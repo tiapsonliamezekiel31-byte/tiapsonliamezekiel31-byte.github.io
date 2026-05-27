@@ -960,12 +960,18 @@ class UIManager {
     if (!panel) return;
     const open = panel.classList.contains('open');
     this.closeTaskPanel(which);
-    if (!open) panel.classList.add('open');
+    if (!open) {
+      panel.classList.add('open');
+      // Make dailies panel take full screen so dailies don't get hidden
+      if (which === 'dailies') panel.classList.add('fullscreen');
+    }
   }
 
   static closeTaskPanel(which) {
     const panel = document.getElementById(which === 'dailies' ? 'dailiesPanel' : 'todosPanel');
-    panel?.classList.remove('open');
+    if (!panel) return;
+    panel.classList.remove('open');
+    panel.classList.remove('fullscreen');
   }
 
   static bindTaskInteractions() {
@@ -1038,6 +1044,21 @@ class UIManager {
             this.updateTodosList();
           }
           state.save();
+          return;
+        }
+
+        // Delete daily/todo
+        if (event.target.closest('.btn-delete')) {
+          if (!confirm('Delete this item? This cannot be undone.')) return;
+          if (taskType === 'daily') {
+            TaskManager.removeDaily(taskId);
+            try { state.save(); } catch (e) {}
+            this.updateDailiesList();
+          } else {
+            TaskManager.removeTodo(taskId);
+            try { state.save(); } catch (e) {}
+            this.updateTodosList();
+          }
           return;
         }
 
@@ -1831,7 +1852,7 @@ class UIManager {
     const visibleDailies = showCompleted ? dailies : dailies.filter(daily => !daily.completed);
     
     container.innerHTML = visibleDailies.map(daily => `
-      <div class="task-card task-clickable task-card-daily ${daily.completed ? 'completed' : ''}" data-id="${daily.id}" data-type="daily" tabindex="0">
+      <div class="task-card task-clickable task-card-daily compact ${daily.completed ? 'completed' : ''}" data-id="${daily.id}" data-type="daily" tabindex="0">
         <div class="daily-card-top">
           <div class="task-title daily-title">${daily.name}</div>
           <div class="daily-card-meta">
@@ -1850,6 +1871,7 @@ class UIManager {
         <div class="task-card-actions task-card-actions-daily task-card-actions-small">
           <button class="btn-blood-oath" title="Blood Oath">🩸</button>
           <button class="btn-edit" title="Edit">✎</button>
+          <button class="btn-delete" title="Delete">✕</button>
         </div>
       </div>
     `).join('');

@@ -845,7 +845,7 @@ body::before {
 .pull-tab {
   position: fixed;
   background: linear-gradient(180deg, rgba(10, 8, 5, 0.98), rgba(8, 6, 4, 0.98));
-  border-top: 2px solid var(--accent-copper);
+  border: 1px solid rgba(255,255,255,0.04);
   overflow-y: auto;
   max-height: 840px;
   min-width: 200px;
@@ -853,7 +853,9 @@ body::before {
   transition: transform 0.2s ease;
   pointer-events: none;
   top: auto;
-  border-radius: 3px;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
 }
 
 .left-tab {
@@ -875,24 +877,78 @@ body::before {
   pointer-events: auto;
 }
 
+/* Fullscreen dailies panel to keep tasks visible and prominent */
+.pull-tab.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  bottom: 0;
+  transform: none;
+  border-radius: 0;
+  z-index: 4500;
+  padding: 18px;
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(8,6,12,0.98), rgba(12,8,20,0.99));
+}
+
+.pull-tab.fullscreen .tab-content {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  gap: 10px;
+}
+
+/* Compact daily card styling so more items fit on screen while keeping features visible */
+.task-card-daily.compact {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 10px;
+}
+.task-card-daily.compact .daily-title {
+  font-size: 11px;
+  flex: 1 1 auto;
+}
+.task-card-daily.compact .daily-card-body {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.task-card-daily.compact .daily-progress-big { font-size: 14px; }
+.task-card-daily.compact .daily-history-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+
+.btn-delete {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--danger-red);
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.btn-delete:hover { background: rgba(255,0,0,0.06); }
+
 .tab-handle {
   position: fixed;
   bottom: 80px;
   z-index: 41;
-  background: linear-gradient(180deg, rgba(15, 10, 7, 0.98), rgba(10, 8, 5, 0.98));
-  border: 2px solid var(--accent-copper);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
   color: var(--accent-gold);
-  padding: 8px 10px;
+  padding: 10px 14px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
+  font-size: 10px;
   cursor: pointer;
-  box-shadow: none;
-  border-radius: 3px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  border-radius: 999px;
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.tab-handle-left { left: 0; }
-.tab-handle-right { right: 0; }
+.tab-handle-left { left: 12px; }
+.tab-handle-right { right: 12px; }
 
 .combo-indicator {
   position: fixed;
@@ -1710,7 +1766,7 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 4000;
+  z-index: 4600; /* raised so popups sit above pull-tabs */
   backdrop-filter: blur(6px);
 }
 
@@ -1724,6 +1780,7 @@ body::before {
   position: relative;
   box-shadow: none;
   border-radius: 3px;
+  z-index: 4601;
 }
 
 .popup h2 {
