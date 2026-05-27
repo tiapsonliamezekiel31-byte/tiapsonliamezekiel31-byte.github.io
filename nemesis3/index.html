@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nemesis Ultimate Roguelike</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="gameContainer"></div>
+  
+  <!-- Core Systems -->
+  <script src="config.js"></script>
+  <script src="JS/core.js"></script>
+  <script src="JS/animations.js"></script>
+  
+  <!-- Game Systems -->
+  <script src="JS/player.js"></script>
+  <script src="JS/tasks.js"></script>
+  <script src="JS/enemy.js"></script>
+  <script src="JS/stage.js"></script>
+  <script src="JS/combat.js"></script>
+  
+  <!-- UI Systems -->
+  <script src="JS/sound.js"></script>
+  <script src="JS/shop.js"></script>
+  <script src="JS/ui.js"></script>
+  <script src="JS/popups.js"></script>
+  
+  <!-- Game Initialization -->
+  <script>
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Create game state
+      const state = initializeGameState();
+      
+      // Try to load saved game
+      if (state.load()) {
+        console.log('Game loaded from save');
+        if (state.dailiesState.dailies.length === 0) {
+          TaskManager.ensureStarterTasks();
+        }
+        if (state.playerState.className) {
+          if ((state.stageState.enemies || []).length === 0) {
+            StageManager.initializeRun(state.stageState.stage || 1);
+          } else {
+            StageManager.rehydrateLoadedEnemies();
+          }
+          UIManager.initializeUI();
+          UIManager.refreshGameUI();
+        } else {
+          PopupsManager.showClassSelection();
+        }
+      } else {
+        console.log('Starting new game');
+        // Show class selection
+        PopupsManager.showClassSelection();
+      }
+    });
+    
+    // Autosave periodically
+    setInterval(() => {
+      const state = getGameState();
+      if (state.playerState.className) {
+        state.save();
+      }
+    }, 30000); // Every 30 seconds
+    
+    // Check for missed check-in (skipped day death)
+    setInterval(() => {
+      const state = getGameState();
+      
+      if (!state.systemState.isPaused && state.playerState.className) {
+        const now = new Date();
+        const lastCheckIn = state.systemState.lastCheckInTime 
+          ? new Date(state.systemState.lastCheckInTime)
+          : new Date();
+        
+        // Check if a full calendar day has passed
+        const daysElapsed = (now - lastCheckIn) / (1000 * 60 * 60 * 24);
+        
+        if (daysElapsed > 1) {
+          // Missed check-in - instant permadeath
+          state.eventBus.emit(EVENTS.SKIPPED_DAY_DEATH);
+          
+          PopupsManager.showDeathScreen({
+            class: state.playerState.className,
+            stage: state.stageState.stage,
+            level: state.playerState.level,
+            enemiesDefeated: state.systemState.runStats.enemiesDefeated,
+            bossesSailed: state.systemState.runStats.bossesSailed,
+            goldEarned: state.systemState.runStats.totalGoldEarned
+          });
+        }
+      }
+    }, 60000); // Check every minute
+  </script>
+</body>
+</html>
