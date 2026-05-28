@@ -1936,6 +1936,51 @@ class UIManager {
     });
     container.innerHTML = html;
 
+    // Attach long-press-to-edit handlers for daily cards (touch + mouse)
+    try {
+      const gs = getGameState();
+      const longPressMs = Number((gs && gs.config && (gs.config.longPressMs || gs.config.shopLongPressMs)) || 450);
+      const cards = container.querySelectorAll('.task-card-daily');
+      cards.forEach(card => {
+        let pressTimer = null;
+        let longPressed = false;
+
+        const openEdit = () => {
+          longPressed = true;
+          try { PopupsManager.showEditDaily(card.dataset.id); } catch (e) {}
+          // mark briefly so delegated click handlers can ignore the click
+          card.dataset.longPressed = '1';
+          setTimeout(() => { delete card.dataset.longPressed; }, 700);
+        };
+
+        const startPress = (e) => {
+          if (e) try { e.preventDefault(); } catch (er) {}
+          longPressed = false;
+          clearTimeout(pressTimer);
+          pressTimer = setTimeout(openEdit, longPressMs);
+        };
+
+        const endPress = () => {
+          clearTimeout(pressTimer);
+        };
+
+        card.addEventListener('mousedown', startPress);
+        card.addEventListener('touchstart', startPress, { passive: false });
+        card.addEventListener('mouseup', endPress);
+        card.addEventListener('mouseleave', endPress);
+        card.addEventListener('touchend', endPress);
+        card.addEventListener('touchcancel', endPress);
+
+        // If a long-press just opened the edit, prevent the delegated click from firing
+        card.addEventListener('click', (e) => {
+          if (card.dataset.longPressed === '1') {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+      });
+    } catch (e) { console.warn('Failed to bind long-press edit for dailies', e); }
+
     const completeDayBtn = document.getElementById('completeDayBtn');
     if (completeDayBtn) {
       const claimed = getGameState().systemState?.completeDayClaimDate === (typeof getLocalDateKey === 'function' ? getLocalDateKey() : new Date().toISOString().split('T')[0]);

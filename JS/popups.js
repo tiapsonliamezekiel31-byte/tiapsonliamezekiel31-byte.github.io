@@ -1154,6 +1154,11 @@ class PopupsManager {
       </select>
       <label>Max completions per day</label>
       <input id="editMax" type="number" min="1" value="${daily.maxCompletionsPerDay || 1}" />
+      <label>Blood Oath</label>
+      <div class="blood-oath-row">
+        <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
+        <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
+      </div>
       <button class="btn-large" id="saveDaily">SAVE</button>
     `;
 
@@ -1168,6 +1173,17 @@ class PopupsManager {
         difficulty: popup.querySelector('#editDiff').value,
         maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1)
       };
+      // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
+      try {
+        const wantBlood = !!popup.querySelector('#editBloodOath').checked;
+        if (wantBlood !== !!daily.bloodOathActive) {
+          const ok = TaskManager.toggleBloodOath(dailyId);
+          if (!ok && wantBlood) {
+            try { alert('Not enough mana to activate Blood Oath'); } catch (e) {}
+          }
+        }
+      } catch (e) { console.warn('Failed to toggle blood oath', e); }
+
       TaskManager.editDaily(dailyId, updates);
       this.closeAllPopups();
       UIManager.updateDailiesList();
