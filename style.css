@@ -1229,6 +1229,7 @@ body::before {
   white-space: normal;
   overflow: hidden;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
@@ -1730,6 +1731,7 @@ body::before {
     white-space: normal;
     overflow: hidden;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
@@ -2559,24 +2561,39 @@ body::before {
 /* Mobile override: prioritize large daily title over completion number */
 @media (max-width: 480px) {
   .task-card-daily .daily-title {
-    font-size: 34px !important;
+    font-size: 12px !important;
     font-weight: 700;
-    line-height: 1.05;
+    line-height: 1.1;
     white-space: normal;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    line-clamp: 1;
+    -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
   }
 
   .task-card-daily .daily-progress-big {
-    font-size: 14px !important;
+    font-size: 11px !important;
     color: #fff7c8;
   }
 
   /* Allow the top row to wrap and keep meta aligned */
   .daily-card-top { align-items: flex-start; }
   .daily-card-meta { min-width: 0; }
+
+  .task-card-daily {
+    padding: 5px 6px;
+    gap: 3px;
+  }
+
+  .daily-card-body {
+    gap: 2px;
+  }
+
+  .daily-history-grid {
+    grid-template-columns: repeat(8, 8px);
+    gap: 1px;
+  }
 }
 
 .victory-quote {
