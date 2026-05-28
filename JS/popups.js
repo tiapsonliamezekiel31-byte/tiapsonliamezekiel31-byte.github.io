@@ -971,6 +971,33 @@ class PopupsManager {
     return true;
   }
 
+  static showConfirm(title, message, onConfirm) {
+    this.closeAllPopups();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup confirm-popup';
+
+    popup.innerHTML = `
+      <h2>${title || 'Confirm'}</h2>
+      <div class="confirm-message">${message || ''}</div>
+      <div class="confirm-actions">
+        <button class="btn-cancel">Cancel</button>
+        <button class="btn-confirm">Confirm</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-cancel').addEventListener('click', () => this.closeAllPopups());
+    popup.querySelector('.btn-confirm').addEventListener('click', () => {
+      try { if (typeof onConfirm === 'function') onConfirm(); } catch (e) {}
+      this.closeAllPopups();
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+    return true;
+  }
+
   static showShopItemDetails(item) {
     if (!item) return false;
     const overlay = this.createPopupOverlay();

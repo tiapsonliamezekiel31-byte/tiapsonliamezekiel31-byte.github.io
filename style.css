@@ -845,7 +845,9 @@ body::before {
 .pull-tab {
   position: fixed;
   background: linear-gradient(180deg, rgba(10, 8, 5, 0.98), rgba(8, 6, 4, 0.98));
-  border: 1px solid rgba(255,255,255,0.04);
+  border-top: 2px solid var(--accent-copper);
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   max-height: 840px;
   min-width: 200px;
@@ -853,9 +855,7 @@ body::before {
   transition: transform 0.2s ease;
   pointer-events: none;
   top: auto;
-  border-radius: 12px;
-  padding: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  border-radius: 3px;
 }
 
 .left-tab {
@@ -877,78 +877,82 @@ body::before {
   pointer-events: auto;
 }
 
-/* Fullscreen dailies panel to keep tasks visible and prominent */
-.pull-tab.fullscreen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  bottom: 0;
-  transform: none;
-  border-radius: 0;
-  z-index: 4500;
-  padding: 18px;
-  overflow: auto;
-  background: linear-gradient(180deg, rgba(8,6,12,0.98), rgba(12,8,20,0.99));
-}
-
-.pull-tab.fullscreen .tab-content {
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
-  gap: 10px;
-}
-
-/* Compact daily card styling so more items fit on screen while keeping features visible */
-.task-card-daily.compact {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  font-size: 10px;
-}
-.task-card-daily.compact .daily-title {
-  font-size: 11px;
-  flex: 1 1 auto;
-}
-.task-card-daily.compact .daily-card-body {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.left-tab.open {
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
   min-width: 0;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  z-index: 12000;
+  overflow: hidden;
 }
-.task-card-daily.compact .daily-progress-big { font-size: 14px; }
-.task-card-daily.compact .daily-history-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 
-.btn-delete {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.06);
-  color: var(--danger-red);
-  padding: 4px 6px;
-  cursor: pointer;
-  border-radius: 4px;
+.left-tab.open .tab-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
-.btn-delete:hover { background: rgba(255,0,0,0.06); }
+
+.left-tab.open .daily-panel-summary {
+  position: sticky;
+  top: 56px;
+  z-index: 1;
+}
+
+.left-tab.open .tab-content {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.right-tab.open {
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  z-index: 12000;
+  overflow: hidden;
+}
+
+.right-tab.open .tab-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.right-tab.open .tab-content {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 .tab-handle {
   position: fixed;
   bottom: 80px;
   z-index: 41;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(15, 10, 7, 0.98), rgba(10, 8, 5, 0.98));
+  border: 2px solid var(--accent-copper);
   color: var(--accent-gold);
-  padding: 10px 14px;
+  padding: 8px 10px;
   font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
+  font-size: 8px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-  border-radius: 999px;
+  box-shadow: none;
+  border-radius: 3px;
   transition: border-color 0.16s ease, background 0.16s ease;
 }
 
-.tab-handle-left { left: 12px; }
-.tab-handle-right { right: 12px; }
+.tab-handle-left { left: 0; }
+.tab-handle-right { right: 0; }
 
 .combo-indicator {
   position: fixed;
@@ -1005,12 +1009,14 @@ body::before {
 
 .daily-box-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(8, 8px);
+  gap: 1px;
+  justify-content: start;
 }
 
 .daily-box {
-  aspect-ratio: 1 / 1;
+  width: 8px;
+  height: 8px;
   border: 1px solid rgba(255, 215, 106, 0.22);
   background: rgba(255, 255, 255, 0.04);
   border-radius: 3px;
@@ -1102,6 +1108,34 @@ body::before {
   overflow-y: auto;
 }
 
+.daily-board {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.todo-board {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.daily-panel-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 8px 4px;
+  border-bottom: 1px solid rgba(255, 215, 106, 0.18);
+  color: var(--accent-gold);
+  font-size: 7px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0.88), rgba(8, 6, 4, 0.92));
+}
+
 .task-card {
   background: var(--primary-dark);
   border: 2px solid var(--text-muted);
@@ -1124,6 +1158,50 @@ body::before {
   border-radius: 3px;
 }
 
+.task-card-daily {
+  padding: 3px 4px;
+  gap: 2px;
+  border-left-width: 3px;
+  border-radius: 4px;
+  position: absolute;
+  width: clamp(116px, 16vw, 168px);
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.task-card-todo {
+  padding: 8px 8px 7px;
+  gap: 4px;
+  position: absolute;
+  width: clamp(156px, 20vw, 220px);
+  /* height is now dynamic to allow subtasks to expand */
+  overflow: visible;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.task-card-todo.dragging {
+  cursor: grabbing;
+  z-index: 20;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+}
+
+.task-card-daily.dragging {
+  cursor: grabbing;
+  z-index: 20;
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+}
+
 .daily-card-top,
 .todo-card-left,
 .todo-card-right {
@@ -1142,25 +1220,84 @@ body::before {
 
 .daily-card-top {
   align-items: flex-start;
+  gap: 4px;
+}
+
+.task-card-daily .daily-title {
+  font-size: 8px;
+  line-height: 1.15;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .task-card-head-todo {
   align-items: center;
 }
 
+.todo-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.todo-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .daily-title,
 .todo-title {
   font-size: 18px;
   line-height: 1.2;
+  white-space: normal;
+}
+
+.task-card-todo .todo-title {
+  font-size: 10px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .daily-card-meta,
 .task-pill-row-right-side {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   justify-content: flex-end;
   flex-wrap: wrap;
   align-items: flex-start;
+}
+
+.task-card-daily .daily-card-meta {
+  gap: 2px;
+}
+
+.daily-streak {
+  font-size: 10px;
+  color: var(--accent-gold);
+  background: rgba(255, 215, 106, 0.08);
+  border: 1px solid rgba(255, 215, 106, 0.14);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.daily-streak.empty {
+  color: var(--text-muted);
+  background: transparent;
+  border-color: transparent;
+}
+
+.task-card-daily .task-difficulty,
+.task-card-daily .task-attr {
+  font-size: 4px;
 }
 
 .task-pill-row {
@@ -1175,36 +1312,41 @@ body::before {
 }
 
 .daily-card-body {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1 1 auto;
+  justify-content: center;
 }
 
 .daily-card-progress {
   display: flex;
   align-items: baseline;
-  gap: 2px;
-  min-width: 62px;
+  gap: 1px;
+  min-width: 0;
+  width: 100%;
+  flex-wrap: nowrap;
 }
 
 .daily-progress-big {
-  font-size: 22px;
+  font-size: 10px;
   line-height: 1;
   color: #fff7c8;
 }
 
 .daily-progress-sep,
 .daily-progress-small {
-  font-size: 10px;
+  font-size: 5px;
   color: var(--accent-gold);
 }
 
 .daily-history-grid {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 3px;
-  align-self: stretch;
+  grid-template-columns: repeat(8, 8px);
+  gap: 1px;
+  align-self: flex-start;
+  justify-content: start;
 }
 
 .todo-card-left {
@@ -1213,48 +1355,84 @@ body::before {
   justify-content: space-between;
 }
 
-.todo-card-right {
-  flex: 0 0 138px;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-  text-align: right;
-}
-
 .todo-date-big {
-  font-size: 16px;
-  line-height: 1.05;
+  font-size: 11px;
+  line-height: 1.08;
   color: #fff7c8;
   word-break: break-word;
 }
 
 .todo-date-subtext {
-  font-size: 7px;
+  font-size: 6px;
   color: var(--text-muted);
 }
 
 .todo-subtasks-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+  min-height: 0;
+  flex: 1 1 auto;
 }
-
-
-.daily-card-body {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-}
-
 .todo-subtask-label {
-  font-size: 8px;
+  font-size: 7px;
   color: var(--text-muted);
+}
+
+.task-card-todo .subtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.task-card-todo .subtask {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 5px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 215, 106, 0.12);
+  border-radius: 4px;
+}
+
+.task-card-todo .subtask-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  font-size: 7px;
+  line-height: 1.2;
+}
+
+.task-card-todo .subtask-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.task-card-todo .subtask-add {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 0;
+}
+
+.task-card-todo .subtask-input {
+  padding: 4px 5px;
+  font-size: 6px;
+}
+
+.task-card-todo .subtask-add-btn {
+  padding: 4px 5px;
+  font-size: 6px;
 }
 
 .task-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 3px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -1263,13 +1441,34 @@ body::before {
   justify-content: flex-start;
 }
 
+.task-card-todo .task-card-actions {
+  margin-top: auto;
+  justify-content: flex-start;
+}
+
+.task-card-todo.collapsed {
+  max-height: none;
+}
+
 .task-card-actions-daily {
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .task-card-actions-small {
-  gap: 4px;
-  margin-top: 2px;
+  gap: 2px;
+  margin-top: 0;
+}
+
+.task-card-daily .btn-blood-oath,
+.task-card-daily .btn-edit,
+.task-card-daily .btn-delete-daily {
+  padding: 1px 2px;
+  font-size: 5px;
+}
+
+.task-card-daily .task-card-actions {
+  margin-top: auto;
+  justify-content: flex-start;
 }
 
 .task-card.completed {
@@ -1281,19 +1480,47 @@ body::before {
   cursor: pointer;
 }
 
+
+  .task-card-todo {
+    width: clamp(168px, 28vw, 236px);
+    padding: 7px 8px 6px;
+    gap: 5px;
+  }
 .task-hint {
   font-size: 7px;
   color: var(--text-muted);
   opacity: 0.75;
+
+  .task-card-todo .todo-title {
+    font-size: 9px;
+  }
 }
 
 .subtasks {
   display: flex;
   flex-direction: column;
+
+  .task-card-todo .task-difficulty,
+  .task-card-todo .task-attr {
+    font-size: 5px;
+  }
+
+  .task-card-todo .subtasks {
+    max-height: 96px;
+  }
+
+  .task-card-todo .subtask-input,
+  .task-card-todo .subtask-add-btn {
+    font-size: 7px;
+  }
   gap: 5px;
 }
 
 .subtask-add {
+
+  .todo-card-body {
+    gap: 5px;
+  }
   display: flex;
   gap: 6px;
   align-items: center;
@@ -1488,13 +1715,62 @@ body::before {
     grid-template-columns: 1fr;
   }
 
-  .daily-history-grid {
-    grid-template-columns: repeat(10, minmax(0, 1fr));
+  .daily-panel-summary {
+    padding: 4px 10px 5px;
+    font-size: 8px;
   }
 
-  .task-card-daily,
+  .task-card-daily {
+    padding: 6px 7px;
+    gap: 4px;
+  }
+
+  .task-card-daily .daily-title {
+    font-size: 9px;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .task-card-daily .task-difficulty,
+  .task-card-daily .task-attr {
+    font-size: 5px;
+  }
+
+  .daily-card-body {
+    gap: 3px;
+  }
+
+  .daily-card-progress {
+    gap: 2px;
+  }
+
+  .daily-progress-big {
+    font-size: 12px;
+  }
+
+  .daily-progress-sep,
+  .daily-progress-small {
+    font-size: 6px;
+  }
+
+  .daily-history-grid {
+    grid-template-columns: repeat(8, 9px);
+    gap: 2px;
+    justify-content: start;
+  }
+
   .task-card-todo {
-    padding: 7px;
+    padding: 5px;
+  }
+
+  .task-card-daily .btn-blood-oath,
+  .task-card-daily .btn-edit,
+  .task-card-daily .btn-delete-daily {
+    padding: 2px 3px;
+    font-size: 6px;
   }
 
   .todo-title {
@@ -1531,6 +1807,12 @@ body::before {
   max-height: 56px;
   overflow: hidden;
   transition: max-height 0.22s ease;
+}
+
+/* Ensure To-Do cards are not forcibly collapsed by the generic rule */
+.task-card.task-card-todo.collapsed {
+  max-height: none;
+  overflow: visible;
 }
 
 .todo-deadline-badge {
@@ -1716,6 +1998,7 @@ body::before {
 
 .task-attr {
   color: var(--text-muted);
+  font-size: 7px;
 }
 
 .btn-complete, .btn-blood-oath, .btn-subtasks {
@@ -1743,8 +2026,23 @@ body::before {
   background: var(--primary-dark2);
   border: 1px solid var(--accent-purple);
   color: var(--accent-gold);
-  padding: 2px 6px;
+  padding: 1px 3px;
   cursor: pointer;
+}
+
+.btn-delete-daily {
+  background: var(--primary-dark2);
+  border: 1px solid rgba(255, 107, 107, 0.55);
+  color: #ffb0b0;
+  padding: 1px 3px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+}
+
+.btn-delete-daily:hover {
+  background: rgba(255, 107, 107, 0.16);
+  color: #ffd2d2;
 }
 
 .btn-complete:hover, .btn-blood-oath:hover, .btn-subtasks:hover {
@@ -1766,7 +2064,7 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 4600; /* raised so popups sit above pull-tabs */
+  z-index: 13000;
   backdrop-filter: blur(6px);
 }
 
@@ -1780,7 +2078,6 @@ body::before {
   position: relative;
   box-shadow: none;
   border-radius: 3px;
-  z-index: 4601;
 }
 
 .popup h2 {
@@ -2267,7 +2564,9 @@ body::before {
     line-height: 1.05;
     white-space: normal;
     overflow: hidden;
-    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
   }
 
   .task-card-daily .daily-progress-big {

@@ -11,6 +11,20 @@ class UIManager {
   static spinnerLastFrameAt = 0;
   static queuedAttackTargetId = null;
   static queuedAttackCount = 0;
+  static dailyDragState = null;
+  static dailyDragSuppressUntil = 0;
+  static todoDragState = null;
+  static todoDragSuppressUntil = 0;
+  static _dailyHistoryCache = {};
+  static _updateDailiesTimer = null;
+
+  static scheduleUpdateDailiesList(delay = 120) {
+    if (UIManager._updateDailiesTimer) clearTimeout(UIManager._updateDailiesTimer);
+    UIManager._updateDailiesTimer = setTimeout(() => {
+      UIManager._updateDailiesTimer = null;
+      try { UIManager.updateDailiesList(); } catch (e) { console.error('updateDailiesList error', e); }
+    }, delay);
+  }
 
   // Mutator display metadata: emoji, color, one-line description
   static MUTATOR_META = {
@@ -331,7 +345,8 @@ class UIManager {
           <button class="tab-close">✕</button>
         </div>
       </div>
-      <div class="tab-content" id="dailiesList"></div>
+      <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
+      <div class="tab-content daily-board" id="dailiesList"></div>
     `;
     document.body.appendChild(leftTab);
     
@@ -348,7 +363,7 @@ class UIManager {
           <button class="tab-close">✕</button>
         </div>
       </div>
-      <div class="tab-content" id="todosList"></div>
+      <div class="tab-content todo-board" id="todosList"></div>
     `;
     document.body.appendChild(rightTab);
   }
@@ -863,7 +878,7 @@ class UIManager {
       }
     } catch (e) {}
     state.eventBus.on(EVENTS.TASK_COMPLETED, (detail) => {
-      if (detail?.type === 'daily') this.updateDailiesList();
+      if (detail?.type === 'daily') this.scheduleUpdateDailiesList();
       if (detail?.type === 'todo') this.updateTodosList();
     });
 
@@ -916,14 +931,14 @@ class UIManager {
     if (dailiesAdd) dailiesAdd.addEventListener('click', () => {
       const created = TaskManager.addDaily('New Daily', 'Easy', getGameState().config.attributes[0], 1);
       if (created) {
-        this.updateDailiesList();
+        this.scheduleUpdateDailiesList();
         getGameState().save();
       }
     });
 
     const todosAdd = document.getElementById('todosAddBtn');
     if (todosAdd) todosAdd.addEventListener('click', () => {
-      const created = TaskManager.addTodo('New To-Do', 'Easy', getGameState().config.attributes[0], null, []);
+      const created = TaskManager.addTodo('', 'Easy', getGameState().config.attributes[0], null, []);
       if (created) {
         this.updateTodosList();
         getGameState().save();
@@ -949,6 +964,8 @@ class UIManager {
       requestAnimationFrame(() => {
         this.renderEnemies();
         this.positionActionButtons();
+        this.positionDailyCards();
+        this.positionTodoCards();
         this.adjustLayout();
         this.resizeScheduled = false;
       });
@@ -962,16 +979,25 @@ class UIManager {
     this.closeTaskPanel(which);
     if (!open) {
       panel.classList.add('open');
-      // Make dailies panel take full screen so dailies don't get hidden
-      if (which === 'dailies') panel.classList.add('fullscreen');
+      // After the open transition, ensure the board is rendered and positioned
+      setTimeout(() => {
+        try {
+          if (which === 'todos') {
+            this.updateTodosList();
+          } else {
+            this.scheduleUpdateDailiesList();
+          }
+          // Force re-position in case sizes changed during the transition
+          if (which === 'todos') this.positionTodoCards();
+          else this.positionDailyCards();
+        } catch (e) { /* ignore */ }
+      }, 260);
     }
   }
 
   static closeTaskPanel(which) {
     const panel = document.getElementById(which === 'dailies' ? 'dailiesPanel' : 'todosPanel');
-    if (!panel) return;
-    panel.classList.remove('open');
-    panel.classList.remove('fullscreen');
+    panel?.classList.remove('open');
   }
 
   static bindTaskInteractions() {
@@ -987,6 +1013,10 @@ class UIManager {
 
         const taskId = card.dataset.id;
         if (!taskId) return;
+
+        if ((taskType === 'daily' && Date.now() < UIManager.dailyDragSuppressUntil) || (taskType === 'todo' && Date.now() < UIManager.todoDragSuppressUntil)) {
+          return;
+        }
 
         // Subtask interactions: toggle, remove, add
         const subtaskCheckbox = event.target.closest('.subtask-checkbox');
@@ -1026,6 +1056,19 @@ class UIManager {
           return;
         }
 
+        const deleteDaily = event.target.closest('.btn-delete-daily');
+        if (deleteDaily && taskType === 'daily') {
+          const dailyName = card.querySelector('.daily-title')?.textContent || 'this daily';
+          if (!confirm(`Delete ${dailyName}?`)) return;
+
+          if (TaskManager.removeDaily(taskId)) {
+            try { state.save(); } catch (e) {}
+            this.scheduleUpdateDailiesList();
+            this.renderEnemies();
+          }
+          return;
+        }
+
         // allow Enter on inline input via delegated keydown handler (see below)
 
         // Edit handler (works even if completed)
@@ -1038,27 +1081,12 @@ class UIManager {
         if (event.target.closest('.btn-blood-oath')) {
           if (taskType === 'daily') {
             TaskManager.toggleBloodOath(taskId);
-            this.updateDailiesList();
+            this.scheduleUpdateDailiesList();
           } else {
             TaskManager.toggleBloodOathTodo(taskId);
             this.updateTodosList();
           }
           state.save();
-          return;
-        }
-
-        // Delete daily/todo
-        if (event.target.closest('.btn-delete')) {
-          if (!confirm('Delete this item? This cannot be undone.')) return;
-          if (taskType === 'daily') {
-            TaskManager.removeDaily(taskId);
-            try { state.save(); } catch (e) {}
-            this.updateDailiesList();
-          } else {
-            TaskManager.removeTodo(taskId);
-            try { state.save(); } catch (e) {}
-            this.updateTodosList();
-          }
           return;
         }
 
@@ -1081,14 +1109,26 @@ class UIManager {
               }
 
               setTimeout(() => {
-                this.updateDailiesList();
+                this.scheduleUpdateDailiesList();
               }, 320);
             } catch (e) {
-              this.updateDailiesList();
+              this.scheduleUpdateDailiesList();
             }
           } else {
-            if (!TaskManager.completeTodo(taskId)) return;
-            this.updateTodosList();
+            // Confirm before completing a To-Do
+            const todoName = card.querySelector('.todo-title')?.textContent || '';
+            try {
+              PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
+                if (!TaskManager.completeTodo(taskId)) return;
+                this.updateTodosList();
+                try { state.save(); } catch (e) {}
+                this.renderEnemies();
+              });
+            } catch (e) {
+              // Fallback to immediate complete if PopupsManager unavailable
+              if (!TaskManager.completeTodo(taskId)) return;
+              this.updateTodosList();
+            }
           }
           state.save();
           this.renderEnemies();
@@ -1645,7 +1685,7 @@ class UIManager {
     if (rewards.diamonds) textParts.push(`+${Math.ceil(rewards.diamonds)} Diamonds`);
     if (rewards.attributePoints) textParts.push(`+${rewards.attributePoints.toFixed ? rewards.attributePoints.toFixed(1) : rewards.attributePoints} Attr`);
     FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, textParts.join(' · ') || 'Complete Day', { color: '#ffd700', duration: 2200 });
-    this.updateDailiesList();
+    this.scheduleUpdateDailiesList();
     this.refreshGameUI();
   }
   
@@ -1850,31 +1890,51 @@ class UIManager {
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
     const visibleDailies = showCompleted ? dailies : dailies.filter(daily => !daily.completed);
+    const summaryEl = document.getElementById('dailiesSummary');
+    if (summaryEl) {
+      const completedCount = dailies.filter(daily => daily.completed).length;
+      summaryEl.textContent = `${completedCount}/${dailies.length} complete`;
+    }
     
-    container.innerHTML = visibleDailies.map(daily => `
-      <div class="task-card task-clickable task-card-daily compact ${daily.completed ? 'completed' : ''}" data-id="${daily.id}" data-type="daily" tabindex="0">
-        <div class="daily-card-top">
-          <div class="task-title daily-title">${daily.name}</div>
-          <div class="daily-card-meta">
-            <div class="task-difficulty ${daily.difficulty.toLowerCase()}">${daily.difficulty}</div>
-            <div class="task-attr">${daily.attribute}</div>
-          </div>
-        </div>
-        <div class="daily-card-body">
-          <div class="daily-card-progress">
-            <div class="daily-progress-big">${daily.completionsToday || 0}</div>
-            <div class="daily-progress-sep">/</div>
-            <div class="daily-progress-small">${daily.maxCompletionsPerDay || 1}</div>
-          </div>
-          <div class="daily-history-grid">${this.buildDailyHistoryBoxes(daily.id)}</div>
-        </div>
-        <div class="task-card-actions task-card-actions-daily task-card-actions-small">
-          <button class="btn-blood-oath" title="Blood Oath">🩸</button>
-          <button class="btn-edit" title="Edit">✎</button>
-          <button class="btn-delete" title="Delete">✕</button>
-        </div>
-      </div>
-    `).join('');
+    const computeDailyStreak = (dailyId) => {
+      const state = getGameState();
+      const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
+      let streak = 0;
+      for (let i = history.length - 1; i >= 0; i--) {
+        const entry = history[i];
+        const completed = Array.isArray(entry.completedDailies) && entry.completedDailies.some(d => String(d.id) === String(dailyId));
+        if (completed) streak++; else break;
+      }
+      return streak;
+    };
+
+    let html = '';
+    visibleDailies.forEach(daily => {
+      const streak = computeDailyStreak(daily.id);
+      const streakHtml = streak > 0 ? (`<div class="daily-streak" title="Consecutive days completed">` + streak + ' 🔥</div>') : ('<div class="daily-streak empty" title="No streak">—</div>');
+      html += '<div class="task-card task-clickable task-card-daily ' + (daily.completed ? 'completed' : '') + '" data-id="' + daily.id + '" data-type="daily" tabindex="0">';
+      html += '<div class="daily-card-top">';
+      html += '<div class="task-title daily-title">' + (daily.name || '') + '</div>';
+      html += '<div class="daily-card-meta">';
+      html += '<div class="task-difficulty ' + (daily.difficulty || '').toLowerCase() + '">' + (daily.difficulty || '') + '</div>';
+      html += '<div class="task-attr">' + (daily.attribute || '') + '</div>';
+      html += streakHtml;
+      html += '</div></div>';
+      html += '<div class="daily-card-body">';
+      html += '<div class="daily-card-progress">';
+      html += '<div class="daily-progress-big">' + (daily.completionsToday || 0) + '</div>';
+      html += '<div class="daily-progress-sep">/</div>';
+      html += '<div class="daily-progress-small">' + (daily.maxCompletionsPerDay || 1) + '</div>';
+      html += '</div>';
+      html += '<div class="daily-history-grid">' + this.buildDailyHistoryBoxes(daily.id) + '</div>';
+      html += '</div>';
+      html += '<div class="task-card-actions task-card-actions-daily task-card-actions-small">';
+      html += '<button class="btn-blood-oath" title="Blood Oath">🩸</button>';
+      html += '<button class="btn-edit" title="Edit">✎</button>';
+      html += '<button class="btn-delete-daily" title="Delete">✕</button>';
+      html += '</div></div>';
+    });
+    container.innerHTML = html;
 
     const completeDayBtn = document.getElementById('completeDayBtn');
     if (completeDayBtn) {
@@ -1884,7 +1944,330 @@ class UIManager {
     }
 
     this.bindTaskInteractions();
+    this.bindDailyBoardInteractions();
+    this.positionDailyCards();
     this.updateRunCompletionGraph();
+  }
+
+  static getDailyBoardMetrics() {
+    const board = document.getElementById('dailiesList');
+    if (!board) return null;
+
+    const rect = board.getBoundingClientRect();
+    return {
+      board,
+      rect,
+      width: Math.max(1, rect.width),
+      height: Math.max(1, rect.height)
+    };
+  }
+
+  static getDailyCardSize() {
+    const board = document.getElementById('dailiesList');
+    const rect = board?.getBoundingClientRect();
+    const width = rect?.width || window.innerWidth || 360;
+    const height = rect?.height || window.innerHeight || 640;
+    const minimumSize = window.innerWidth <= 700 ? 126 : 116;
+    const size = Math.round(Math.max(minimumSize, Math.min(168, Math.min(width, height) * 0.28)));
+    return { width: size, height: size };
+  }
+
+  static clampDailyLayout(layout, metrics, tileSize) {
+    const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
+    const maxY = Math.max(0, 100 - ((tileSize.height / metrics.height) * 100));
+    return {
+      x: Math.max(0, Math.min(maxX, Number(layout?.x) || 0)),
+      y: Math.max(0, Math.min(maxY, Number(layout?.y) || 0))
+    };
+  }
+
+  static getDefaultDailyLayout(index, metrics, tileSize) {
+    const padding = 12;
+    const gap = 10;
+    const cols = Math.max(1, Math.floor((metrics.width - (padding * 2) + gap) / (tileSize.width + gap)));
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const xPx = Math.min(Math.max(0, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
+    const yPx = Math.min(Math.max(0, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
+    return {
+      x: (xPx / metrics.width) * 100,
+      y: (yPx / metrics.height) * 100
+    };
+  }
+
+  static positionDailyCards() {
+    const metrics = this.getDailyBoardMetrics();
+    if (!metrics) return;
+
+    const dailies = TaskManager.getAllDailies();
+    const tileSize = this.getDailyCardSize();
+
+    dailies.forEach((daily, index) => {
+      const card = metrics.board.querySelector(`.task-card-daily[data-id="${daily.id}"]`);
+      if (!card) return;
+
+      const layout = daily.layout
+        ? this.clampDailyLayout(daily.layout, metrics, tileSize)
+        : this.getDefaultDailyLayout(index, metrics, tileSize);
+
+      card.style.width = `${tileSize.width}px`;
+      card.style.left = `${layout.x}%`;
+      card.style.top = `${layout.y}%`;
+    });
+  }
+
+  static bindDailyBoardInteractions() {
+    const board = document.getElementById('dailiesList');
+    if (!board || board.dataset.dragBound === '1') return;
+
+    board.dataset.dragBound = '1';
+
+    board.addEventListener('pointerdown', (event) => {
+      const card = event.target.closest('.task-card-daily');
+      if (!card || !board.contains(card)) return;
+      if (event.target.closest('button, input, textarea, select, label')) return;
+      if (event.button !== 0) return;
+
+      const dailyId = card.dataset.id;
+      if (!dailyId) return;
+
+      const cardRect = card.getBoundingClientRect();
+      this.dailyDragState = {
+        dailyId,
+        card,
+        board,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - cardRect.left,
+        offsetY: event.clientY - cardRect.top,
+        moved: false,
+        startX: event.clientX,
+        startY: event.clientY
+      };
+
+      card.classList.add('dragging');
+      try { card.setPointerCapture(event.pointerId); } catch (error) {}
+      event.preventDefault();
+    });
+
+    const onMove = (event) => {
+      const dragState = this.dailyDragState;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+      const boardRect = dragState.board.getBoundingClientRect();
+      const cardRect = dragState.card.getBoundingClientRect();
+      const maxLeft = Math.max(0, boardRect.width - cardRect.width);
+      const maxTop = Math.max(0, boardRect.height - cardRect.height);
+      const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
+      const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
+
+      if (!dragState.moved) {
+        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+        if (distance > 4) dragState.moved = true;
+      }
+
+      dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
+      dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+    };
+
+    const endDrag = (event) => {
+      const dragState = this.dailyDragState;
+      if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
+
+      const boardRect = dragState.board.getBoundingClientRect();
+      const cardRect = dragState.card.getBoundingClientRect();
+      dragState.card.classList.remove('dragging');
+      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) {}
+
+      if (dragState.moved) {
+        const tileSize = { width: cardRect.width, height: cardRect.height };
+        const layout = this.clampDailyLayout({
+          x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
+          y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
+        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
+
+        TaskManager.updateDailyLayout(dragState.dailyId, layout);
+        try { getGameState().save(); } catch (error) {}
+        this.dailyDragSuppressUntil = Date.now() + 250;
+      }
+
+      this.dailyDragState = null;
+      this.positionDailyCards();
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', endDrag);
+    document.addEventListener('pointercancel', endDrag);
+  }
+
+  static getTodoBoardMetrics() {
+    const board = document.getElementById('todosList');
+    if (!board) return null;
+
+    const rect = board.getBoundingClientRect();
+    return {
+      board,
+      rect,
+      width: Math.max(1, rect.width),
+      height: Math.max(1, rect.height)
+    };
+  }
+
+  static getTodoCardSize() {
+    const board = document.getElementById('todosList');
+    const rect = board?.getBoundingClientRect();
+    const width = rect?.width || window.innerWidth || 360;
+    const height = rect?.height || window.innerHeight || 640;
+    const minimumSize = window.innerWidth <= 700 ? 156 : 180;
+    const size = Math.round(Math.max(minimumSize, Math.min(260, Math.min(width, height) * 0.36)));
+    return { width: size, height: size };
+  }
+
+  static clampTodoLayout(layout, metrics, tileSize) {
+    const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
+    const maxY = Math.max(0, 100 - ((tileSize.height / metrics.height) * 100));
+    return {
+      x: Math.max(0, Math.min(maxX, Number(layout?.x) || 0)),
+      y: Math.max(0, Math.min(maxY, Number(layout?.y) || 0))
+    };
+  }
+
+  static getDefaultTodoLayout(index, metrics, tileSize) {
+    const padding = 12;
+    const gap = 12;
+    const cols = Math.max(1, Math.floor((metrics.width - (padding * 2) + gap) / (tileSize.width + gap)));
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const xPx = Math.min(Math.max(0, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
+    const yPx = Math.min(Math.max(0, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
+    return {
+      x: (xPx / metrics.width) * 100,
+      y: (yPx / metrics.height) * 100
+    };
+  }
+
+  static positionTodoCards() {
+    const metrics = this.getTodoBoardMetrics();
+    if (!metrics) return;
+
+    const todos = TaskManager.getAllTodos();
+    const tileSize = this.getTodoCardSize();
+    let changed = false;
+
+    todos.forEach((todo, index) => {
+      const card = metrics.board.querySelector(`.task-card-todo[data-id="${todo.id}"]`);
+      if (!card) return;
+
+      // Allow card height to be dynamic (subtasks may increase height).
+      const actualTileHeight = card.offsetHeight || tileSize.height;
+
+      const layout = todo.layout
+        ? (() => {
+            const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
+            const maxY = Math.max(0, 100 - ((actualTileHeight / metrics.height) * 100));
+            return {
+              x: Math.max(0, Math.min(maxX, Number(todo.layout?.x) || 0)),
+              y: Math.max(0, Math.min(maxY, Number(todo.layout?.y) || 0))
+            };
+          })()
+        : this.getDefaultTodoLayout(index, metrics, tileSize);
+
+      if (!todo.layout) {
+        TaskManager.updateTodoLayout(todo.id, layout);
+        changed = true;
+      }
+
+      card.style.width = `${tileSize.width}px`;
+      // Do not force a fixed height; let subtasks expand the card vertically.
+      card.style.left = `${layout.x}%`;
+      card.style.top = `${layout.y}%`;
+    });
+
+    if (changed) {
+      try { getGameState().save(); } catch (error) {}
+    }
+  }
+
+  static bindTodoBoardInteractions() {
+    const board = document.getElementById('todosList');
+    if (!board || board.dataset.dragBound === '1') return;
+
+    board.dataset.dragBound = '1';
+
+    board.addEventListener('pointerdown', (event) => {
+      const card = event.target.closest('.task-card-todo');
+      if (!card || !board.contains(card)) return;
+      if (event.target.closest('button, input, textarea, select, label')) return;
+      if (event.button !== 0) return;
+
+      const todoId = card.dataset.id;
+      if (!todoId) return;
+
+      const cardRect = card.getBoundingClientRect();
+      this.todoDragState = {
+        todoId,
+        card,
+        board,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - cardRect.left,
+        offsetY: event.clientY - cardRect.top,
+        moved: false,
+        startX: event.clientX,
+        startY: event.clientY
+      };
+
+      card.classList.add('dragging');
+      try { card.setPointerCapture(event.pointerId); } catch (error) {}
+      event.preventDefault();
+    });
+
+    const onMove = (event) => {
+      const dragState = this.todoDragState;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+
+      const boardRect = dragState.board.getBoundingClientRect();
+      const cardRect = dragState.card.getBoundingClientRect();
+      const maxLeft = Math.max(0, boardRect.width - cardRect.width);
+      const maxTop = Math.max(0, boardRect.height - cardRect.height);
+      const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
+      const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
+
+      if (!dragState.moved) {
+        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+        if (distance > 4) dragState.moved = true;
+      }
+
+      dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
+      dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+    };
+
+    const endDrag = (event) => {
+      const dragState = this.todoDragState;
+      if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
+
+      const boardRect = dragState.board.getBoundingClientRect();
+      const cardRect = dragState.card.getBoundingClientRect();
+      dragState.card.classList.remove('dragging');
+      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) {}
+
+      if (dragState.moved) {
+        const tileSize = { width: cardRect.width, height: cardRect.height };
+        const layout = this.clampTodoLayout({
+          x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
+          y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
+        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
+
+        TaskManager.updateTodoLayout(dragState.todoId, layout);
+        try { getGameState().save(); } catch (error) {}
+        this.todoDragSuppressUntil = Date.now() + 250;
+      }
+
+      this.todoDragState = null;
+      this.positionTodoCards();
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', endDrag);
+    document.addEventListener('pointercancel', endDrag);
   }
   
   static updateTodosList() {
@@ -1897,6 +2280,7 @@ class UIManager {
     const visibleTodos = showCompleted ? todos : todos.filter(todo => !todo.completed);
     
     container.innerHTML = visibleTodos.map(todo => {
+      const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
       const subtasks = (todo.subtasks || []).map(st => `
         <div class="subtask ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
           <label class="subtask-label"><input type="checkbox" class="subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''}> <span class="subtask-name">${st.name}</span></label>
@@ -1907,25 +2291,26 @@ class UIManager {
       const deadlineLabel = todo.deadline ? new Date(todo.deadline).toLocaleDateString() : 'No deadline';
       const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
       return `
-      <div class="task-card task-clickable task-card-todo discreet collapsed ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0">
-        <div class="todo-card-left">
-          <div class="task-title todo-title">${todo.name}</div>
+      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0">
+        <div class="todo-card-top">
+          <div class="task-title todo-title">${displayName}</div>
+          <div class="task-pill-row task-pill-row-left task-pill-row-right-side">
+            <div class="task-difficulty ${todo.difficulty.toLowerCase()}">${todo.difficulty}</div>
+            <div class="task-attr">${todo.attribute}</div>
+          </div>
+        </div>
+
+        <div class="todo-card-body">
+          <div class="todo-date-big">${deadlineLabel}</div>
+          <div class="todo-date-subtext">${deadlineDistance}</div>
           <div class="todo-subtasks-wrap">
-            ${subtaskCount > 0 ? `<div class="todo-subtask-label">${subtaskCount} subtasks</div><div class="subtasks">${subtasks}</div>` : ''}
+            <div class="todo-subtask-label">${subtaskCount} subtasks</div>
+            ${subtaskCount > 0 ? `<div class="subtasks">${subtasks}</div>` : '<div class="muted">No subtasks yet</div>'}
             <div class="subtask-add">
               <input class="subtask-input" placeholder="Add subtask..." data-todo-id="${todo.id}" />
               <button class="subtask-add-btn" data-todo-id="${todo.id}">Add</button>
             </div>
           </div>
-        </div>
-
-        <div class="todo-card-right">
-          <div class="task-pill-row task-pill-row-left task-pill-row-right-side">
-            <div class="task-difficulty ${todo.difficulty.toLowerCase()}">${todo.difficulty}</div>
-            <div class="task-attr">${todo.attribute}</div>
-          </div>
-          <div class="todo-date-big">${deadlineLabel}</div>
-          <div class="todo-date-subtext">${deadlineDistance}</div>
         </div>
 
         <div class="task-card-actions task-card-actions-todo task-card-actions-small">
@@ -1937,6 +2322,8 @@ class UIManager {
     }).join('');
 
     this.bindTaskInteractions();
+    this.bindTodoBoardInteractions();
+    this.positionTodoCards();
   }
 
   static renderEnemies() {
@@ -2239,7 +2626,7 @@ class UIManager {
     } catch (e) {
       console.warn('refreshGameUI: failed to sync resources', e);
     }
-    this.updateDailiesList();
+    this.scheduleUpdateDailiesList();
     this.updateTodosList();
     this.updateDeathDefianceBadge();
     this.updateTaskVisibilityToggleLabels();
@@ -2276,17 +2663,31 @@ class UIManager {
   static buildDailyHistoryBoxes(dailyId) {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
-    const recentEntries = history.slice(-20);
-    const boxes = recentEntries.map(entry => {
+    const N = 64; // 8x8 grid
+
+    const lastEntry = history.length ? history[history.length - 1] : null;
+    const fingerprint = history.length + '|' + (lastEntry ? (lastEntry.date || lastEntry.day || '') : '');
+    UIManager._dailyHistoryCache = UIManager._dailyHistoryCache || {};
+    const cacheKey = `${dailyId}|${fingerprint}`;
+    if (UIManager._dailyHistoryCache[cacheKey]) return UIManager._dailyHistoryCache[cacheKey];
+
+    const recentEntries = history.slice(-N);
+    const boxes = [];
+
+    // pad with empty boxes on the left so newest entries sit at the right/bottom
+    const padCount = Math.max(0, N - recentEntries.length);
+    for (let i = 0; i < padCount; i++) boxes.push('<span class="daily-box" title=""></span>');
+
+    recentEntries.forEach(entry => {
       const completed = Array.isArray(entry.completedDailies) && entry.completedDailies.some(d => String(d.id) === String(dailyId));
-      return `<span class="daily-box ${completed ? 'filled' : ''}" title="${completed ? 'Completed' : 'Not completed'}"></span>`;
+      boxes.push(`<span class="daily-box ${completed ? 'filled' : ''}" title="${completed ? 'Completed' : 'Not completed'}"></span>`);
     });
 
-    while (boxes.length < 20) {
-      boxes.unshift('<span class="daily-box"></span>');
-    }
-
-    return boxes.join('');
+    const html = boxes.join('');
+    UIManager._dailyHistoryCache[cacheKey] = html;
+    // keep cache size bounded
+    if (Object.keys(UIManager._dailyHistoryCache).length > 2000) UIManager._dailyHistoryCache = {};
+    return html;
   }
 
   static getDeadlineDistanceText(deadline) {
