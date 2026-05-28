@@ -846,6 +846,8 @@ body::before {
   position: fixed;
   background: linear-gradient(180deg, rgba(10, 8, 5, 0.98), rgba(8, 6, 4, 0.98));
   border-top: 2px solid var(--accent-copper);
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   max-height: 840px;
   min-width: 200px;
@@ -873,6 +875,38 @@ body::before {
 .pull-tab.open {
   transform: translateX(0);
   pointer-events: auto;
+}
+
+.left-tab.open {
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-height: none;
+  min-width: 0;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  z-index: 12000;
+  overflow: hidden;
+}
+
+.left-tab.open .tab-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.left-tab.open .daily-panel-summary {
+  position: sticky;
+  top: 56px;
+  z-index: 1;
+}
+
+.left-tab.open .tab-content {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .tab-handle {
@@ -1046,6 +1080,18 @@ body::before {
   overflow-y: auto;
 }
 
+.daily-panel-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 10px 6px;
+  border-bottom: 1px solid rgba(255, 215, 106, 0.18);
+  color: var(--accent-gold);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  background: linear-gradient(180deg, rgba(10, 8, 5, 0.88), rgba(8, 6, 4, 0.92));
+}
+
 .task-card {
   background: var(--primary-dark);
   border: 2px solid var(--text-muted);
@@ -1068,6 +1114,13 @@ body::before {
   border-radius: 3px;
 }
 
+.task-card-daily {
+  padding: 4px 5px;
+  gap: 3px;
+  border-left-width: 3px;
+  border-radius: 4px;
+}
+
 .daily-card-top,
 .todo-card-left,
 .todo-card-right {
@@ -1086,6 +1139,14 @@ body::before {
 
 .daily-card-top {
   align-items: flex-start;
+}
+
+.task-card-daily .daily-title {
+  font-size: 9px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .task-card-head-todo {
@@ -1107,6 +1168,15 @@ body::before {
   align-items: flex-start;
 }
 
+.task-card-daily .daily-card-meta {
+  gap: 3px;
+}
+
+.task-card-daily .task-difficulty,
+.task-card-daily .task-attr {
+  font-size: 5px;
+}
+
 .task-pill-row {
   display: flex;
   gap: 6px;
@@ -1121,7 +1191,7 @@ body::before {
 .daily-card-body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+  gap: 5px;
   align-items: center;
 }
 
@@ -1129,25 +1199,25 @@ body::before {
   display: flex;
   align-items: baseline;
   gap: 2px;
-  min-width: 62px;
+  min-width: 42px;
 }
 
 .daily-progress-big {
-  font-size: 22px;
+  font-size: 12px;
   line-height: 1;
   color: #fff7c8;
 }
 
 .daily-progress-sep,
 .daily-progress-small {
-  font-size: 10px;
+  font-size: 6px;
   color: var(--accent-gold);
 }
 
 .daily-history-grid {
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 3px;
+  gap: 2px;
   align-self: stretch;
 }
 
@@ -1198,7 +1268,7 @@ body::before {
 
 .task-card-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -1208,12 +1278,12 @@ body::before {
 }
 
 .task-card-actions-daily {
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .task-card-actions-small {
-  gap: 4px;
-  margin-top: 2px;
+  gap: 3px;
+  margin-top: 0;
 }
 
 .task-card.completed {
@@ -1660,6 +1730,7 @@ body::before {
 
 .task-attr {
   color: var(--text-muted);
+  font-size: 7px;
 }
 
 .btn-complete, .btn-blood-oath, .btn-subtasks {
@@ -1687,8 +1758,23 @@ body::before {
   background: var(--primary-dark2);
   border: 1px solid var(--accent-purple);
   color: var(--accent-gold);
-  padding: 2px 6px;
+  padding: 1px 4px;
   cursor: pointer;
+}
+
+.btn-delete-daily {
+  background: var(--primary-dark2);
+  border: 1px solid rgba(255, 107, 107, 0.55);
+  color: #ffb0b0;
+  padding: 1px 4px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+}
+
+.btn-delete-daily:hover {
+  background: rgba(255, 107, 107, 0.16);
+  color: #ffd2d2;
 }
 
 .btn-complete:hover, .btn-blood-oath:hover, .btn-subtasks:hover {
@@ -1710,7 +1796,7 @@ body::before {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 4000;
+  z-index: 13000;
   backdrop-filter: blur(6px);
 }
 

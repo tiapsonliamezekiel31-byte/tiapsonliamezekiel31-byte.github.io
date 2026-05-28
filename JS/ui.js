@@ -331,6 +331,7 @@ class UIManager {
           <button class="tab-close">✕</button>
         </div>
       </div>
+      <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
       <div class="tab-content" id="dailiesList"></div>
     `;
     document.body.appendChild(leftTab);
@@ -1016,6 +1017,19 @@ class UIManager {
             TaskManager.addSubtask(todoId, name);
             try { state.save(); } catch (e) {}
             this.updateTodosList();
+          }
+          return;
+        }
+
+        const deleteDaily = event.target.closest('.btn-delete-daily');
+        if (deleteDaily && taskType === 'daily') {
+          const dailyName = card.querySelector('.daily-title')?.textContent || 'this daily';
+          if (!confirm(`Delete ${dailyName}?`)) return;
+
+          if (TaskManager.removeDaily(taskId)) {
+            try { state.save(); } catch (e) {}
+            this.updateDailiesList();
+            this.renderEnemies();
           }
           return;
         }
@@ -1829,6 +1843,11 @@ class UIManager {
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
     const visibleDailies = showCompleted ? dailies : dailies.filter(daily => !daily.completed);
+    const summaryEl = document.getElementById('dailiesSummary');
+    if (summaryEl) {
+      const completedCount = dailies.filter(daily => daily.completed).length;
+      summaryEl.textContent = `${completedCount}/${dailies.length} complete`;
+    }
     
     container.innerHTML = visibleDailies.map(daily => `
       <div class="task-card task-clickable task-card-daily ${daily.completed ? 'completed' : ''}" data-id="${daily.id}" data-type="daily" tabindex="0">
@@ -1850,6 +1869,7 @@ class UIManager {
         <div class="task-card-actions task-card-actions-daily task-card-actions-small">
           <button class="btn-blood-oath" title="Blood Oath">🩸</button>
           <button class="btn-edit" title="Edit">✎</button>
+          <button class="btn-delete-daily" title="Delete">✕</button>
         </div>
       </div>
     `).join('');
