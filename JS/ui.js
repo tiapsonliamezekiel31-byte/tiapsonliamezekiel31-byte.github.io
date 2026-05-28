@@ -26,6 +26,18 @@ class UIManager {
     }, delay);
   }
 
+  static showDailyApReward(card, amount) {
+    const rect = card?.getBoundingClientRect?.();
+    if (!rect) return;
+
+    FloatingDamageNumber.show(
+      rect.left + rect.width / 2,
+      Math.max(12, rect.top - 18),
+      `+${Math.ceil(amount)} AP`,
+      { color: UIManager.themeColor('--ap-gold', '#FFB33F') }
+    );
+  }
+
   // Mutator display metadata: emoji, color, one-line description
   static MUTATOR_META = {
     vampiric: { icon: '🩸', color: '#C00707', label: 'Vampiric', desc: 'Heals itself when it deals damage' },
@@ -341,6 +353,7 @@ class UIManager {
         <div>
           <button id="completeDayBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost">Complete Day</button>
           <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
+          <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Edit: off</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
         </div>
@@ -920,6 +933,7 @@ class UIManager {
     document.getElementById('checkInBtn').addEventListener('click', () => this.handleCheckInClick());
     document.getElementById('completeDayBtn')?.addEventListener('click', () => this.handleCompleteDayClick());
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
+    document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
     document.getElementById('todosShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('todos'));
 
     document.getElementById('dailiesTabHandle').addEventListener('click', () => this.toggleTaskPanel('dailies'));
@@ -1008,8 +1022,9 @@ class UIManager {
 
       container.dataset.bound = '1';
       container.addEventListener('click', (event) => {
-        const card = event.target.closest('.task-card');
+        const card = event.target.closest('.task-card, .task-card-daily');
         if (!card) return;
+        if (taskType === 'daily' && card.classList.contains('task-card-daily')) return;
 
         const taskId = card.dataset.id;
         if (!taskId) return;
@@ -1091,7 +1106,12 @@ class UIManager {
         }
 
         const interactiveInsideCard = event.target.closest('.subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label');
-        if (event.target.closest('.btn-complete') || (event.target.closest('.task-card') && !interactiveInsideCard)) {
+        const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
+        if (taskType === 'daily' && editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
+          PopupsManager.showEditDaily(taskId);
+          return;
+        }
+        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') || card.classList.contains('task-card')) && !interactiveInsideCard) {
           if (card.classList.contains('completed')) return;
           if (taskType === 'daily') {
             const res = TaskManager.completeDaily(taskId);
@@ -1105,7 +1125,7 @@ class UIManager {
 
               // Show reward popup numbers
               if (res.rewards && res.rewards.ap) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F') });
+                UIManager.showDailyApReward(card, res.rewards.ap);
               }
 
               setTimeout(() => {
@@ -1512,9 +1532,28 @@ class UIManager {
     this.refreshGameUI();
   }
 
+  static toggleEditMode(kind) {
+    const state = getGameState();
+    if (!state.systemState.taskListFilters) {
+      state.systemState.taskListFilters = {
+        showCompletedDailies: false,
+        showCompletedTodos: false,
+        editModeDailies: false
+      };
+    }
+
+    if (kind === 'dailies') {
+      state.systemState.taskListFilters.editModeDailies = !state.systemState.taskListFilters.editModeDailies;
+    }
+
+    state.save();
+    this.refreshGameUI();
+  }
+
   static updateTaskVisibilityToggleLabels() {
     const state = getGameState();
     const dailiesBtn = document.getElementById('dailiesShowCompletedBtn');
+    const dailiesEditBtn = document.getElementById('dailiesEditModeBtn');
     const todosBtn = document.getElementById('todosShowCompletedBtn');
 
     if (dailiesBtn) {
@@ -1529,6 +1568,13 @@ class UIManager {
       todosBtn.textContent = '✓';
       todosBtn.setAttribute('aria-pressed', String(show));
       todosBtn.classList.toggle('active', show);
+    }
+
+    if (dailiesEditBtn) {
+      const editMode = !!state.systemState?.taskListFilters?.editModeDailies;
+      dailiesEditBtn.textContent = 'Edit';
+      dailiesEditBtn.setAttribute('aria-pressed', String(editMode));
+      dailiesEditBtn.classList.toggle('active', editMode);
     }
   }
   
@@ -1669,24 +1715,33 @@ class UIManager {
   }
 
   static handleCompleteDayClick() {
-    const result = TaskManager.completeDay();
-    if (!result || !result.success) {
-      const reason = result?.reason || 'unknown';
-      if (reason === 'already_claimed') {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already used today', { color: '#ffcc66' });
+    const completeNow = () => {
+      const result = TaskManager.completeDay();
+      if (!result || !result.success) {
+        const reason = result?.reason || 'unknown';
+        if (reason === 'already_claimed') {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already used today', { color: '#ffcc66' });
+        }
+        return;
       }
-      return;
-    }
 
-    const rewards = result.rewards || {};
-    const textParts = [];
-    if (rewards.ap) textParts.push(`+${Math.ceil(rewards.ap)} AP`);
-    if (rewards.gold) textParts.push(`+${Math.ceil(rewards.gold)} Gold`);
-    if (rewards.diamonds) textParts.push(`+${Math.ceil(rewards.diamonds)} Diamonds`);
-    if (rewards.attributePoints) textParts.push(`+${rewards.attributePoints.toFixed ? rewards.attributePoints.toFixed(1) : rewards.attributePoints} Attr`);
-    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, textParts.join(' · ') || 'Complete Day', { color: '#ffd700', duration: 2200 });
-    this.scheduleUpdateDailiesList();
-    this.refreshGameUI();
+      const rewards = result.rewards || {};
+      const textParts = [];
+      if (rewards.ap) textParts.push(`+${Math.ceil(rewards.ap)} AP`);
+      if (rewards.gold) textParts.push(`+${Math.ceil(rewards.gold)} Gold`);
+      if (rewards.diamonds) textParts.push(`+${Math.ceil(rewards.diamonds)} Diamonds`);
+      if (rewards.attributePoints) textParts.push(`+${rewards.attributePoints.toFixed ? rewards.attributePoints.toFixed(1) : rewards.attributePoints} Attr`);
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, textParts.join(' · ') || 'Complete Day', { color: '#ffd700', duration: 2200 });
+      this.scheduleUpdateDailiesList();
+      this.refreshGameUI();
+    };
+
+    try {
+      PopupsManager.showConfirm('Complete Day?', 'Claim the day now and reset the dailies for check-in?', completeNow);
+    } catch (error) {
+      console.warn('Failed to show complete-day confirmation', error);
+      completeNow();
+    }
   }
   
   static handleDodgeClick() {
@@ -1899,40 +1954,72 @@ class UIManager {
     const computeDailyStreak = (dailyId) => {
       const state = getGameState();
       const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
-      let streak = 0;
+      let positive = 0;
+      let negative = 0;
       for (let i = history.length - 1; i >= 0; i--) {
         const entry = history[i];
         const completed = Array.isArray(entry.completedDailies) && entry.completedDailies.some(d => String(d.id) === String(dailyId));
-        if (completed) streak++; else break;
+        const missed = Array.isArray(entry.missedDailies) && entry.missedDailies.some(d => String(d.id) === String(dailyId));
+        if (completed) {
+          if (negative > 0) break;
+          positive++;
+          continue;
+        }
+        if (missed) {
+          if (positive > 0) break;
+          negative++;
+          continue;
+        }
+        break;
       }
-      return streak;
+      return positive > 0 ? positive : negative > 0 ? -negative : 0;
+    };
+
+    const getAttributeColor = (attribute) => {
+      const palette = getGameState()?.config?.attributeColors || {};
+      return palette[String(attribute || '').toUpperCase()] || '#7a7a7a';
+    };
+
+    const getTextColorForHex = (hex) => {
+      const normalized = String(hex || '').replace('#', '');
+      if (normalized.length !== 6) return '#ffffff';
+      const r = parseInt(normalized.slice(0, 2), 16);
+      const g = parseInt(normalized.slice(2, 4), 16);
+      const b = parseInt(normalized.slice(4, 6), 16);
+      const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+      return luminance > 150 ? '#14161d' : '#ffffff';
+    };
+
+    const shadeColor = (hex, amount = -18) => {
+      const normalized = String(hex || '').replace('#', '');
+      if (normalized.length !== 6) return '#2d2d2d';
+      const clamp = (value) => Math.max(0, Math.min(255, value));
+      const ratio = amount / 100;
+      const r = clamp(Math.round(parseInt(normalized.slice(0, 2), 16) * (1 + ratio)));
+      const g = clamp(Math.round(parseInt(normalized.slice(2, 4), 16) * (1 + ratio)));
+      const b = clamp(Math.round(parseInt(normalized.slice(4, 6), 16) * (1 + ratio)));
+      return `#${[r, g, b].map(value => value.toString(16).padStart(2, '0')).join('')}`;
     };
 
     let html = '';
     visibleDailies.forEach(daily => {
       const streak = computeDailyStreak(daily.id);
-      const streakHtml = streak > 0 ? (`<div class="daily-streak" title="Consecutive days completed">` + streak + ' 🔥</div>') : ('<div class="daily-streak empty" title="No streak">—</div>');
-      html += '<div class="task-card task-clickable task-card-daily ' + (daily.completed ? 'completed' : '') + '" data-id="' + daily.id + '" data-type="daily" tabindex="0">';
-      html += '<div class="daily-card-top">';
-      html += '<div class="task-title daily-title">' + (daily.name || '') + '</div>';
-      html += '<div class="daily-card-meta">';
-      html += '<div class="task-difficulty ' + (daily.difficulty || '').toLowerCase() + '">' + (daily.difficulty || '') + '</div>';
-      html += '<div class="task-attr">' + (daily.attribute || '') + '</div>';
-      html += streakHtml;
-      html += '</div></div>';
-      html += '<div class="daily-card-body">';
-      html += '<div class="daily-card-progress">';
-      html += '<div class="daily-progress-big">' + (daily.completionsToday || 0) + '</div>';
-      html += '<div class="daily-progress-sep">/</div>';
-      html += '<div class="daily-progress-small">' + (daily.maxCompletionsPerDay || 1) + '</div>';
+      const maxCompletions = Math.max(1, Number(daily.maxCompletionsPerDay) || 1);
+      const completionsToday = Math.max(0, Number(daily.completionsToday) || 0);
+      const completionRatio = Math.min(1, completionsToday / maxCompletions);
+      const opacity = Math.max(0.1, 1 - completionRatio);
+      const attributeColor = getAttributeColor(daily.attribute);
+      const textColor = getTextColorForHex(attributeColor);
+      const streakClass = streak > 0 ? 'is-positive' : streak < 0 ? 'is-negative' : 'is-neutral';
+      const strokeWidth = Math.min(6, 1 + Math.abs(streak));
+      const progressText = `${completionsToday}/${maxCompletions}`;
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed' : '') + '" data-id="' + daily.id + '" data-type="daily" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;">';
+      html += '<div class="task-shape-streak ' + streakClass + '" title="Streak">' + streak + '</div>';
+      html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
+      html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
+      html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
+      html += '<div class="task-shape-progress">' + progressText + '</div>';
       html += '</div>';
-      html += '<div class="daily-history-grid">' + this.buildDailyHistoryBoxes(daily.id) + '</div>';
-      html += '</div>';
-      html += '<div class="task-card-actions task-card-actions-daily task-card-actions-small">';
-      html += '<button class="btn-blood-oath" title="Blood Oath">🩸</button>';
-      html += '<button class="btn-edit" title="Edit">✎</button>';
-      html += '<button class="btn-delete-daily" title="Delete">✕</button>';
-      html += '</div></div>';
     });
     container.innerHTML = html;
 
@@ -1945,9 +2032,11 @@ class UIManager {
         let pressTimer = null;
         let longPressed = false;
 
-        const openEdit = () => {
+        const toggleBloodOath = () => {
           longPressed = true;
-          try { PopupsManager.showEditDaily(card.dataset.id); } catch (e) {}
+          try { TaskManager.toggleBloodOath(card.dataset.id); } catch (e) {}
+          try { getGameState().save(); } catch (e) {}
+          this.scheduleUpdateDailiesList();
           // mark briefly so delegated click handlers can ignore the click
           card.dataset.longPressed = '1';
           setTimeout(() => { delete card.dataset.longPressed; }, 700);
@@ -1957,7 +2046,7 @@ class UIManager {
           if (e) try { e.preventDefault(); } catch (er) {}
           longPressed = false;
           clearTimeout(pressTimer);
-          pressTimer = setTimeout(openEdit, longPressMs);
+          pressTimer = setTimeout(toggleBloodOath, longPressMs);
         };
 
         const endPress = () => {
@@ -1971,13 +2060,6 @@ class UIManager {
         card.addEventListener('touchend', endPress);
         card.addEventListener('touchcancel', endPress);
 
-        // If a long-press just opened the edit, prevent the delegated click from firing
-        card.addEventListener('click', (e) => {
-          if (card.dataset.longPressed === '1') {
-            e.stopImmediatePropagation();
-            e.preventDefault();
-          }
-        }, true);
       });
     } catch (e) { console.warn('Failed to bind long-press edit for dailies', e); }
 
@@ -2015,6 +2097,14 @@ class UIManager {
     const minimumSize = window.innerWidth <= 700 ? 126 : 116;
     const size = Math.round(Math.max(minimumSize, Math.min(168, Math.min(width, height) * 0.28)));
     return { width: size, height: size };
+  }
+
+  static shapeClassForDifficulty(difficulty) {
+    const normalized = String(difficulty || '').toLowerCase();
+    if (normalized === 'easy') return 'easy';
+    if (normalized === 'medium') return 'medium';
+    if (normalized === 'hard') return 'hard';
+    return 'ultra';
   }
 
   static clampDailyLayout(layout, metrics, tileSize) {
@@ -2133,6 +2223,32 @@ class UIManager {
         TaskManager.updateDailyLayout(dragState.dailyId, layout);
         try { getGameState().save(); } catch (error) {}
         this.dailyDragSuppressUntil = Date.now() + 250;
+      } else {
+        const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+        const longPressed = dragState.card.dataset.longPressed === '1';
+        if (!longPressed) {
+          if (editModeDailies) {
+            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
+          } else {
+            const res = TaskManager.completeDaily(dragState.dailyId);
+            if (!res || !res.success) return;
+            try {
+              dragState.card.classList.add('just-completed');
+              dragState.card.style.transition = 'transform 220ms ease, opacity 400ms ease';
+              dragState.card.style.transform = 'scale(1.04)';
+              if (res.rewards && res.rewards.ap) {
+                UIManager.showDailyApReward(dragState.card, res.rewards.ap);
+              }
+              setTimeout(() => {
+                this.scheduleUpdateDailiesList();
+              }, 320);
+            } catch (error) {
+              this.scheduleUpdateDailiesList();
+            }
+            try { getGameState().save(); } catch (saveError) {}
+            this.renderEnemies();
+          }
+        }
       }
 
       this.dailyDragState = null;

@@ -62,7 +62,16 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // ATTRIBUTES
   // ============================================================
-  attributes: ['STR', 'INT', 'DISC', 'CREA', 'SOC', 'CAP', 'RESP'],
+  attributes: ['STR', 'DISC', 'RESP', 'SOC', 'CAP', 'CREA', 'INT'],
+  attributeColors: {
+    STR: '#f94144',
+    DISC: '#f3722c',
+    RESP: '#f8961e',
+    SOC: '#f9c74f',
+    CAP: '#90be6d',
+    CREA: '#43aa8b',
+    INT: '#577590'
+  },
   attributeLevelThresholds: function() {
     // Level L: sum from i=10 to 10+L-2
     const thresholds = [0, 10]; // Level 0, 1

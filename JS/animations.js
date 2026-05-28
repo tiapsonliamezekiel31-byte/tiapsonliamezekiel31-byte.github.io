@@ -261,7 +261,7 @@ class FloatingDamageNumber {
       letter-spacing: 0.5px;
       -webkit-text-stroke: 0.5px ${color};
       pointer-events: none;
-      z-index: 10001;
+      z-index: 13050;
       transform: translate3d(${x + xOffset}px, ${y}px, 0) translateX(-50%) rotate(${baseRotation}deg);
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.16);
       will-change: transform, opacity;
