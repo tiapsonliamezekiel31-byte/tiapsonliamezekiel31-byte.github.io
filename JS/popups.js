@@ -1159,7 +1159,10 @@ class PopupsManager {
         <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
         <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
       </div>
-      <button class="btn-large" id="saveDaily">SAVE</button>
+      <div class="edit-daily-actions">
+        <button class="btn-large" id="saveDaily">SAVE</button>
+        <button class="btn-large btn-danger" id="deleteDaily">DELETE DAILY</button>
+      </div>
     `;
 
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
@@ -1187,6 +1190,20 @@ class PopupsManager {
       TaskManager.editDaily(dailyId, updates);
       this.closeAllPopups();
       UIManager.updateDailiesList();
+      getGameState().save();
+    });
+
+    popup.querySelector('#deleteDaily').addEventListener('click', () => {
+      const latestDaily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+      const dailyName = latestDaily?.name || daily.name || 'this daily';
+      if (!confirm(`Delete ${dailyName}?`)) return;
+
+      const removed = TaskManager.removeDaily(dailyId);
+      if (!removed) return;
+
+      this.closeAllPopups();
+      UIManager.updateDailiesList();
+      UIManager.renderEnemies();
       getGameState().save();
     });
     PopupAnimation.scale(popup);

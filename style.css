@@ -2341,6 +2341,23 @@ body::before {
   box-shadow: none;
 }
 
+.edit-daily-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-large.btn-danger {
+  background: linear-gradient(180deg, rgba(191, 60, 60, 0.92), rgba(148, 36, 36, 0.92));
+  border: 2px solid rgba(255, 140, 140, 0.75);
+  color: #ffe7e7;
+}
+
+.btn-large.btn-danger:hover {
+  background: linear-gradient(180deg, rgba(225, 74, 74, 0.95), rgba(173, 40, 40, 0.95));
+  box-shadow: 0 0 10px rgba(255, 120, 120, 0.35);
+}
+
 .btn-select {
   background: linear-gradient(180deg, rgba(68, 255, 68, 0.95), rgba(37, 174, 72, 0.95));
   border: 2px solid rgba(255, 255, 255, 0.85);
