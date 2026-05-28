@@ -557,9 +557,12 @@ class ScreenEffects {
         width: 100%;
         height: 100%;
         pointer-events: none;
-        z-index: 9999;
+        z-index: 100500; /* ensure above any other UI overlays */
+        mix-blend-mode: normal;
+        background-blend-mode: normal;
       `;
       this.flashOverlay = overlay;
+      // append at end of body so it sits on top
       document.body.appendChild(overlay);
     }
 

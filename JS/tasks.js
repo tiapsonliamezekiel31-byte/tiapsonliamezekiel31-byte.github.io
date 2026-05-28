@@ -51,13 +51,28 @@ class TaskManager {
       bloodOath: false,
       bloodOathActive: false,
       maxCompletionsPerDay: Math.max(1, Number(maxCompletions) || 1),
-      completionsToday: 0
+      completionsToday: 0,
+      layout: null
     };
     
     state.dailiesState.dailies.push(daily);
     PlayerManager.recalculateMaxAp();
     
     return daily;
+  }
+
+  static updateDailyLayout(dailyId, layout) {
+    const state = getGameState();
+    const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
+
+    if (!daily || !layout) return false;
+
+    daily.layout = {
+      x: Math.max(0, Number(layout.x) || 0),
+      y: Math.max(0, Number(layout.y) || 0)
+    };
+
+    return true;
   }
   
   static removeDaily(dailyId) {
@@ -214,6 +229,7 @@ class TaskManager {
       completed: false,
       bloodOath: false,
       bloodOathActive: false,
+      layout: null,
       subtasks: subtasks.map(st => ({
         id: this.generateTaskId(),
         name: st,
@@ -224,6 +240,20 @@ class TaskManager {
     
     state.dailiesState.todos.push(todo);
     return todo;
+  }
+
+  static updateTodoLayout(todoId, layout) {
+    const state = getGameState();
+    const todo = state.dailiesState.todos.find(t => t.id === todoId);
+
+    if (!todo || !layout) return false;
+
+    todo.layout = {
+      x: Math.max(0, Number(layout.x) || 0),
+      y: Math.max(0, Number(layout.y) || 0)
+    };
+
+    return true;
   }
   
   static removeTodo(todoId) {
