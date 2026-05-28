@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nemesis-ultimate-roguelike-v5';
+const CACHE_NAME = 'nemesis-ultimate-roguelike-v6';
 const APP_SHELL = [
   './',
   './index.html',
@@ -73,4 +73,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
->>>>>>> origin/main
