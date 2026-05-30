@@ -1090,6 +1090,8 @@ class PopupsManager {
       <p>All timers and regen are frozen.</p>
       <div class="pause-menu">
         <button class="btn-pause-action" id="resumeBtn">▶️ RESUME</button>
+        <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
+        <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
         <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
       </div>
@@ -1108,6 +1110,23 @@ class PopupsManager {
     popup.querySelector('#resumeBtn').addEventListener('click', () => {
       getGameState().resume();
       this.closeAllPopups();
+    });
+
+    popup.querySelector('#forceRefreshBtn').addEventListener('click', async () => {
+      try {
+        if (typeof window.forceRefreshNemesisApp === 'function') {
+          await window.forceRefreshNemesisApp();
+        } else {
+          location.reload();
+        }
+      } catch (error) {
+        console.warn('Force refresh failed', error);
+        location.reload();
+      }
+    });
+
+    popup.querySelector('#backupBtn').addEventListener('click', () => {
+      this.showDataBackup();
     });
     
     // attributes moved to center modal button; pause menu no longer exposes attributes here
@@ -1151,6 +1170,111 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
+  }
+
+  static showDataBackup() {
+    this.closeAllPopups();
+
+    const state = getGameState();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup backup-popup';
+
+    popup.innerHTML = `
+      <h2>BACKUP / RESTORE</h2>
+      <button class="btn-close">✕</button>
+      <p class="backup-help">Export is plain text JSON. Paste it back here to restore every saved data file.</p>
+      <textarea id="backupDataArea" class="backup-data-area" spellcheck="false" placeholder="Exported backup text appears here..."></textarea>
+      <div class="backup-actions">
+        <button class="btn-pause-action" id="backupExportBtn">EXPORT</button>
+        <button class="btn-pause-action" id="backupCopyBtn">COPY</button>
+        <button class="btn-pause-action" id="backupDownloadBtn">DOWNLOAD</button>
+        <label class="btn-pause-action backup-file-label">
+          LOAD FILE
+          <input id="backupFileInput" type="file" accept=".json,.txt,application/json,text/plain" />
+        </label>
+        <button class="btn-pause-action" id="backupImportBtn">IMPORT</button>
+      </div>
+    `;
+
+    const close = () => this.closeAllPopups();
+    popup.querySelector('.btn-close').addEventListener('click', close);
+
+    const area = popup.querySelector('#backupDataArea');
+    const fillExport = () => {
+      try {
+        area.value = state.exportUserData();
+        area.focus();
+        area.select();
+      } catch (error) {
+        area.value = '';
+        console.warn('Failed to export user data', error);
+      }
+    };
+
+    popup.querySelector('#backupExportBtn').addEventListener('click', fillExport);
+
+    popup.querySelector('#backupCopyBtn').addEventListener('click', async () => {
+      const text = area.value || state.exportUserData();
+      area.value = text;
+      try {
+        await navigator.clipboard.writeText(text);
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Copied', { color: '#44ff44', duration: 900 });
+      } catch (error) {
+        console.warn('Clipboard copy failed', error);
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Copy failed', { color: '#ff6666', duration: 900 });
+      }
+    });
+
+    popup.querySelector('#backupDownloadBtn').addEventListener('click', () => {
+      const text = area.value || state.exportUserData();
+      const blob = new Blob([text], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `nemesis-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    popup.querySelector('#backupFileInput').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        area.value = await file.text();
+        area.focus();
+        area.select();
+      } catch (error) {
+        console.warn('Failed to read backup file', error);
+      }
+    });
+
+    popup.querySelector('#backupImportBtn').addEventListener('click', () => {
+      const text = String(area.value || '').trim();
+      if (!text) {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Paste backup text first', { color: '#ff6666', duration: 1200 });
+        return;
+      }
+
+      PopupsManager.showConfirm('Import Backup?', 'This will overwrite local saved data with the pasted backup text.', () => {
+        const result = state.importUserData(text);
+        if (!result?.success) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Import failed', { color: '#ff6666', duration: 1200 });
+          return;
+        }
+
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Imported', { color: '#44ff44', duration: 1200 });
+        try { UIManager.refreshGameUI(); } catch (error) {}
+        close();
+      });
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+    fillExport();
   }
 
   static runCheatCommand(rawCommand) {

@@ -87,6 +87,30 @@ function getLocalDayKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+const USER_DATA_STORAGE_KEYS = ['nemesis_data', 'nemesis_planner_data', 'nemesis_shop_data'];
+const USER_DATA_EXPORT_VERSION = 1;
+
+function normalizeDailyNoteEntry(entry, fallbackText = '') {
+  if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+    return {
+      id: String(entry.id || `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+      text: String(entry.text ?? entry.value ?? fallbackText ?? ''),
+      x: Number.isFinite(Number(entry.x)) ? Number(entry.x) : 12,
+      y: Number.isFinite(Number(entry.y)) ? Number(entry.y) : 12
+    };
+  }
+
+  const text = String(entry ?? fallbackText ?? '');
+  if (!text) return null;
+
+  return {
+    id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    text,
+    x: 12,
+    y: 12
+  };
+}
+
 // GameState: singular source of truth
 class GameState {
   constructor(config = DEFAULT_GAME_CONFIG) {
@@ -188,6 +212,7 @@ class GameState {
       lastCheckInTime: null, // timestamp of last check-in
       gameStartTime: null,
       runCompletionHistory: [],
+      dailyNotesByDate: {},
       runStats: {
         startClass: null,
         enemiesDefeated: 0,
@@ -260,6 +285,7 @@ class GameState {
     this.systemState.gameStartTime = null;
     this.systemState.lastCheckInTime = null;
     this.systemState.runCompletionHistory = [];
+    this.systemState.dailyNotesByDate = {};
     this.systemState.runStats = {
       startClass: null,
       enemiesDefeated: 0,
@@ -450,6 +476,149 @@ class GameState {
     localStorage.setItem('nemesis_data', JSON.stringify(data));
     this.eventBus.emit(EVENTS.GAME_SAVE, { data });
   }
+
+  getDailyNotesMap() {
+    if (!this.systemState || typeof this.systemState !== 'object') this.systemState = {};
+    if (!this.systemState.dailyNotesByDate || typeof this.systemState.dailyNotesByDate !== 'object') {
+      this.systemState.dailyNotesByDate = {};
+    }
+    return this.systemState.dailyNotesByDate;
+  }
+
+  getDailyNotesForDate(dateKey = getLocalDayKey()) {
+    const notesMap = this.getDailyNotesMap();
+    const value = notesMap[dateKey];
+
+    if (Array.isArray(value)) {
+      notesMap[dateKey] = value.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
+      return notesMap[dateKey];
+    }
+
+    if (typeof value === 'string') {
+      notesMap[dateKey] = value.trim() ? [normalizeDailyNoteEntry(null, value)] : [];
+      return notesMap[dateKey];
+    }
+
+    if (value && typeof value === 'object') {
+      const legacyNotes = Array.isArray(value.notes) ? value.notes : [];
+      notesMap[dateKey] = legacyNotes.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
+      return notesMap[dateKey];
+    }
+
+    notesMap[dateKey] = [];
+    return notesMap[dateKey];
+  }
+
+  getDailyNote(dateKey = getLocalDayKey()) {
+    return this.getDailyNotesForDate(dateKey).map((note) => note.text).filter(Boolean).join('\n');
+  }
+
+  addDailyNote(text = '', dateKey = getLocalDayKey(), position = {}) {
+    const notes = this.getDailyNotesForDate(dateKey);
+    const note = normalizeDailyNoteEntry({
+      text,
+      x: Number(position.x),
+      y: Number(position.y)
+    });
+    if (!note) return null;
+    notes.push(note);
+    this.save();
+    return note;
+  }
+
+  updateDailyNote(dateKey = getLocalDayKey(), noteId, updates = {}) {
+    const notes = this.getDailyNotesForDate(dateKey);
+    const note = notes.find((entry) => String(entry.id) === String(noteId));
+    if (!note) return false;
+    if (updates.text !== undefined) note.text = String(updates.text || '');
+    if (updates.x !== undefined) note.x = Number(updates.x);
+    if (updates.y !== undefined) note.y = Number(updates.y);
+    this.save();
+    return true;
+  }
+
+  moveDailyNote(dateKey = getLocalDayKey(), noteId, position = {}) {
+    return this.updateDailyNote(dateKey, noteId, position);
+  }
+
+  removeDailyNote(dateKey = getLocalDayKey(), noteId) {
+    const notes = this.getDailyNotesForDate(dateKey);
+    const index = notes.findIndex((entry) => String(entry.id) === String(noteId));
+    if (index < 0) return false;
+    notes.splice(index, 1);
+    this.save();
+    return true;
+  }
+
+  setDailyNote(text, dateKey = getLocalDayKey()) {
+    const notes = this.getDailyNotesForDate(dateKey);
+    if (notes.length === 0) {
+      const note = normalizeDailyNoteEntry(null, text);
+      if (note) notes.push(note);
+    } else {
+      notes[0].text = String(text || '');
+    }
+    this.save();
+    return true;
+  }
+
+  buildUserDataSnapshot() {
+    const snapshot = { version: USER_DATA_EXPORT_VERSION, exportedAt: Date.now(), storage: {} };
+    USER_DATA_STORAGE_KEYS.forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      try {
+        snapshot.storage[key] = JSON.parse(raw);
+      } catch (error) {
+        snapshot.storage[key] = raw;
+      }
+    });
+    return snapshot;
+  }
+
+  exportUserData() {
+    return JSON.stringify(this.buildUserDataSnapshot(), null, 2);
+  }
+
+  importUserData(rawText) {
+    const text = String(rawText || '').trim();
+    if (!text) {
+      return { success: false, reason: 'empty' };
+    }
+
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (error) {
+      return { success: false, reason: 'invalid_json' };
+    }
+
+    const storage = payload && typeof payload === 'object' ? payload.storage : null;
+    if (!storage || typeof storage !== 'object') {
+      return { success: false, reason: 'invalid_format' };
+    }
+
+    USER_DATA_STORAGE_KEYS.forEach((key) => {
+      localStorage.removeItem(key);
+    });
+
+    Object.entries(storage).forEach(([key, value]) => {
+      if (!USER_DATA_STORAGE_KEYS.includes(key)) return;
+      if (value === undefined || value === null) return;
+      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      try {
+        window.dispatchEvent(new StorageEvent('storage', { key, newValue: localStorage.getItem(key) }));
+      } catch (error) {
+        // ignore storage event issues in unsupported contexts
+      }
+    });
+
+    this.load();
+    try { if (window.ShopManager && typeof ShopManager.init === 'function') ShopManager.init(); } catch (error) {}
+    try { if (window.UIManager && typeof UIManager.refreshGameUI === 'function') UIManager.refreshGameUI(); } catch (error) {}
+
+    return { success: true, keys: Object.keys(storage).filter((key) => USER_DATA_STORAGE_KEYS.includes(key)) };
+  }
   
   load() {
     const saved = localStorage.getItem('nemesis_data');
@@ -483,6 +652,21 @@ class GameState {
       this.combatState.hoveredEnemyId = null;
       this.combatState.queuedAttackTargetId = null;
       this.combatState.queuedAttackCount = 0;
+      if (!this.systemState.dailyNotesByDate || typeof this.systemState.dailyNotesByDate !== 'object') {
+        this.systemState.dailyNotesByDate = {};
+      }
+      Object.entries(this.systemState.dailyNotesByDate).forEach(([dateKey, value]) => {
+        if (Array.isArray(value)) {
+          this.systemState.dailyNotesByDate[dateKey] = value.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
+        } else if (typeof value === 'string') {
+          this.systemState.dailyNotesByDate[dateKey] = value.trim() ? [normalizeDailyNoteEntry(null, value)] : [];
+        } else if (value && typeof value === 'object') {
+          const legacyNotes = Array.isArray(value.notes) ? value.notes : [];
+          this.systemState.dailyNotesByDate[dateKey] = legacyNotes.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
+        } else {
+          this.systemState.dailyNotesByDate[dateKey] = [];
+        }
+      });
       if (!this.systemState.dialogueSeen) {
         this.systemState.dialogueSeen = {};
       }
@@ -562,6 +746,9 @@ function getGameState() {
 // ============================================================
 function performCheckIn() {
   const state = getGameState();
+  const clearCheckInRunning = () => {
+    state.systemState.isCheckInRunning = false;
+  };
 
   if (state.systemState.isPaused) {
     console.warn('Cannot check in while paused');
@@ -609,7 +796,7 @@ function performCheckIn() {
       bossesSailed: state.systemState.runStats.bossesSailed,
       goldEarned: state.systemState.runStats.totalGoldEarned
     });
-    state.systemState.isCheckInRunning = false; // Reset check-in running state
+    clearCheckInRunning();
     state.save();
     return;
   }
@@ -1044,7 +1231,7 @@ function performCheckIn() {
         console.warn('Daily regeneration failed during check-in', e);
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
-        state.systemState.isCheckInRunning = false; // Reset check-in running state
+        clearCheckInRunning();
       }
     };
 
@@ -1081,6 +1268,7 @@ function performCheckIn() {
   if (typeof UIManager !== 'undefined') {
     UIManager.refreshGameUI();
   }
+  clearCheckInRunning();
 
   return true;
 }

@@ -373,10 +373,6 @@ class TaskManager {
     const state = getGameState();
     const dateKey = this.getCurrentGameDateKey();
 
-    if (state.systemState?.completeDayClaimDate === dateKey) {
-      return { success: false, reason: 'already_claimed' };
-    }
-
     const dailyApTotal = this.getAllDailies().reduce((sum, daily) => {
       const reward = state.config.taskRewards[daily.difficulty];
       return sum + (reward?.ap || 0);
@@ -432,7 +428,6 @@ class TaskManager {
       });
     }
 
-    state.systemState.completeDayClaimDate = dateKey;
     state.systemState.runStats.tasksCompleted += 1;
     state.eventBus.emit(EVENTS.TASK_COMPLETED, {
       taskId: `complete-day:${dateKey}`,

@@ -14,6 +14,13 @@
 </head>
 <body>
   <div id="gameContainer"></div>
+  <div id="updateBanner" class="update-banner" hidden>
+    <span>New version available.</span>
+    <div class="update-banner-actions">
+      <button id="updateNowBtn" class="btn-pause-action">UPDATE NOW</button>
+      <button id="refreshNowBtn" class="btn-pause-action">FORCE REFRESH</button>
+    </div>
+  </div>
   
   <!-- Core Systems -->
   <script src="config.js"></script>
@@ -35,6 +42,73 @@
   
   <!-- Game Initialization -->
   <script>
+    const updateBanner = document.getElementById('updateBanner');
+    const updateNowBtn = document.getElementById('updateNowBtn');
+    const refreshNowBtn = document.getElementById('refreshNowBtn');
+
+    const showUpdateBanner = () => {
+      if (updateBanner) updateBanner.hidden = false;
+    };
+
+    const hideUpdateBanner = () => {
+      if (updateBanner) updateBanner.hidden = true;
+    };
+
+    window.forceRefreshNemesisApp = async () => {
+      try {
+        const registrations = await navigator.serviceWorker?.getRegistrations?.();
+        if (Array.isArray(registrations)) {
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+      } catch (error) {
+        console.warn('Service worker unregister failed', error);
+      }
+
+      try {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+      } catch (error) {
+        console.warn('Cache clear failed', error);
+      }
+
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set('forceRefresh', Date.now().toString());
+      window.location.replace(nextUrl.toString());
+    };
+
+    if (updateNowBtn) {
+      updateNowBtn.addEventListener('click', async () => {
+        try {
+          const registration = await navigator.serviceWorker?.getRegistration?.();
+          if (registration?.waiting) {
+            const reloadOnControllerChange = () => {
+              navigator.serviceWorker.removeEventListener('controllerchange', reloadOnControllerChange);
+              window.location.reload();
+            };
+            navigator.serviceWorker.addEventListener('controllerchange', reloadOnControllerChange);
+            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            hideUpdateBanner();
+            return;
+          }
+        } catch (error) {
+          console.warn('Update handoff failed', error);
+        }
+        window.forceRefreshNemesisApp();
+      });
+    }
+
+    if (refreshNowBtn) {
+      refreshNowBtn.addEventListener('click', () => {
+        window.forceRefreshNemesisApp();
+      });
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        hideUpdateBanner();
+      });
+    }
+
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
       // Create game state
@@ -104,7 +178,29 @@
     // Register the service worker when hosted over HTTP(S)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((error) => {
+        navigator.serviceWorker.register('./sw.js').then((registration) => {
+          const maybeShow = () => {
+            if (registration.waiting) {
+              showUpdateBanner();
+            }
+          };
+
+          if (registration.waiting) {
+            showUpdateBanner();
+          }
+
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdateBanner();
+              }
+            });
+          });
+
+          maybeShow();
+        }).catch((error) => {
           console.warn('Service worker registration failed', error);
         });
       });

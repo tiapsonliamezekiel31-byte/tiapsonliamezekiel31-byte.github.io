@@ -227,6 +227,34 @@ body::before {
   box-shadow: none;
 }
 
+.update-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--headbar-height) + 10px);
+  transform: translateX(-50%);
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 2px solid var(--accent-gold);
+  background: linear-gradient(180deg, rgba(16, 12, 8, 0.98), rgba(8, 8, 14, 0.98));
+  color: var(--accent-gold);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  max-width: calc(100vw - 20px);
+}
+
+.update-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.update-banner .btn-pause-action {
+  min-width: 0;
+  padding: 8px 10px;
+}
+
 .diamond-rewards-btn {
   color: #fff6cc;
   border-color: rgba(255, 215, 106, 0.85);
@@ -1134,6 +1162,59 @@ body::before {
   font-size: 7px;
   letter-spacing: 0.04em;
   background: linear-gradient(180deg, rgba(10, 8, 5, 0.88), rgba(8, 6, 4, 0.92));
+}
+.daily-note-card {
+  position: absolute;
+  min-width: 112px;
+  max-width: 220px;
+  padding: 10px 12px 12px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 246, 216, 0.08);
+  box-shadow: none;
+  color: #fff6d8;
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(1px);
+}
+
+.daily-note-card.dragging {
+  cursor: grabbing;
+}
+
+.daily-note-text {
+  font-family: inherit;
+  font-size: 8px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  outline: none;
+  color: inherit;
+  min-height: 28px;
+  padding-right: 16px;
+}
+
+.daily-note-text:empty::before {
+  content: 'New note';
+  color: rgba(255, 246, 216, 0.45);
+}
+
+.daily-note-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 246, 216, 0.7);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.daily-note-delete:hover {
+  color: #fff6d8;
 }
 
 .task-card {
@@ -3053,6 +3134,48 @@ body::before {
 .task-card-todo,
 .btn-icon,
 .btn-action,
+.backup-popup {
+  width: min(720px, 92vw);
+}
+.backup-help {
+  color: var(--text-muted);
+  font-size: 8px;
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+.backup-data-area {
+  width: 100%;
+  min-height: 260px;
+  resize: vertical;
+  background: rgba(4, 4, 8, 0.72);
+  color: #fff;
+  border: 1px solid rgba(255, 215, 106, 0.25);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+.backup-file-label {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.backup-file-label input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
 .shop-item,
 .buff-card,
 .class-card,

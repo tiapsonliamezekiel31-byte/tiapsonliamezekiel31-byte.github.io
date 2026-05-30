@@ -251,9 +251,14 @@ class CombatManager {
     // Support AoE and special weapons
     const targets = [];
     const aliveList = StageManager.getAliveEnemies();
+    const specialPopups = [];
+    const pushSpecialPopup = (text, color = '#ffd76a') => {
+      specialPopups.push({ text, color });
+    };
 
     if (weaponData.special && weaponData.special.includes('Hits ALL')) {
       targets.push(...aliveList.map(enemy => ({ enemy, damageMultiplier: 1 }))); 
+      pushSpecialPopup('ALL HIT', '#ffd76a');
     } else if (weaponData.special && weaponData.special.includes('adjacent')) {
       // Bazooka: target + up to 2 adjacent
       const all = StageManager.getAllEnemies();
@@ -263,6 +268,7 @@ class CombatManager {
         const adj = EnemyManager.getAdjacentEnemies(all, idx);
         adj.slice(0, 2).forEach(a => targets.push({ enemy: a, damageMultiplier: 1 }));
       }
+      pushSpecialPopup('SPLASH', '#ffb33f');
     } else if (weapon.name === 'Lazer' || attackPlan.specialId === 'lazer') {
       targets.push({ enemy: target, damageMultiplier: 1 });
       const otherEnemies = aliveList.filter(enemy => enemy && enemy.id !== target.id);
@@ -270,6 +276,7 @@ class CombatManager {
         ? otherEnemies[Math.floor(Math.random() * otherEnemies.length)]
         : target;
       targets.push({ enemy: randomEnemy, damageMultiplier: 2 });
+      pushSpecialPopup('LASER SPLIT', '#4ea3ff');
     } else {
       targets.push({ enemy: target, damageMultiplier: 1 });
     }
@@ -305,6 +312,7 @@ class CombatManager {
         if (!vineState.triggeredTodayByEnemyId[enemyId]) {
           if (stored > 0) {
             damage += stored / 3;
+              pushSpecialPopup(`VINE +${Math.ceil(stored / 3)}`, '#30c85a');
           }
           vineState.triggeredTodayByEnemyId[enemyId] = true;
           vineState.storedDamageByEnemyId[enemyId] = 0;
@@ -343,6 +351,7 @@ class CombatManager {
             rewardValue: attackPlan.specialId === 'buckler' ? 0.2 : 50,
             pending: true
           };
+          pushSpecialPopup(attackPlan.specialId === 'buckler' ? 'BUCKLER READY' : 'AEGIS READY', attackPlan.specialId === 'buckler' ? '#ffd700' : '#4ea3ff');
         }
 
         // Boss phase-2 trigger at <= 30% HP (dialogue + phase flag only)
@@ -506,7 +515,8 @@ class CombatManager {
       isCrit,
       targetDead: target.isDead,
       apCost: actualCost,
-      fireRate
+      fireRate,
+      specialPopups
     };
   }
   
