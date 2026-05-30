@@ -164,7 +164,11 @@ class ParticleSystem {
       ...config
     };
   }
-  
+  // Global pools and active list shared across all ParticleSystem instances
+  static _pool = [];
+  static _active = [];
+  static _tickRunning = false;
+
   emit(x, y, count = 10, options = {}) {
     const {
       color = (typeof UIManager !== 'undefined') ? UIManager.themeColor('--text-white', '#ffffff') : '#fff',
@@ -173,14 +177,17 @@ class ParticleSystem {
       spread = Math.PI * 2,
       size = 4
     } = options;
-    
+
     const scaledCount = Math.max(1, Math.min(AnimationRuntime.maxBurstParticles, Math.round(count * AnimationRuntime.particleScale)));
+
+    const now = performance.now();
 
     for (let i = 0; i < scaledCount; i++) {
       const angle = Math.random() * spread;
       const speed = velocity * (0.8 + Math.random() * 0.4);
-      
-      const particle = document.createElement('div');
+
+      // reuse element from pool when possible
+      const particle = ParticleSystem._pool.length ? ParticleSystem._pool.pop() : document.createElement('div');
       particle.style.cssText = `
         position: fixed;
         left: 0;
@@ -195,29 +202,54 @@ class ParticleSystem {
         will-change: transform, opacity;
       `;
       this.config.container.appendChild(particle);
-      
+
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      const startTime = Date.now();
-      
-      const animate = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = elapsed / lifetime;
-        
-        if (progress >= 1) {
-          particle.remove();
-          return;
-        }
-        
-        const px = x + (vx * elapsed / 16);
-        const py = y + (vy * elapsed / 16);
-        particle.style.transform = `translate3d(${px}px, ${py}px, 0)`;
-        particle.style.opacity = 1 - progress;
-        
-        requestAnimationFrame(animate);
-      };
-      
-      animate();
+
+      ParticleSystem._active.push({
+        el: particle,
+        x,
+        y,
+        vx,
+        vy,
+        start: now,
+        lifetime
+      });
+    }
+
+    // ensure the global tick is running
+    if (!ParticleSystem._tickRunning) {
+      ParticleSystem._tickRunning = true;
+      requestAnimationFrame(ParticleSystem._tick);
+    }
+  }
+
+  static _tick() {
+    const now = performance.now();
+    const list = ParticleSystem._active;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const p = list[i];
+      const elapsed = now - p.start;
+      const progress = elapsed / p.lifetime;
+      if (progress >= 1) {
+        try { p.el.remove(); } catch (e) {}
+        // recycle element
+        ParticleSystem._pool.push(p.el);
+        list.splice(i, 1);
+        continue;
+      }
+
+      // simple linear movement scaled to frame time
+      const px = p.x + (p.vx * (elapsed / 16));
+      const py = p.y + (p.vy * (elapsed / 16));
+      p.el.style.transform = `translate3d(${px}px, ${py}px, 0)`;
+      p.el.style.opacity = 1 - progress;
+    }
+
+    if (list.length > 0) {
+      requestAnimationFrame(ParticleSystem._tick);
+    } else {
+      ParticleSystem._tickRunning = false;
     }
   }
 }
@@ -245,6 +277,8 @@ class FloatingDamageNumber {
     const effectiveFadeDelay = (typeof fadeDelay === 'number') ? Number(fadeDelay) : DEFAULT_HOLD;
     const sizeMultiplier = 1.5;
     const xOffset = 0;
+    const driftX = (Math.random() * 10) - 5;
+    const driftY = (Math.random() * 8) - 4;
 
     const div = document.createElement('div');
     const displayValue = isMiss ? 'MISS' : value;
@@ -269,13 +303,13 @@ class FloatingDamageNumber {
     `;
     div.textContent = displayValue;
     container.appendChild(div);
-
-    const clampX = () => {
-      const rect = div.getBoundingClientRect();
-      const minX = rect.width / 2 + 8;
-      const maxX = window.innerWidth - rect.width / 2 - 8;
+    // cache width to avoid repeated layout reads
+    const rectWidth = (div.getBoundingClientRect() || {}).width || 0;
+    const clampXVal = (() => {
+      const minX = rectWidth / 2 + 8;
+      const maxX = window.innerWidth - rectWidth / 2 - 8;
       return Math.min(Math.max(x + xOffset, minX), Math.max(minX, maxX));
-    };
+    })();
 
     // Manage stacking by rounded coordinates unless a stackKey is provided
     const key = stackKey || `coord:${Math.round(x)}_${Math.round(y)}`;
@@ -283,52 +317,62 @@ class FloatingDamageNumber {
     if (!FloatingDamageNumber._coordActiveByKey[key]) FloatingDamageNumber._coordActiveByKey[key] = [];
     FloatingDamageNumber._coordActiveByKey[key].push(div);
 
-    const startTime = Date.now();
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const visibleDuration = Math.max(1, effectiveDuration - effectiveFadeDelay);
-      const progress = elapsed / effectiveDuration;
-
-      if (progress >= 1) {
-        try { div.remove(); } catch (e) {}
-        // remove from stack map
-        const arr = FloatingDamageNumber._coordActiveByKey[key];
-        if (arr) {
-          const idx = arr.indexOf(div);
-          if (idx !== -1) arr.splice(idx, 1);
-          if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
-        }
-        return;
-      }
-
-      const slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(div) || 0;
-
-      // Apply slight hue shift and darken for stacked coordinate floats as well
-      try {
-        const base = color || div.style.color || '#ffffff';
-        const v = variantForStack(base, slotIndex);
-        div.style.color = v;
-        div.style.webkitTextStroke = `0.5px ${v}`;
-      } catch (e) {}
-
-      const yOffset = progress * -50;
-      const fadeRaw = elapsed <= effectiveFadeDelay ? 0 : Math.min(1, (elapsed - effectiveFadeDelay) / visibleDuration);
-      // Eased fade: keep opacity high until near the end, then fade quickly
-      const easedFade = Math.pow(fadeRaw, 2.6);
-      const opacity = 1 - easedFade;
-      const scaleValue = 1 + progress * 0.3;
-
-      // Smooth wobble: sinusoidal decreasing amplitude to avoid rapid random shaking
-      const wobbleAmplitude = isCrit ? 6 : 3; // degrees
-      const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
-
-      div.style.transform = `translate3d(${clampX()}px, ${y + yOffset}px, 0) translateX(-50%) rotate(${baseRotation + wobble}deg) scale(${scaleValue})`;
-      div.style.opacity = opacity;
-
-      requestAnimationFrame(animate);
+    // Register in centralized non-anchored list for a single RAF loop
+    if (!FloatingDamageNumber._list) FloatingDamageNumber._list = [];
+    const createdAt = performance.now();
+    const item = {
+      div,
+      x: clampXVal,
+      y,
+      driftX,
+      driftY,
+      createdAt,
+      duration: effectiveDuration,
+      fadeDelay: effectiveFadeDelay,
+      isCrit,
+      baseRotation,
+      color
     };
+    FloatingDamageNumber._list.push(item);
 
-    animate();
+    if (!FloatingDamageNumber._running) {
+      FloatingDamageNumber._running = true;
+      requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
+    }
+  }
+
+  static showBurst(x, y, totalValue, options = {}) {
+    const {
+      bursts = 1,
+      spreadX = 18,
+      spreadY = 6,
+      staggerMs = 55,
+      values = null,
+      ...rest
+    } = options;
+
+    const count = Math.max(1, Math.floor(Number(bursts) || 1));
+    const numericTotal = Number(totalValue) || 0;
+    const burstValues = Array.isArray(values) && values.length
+      ? values.map(v => Number(v) || 0)
+      : Array.from({ length: count }, (_, index) => {
+          const base = Math.floor(numericTotal / count);
+          const remainder = Math.abs(numericTotal % count);
+          const sign = numericTotal < 0 ? -1 : 1;
+          return sign * (base + (index < remainder ? 1 : 0));
+        });
+
+    burstValues.forEach((value, index) => {
+      setTimeout(() => {
+        const offsetX = ((index - (burstValues.length - 1) / 2) * spreadX) + (Math.random() * 6 - 3);
+        const offsetY = (Math.random() * spreadY) - (spreadY / 2);
+        FloatingDamageNumber.show(x + offsetX, y + offsetY, Math.abs(value), {
+          ...rest,
+          isCrit: !!rest.isCrit && index === 0,
+          scale: rest.scale || 1
+        });
+      }, index * staggerMs);
+    });
   }
 }
 
@@ -406,7 +450,9 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
     div,
     anchorRectFn,
     anchorKey: anchorKey ? String(anchorKey) : null,
-    createdAt: Date.now(),
+    driftX: (Math.random() * 10) - 5,
+    driftY: (Math.random() * 8) - 4,
+    createdAt: performance.now(),
     duration: effectiveDuration,
     fadeDelay: Number(opts.fadeDelay) || DEFAULT_HOLD,
     scale: opts.scale,
@@ -433,7 +479,7 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
 };
 
 FloatingDamageNumber._anchoredTick = function() {
-  const now = Date.now();
+  const now = performance.now();
   const list = FloatingDamageNumber._anchoredList;
 
   for (let i = list.length - 1; i >= 0; i--) {
@@ -477,8 +523,10 @@ FloatingDamageNumber._anchoredTick = function() {
     const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
     const wobbleAmplitude = f.isCrit ? 6 : 3;
     const wobble = Math.sin(Math.max(0, Math.min(1, progress)) * Math.PI * 2) * wobbleAmplitude * (1 - Math.max(0, Math.min(1, progress)));
+    const driftX = (f.driftX || 0) * Math.min(1, progress);
+    const driftY = (f.driftY || 0) * Math.min(1, progress);
 
-    f.div.style.transform = `translate3d(${clampX}px, ${yPos}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+    f.div.style.transform = `translate3d(${clampX + driftX}px, ${yPos + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
     f.div.style.opacity = opacity;
 
     if (progress >= 1) {
@@ -501,6 +549,66 @@ FloatingDamageNumber._anchoredTick = function() {
   }
 };
 
+// Non-anchored floats centralized tick
+FloatingDamageNumber._tickNonAnchored = function() {
+  const now = performance.now();
+  const list = FloatingDamageNumber._list || [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const f = list[i];
+    const elapsed = now - f.createdAt;
+    const progress = elapsed / f.duration;
+    const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
+    const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
+    const easedFade = Math.pow(fadeRaw, 2.6);
+    const opacity = 1 - easedFade;
+
+    // stacked slot index based on coord map
+    let slotIndex = 0;
+    try {
+      const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
+      if (key) slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(f.div) || 0;
+    } catch (e) {}
+
+    try {
+      const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
+      f.div.style.color = v;
+      f.div.style.webkitTextStroke = `0.5px ${v}`;
+    } catch (e) {}
+
+    const yOffset = progress * -50;
+    const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
+    const wobbleAmplitude = f.isCrit ? 6 : 3;
+    const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
+    const driftX = (f.driftX || 0) * Math.min(1, progress);
+    const driftY = (f.driftY || 0) * Math.min(1, progress);
+
+    f.div.style.transform = `translate3d(${f.x + driftX}px, ${f.y + yOffset + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+    f.div.style.opacity = opacity;
+
+    if (progress >= 1) {
+      try { f.div.remove(); } catch (e) {}
+      // remove from coord map
+      try {
+        const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
+        if (key) {
+          const arr = FloatingDamageNumber._coordActiveByKey[key];
+          const idx = arr.indexOf(f.div);
+          if (idx !== -1) arr.splice(idx, 1);
+          if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
+        }
+      } catch (e) {}
+
+      list.splice(i, 1);
+    }
+  }
+
+  if (list.length > 0) {
+    requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
+  } else {
+    FloatingDamageNumber._running = false;
+  }
+};
+
 // Screen effects
 class ScreenEffects {
   static lastShakeAt = 0;
@@ -517,10 +625,10 @@ class ScreenEffects {
 
     const element = document.documentElement;
     const scaledIntensity = intensity * AnimationRuntime.shakeIntensityScale;
-    const startTime = Date.now();
+    const startTime = performance.now();
     
     const animate = () => {
-      const elapsed = Date.now() - startTime;
+      const elapsed = performance.now() - startTime;
       const progress = elapsed / duration;
       
       if (progress >= 1) {
@@ -734,9 +842,9 @@ class ConsumableDropAnimation {
     `;
     document.body.appendChild(icon);
     
-    const startTime = Date.now();
+    const startTime = performance.now();
     const animate = () => {
-      const elapsed = Date.now() - startTime;
+      const elapsed = performance.now() - startTime;
       const progress = Math.min(1, elapsed / duration);
       
       if (progress >= 1) {

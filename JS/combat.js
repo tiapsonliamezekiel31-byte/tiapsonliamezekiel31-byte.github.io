@@ -122,6 +122,7 @@ class CombatManager {
 
     const attackPlan = new WeaponAttack(weapon.name, weapon.element);
     const scaledCost = attackPlan.getScaledApCost();
+    const fireRate = Math.max(1, Math.floor(Number(weapon.data?.fireRate || 1)));
 
     let actualCost = scaledCost;
     if (state.hasBuff('Efficiency')) {
@@ -166,6 +167,7 @@ class CombatManager {
     return {
       success: true,
       weapon,
+      fireRate,
       target,
       targetEnemyId: String(targetEnemyId),
       actualCost,
@@ -187,9 +189,11 @@ class CombatManager {
     // Check if player has AP
     const weapon = PlayerManager.getCurrentWeapon();
     if (!weapon) return { success: false, reason: 'No weapon equipped' };
+    const weaponData = weapon.data || {};
     
     const attackPlan = new WeaponAttack(weapon.name, weapon.element);
     const scaledCost = attackPlan.getScaledApCost();
+    const fireRate = Math.max(1, Math.floor(Number(weaponData.fireRate || 1)));
 
     // Calculate AP cost with combo/buffs BEFORE spending
     let actualCost = scaledCost;
@@ -248,9 +252,9 @@ class CombatManager {
     const targets = [];
     const aliveList = StageManager.getAliveEnemies();
 
-    if (weapon.data.special && weapon.data.special.includes('Hits ALL')) {
+    if (weaponData.special && weaponData.special.includes('Hits ALL')) {
       targets.push(...aliveList.map(enemy => ({ enemy, damageMultiplier: 1 }))); 
-    } else if (weapon.data.special && weapon.data.special.includes('adjacent')) {
+    } else if (weaponData.special && weaponData.special.includes('adjacent')) {
       // Bazooka: target + up to 2 adjacent
       const all = StageManager.getAllEnemies();
       const idx = all.indexOf(target);
@@ -426,7 +430,8 @@ class CombatManager {
       damage,
       isCrit,
       apCost: actualCost,
-      combo: state.combatState.currentCombo
+      combo: state.combatState.currentCombo,
+      fireRate
     });
 
     // Mutators that respond to player attacks (e.g., turret backlash)
@@ -500,7 +505,8 @@ class CombatManager {
       damage,
       isCrit,
       targetDead: target.isDead,
-      apCost: actualCost
+      apCost: actualCost,
+      fireRate
     };
   }
   

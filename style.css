@@ -542,13 +542,13 @@ body::before {
 .enemy-card {
   position: absolute;
   width: 92px;
-  min-height: 92px;
+  min-height: 100px;
   border: 2px solid var(--enemy-border-default);
   border-left-color: var(--enemy-weak-color);
   border-right-color: var(--enemy-resist-color);
   border-radius: 10px;
   background: linear-gradient(180deg, rgba(24, 18, 50, 0.98), rgba(12, 10, 26, 0.97));
-  padding: 20px 8px 14px 8px; /* space for emoji to pop out without overlapping content */
+  padding: 20px 8px 18px 8px; /* extra bottom room keeps the HP bar fully visible */
   font-size: 10px;
   text-align: center;
   box-shadow: 0 0 14px var(--enemy-border-shadow), inset 0 1px 0 rgba(255,255,255,0.05);
@@ -632,8 +632,8 @@ body::before {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 8px;
-  height: 18px;
+  bottom: 10px;
+  height: 20px;
   background: #241a34;
   border-radius: 6px;
   overflow: hidden;
@@ -667,7 +667,7 @@ body::before {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 32px; /* sits above the larger hpbar */
+  bottom: 36px; /* sits above the HP bar with breathing room */
   text-align: center;
   font-size: 9px;
   z-index: 10002;
@@ -1191,6 +1191,15 @@ body::before {
   color: var(--task-ink);
 }
 
+.task-card-daily {
+  transform-origin: top left;
+}
+
+.task-card-daily.is-completed-visible {
+  opacity: 0.38;
+  filter: grayscale(1) saturate(0.35) brightness(0.78);
+}
+
 .task-card-daily.shape-task .task-shape-streak,
 .task-card-daily.shape-task .task-shape-difficulty,
 .task-card-daily.shape-task .task-shape-progress,
@@ -1223,6 +1232,33 @@ body::before {
 }
 
 .task-card-daily.shape-task .task-shape-streak.is-negative {
+  background: rgba(52, 14, 18, 0.9);
+  border-color: rgba(255, 90, 90, 0.36);
+}
+
+.task-daily-streak-badge {
+  position: absolute;
+  z-index: 12;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 14px;
+  font-weight: 700;
+  text-align: center;
+  color: #fff;
+  background: rgba(8, 8, 12, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.task-daily-streak-badge.is-positive {
+  background: rgba(35, 27, 8, 0.9);
+  border-color: rgba(255, 215, 106, 0.36);
+}
+
+.task-daily-streak-badge.is-negative {
   background: rgba(52, 14, 18, 0.9);
   border-color: rgba(255, 90, 90, 0.36);
 }
@@ -1798,10 +1834,23 @@ body::before {
 
   .enemy-card {
     width: 72px;
-    min-height: 72px;
+    min-height: 84px;
     font-size: 7px;
     box-shadow: 0 0 7px var(--enemy-border-shadow), inset 0 1px 0 rgba(255,255,255,0.04);
     transition: transform 0.12s ease, opacity 0.12s ease;
+    padding: 16px 6px 16px 6px;
+  }
+
+  .enemy-name {
+    bottom: 32px;
+    font-size: 7px;
+  }
+
+  .enemy-hpbar {
+    left: 6px;
+    right: 6px;
+    bottom: 8px;
+    height: 18px;
   }
 
   .enemy-card.dead {

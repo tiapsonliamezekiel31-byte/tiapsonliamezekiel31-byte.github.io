@@ -5,6 +5,7 @@
 
 class UIManager {
   static checkInSequenceToken = 0;
+  static eventListenersBound = false;
   static resizeScheduled = false;
   static spinnerFrameId = null;
   static spinnerAngle = 0;
@@ -597,7 +598,11 @@ class UIManager {
 
       // Consumables: use ShopManager.getAvailableConsumables and pricing rules from blueprint
       if (ShopManager && ShopManager.getAvailableConsumables) {
-        const consumables = ShopManager.getAvailableConsumables() || [];
+        const consumables = [...new Set([
+          'Health Potion',
+          'Mana Potion',
+          ...(ShopManager.getAvailableConsumables() || [])
+        ])];
         consumables.forEach(name => {
           const price = ShopManager.getConsumablePrice ? ShopManager.getConsumablePrice(name) : 0;
           const row = document.createElement('div');
@@ -664,6 +669,8 @@ class UIManager {
       ? ShopManager.getCatalog()
       : [
         { id: 's_word_upgrade', name: 'Sword Upgrade', desc: 'Increase Rusty Sword damage +10%', price: 50, type: 'weapon_upgrade' },
+        { id: 'Health Potion', name: 'Health Potion', desc: 'Heals 30 HP instantly', price: 1, type: 'consumable' },
+        { id: 'Mana Potion', name: 'Mana Potion', desc: 'Restores 50 Mana instantly', price: 1, type: 'consumable' },
         { id: 's_heal_potion', name: 'Heal Potion', desc: 'Heals 20 HP on use', price: 25, type: 'consumable' },
         { id: 's_ap_potion', name: 'AP Tonic', desc: 'Grants +30 AP instantly', price: 40, type: 'consumable' },
         { id: 's_killtag', name: 'Kill Tag Pack', desc: 'Grants 1 Kill Tag for smith upgrades', price: 80, type: 'currency', amount: 1 }
@@ -751,6 +758,8 @@ class UIManager {
   }
   
   static bindEventListeners() {
+    if (this.eventListenersBound) return;
+    this.eventListenersBound = true;
     const state = getGameState();
     // Initialize sound manager with config
     try {
@@ -862,8 +871,19 @@ class UIManager {
       if (window.SoundManager) {
         state.eventBus.on(EVENTS.ATTACK, (detail) => {
           try {
-            if (detail && detail.type === 'pet') SoundManager.play('pet');
-            else SoundManager.play(detail && detail.isCrit ? 'crit' : 'attack');
+            if (detail && detail.type === 'pet') {
+              SoundManager.play('pet');
+              return;
+            }
+
+            SoundManager.play('attack', {
+              weaponName: detail?.weaponName,
+              repeats: Math.max(1, Number(detail?.fireRate || 1)),
+              gapMs: 42
+            });
+            if (detail && detail.isCrit) {
+              SoundManager.play('crit');
+            }
           } catch (e) {}
         });
 
@@ -1603,91 +1623,7 @@ class UIManager {
     const state = getGameState();
     if (!state.combatState) state.combatState = {};
 
-    if (state.combatState.attackInProgress) {
-      state.combatState.queuedAttackTargetId = targetEnemyId ? String(targetEnemyId) : (state.combatState.queuedAttackTargetId || state.combatState.currentTarget || null);
-      state.combatState.queuedAttackCount = (state.combatState.queuedAttackCount || 0) + 1;
-      return;
-    }
-
-    // Prefer an explicitly clicked enemy, then fall back to the spinner target.
-    const target = this.resolveAttackTarget(targetEnemyId);
-    if (!target) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
-      console.warn('No attack target available');
-      this.finishAttackSpinner();
-      return;
-    }
-
-    state.combatState.currentTarget = target.id;
-
-    const attackRolls = {
-      critRoll: Math.random(),
-      precisionRoll: Math.random()
-    };
-    const preview = CombatManager.previewAttackImpact(state.playerState.activeWeapon, target.id, attackRolls);
-
-    if (!preview.success) {
-      const isApFailure = typeof preview.reason === 'string' && preview.reason.toLowerCase().includes('not enough ap');
-      if (isApFailure) {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-        try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-      } else {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
-        try { state.resetCombo(); } catch (e) {}
-        ScreenEffects.shake(2, 80);
-        try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-      }
-      this.finishAttackSpinner();
-      return;
-    }
-
-    this.beginAttackSpinner(target.id);
-    state.combatState.attackInProgress = true;
-
-    try {
-      if (preview.impactDelayMs > 0) {
-        await new Promise(resolve => setTimeout(resolve, preview.impactDelayMs));
-      }
-
-      try { ScreenEffects.flash && ScreenEffects.flash('rgba(255,255,255,1)', 17); } catch (e) {}
-      const result = CombatManager.attemptAttack(state.playerState.activeWeapon, target.id, attackRolls);
-
-      // Show AP cost whether the attack hits or misses
-      if (result && result.apCost) {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${Math.ceil(result.apCost)} AP`, { color: '#ffd700' });
-      }
-
-      if (!result.success) {
-        const isApFailure = typeof result.reason === 'string' && result.reason.toLowerCase().includes('not enough ap');
-        if (isApFailure) {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-        } else {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
-          try { state.resetCombo(); } catch (e) {}
-          ScreenEffects.shake(2, 80);
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-        }
-        return;
-      }
-
-      FloatingDamageNumber.show(
-        window.innerWidth / 2,
-        window.innerHeight / 2,
-        Math.ceil(result.damage),
-        { isCrit: result.isCrit, color: result.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707') }
-      );
-
-      if (result.targetDead) {
-        EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2, true);
-      }
-
-      this.renderEnemies();
-      getGameState().save();
-    } finally {
-      state.combatState.attackInProgress = false;
-      this.finishAttackSpinner();
-
+    const settleQueue = () => {
       const queuedCount = Number(state.combatState.queuedAttackCount || 0);
       const queuedTargetId = state.combatState.queuedAttackTargetId || null;
       if (queuedCount > 0) {
@@ -1698,6 +1634,135 @@ class UIManager {
         }
         queueMicrotask(() => this.handleAttackClick(queuedTargetId));
       }
+    };
+
+    try {
+      if (state.combatState.attackInProgress) {
+        state.combatState.queuedAttackTargetId = targetEnemyId ? String(targetEnemyId) : (state.combatState.queuedAttackTargetId || state.combatState.currentTarget || null);
+        state.combatState.queuedAttackCount = (state.combatState.queuedAttackCount || 0) + 1;
+        return;
+      }
+
+      // Prefer an explicitly clicked enemy, then fall back to the spinner target, then any alive enemy.
+      let target = this.resolveAttackTarget(targetEnemyId);
+      if (!target) {
+        target = (StageManager.getAliveEnemies && StageManager.getAliveEnemies()[0]) || (StageManager.getAllEnemies && StageManager.getAllEnemies().find(enemy => enemy && !enemy.isDead)) || null;
+      }
+      if (!target) {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
+        console.warn('No attack target available');
+        this.finishAttackSpinner();
+        return;
+      }
+
+      const weapon = PlayerManager.getCurrentWeapon();
+      if (!weapon) {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No weapon equipped', { color: '#ff6666' });
+        this.finishAttackSpinner();
+        return;
+      }
+
+      state.combatState.currentTarget = target.id;
+      const attackRolls = {
+        critRoll: Math.random(),
+        precisionRoll: Math.random()
+      };
+      const preview = CombatManager.previewAttackImpact(state.playerState.activeWeapon, target.id, attackRolls);
+
+      if (!preview.success) {
+        const isApFailure = typeof preview.reason === 'string' && preview.reason.toLowerCase().includes('not enough ap');
+        if (isApFailure) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+        } else {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
+          try { state.resetCombo(); } catch (e) {}
+          ScreenEffects.shake(2, 80);
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+        }
+        this.finishAttackSpinner();
+        return;
+      }
+
+      this.beginAttackSpinner(target.id);
+      state.combatState.attackInProgress = true;
+
+      try {
+        if (preview.impactDelayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, preview.impactDelayMs));
+        }
+
+        try { ScreenEffects.flash && ScreenEffects.flash('rgba(255,255,255,1)', 17); } catch (e) {}
+        let result;
+        try {
+          result = CombatManager.attemptAttack(state.playerState.activeWeapon, target.id, attackRolls);
+        } catch (attackError) {
+          console.error('[UI] attack failed', attackError);
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack failed', { color: '#ff6666' });
+          try { state.resetCombo(); } catch (e) {}
+          return;
+        }
+
+        if (result && result.apCost) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${Math.ceil(result.apCost)} AP`, { color: '#ffd700' });
+        }
+
+        if (!result.success) {
+          const isApFailure = typeof result.reason === 'string' && result.reason.toLowerCase().includes('not enough ap');
+          if (isApFailure) {
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
+            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          } else {
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
+            try { state.resetCombo(); } catch (e) {}
+            ScreenEffects.shake(2, 80);
+            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          }
+          return;
+        }
+
+        const damageColor = result.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
+        const fireRate = Math.max(1, Number(result.fireRate || 1));
+        if (fireRate > 1) {
+          FloatingDamageNumber.showBurst(
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            Math.ceil(result.damage),
+            {
+              bursts: fireRate,
+              color: damageColor,
+              isCrit: result.isCrit,
+              duration: 1400,
+              fadeDelay: 900,
+              staggerMs: 60
+            }
+          );
+        } else {
+          FloatingDamageNumber.show(
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            Math.ceil(result.damage),
+            { isCrit: result.isCrit, color: damageColor }
+          );
+        }
+
+        if (result.targetDead) {
+          EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2, true);
+        }
+
+        this.renderEnemies();
+        getGameState().save();
+      } finally {
+        state.combatState.attackInProgress = false;
+        this.finishAttackSpinner();
+        settleQueue();
+      }
+    } catch (error) {
+      console.error('[UI] handleAttackClick failed', error);
+      state.combatState.attackInProgress = false;
+      this.finishAttackSpinner();
+      settleQueue();
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack blocked', { color: '#ff6666' });
     }
   }
   
@@ -2006,15 +2071,19 @@ class UIManager {
       const streak = computeDailyStreak(daily.id);
       const maxCompletions = Math.max(1, Number(daily.maxCompletionsPerDay) || 1);
       const completionsToday = Math.max(0, Number(daily.completionsToday) || 0);
-      const completionRatio = Math.min(1, completionsToday / maxCompletions);
-      const opacity = Math.max(0.1, 1 - completionRatio);
+      const remainingCompletions = Math.max(0, maxCompletions - completionsToday);
+      const opacity = daily.completed
+        ? (showCompleted ? 0.38 : 0)
+        : (maxCompletions > 1 ? Math.max(0.5, remainingCompletions / maxCompletions) : 1);
+      const sizeScale = Math.max(0.5, Number(daily.size) || 1);
       const attributeColor = getAttributeColor(daily.attribute);
       const textColor = getTextColorForHex(attributeColor);
       const streakClass = streak > 0 ? 'is-positive' : streak < 0 ? 'is-negative' : 'is-neutral';
       const strokeWidth = Math.min(6, 1 + Math.abs(streak));
       const progressText = `${completionsToday}/${maxCompletions}`;
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed' : '') + '" data-id="' + daily.id + '" data-type="daily" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;">';
-      html += '<div class="task-shape-streak ' + streakClass + '" title="Streak">' + streak + '</div>';
+      const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
+      html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;">';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
@@ -2140,14 +2209,27 @@ class UIManager {
     dailies.forEach((daily, index) => {
       const card = metrics.board.querySelector(`.task-card-daily[data-id="${daily.id}"]`);
       if (!card) return;
+      const streak = metrics.board.querySelector(`.task-daily-streak-badge[data-daily-id="${daily.id}"]`);
 
       const layout = daily.layout
         ? this.clampDailyLayout(daily.layout, metrics, tileSize)
         : this.getDefaultDailyLayout(index, metrics, tileSize);
 
       card.style.width = `${tileSize.width}px`;
+      card.dataset.sizeScale = String(Math.max(0.5, Number(daily.size) || 1));
+      if (!card.classList.contains('just-completed')) {
+        card.style.transform = `scale(${Math.max(0.5, Number(daily.size) || 1)})`;
+      }
       card.style.left = `${layout.x}%`;
       card.style.top = `${layout.y}%`;
+
+      if (streak) {
+        const cardRect = card.getBoundingClientRect();
+        const boardRect = metrics.board.getBoundingClientRect();
+        const offset = Math.max(12, Math.round(cardRect.width * 0.12));
+        streak.style.left = `${cardRect.left - boardRect.left + (cardRect.width / 2)}px`;
+        streak.style.top = `${cardRect.top - boardRect.top - offset}px`;
+      }
     });
   }
 
@@ -2235,7 +2317,8 @@ class UIManager {
             try {
               dragState.card.classList.add('just-completed');
               dragState.card.style.transition = 'transform 220ms ease, opacity 400ms ease';
-              dragState.card.style.transform = 'scale(1.04)';
+              const sizeScale = Math.max(0.5, Number(dragState.card.dataset.sizeScale) || 1);
+              dragState.card.style.transform = `scale(${sizeScale * 1.04})`;
               if (res.rewards && res.rewards.ap) {
                 UIManager.showDailyApReward(dragState.card, res.rewards.ap);
               }

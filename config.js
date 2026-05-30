@@ -391,6 +391,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 30,
       damageMultiplier: 1.0,
       critChance: 0.05,
+      fireRate: 1,
       price: 0, // starter
       special: 'Universal starter'
     },
@@ -399,6 +400,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 55,
       damageMultiplier: 1.8,
       critChance: 0.05,
+      fireRate: 1,
       price: 3,
       special: null
     },
@@ -407,6 +409,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 22,
       damageMultiplier: 0.6,
       critChance: 0.5,
+      fireRate: 3,
       price: 3,
       special: null
     },
@@ -415,6 +418,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 55,
       damageMultiplier: 0.2,
       critChance: 0.08,
+      fireRate: 4,
       price: 4,
       special: 'Hits ALL enemies'
     },
@@ -423,6 +427,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 50,
       damageMultiplier: 0.1,
       critChance: 0.05,
+      fireRate: 1,
       price: 3,
       specialId: 'buckler',
       special: 'Applies Buckler. The next time that enemy attacks, gain 20% max AP and halve its damage.',
@@ -433,6 +438,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 40,
       damageMultiplier: 1.1,
       critChance: 0.1,
+      fireRate: 2,
       price: 3,
       special: 'Gain 20 mana when you kill an enemy'
     },
@@ -443,6 +449,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 38,
       damageMultiplier: 0.7,
       critChance: 0.28,
+      fireRate: 4,
       price: 5,
       special: '+30 HP when you kill an enemy'
     },
@@ -451,6 +458,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 65,
       damageMultiplier: 2.8,
       critChance: 0.0,
+      fireRate: 4,
       price: 6,
       special: 'Hits target + 2 adjacent enemies'
     },
@@ -459,6 +467,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 12,
       damageMultiplier: 2.0,
       critChance: 0.08,
+      fireRate: 6,
       price: 4,
       comboMaxStacks: 10,
       specialId: 'uzi',
@@ -470,6 +479,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 100,
       damageMultiplier: 1.5,
       critChance: 0.15,
+      fireRate: 1,
       price: 7,
       special: 'Stuns enemy on crit (skips its next attack)'
     },
@@ -478,6 +488,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 50,
       damageMultiplier: 0.8,
       critChance: 0.2,
+      fireRate: 2,
       price: 5,
       specialId: 'lazer',
       special: 'Also blasts a random enemy for 2x damage',
@@ -488,6 +499,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 45,
       damageMultiplier: 0.5,
       critChance: 0.08,
+      fireRate: 2,
       price: 5,
       specialId: 'vine',
       special: 'Stores damage dealt to each enemy and replays 1/3 on the first hit each day',
@@ -498,6 +510,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 300,
       damageMultiplier: Infinity, // instakill
       critChance: 0,
+      fireRate: 1,
       price: 8,
       special: 'Kills enemy at ≤30% HP instantly'
     },
@@ -506,6 +519,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 55,
       damageMultiplier: 2.2,
       critChance: 0.15,
+      fireRate: 1,
       price: 5,
       special: null
     },
@@ -514,6 +528,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 35,
       damageMultiplier: 1.0,
       critChance: 0.1,
+      fireRate: 3,
       price: 5,
       special: 'Every 3rd attack deals double damage'
     },
@@ -522,6 +537,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 50,
       damageMultiplier: 0.1,
       critChance: 0.05,
+      fireRate: 1,
       price: 6,
       specialId: 'aegis',
       special: 'Applies Aegis. The next time that enemy attacks, gain 50 mana and halve its damage.',
@@ -536,6 +552,8 @@ const DEFAULT_GAME_CONFIG = {
     // Defensive
     'Shield': { type: 'Defensive', effect: '-10% dmg 1 day', price: 0.3 },
     'Mega Instinct': { type: 'Defensive', effect: '+20% dodge 1 day', price: 0.3 },
+    'Health Potion': { type: 'Restorative', effect: '+30 HP instantly', price: 1 },
+    'Mana Potion': { type: 'Restorative', effect: '+50 Mana instantly', price: 1 },
     // Offensive
     'Rage Tonic': { type: 'Offensive', effect: 'next 3 attacks +5% dmg', price: 0.4 },
     'Elemental Grease': { type: 'Offensive', effect: 'enemy weaknesses +3%', price: 0.4 },
@@ -563,6 +581,8 @@ const DEFAULT_GAME_CONFIG = {
   shopItemIcons: {
     smith: '⚒️',
     consumable: '🧪',
+    'Health Potion': '❤️',
+    'Mana Potion': '💧',
     'Heal Potion': '🧪',
     'AP Tonic': '⚡',
     'Kill Tag Pack': '🏷️',

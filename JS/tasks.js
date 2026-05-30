@@ -52,6 +52,7 @@ class TaskManager {
       bloodOathActive: false,
       maxCompletionsPerDay: Math.max(1, Number(maxCompletions) || 1),
       completionsToday: 0,
+      size: 1,
       layout: null
     };
     
@@ -97,7 +98,16 @@ class TaskManager {
     if (updates.maxCompletionsPerDay !== undefined) {
       daily.maxCompletionsPerDay = Math.max(1, Number(updates.maxCompletionsPerDay) || 1);
     }
+    if (updates.size !== undefined) {
+      daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
+    }
     Object.assign(daily, updates);
+    if (updates.maxCompletionsPerDay !== undefined) {
+      daily.maxCompletionsPerDay = Math.max(1, Number(updates.maxCompletionsPerDay) || 1);
+    }
+    if (updates.size !== undefined) {
+      daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
+    }
     return true;
   }
   

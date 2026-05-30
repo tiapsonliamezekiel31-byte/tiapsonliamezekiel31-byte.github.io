@@ -95,6 +95,7 @@ class GameState {
     
     // Initialize fresh state
     this.reset();
+    this.systemState.isCheckInRunning = false; // Added to prevent overlapping check-ins
   }
   
   reset() {
@@ -196,6 +197,77 @@ class GameState {
         tasksCompleted: 0,
         daysSurvived: 0
       }
+    };
+  }
+
+  resetRunState() {
+    this.playerState.className = null;
+    this.playerState.level = 1;
+    this.playerState.hp = 0;
+    this.playerState.maxHp = 0;
+    this.playerState.mana = 0;
+    this.playerState.maxMana = 0;
+    this.playerState.ap = 0;
+    this.playerState.maxAp = 0;
+    this.playerState.gold = 0;
+    this.playerState.diamonds = 0;
+    this.playerState.attributes = {
+      STR: { points: 0, level: 1 },
+      INT: { points: 0, level: 1 },
+      DISC: { points: 0, level: 1 },
+      CREA: { points: 0, level: 1 },
+      SOC: { points: 0, level: 1 },
+      CAP: { points: 0, level: 1 },
+      RESP: { points: 0, level: 1 }
+    };
+    this.playerState.weapons = [null, null];
+    this.playerState.weaponElements = [null, null];
+    this.playerState.activeWeapon = 0;
+    this.playerState.consumables = {};
+    this.playerState.kills = 0;
+    this.playerState.killTagsByWeapon = {};
+    this.playerState.weaponUpgrades = {};
+
+    this.stageState.stage = 1;
+    this.stageState.stageVariation = 'A';
+    this.stageState.level = 1;
+    this.stageState.enemies = [];
+    this.stageState.bossData = null;
+    this.stageState.nextBossAtLevel = 5;
+
+    this.combatState = {
+      currentCombo: 0,
+      lastAttackTime: 0,
+      selectedWeapon: 0,
+      isDodging: false,
+      isSkillActive: false
+    };
+
+    this.buffs = [];
+    this.systemState.isDeathDefiance = false;
+    this.systemState.deathDefiance = {
+      available: true,
+      active: false,
+      triggeredAt: null
+    };
+    this.systemState.isCheckInRunning = false;
+    this.systemState.dialogueSeen = {};
+    this.systemState.runSeenEnemies = {};
+    this.systemState.diamondRewards = [];
+    this.systemState.isPaused = false;
+    this.systemState.completeDayClaimDate = null;
+    this.systemState.completeDayApBonus = 0;
+    this.systemState.gameStartTime = null;
+    this.systemState.lastCheckInTime = null;
+    this.systemState.runCompletionHistory = [];
+    this.systemState.runStats = {
+      startClass: null,
+      enemiesDefeated: 0,
+      bossesSailed: 0,
+      totalGoldEarned: 0,
+      buffsCollected: 0,
+      tasksCompleted: 0,
+      daysSurvived: 0
     };
   }
   
@@ -401,6 +473,16 @@ class GameState {
       this.buffs = data.buffs;
       this.nemesisState = data.nemesisState;
       this.systemState = data.systemState;
+      if (!this.combatState || typeof this.combatState !== 'object') {
+        this.combatState = {};
+      }
+      this.combatState.attackInProgress = false;
+      this.combatState.attackSpinnerPressed = false;
+      this.combatState.attackSpinnerActive = false;
+      this.combatState.attackSpinnerTargetId = null;
+      this.combatState.hoveredEnemyId = null;
+      this.combatState.queuedAttackTargetId = null;
+      this.combatState.queuedAttackCount = 0;
       if (!this.systemState.dialogueSeen) {
         this.systemState.dialogueSeen = {};
       }
@@ -485,6 +567,12 @@ function performCheckIn() {
     console.warn('Cannot check in while paused');
     return;
   }
+  
+  if (state.systemState.isCheckInRunning) {
+    console.warn('Check-in already running');
+    return;
+  }
+  state.systemState.isCheckInRunning = true;
 
   const nowMs = Date.now();
   const getLocalDateKey = () => {
@@ -521,6 +609,7 @@ function performCheckIn() {
       bossesSailed: state.systemState.runStats.bossesSailed,
       goldEarned: state.systemState.runStats.totalGoldEarned
     });
+    state.systemState.isCheckInRunning = false; // Reset check-in running state
     state.save();
     return;
   }
@@ -955,6 +1044,7 @@ function performCheckIn() {
         console.warn('Daily regeneration failed during check-in', e);
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+        state.systemState.isCheckInRunning = false; // Reset check-in running state
       }
     };
 

@@ -8,6 +8,8 @@ const ShopManager = (function() {
   const SHOP_KEY = 'nemesis_shop_data';
 
   const defaultCatalog = [
+    { id: 'consumable_health_potion', name: 'Health Potion', desc: 'Heals 30 HP instantly', price: 1, type: 'consumable' },
+    { id: 'consumable_mana_potion', name: 'Mana Potion', desc: 'Restores 50 Mana instantly', price: 1, type: 'consumable' },
     { id: 's_heal_potion', name: 'Heal Potion', desc: 'Heals 20 HP on use', price: 25, type: 'consumable' },
     { id: 's_ap_potion', name: 'AP Tonic', desc: 'Grants +30 AP instantly', price: 40, type: 'consumable' },
     { id: 's_killtag', name: 'Kill Tag Pack', desc: 'Grants 1 Kill Tag for smith upgrades', price: 80, type: 'currency', amount: 1 }
@@ -45,16 +47,18 @@ const ShopManager = (function() {
     const candidates = allWeapons.filter(w => !equipped.includes(w));
     currentOffers.weapons = _sample(candidates, 2);
 
-    // Consumables: blueprint says 2 defensive, 2 offensive, 20% chance extra other
+    // Consumables: guarantee core restorative potions, then add the usual shelf mix
+    const guaranteed = ['Health Potion', 'Mana Potion'];
     const defensive = ['Shield', 'Mega Instinct'];
     const offensive = ['Rage Tonic', 'Elemental Grease', 'Lightning Rod', 'Gorillaz Brute Juice', 'Catalyzer'];
     const other = ['Prayer', 'Rift', 'Echo'];
 
     const picks = [];
+    picks.push(...guaranteed);
     picks.push(..._sample(defensive, 2));
     picks.push(..._sample(offensive, 2));
     if (Math.random() < 0.2) picks.push(_sample(other, 1)[0]);
-    currentOffers.consumables = picks.filter(Boolean);
+    currentOffers.consumables = [...new Set(picks.filter(Boolean))];
 
     return currentOffers;
   }
@@ -192,10 +196,13 @@ const ShopManager = (function() {
   function getAvailableConsumables() {
     const state = getGameState();
     if (!state) return [];
-    if (currentOffers.consumables && currentOffers.consumables.length) return currentOffers.consumables.slice();
+    const guaranteed = ['Health Potion', 'Mana Potion'];
+    if (currentOffers.consumables && currentOffers.consumables.length) {
+      return [...new Set([...guaranteed, ...currentOffers.consumables])];
+    }
     // fallback: generate now but keep it
     generateShopOffers();
-    return currentOffers.consumables.slice();
+    return [...new Set([...guaranteed, ...currentOffers.consumables])];
   }
 
   function getSmithUpgrade() {

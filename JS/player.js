@@ -12,6 +12,10 @@ class PlayerManager {
       console.error(`Class not found: ${className}`);
       return false;
     }
+
+    if (typeof state.resetRunState === 'function') {
+      state.resetRunState();
+    }
     
     state.playerState.className = className;
     state.playerState.maxHp = classData.hp;
@@ -35,6 +39,7 @@ class PlayerManager {
     
     state.playerState.activeWeapon = 0;
     state.playerState.consumables = {};
+    state.playerState.weaponUpgrades = {};
     
     // Start with Rusty Sword
     state.playerState.weapons[0] = 'Rusty Sword';
@@ -96,7 +101,31 @@ class PlayerManager {
   
   static getCurrentWeapon() {
     const state = getGameState();
-    const weaponName = state.playerState.weapons[state.playerState.activeWeapon];
+    const weapons = Array.isArray(state.playerState.weapons) ? state.playerState.weapons : [];
+    let activeIndex = Number.isInteger(state.playerState.activeWeapon) ? state.playerState.activeWeapon : 0;
+    if (activeIndex < 0 || activeIndex >= weapons.length) activeIndex = 0;
+
+    let weaponName = weapons[activeIndex];
+    if (!weaponName) {
+      const fallbackIndex = weapons.findIndex(Boolean);
+      if (fallbackIndex >= 0) {
+        activeIndex = fallbackIndex;
+        weaponName = weapons[fallbackIndex];
+        state.playerState.activeWeapon = fallbackIndex;
+      }
+    }
+
+    if (!weaponName && state.config?.weapons?.['Rusty Sword']) {
+      weaponName = 'Rusty Sword';
+      state.playerState.activeWeapon = 0;
+      if (!Array.isArray(state.playerState.weapons)) state.playerState.weapons = [];
+      state.playerState.weapons[0] = 'Rusty Sword';
+      if (!Array.isArray(state.playerState.weaponElements)) state.playerState.weaponElements = [];
+      state.playerState.weaponElements[0] = null;
+      if (!state.playerState.killTagsByWeapon) state.playerState.killTagsByWeapon = {};
+      if (typeof state.playerState.killTagsByWeapon['Rusty Sword'] !== 'number') state.playerState.killTagsByWeapon['Rusty Sword'] = 0;
+    }
+
     if (!weaponName) return null;
     
     return {
@@ -243,6 +272,8 @@ class PlayerManager {
 
     let key = null;
     if (hasCount(consumableName)) key = consumableName;
+    else if (hasCount('Health Potion') && /health|heal/i.test(consumableName)) key = 'Health Potion';
+    else if (hasCount('Mana Potion') && /mana/i.test(consumableName)) key = 'Mana Potion';
     else if (hasCount('s_heal_potion') && /heal|potion/i.test(consumableName)) key = 's_heal_potion';
     else if (hasCount('s_ap_potion') && /ap|tonic/i.test(consumableName)) key = 's_ap_potion';
     else {
@@ -262,9 +293,12 @@ class PlayerManager {
 
     // Apply effects for known consumables
     try {
-      if (key === 's_heal_potion' || /heal|potion/i.test(key)) {
-        // Heal 20 HP
-        state.addHp(20);
+      if (key === 'Health Potion' || key === 's_heal_potion' || key === 's_health_potion') {
+        // Heal 30 HP
+        state.addHp(30);
+      } else if (key === 'Mana Potion' || key === 's_mana_potion') {
+        // Restore 50 mana
+        state.addMana(50);
       } else if (key === 's_ap_potion' || /ap|tonic/i.test(key)) {
         // Grant 30 AP
         state.addAp(30);

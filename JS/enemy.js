@@ -311,6 +311,27 @@ class EnemyManager {
     return baseGold * multiplier;
   }
 
+  // Developer utility: halve every enemy's health (both max and current)
+  // Usage: call `EnemyManager.halveAllEnemiesHealth()` from console or game debug UI
+  static halveAllEnemiesHealth() {
+    try {
+      const state = getGameState();
+      const enemies = state.stageState.enemies || [];
+      enemies.forEach(e => {
+        if (!e) return;
+        // halve maxHp (min 1) and halve current hp, then clamp
+        const oldMax = Math.max(1, Math.floor(e.maxHp || 1));
+        const newMax = Math.max(1, Math.floor(oldMax / 2));
+        e.maxHp = newMax;
+        e.hp = Math.min(e.hp || 0, newMax);
+      });
+      try { if (typeof UIManager !== 'undefined') UIManager.refreshGameUI(); } catch (e) {}
+      try { state.eventBus.emit && state.eventBus.emit('ENEMIES_UPDATED'); } catch (e) {}
+    } catch (e) {
+      console.warn('halveAllEnemiesHealth failed', e);
+    }
+  }
+
   // -------------------------
   // Mutator helpers
   // -------------------------
@@ -367,12 +388,14 @@ class EnemyManager {
       const enemies = state.stageState.enemies || [];
 
       // Turret: every enemy with turret mutator deals flat damage to player when player attacks another enemy
+      // New rule: if the player attacked a turret, other turrets do NOT retaliate.
       let totalTurretDamage = 0;
+      const attackedIsTurret = Boolean(target && Array.isArray(target.mutators) && target.mutators.includes('turret'));
       enemies.forEach(e => {
         if (!e || e.isDead) return;
         if (Array.isArray(e.mutators) && e.mutators.includes('turret')) {
-          // Only trigger if the player attacked a different enemy
-          if (e.id !== target.id) {
+          // Only trigger if the player attacked a different enemy and the attacked target is not a turret
+          if (e.id !== target.id && !attackedIsTurret) {
             totalTurretDamage += (state.config.mutators?.turret?.damage ?? 5);
           }
         }

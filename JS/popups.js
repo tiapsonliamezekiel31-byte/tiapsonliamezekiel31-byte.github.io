@@ -1093,6 +1093,14 @@ class PopupsManager {
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
         <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
       </div>
+      <div class="pause-cheat-box">
+        <label for="cheatCommandInput">CHEAT COMMAND</label>
+        <div class="pause-cheat-row">
+          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="weapon Bazooka | gold 999 | ap 999 | help" />
+          <button class="btn-pause-action" id="runCheatBtn">RUN</button>
+        </div>
+        <div class="pause-cheat-help">Examples: <span>weapon Uzi</span> · <span>all weapons</span> · <span>gold 999</span> · <span>hp 999</span> · <span>heal full</span> · <span>enemy hp half</span></div>
+      </div>
     `;
     
     popup.innerHTML = html;
@@ -1117,10 +1125,161 @@ class PopupsManager {
         location.reload();
       }
     });
+
+    const cheatInput = popup.querySelector('#cheatCommandInput');
+    const runCheat = () => {
+      const value = String(cheatInput?.value || '').trim();
+      const result = this.runCheatCommand(value);
+      if (result?.message) {
+        try {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, result.message, { color: result.ok ? '#44ff44' : '#ff6666', duration: 1400 });
+        } catch (e) {}
+      }
+      if (result?.ok) {
+        try { getGameState().save(); } catch (e) {}
+      }
+    };
+
+    popup.querySelector('#runCheatBtn').addEventListener('click', runCheat);
+    cheatInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        runCheat();
+      }
+    });
     
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
+  }
+
+  static runCheatCommand(rawCommand) {
+    const state = getGameState();
+    const command = String(rawCommand || '').trim();
+    if (!command) return { ok: false, message: 'Enter a command' };
+
+    const lower = command.toLowerCase();
+    const weaponNames = Object.keys(state.config?.weapons || {});
+    const normalize = (value) => String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+    const findWeaponName = (query) => {
+      const normalizedQuery = normalize(query);
+      return weaponNames.find(name => normalize(name) === normalizedQuery || normalize(name).includes(normalizedQuery));
+    };
+
+    const ensureRuntime = () => {
+      if (!state.combatState) state.combatState = {};
+      if (!Array.isArray(state.playerState.weapons)) state.playerState.weapons = [null, null];
+      if (!Array.isArray(state.playerState.weaponElements)) state.playerState.weaponElements = new Array(state.playerState.weapons.length).fill(null);
+      if (!state.playerState.killTagsByWeapon) state.playerState.killTagsByWeapon = {};
+    };
+
+    const setResource = (key, amount) => {
+      const value = Math.max(0, Math.floor(Number(amount) || 0));
+      if (key === 'gold' && typeof state.setGold === 'function') state.setGold(value);
+      else if (key === 'hp') state.setHp ? state.setHp(value) : state.playerState.hp = value;
+      else if (key === 'mana') state.setMana ? state.setMana(value) : state.playerState.mana = value;
+      else if (key === 'ap') state.setAp ? state.setAp(value) : state.playerState.ap = value;
+      else if (key === 'diamonds' && typeof state.setDiamonds === 'function') state.setDiamonds(value);
+      else state.playerState[key] = value;
+    };
+
+    try {
+      ensureRuntime();
+
+      if (lower === 'help' || lower === '?') {
+        return { ok: true, message: 'Commands: weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N' };
+      }
+
+      if (lower === 'all weapons' || lower === 'give all weapons') {
+        const slots = state.playerState.weapons.length;
+        const fill = weaponNames.slice(0, slots);
+        fill.forEach((name, index) => {
+          state.playerState.weapons[index] = name;
+          state.playerState.weaponElements[index] = null;
+          state.playerState.killTagsByWeapon[name] = state.playerState.killTagsByWeapon[name] || 0;
+        });
+        state.playerState.activeWeapon = 0;
+        this.closeAllPopups();
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'All weapons equipped' };
+      }
+
+      if (lower.startsWith('weapon ') || lower.startsWith('give weapon ')) {
+        const weaponQuery = command.replace(/^give\s+weapon\s+/i, '').replace(/^weapon\s+/i, '').trim();
+        const weaponName = findWeaponName(weaponQuery);
+        if (!weaponName) return { ok: false, message: 'Weapon not found' };
+        const added = PlayerManager.addWeapon(weaponName);
+        if (!added) {
+          const replaced = PlayerManager.replaceWeapon(state.playerState.activeWeapon || 0, weaponName);
+          if (!replaced) return { ok: false, message: 'No free slot' };
+        }
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Given ${weaponName}` };
+      }
+
+      if (lower.startsWith('gold ')) {
+        setResource('gold', command.slice(5));
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Gold set' };
+      }
+
+      if (lower.startsWith('hp ')) {
+        setResource('hp', command.slice(3));
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'HP set' };
+      }
+
+      if (lower.startsWith('mana ')) {
+        setResource('mana', command.slice(5));
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Mana set' };
+      }
+
+      if (lower.startsWith('ap ')) {
+        setResource('ap', command.slice(3));
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'AP set' };
+      }
+
+      if (lower === 'heal full' || lower === 'full heal' || lower === 'heal') {
+        state.playerState.hp = state.playerState.maxHp;
+        state.playerState.mana = state.playerState.maxMana;
+        state.playerState.ap = state.playerState.maxAp;
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Healed' };
+      }
+
+      if (lower === 'enemy hp half' || lower === 'enemy half hp' || lower === 'half enemies hp' || lower === 'halve enemies hp') {
+        if (typeof EnemyManager !== 'undefined' && typeof EnemyManager.halveAllEnemiesHealth === 'function') {
+          EnemyManager.halveAllEnemiesHealth();
+          return { ok: true, message: 'Enemy HP halved' };
+        }
+        return { ok: false, message: 'Enemy helper unavailable' };
+      }
+
+      if (lower.startsWith('kill tags ')) {
+        const parts = command.split(/\s+/);
+        const count = Number(parts.pop());
+        const weaponQuery = parts.slice(2).join(' ');
+        const weaponName = findWeaponName(weaponQuery);
+        if (!weaponName) return { ok: false, message: 'Weapon not found' };
+        if (!Number.isFinite(count)) return { ok: false, message: 'Bad count' };
+        state.playerState.killTagsByWeapon[weaponName] = Math.max(0, Math.floor(count));
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Kill tags set' };
+      }
+
+      if (lower === 'resume' || lower === 'close') {
+        getGameState().resume();
+        this.closeAllPopups();
+        return { ok: true, message: 'Resumed' };
+      }
+
+      return { ok: false, message: 'Unknown command' };
+    } catch (e) {
+      console.warn('runCheatCommand failed', e);
+      return { ok: false, message: 'Cheat failed' };
+    }
   }
 
   // ============================================================
@@ -1154,6 +1313,8 @@ class PopupsManager {
       </select>
       <label>Max completions per day</label>
       <input id="editMax" type="number" min="1" value="${daily.maxCompletionsPerDay || 1}" />
+      <label>Size</label>
+      <input id="editSize" type="number" min="0.5" max="2" step="0.05" value="${Number(daily.size) || 1}" />
       <label>Blood Oath</label>
       <div class="blood-oath-row">
         <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
@@ -1174,7 +1335,8 @@ class PopupsManager {
         name: popup.querySelector('#editName').value,
         attribute: popup.querySelector('#editAttr').value,
         difficulty: popup.querySelector('#editDiff').value,
-        maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1)
+        maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1),
+        size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1)
       };
       // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
       try {

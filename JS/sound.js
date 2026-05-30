@@ -1,5 +1,24 @@
 /* Simple SoundManager using WebAudio for synthesized game sounds */
 class SoundManager {
+  static weaponSoundMap = {
+    'Rusty Sword': 'assets/sounds/rustysword.mp3',
+    'Great Hammer': 'assets/sounds/greathammer.mp3',
+    'Dagger': 'assets/sounds/dagger.mp3',
+    'Bomb': 'assets/sounds/bomb.mp3',
+    'Buckler': 'assets/sounds/buckler.mp3',
+    'Grimoire': 'assets/sounds/grimoire.mp3',
+    'Vampire Dagger': 'assets/sounds/vampiredagger.mp3',
+    'Bazooka': 'assets/sounds/bazooka.mp3',
+    'Uzi': 'assets/sounds/uzi.mp3',
+    'Thunder Hammer': 'assets/sounds/thunderhammer.mp3',
+    'Lazer': 'assets/sounds/lazer.mp3',
+    'Vine Spell': 'assets/sounds/vinespell.mp3',
+    'Death Spell': 'assets/sounds/deathspell.mp3',
+    'Heavy Hammer': 'assets/sounds/heavyhammer.mp3',
+    'Echo Bow': 'assets/sounds/echobow.mp3',
+    'Aegis': 'assets/sounds/aegishsield.mp3'
+  };
+
   static init(enabled = true, volume = 0.6) {
     this.enabled = !!enabled;
     this.volume = typeof volume === 'number' ? volume : 0.6;
@@ -26,7 +45,7 @@ class SoundManager {
     if (!this.audioCtx) this.init(this.enabled, this.volume);
     try {
       switch (key) {
-        case 'attack': this._playFile('assets/sounds/attack.mp3', opts); break;
+        case 'attack': this.playWeaponAttack(opts.weaponName, opts); break;
         case 'crit': this._playSequence([900, 1200], [0.06, 0.09], 'sawtooth', 0.14); break;
         case 'hit': this._playTone(220, 0.12, 'square', 0.16); break;
         case 'kill': this._playSequence([800, 1000, 1200], [0.06,0.06,0.08], 'sine', 0.16); break;
@@ -40,6 +59,20 @@ class SoundManager {
         default: this._playTone(600, 0.05, 'sine', 0.08); break;
       }
     } catch (e) { console.warn('Sound play failed', e); }
+  }
+
+  static playWeaponAttack(weaponName, opts = {}) {
+    const path = this.weaponSoundMap[weaponName] || 'assets/sounds/attack.mp3';
+    const repeats = Math.max(1, Math.floor(Number(opts.repeats || 1)));
+    const gapMs = Math.max(0, Math.floor(Number(opts.gapMs || 42)));
+
+    for (let i = 0; i < repeats; i++) {
+      if (i === 0) {
+        this._playFile(path, opts);
+      } else {
+        setTimeout(() => this._playFile(path, opts), i * gapMs);
+      }
+    }
   }
 
   static _playTone(freq, duration = 0.1, type = 'sine', gain = 0.1) {
