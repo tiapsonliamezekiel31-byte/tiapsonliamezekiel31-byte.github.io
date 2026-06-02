@@ -1098,10 +1098,10 @@ class PopupsManager {
       <div class="pause-cheat-box">
         <label for="cheatCommandInput">CHEAT COMMAND</label>
         <div class="pause-cheat-row">
-          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="weapon Bazooka | gold 999 | ap 999 | help" />
+          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | boss 5 a | gold 999 | help" />
           <button class="btn-pause-action" id="runCheatBtn">RUN</button>
         </div>
-        <div class="pause-cheat-help">Examples: <span>weapon Uzi</span> · <span>all weapons</span> · <span>gold 999</span> · <span>hp 999</span> · <span>heal full</span> · <span>enemy hp half</span></div>
+        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>boss 5 a</span> · <span>weapon Uzi</span> · <span>gold 999</span></div>
       </div>
     `;
     
@@ -1297,6 +1297,28 @@ class PopupsManager {
       if (!state.playerState.killTagsByWeapon) state.playerState.killTagsByWeapon = {};
     };
 
+    const clampStage = (value) => Math.max(1, Math.min(7, Math.floor(Number(value) || 1)));
+    const clampLevel = (value) => Math.max(1, Math.min(5, Math.floor(Number(value) || 1)));
+    const normalizeVariant = (value) => {
+      const variant = String(value || '').trim().toUpperCase();
+      return variant === 'B' ? 'B' : 'A';
+    };
+    const jumpToStage = (targetStage, targetLevel = 1, targetVariant = null) => {
+      if (typeof StageManager === 'undefined' || typeof StageManager.generateLevel !== 'function') {
+        return { ok: false, message: 'Stage helper unavailable' };
+      }
+
+      state.stageState.stage = clampStage(targetStage);
+      state.stageState.level = clampLevel(targetLevel);
+      if (targetVariant) {
+        state.stageState.stageVariation = normalizeVariant(targetVariant);
+      }
+
+      StageManager.generateLevel(state.stageState.level);
+      try { UIManager.refreshGameUI?.(); } catch (e) {}
+      return { ok: true, message: `Stage ${state.stageState.stage}-${state.stageState.stageVariation} L${state.stageState.level}` };
+    };
+
     const setResource = (key, amount) => {
       const value = Math.max(0, Math.floor(Number(amount) || 0));
       if (key === 'gold' && typeof state.setGold === 'function') state.setGold(value);
@@ -1311,7 +1333,33 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N' };
+      }
+
+      if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
+        const tokens = command.split(/\s+/).filter(Boolean);
+        const keyword = (tokens.shift() || '').toLowerCase();
+        const numericTokens = [];
+        let variantToken = null;
+
+        tokens.forEach((token) => {
+          if (/^[ab]$/i.test(token)) {
+            variantToken = token;
+          } else if (/^\d+$/.test(token)) {
+            numericTokens.push(Number(token));
+          }
+        });
+
+        if (keyword === 'level') {
+          const targetLevel = numericTokens[0];
+          if (!Number.isFinite(targetLevel)) return { ok: false, message: 'Usage: level 3' };
+          return jumpToStage(state.stageState.stage || 1, targetLevel, variantToken);
+        }
+
+        const targetStage = numericTokens[0];
+        if (!Number.isFinite(targetStage)) return { ok: false, message: 'Usage: stage 4 b 2' };
+        const targetLevel = keyword === 'boss' ? (numericTokens[1] || 5) : (numericTokens[1] || 1);
+        return jumpToStage(targetStage, targetLevel, variantToken);
       }
 
       if (lower === 'all weapons' || lower === 'give all weapons') {

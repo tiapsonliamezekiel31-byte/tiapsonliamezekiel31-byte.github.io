@@ -86,7 +86,17 @@
               window.location.reload();
             };
             navigator.serviceWorker.addEventListener('controllerchange', reloadOnControllerChange);
-            registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            try {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            } catch (err) {
+              console.warn('postMessage to waiting worker failed', err);
+            }
+            // If the worker doesn't activate within a short time, fall back to a force refresh
+            setTimeout(() => {
+              if (navigator.serviceWorker.controller) return; // already changed
+              console.log('Update handoff timeout, forcing refresh');
+              window.forceRefreshNemesisApp();
+            }, 2500);
             hideUpdateBanner();
             return;
           }
@@ -107,6 +117,25 @@
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         hideUpdateBanner();
       });
+    }
+
+    // Give users a quick fallback: clicking the banner background forces refresh,
+    // and provide a small dismiss button in case they want to continue without updating.
+    if (updateBanner) {
+      updateBanner.addEventListener('click', (e) => {
+        if (e.target === updateBanner) {
+          // Clicked the banner background — force refresh
+          try { window.forceRefreshNemesisApp(); } catch (err) { location.reload(); }
+        }
+      });
+
+      const dismissBtn = document.createElement('button');
+      dismissBtn.className = 'btn-pause-action diamond-rewards-btn';
+      dismissBtn.style.marginLeft = '8px';
+      dismissBtn.textContent = 'DISMISS';
+      dismissBtn.addEventListener('click', (ev) => { ev.stopPropagation(); hideUpdateBanner(); });
+      const actions = updateBanner.querySelector('.update-banner-actions');
+      if (actions) actions.appendChild(dismissBtn);
     }
 
     // Initialize on page load
@@ -205,6 +234,50 @@
         });
       });
     }
+  </script>
+  <script>
+    // Runtime UI debug helpers: log clicks and surface JS errors/promises
+    (function(){
+      window.addEventListener('error', (e) => {
+        console.error('Runtime error caught by debug helper:', e.message, e.filename, e.lineno, e.colno, e.error);
+        const marker = document.getElementById('runtimeErrorMarker') || document.createElement('div');
+        marker.id = 'runtimeErrorMarker';
+        marker.style.position = 'fixed';
+        marker.style.right = '12px';
+        marker.style.bottom = '12px';
+        marker.style.padding = '8px 10px';
+        marker.style.background = 'rgba(200,40,40,0.95)';
+        marker.style.color = 'white';
+        marker.style.zIndex = 6000;
+        marker.style.fontSize = '12px';
+        marker.style.fontFamily = 'sans-serif';
+        marker.textContent = 'JS Error: ' + (e.message || 'see console');
+        document.body.appendChild(marker);
+      });
+
+      window.addEventListener('unhandledrejection', (ev) => {
+        console.error('Unhandled promise rejection:', ev.reason);
+      });
+
+      document.addEventListener('click', (ev) => {
+        try {
+          console.log('DEBUG CLICK:', ev.target && (ev.target.id || ev.target.className || ev.target.tagName));
+        } catch (err) { /* ignore */ }
+      }, { capture: true });
+
+      // Ensure update banner buttons allow pointer events and log their clicks
+      const ub = document.getElementById('updateBanner');
+      if (ub) ub.style.pointerEvents = 'auto';
+      ['updateNowBtn','refreshNowBtn'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.setAttribute('type','button');
+        el.style.pointerEvents = 'auto';
+        el.addEventListener('click', (e) => {
+          console.log('DEBUG BUTTON CLICK:', id);
+        }, { capture: true });
+      });
+    })();
   </script>
 </body>
 </html>

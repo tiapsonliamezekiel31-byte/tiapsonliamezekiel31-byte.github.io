@@ -418,7 +418,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 55,
       damageMultiplier: 0.2,
       critChance: 0.08,
-      fireRate: 4,
+      fireRate: 1,
       price: 4,
       special: 'Hits ALL enemies'
     },
@@ -458,7 +458,7 @@ const DEFAULT_GAME_CONFIG = {
       baseApCost: 65,
       damageMultiplier: 2.8,
       critChance: 0.0,
-      fireRate: 4,
+      fireRate: 1,
       price: 6,
       special: 'Hits target + 2 adjacent enemies'
     },

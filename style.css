@@ -394,14 +394,41 @@ body::before {
   left: 0;
   width: 100%;
   height: calc(100% - var(--headbar-height) - 60px);
-  /* Clean linear gradient, no purple wash */
-  background: linear-gradient(180deg, #0a0805 0%, #0f0a07 55%, #0a0805 100%);
+  background: #0a0805;
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
   flex-direction: column;
   z-index: 1;
+  isolation: isolate;
+}
+
+#gameArea::before,
+#gameArea::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+#gameArea::before {
+  background-image:
+    var(--stage-bg-image, none),
+    radial-gradient(circle at 50% 42%, rgba(255, 215, 106, 0.05), rgba(10, 8, 5, 0.2) 42%, rgba(10, 8, 5, 0.92) 100%);
+  background-repeat: no-repeat, no-repeat;
+  background-size: cover, cover;
+  background-position: var(--stage-bg-position, center center), center center;
+  filter: saturate(0.96) brightness(0.76) contrast(1.05);
+  transform: scale(1.02);
+  z-index: -2;
+}
+
+#gameArea::after {
+  background:
+    linear-gradient(180deg, rgba(10, 8, 5, 0.25) 0%, rgba(10, 8, 5, 0.08) 26%, rgba(10, 8, 5, 0.18) 62%, rgba(10, 8, 5, 0.8) 100%),
+    radial-gradient(circle at center, transparent 0%, rgba(10, 8, 5, 0.16) 54%, rgba(10, 8, 5, 0.34) 100%);
+  z-index: -1;
 }
 
 .game-top-left {
@@ -1175,6 +1202,7 @@ body::before {
   color: #fff6d8;
   transform: translate(-50%, -50%);
   backdrop-filter: blur(1px);
+  touch-action: none;
 }
 
 .daily-note-card.dragging {

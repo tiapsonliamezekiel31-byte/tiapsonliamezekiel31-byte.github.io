@@ -18,6 +18,38 @@ class UIManager {
   static todoDragSuppressUntil = 0;
   static _dailyHistoryCache = {};
   static _updateDailiesTimer = null;
+  static _stageBackdropKey = '';
+
+  static STAGE_BACKDROPS = {
+    1: {
+      A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' },
+      B: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }
+    },
+    2: {
+      A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' },
+      B: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' }
+    },
+    3: {
+      A: { src: 'assets/backgrounds/glacier.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' },
+      B: { src: 'assets/backgrounds/ruins.jpg', mobilePosition: 'center 34%', desktopPosition: 'center 36%' }
+    },
+    4: {
+      A: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' },
+      B: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' }
+    },
+    5: {
+      A: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' },
+      B: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' }
+    },
+    6: {
+      A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' },
+      B: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' }
+    },
+    7: {
+      A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' },
+      B: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }
+    }
+  };
 
   static scheduleUpdateDailiesList(delay = 120) {
     if (UIManager._updateDailiesTimer) clearTimeout(UIManager._updateDailiesTimer);
@@ -275,6 +307,7 @@ class UIManager {
       <div class="combo-indicator" id="comboIndicator"></div>
     `;
     document.body.appendChild(gameArea);
+    this.updateStageBackdrop();
   }
   
   static createActionButtons() {
@@ -998,6 +1031,7 @@ class UIManager {
       if (this.resizeScheduled) return;
       this.resizeScheduled = true;
       requestAnimationFrame(() => {
+        this.updateStageBackdrop();
         this.renderEnemies();
         this.positionActionButtons();
         this.positionDailyCards();
@@ -2323,14 +2357,21 @@ class UIManager {
 
           const noteRect = noteEl.getBoundingClientRect();
           const boardRect = board.getBoundingClientRect();
+          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
           const dragState = {
             pointerId: event.pointerId,
-            offsetX: event.clientX - noteRect.left,
-            offsetY: event.clientY - noteRect.top,
+            boardRect,
+            noteWidth: noteRect.width,
+            noteHeight: noteRect.height,
+            offsetX: event.clientX - (boardRect.left + startLeftPx),
+            offsetY: event.clientY - (boardRect.top + startTopPx),
             moved: false,
             startX: event.clientX,
             startY: event.clientY,
-            noteId
+            noteId,
+            nextX: Number(noteData.x) || 0,
+            nextY: Number(noteData.y) || 0
           };
 
           noteEl.classList.add('dragging');
@@ -2345,16 +2386,16 @@ class UIManager {
             if (moveEvent.pointerId !== current.pointerId) return;
 
             const boardNow = board.getBoundingClientRect();
-            const nextLeftPx = Math.max(0, Math.min(boardNow.width - noteEl.offsetWidth, moveEvent.clientX - boardNow.left - current.offsetX));
-            const nextTopPx = Math.max(0, Math.min(boardNow.height - noteEl.offsetHeight, moveEvent.clientY - boardNow.top - current.offsetY));
+            const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
+            const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
             if (!current.moved && Math.hypot(moveEvent.clientX - current.startX, moveEvent.clientY - current.startY) > 4) {
               current.moved = true;
             }
 
-            noteEl.style.left = `${(nextLeftPx / Math.max(1, boardNow.width)) * 100}%`;
-            noteEl.style.top = `${(nextTopPx / Math.max(1, boardNow.height)) * 100}%`;
             current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
             current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+            noteEl.style.left = `${current.nextX}%`;
+            noteEl.style.top = `${current.nextY}%`;
             noteEl.dataset.dragState = JSON.stringify(current);
           };
 
@@ -2627,16 +2668,24 @@ class UIManager {
       if (!todoId) return;
 
       const cardRect = card.getBoundingClientRect();
+      const boardRect = board.getBoundingClientRect();
+      const startLeftPx = (parseFloat(card.style.left) || 0) * boardRect.width / 100;
+      const startTopPx = (parseFloat(card.style.top) || 0) * boardRect.height / 100;
       this.todoDragState = {
         todoId,
         card,
         board,
         pointerId: event.pointerId,
-        offsetX: event.clientX - cardRect.left,
-        offsetY: event.clientY - cardRect.top,
+        boardRect,
+        cardWidth: cardRect.width,
+        cardHeight: cardRect.height,
+        offsetX: event.clientX - (boardRect.left + startLeftPx),
+        offsetY: event.clientY - (boardRect.top + startTopPx),
         moved: false,
         startX: event.clientX,
-        startY: event.clientY
+        startY: event.clientY,
+        nextX: parseFloat(card.style.left) || 0,
+        nextY: parseFloat(card.style.top) || 0
       };
 
       card.classList.add('dragging');
@@ -2649,9 +2698,8 @@ class UIManager {
       if (!dragState || event.pointerId !== dragState.pointerId) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
-      const cardRect = dragState.card.getBoundingClientRect();
-      const maxLeft = Math.max(0, boardRect.width - cardRect.width);
-      const maxTop = Math.max(0, boardRect.height - cardRect.height);
+      const maxLeft = Math.max(0, boardRect.width - dragState.cardWidth);
+      const maxTop = Math.max(0, boardRect.height - dragState.cardHeight);
       const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
       const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
 
@@ -2660,8 +2708,10 @@ class UIManager {
         if (distance > 4) dragState.moved = true;
       }
 
-      dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
-      dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+      dragState.nextX = (nextLeftPx / Math.max(1, boardRect.width)) * 100;
+      dragState.nextY = (nextTopPx / Math.max(1, boardRect.height)) * 100;
+      dragState.card.style.left = `${dragState.nextX}%`;
+      dragState.card.style.top = `${dragState.nextY}%`;
     };
 
     const endDrag = (event) => {
@@ -3021,6 +3071,7 @@ class UIManager {
   }
 
   static refreshGameUI() {
+    this.updateStageBackdrop();
     this.updateWeaponIcons();
     this.updateDateDisplay();
     this.renderEnemies();
@@ -3054,6 +3105,39 @@ class UIManager {
     this.updateTodosList();
     this.updateDeathDefianceBadge();
     this.updateTaskVisibilityToggleLabels();
+  }
+
+  static getStageBackdropConfig() {
+    const state = getGameState();
+    const stage = Math.max(1, Number(state?.stageState?.stage) || 1);
+    const variation = String(state?.stageState?.stageVariation || 'A').toUpperCase();
+    const viewportMode = window.innerWidth <= 900 ? 'mobile' : 'desktop';
+    const stageConfig = this.STAGE_BACKDROPS[stage] || this.STAGE_BACKDROPS[1];
+    const fallbackConfig = stageConfig.A || stageConfig.B || this.STAGE_BACKDROPS[1].A;
+    const rawConfig = stageConfig[variation] || fallbackConfig;
+    return {
+      key: `${stage}:${variation}:${viewportMode}`,
+      src: rawConfig.src,
+      position: viewportMode === 'mobile'
+        ? (rawConfig.mobilePosition || rawConfig.desktopPosition || 'center center')
+        : (rawConfig.desktopPosition || rawConfig.mobilePosition || 'center center')
+    };
+  }
+
+  static updateStageBackdrop() {
+    const gameArea = document.getElementById('gameArea');
+    if (!gameArea) return;
+
+    const backdrop = this.getStageBackdropConfig();
+    if (!backdrop.src) return;
+
+    if (this._stageBackdropKey === backdrop.key && gameArea.style.getPropertyValue('--stage-bg-image')) {
+      return;
+    }
+
+    this._stageBackdropKey = backdrop.key;
+    gameArea.style.setProperty('--stage-bg-image', `url("${backdrop.src}")`);
+    gameArea.style.setProperty('--stage-bg-position', backdrop.position);
   }
 
   static getRunCompletionEntries() {
@@ -3459,6 +3543,7 @@ window.addEventListener('resize', () => {
   if (UIManager.resizeScheduled) return;
   UIManager.resizeScheduled = true;
   requestAnimationFrame(() => {
+    UIManager.updateStageBackdrop();
     UIManager.renderEnemies();
     if (typeof UIManager.positionActionButtons === 'function') UIManager.positionActionButtons();
     UIManager.resizeScheduled = false;
