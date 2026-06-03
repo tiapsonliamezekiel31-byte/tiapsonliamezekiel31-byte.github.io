@@ -332,7 +332,18 @@ class TaskManager {
     state.addAp(apReward);
     state.addGold(goldReward);
     state.addDiamonds(diamondReward);
-    state.addAttributePoints(todo.attribute, attrReward);
+    
+    if (todo.clusterAttributes) {
+      for (const attr in todo.clusterAttributes) {
+        const ratio = todo.clusterAttributes[attr] || 0;
+        const proportionalAttrReward = this.roundValue(attrReward * ratio, 2);
+        state.addAttributePoints(attr, proportionalAttrReward);
+      }
+    } else {
+      state.addAttributePoints(todo.attribute, attrReward);
+    }
+
+    // Keep clusterId, clusterIndex, and clusterAttributes to maintain the cluster structure and placeholder rendering
     
     state.systemState.runStats.tasksCompleted++;
     

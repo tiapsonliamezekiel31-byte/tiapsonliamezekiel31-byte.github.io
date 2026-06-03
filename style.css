@@ -4212,9 +4212,268 @@ button:hover,
   height: 100%;
   object-fit: cover;
   opacity: 0.9;
+.satchel-item-count {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-white);
 }
 
+/* Compact vertical buff panel on the right */
+.buff-panel {
+  position: fixed;
+  right: 12px;
+  top: 236px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10020;
+  pointer-events: auto;
+}
+.buff-panel .buff-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(20,18,38,0.98), rgba(8,10,20,0.98));
+  border: 2px solid rgba(255,255,255,0.04);
+  font-size: 20px;
+  color: var(--text-white);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.buff-panel .buff-icon.buff-gain {
+  transform: scale(1.18);
+  box-shadow: 0 10px 28px rgba(255, 215, 106, 0.12);
+}
+
+@media (max-width: 900px) {
+  .buff-panel { display: none; }
+}
+
+/* ============================================================
+   ENEMY INFO POPUP
+   ============================================================ */
 .enemy-info-popup {
-  margin-top: 50px;
+  width: min(320px, 90vw);
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(16, 18, 36, 0.98), rgba(8, 10, 20, 0.98));
+  border: 1px solid rgba(161, 92, 255, 0.4);
+  border-radius: 12px;
+}
+
+.enemy-info-popup h2 {
+  font-size: 14px;
+  color: var(--accent-gold);
+  margin: 0 0 16px 0;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.enemy-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.enemy-info-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0,0,0,0.3);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.enemy-info-popup .stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.enemy-info-popup .stat-label {
+  color: #aaa;
+}
+
+.enemy-info-popup .stat-value {
+  color: #fff;
+  font-weight: bold;
+}
+
+.enemy-info-popup .hp-row {
+  margin-bottom: 4px;
+}
+
+.enemy-info-popup .stat-bar-container {
+  flex: 1;
+  margin-left: 12px;
+  height: 14px;
+  background: #241a34;
+  border-radius: 4px;
   position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.6);
+}
+
+.enemy-info-popup .stat-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.enemy-info-popup .stat-bar-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: #fff;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+
+.archetype-desc {
+  font-size: 9px;
+  color: #888;
+  font-style: italic;
+  margin-top: -4px;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.enemy-info-mutators-section h3 {
+  font-size: 12px;
+  color: #fff;
+  margin: 0 0 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 4px;
+}
+
+.enemy-info-mutator {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.03);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.enemy-info-mutator .mutator-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.enemy-info-mutator .mutator-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.enemy-info-mutator .mutator-details strong {
+  font-size: 11px;
+  color: #ffd700;
+}
+
+.enemy-info-mutator .mutator-details span {
+  font-size: 9px;
+  color: #ccc;
+  line-height: 1.3;
+}
+
+/* Cluster To-Do Card Styles */
+.task-card-todo[data-cluster-id] {
+  border: 1.5px solid #6a0dad !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 6px rgba(106, 13, 173, 0.5) !important;
+}
+
+.task-card-todo[data-cluster-id]:hover {
+  border-color: #a04ef6 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 12px rgba(160, 78, 246, 0.7) !important;
+}
+
+/* Completed Cluster Placeholder Card */
+.task-card-todo.completed-cluster-placeholder {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  pointer-events: auto !important;
+  cursor: grab !important;
+}
+
+.completed-cluster-chain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0.45 !important;
+  font-size: 14px !important;
+  pointer-events: none !important;
+}
+
+.completed-cluster-chain::before {
+  content: "⛓️" !important;
+  transform: rotate(90deg) !important;
+  color: #6a0dad !important;
+  display: inline-block !important;
+}
+
+.task-card-todo.completed-cluster-placeholder .placeholder-actions {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Floating Difficulty Shape */
+.todo-difficulty-shape {
+  position: absolute;
+  left: -14px; /* Sticks out further from left border, overlapping by 2px */
+  top: 12px;
+  width: 12px; /* Larger size for high-res visibility */
+  height: 12px;
+  z-index: 100; /* Ensure on top of all borders/glows */
+  display: block !important;
+  box-sizing: border-box;
+  filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.8));
+}
+
+.todo-difficulty-shape.shape-easy {
+  border-radius: 50%;
+  background-color: #4488ff;
+}
+
+.todo-difficulty-shape.shape-medium {
+  clip-path: polygon(0% 0%, 100% 50%, 0% 100%); /* Right-pointing triangle matching mockup */
+  background-color: #ffcc00;
+}
+
+.todo-difficulty-shape.shape-hard {
+  border-radius: 2px;
+  background-color: #ff4444;
+}
+
+.todo-difficulty-shape.shape-ultra {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  background-color: #9933ff;
+}
+
+/* Hover-only details for clean card layouts */
+.task-card-todo .hover-only {
+  display: none !important;
+}
+
+.task-card-todo:hover .hover-only,
+.task-card-todo:focus-within .hover-only {
+  display: flex !important;
 }

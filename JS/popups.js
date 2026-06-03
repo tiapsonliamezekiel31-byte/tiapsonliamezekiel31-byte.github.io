@@ -2026,4 +2026,241 @@ class PopupsManager {
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
   }
+
+  static showBulkAddTodo() {
+    const state = getGameState();
+    const attributes = state.config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
+    
+    this.closeAllPopups();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup edit-todo-popup bulk-todo-popup';
+
+    const attrsOptions = attributes.map(a => `<option value="${a}">${a}</option>`).join('');
+    const diffOptions = `
+      <option value="Easy">Easy</option>
+      <option value="Medium">Medium</option>
+      <option value="Hard">Hard</option>
+      <option value="Ultra">Ultra</option>
+    `;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const defaultDeadline = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : null;
+    const deadlineVal = defaultDeadline ? new Date(defaultDeadline).toISOString().slice(0,10) : tomorrow.toISOString().slice(0,10);
+
+    popup.innerHTML = `
+      <h2>BULK ADD TO-DOS</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body">
+        <p class="bulk-todo-help" style="font-size: 8px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
+          Enter multiple tasks below (one per line). They will all be created instantly with the selected configuration.
+        </p>
+        
+        <label for="bulkTodoNames">Tasks (One per line)</label>
+        <textarea id="bulkTodoNames" class="bulk-todo-textarea" placeholder="Read 10 pages&#10;Workout for 30 mins&#10;Reply to emails" spellcheck="false" autofocus></textarea>
+        
+        <div class="bulk-todo-settings" style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+          <div class="bulk-setting-col" style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 9px; color: #f1de97;">Attribute</label>
+            <select id="bulkTodoAttr">${attrsOptions}</select>
+          </div>
+          
+          <div class="bulk-setting-col" style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 9px; color: #f1de97;">Difficulty</label>
+            <select id="bulkTodoDiff">${diffOptions}</select>
+          </div>
+          
+          <div class="bulk-setting-col" style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-size: 9px; color: #f1de97;">Deadline</label>
+            <input id="bulkTodoDeadline" type="date" value="${deadlineVal}" style="width: 100%; box-sizing: border-box;" />
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; margin-bottom: 8px;">
+          <input type="checkbox" id="bulkTodoClusterCheckbox" style="accent-color: var(--accent-gold); cursor: pointer;" />
+          <label for="bulkTodoClusterCheckbox" style="font-size: 9px; color: #fff0b8; cursor: pointer; user-select: none;">⛓️ Create as Cluster (linked cards, split attributes)</label>
+        </div>
+
+        <div id="clusterAttributesPanel" style="display: none; border: 1px dashed rgba(255, 215, 106, 0.2); border-radius: 4px; padding: 10px; margin-bottom: 12px; background: rgba(0, 0, 0, 0.15);">
+          <h3 style="font-size: 10px; color: #f1de97; margin: 0 0 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 4px;">Cluster Attribute Weights</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;" id="clusterAttributesGrid">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+      
+      <div class="edit-todo-actions" style="margin-top: 12px;">
+        <button class="btn-large btn-success" id="btnBulkAddSave">ADD ALL</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    // Populate attributes grid
+    const attrGrid = popup.querySelector('#clusterAttributesGrid');
+    if (attrGrid) {
+      attrGrid.innerHTML = attributes.map(attr => {
+        const color = state.config.attributeColors?.[attr] || '#fff';
+        return `
+          <div class="cluster-attr-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+            <label style="display: flex; align-items: center; gap: 4px; font-size: 9px; color: ${color}; cursor: pointer; user-select: none; min-width: 0; flex: 1;">
+              <input type="checkbox" class="cluster-attr-check" data-attr="${attr}" style="accent-color: ${color}; cursor: pointer;" />
+              <span>${attr}</span>
+            </label>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input type="number" class="cluster-attr-weight" data-attr="${attr}" min="1" value="1" disabled style="width: 40px; padding: 2px 4px; font-size: 8px; text-align: center; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-family: monospace;" />
+              <span class="cluster-attr-pct" data-attr="${attr}" style="font-size: 7px; color: var(--text-muted); min-width: 32px; font-family: monospace;">(0%)</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    const clusterCheck = popup.querySelector('#bulkTodoClusterCheckbox');
+    const panel = popup.querySelector('#clusterAttributesPanel');
+    const singleAttrCol = popup.querySelector('#bulkTodoAttr').closest('.bulk-setting-col');
+    
+    const updatePercentages = () => {
+      let totalWeight = 0;
+      const checkedAttrs = [];
+      
+      popup.querySelectorAll('.cluster-attr-row').forEach(row => {
+        const check = row.querySelector('.cluster-attr-check');
+        const weightInput = row.querySelector('.cluster-attr-weight');
+        const pctSpan = row.querySelector('.cluster-attr-pct');
+        const attr = check.dataset.attr;
+        
+        if (check.checked) {
+          weightInput.disabled = false;
+          const w = Math.max(1, parseInt(weightInput.value) || 1);
+          totalWeight += w;
+          checkedAttrs.push({ attr, weightInput, pctSpan, weight: w });
+        } else {
+          weightInput.disabled = true;
+          pctSpan.textContent = '(0%)';
+        }
+      });
+      
+      checkedAttrs.forEach(item => {
+        const pct = totalWeight > 0 ? Math.round((item.weight / totalWeight) * 100) : 0;
+        item.pctSpan.textContent = `(${pct}%)`;
+      });
+    };
+
+    clusterCheck.addEventListener('change', () => {
+      if (clusterCheck.checked) {
+        panel.style.display = 'block';
+        singleAttrCol.style.opacity = '0.35';
+        popup.querySelector('#bulkTodoAttr').disabled = true;
+        updatePercentages();
+      } else {
+        panel.style.display = 'none';
+        singleAttrCol.style.opacity = '1';
+        popup.querySelector('#bulkTodoAttr').disabled = false;
+      }
+    });
+
+    popup.querySelectorAll('.cluster-attr-check').forEach(check => {
+      check.addEventListener('change', updatePercentages);
+    });
+    popup.querySelectorAll('.cluster-attr-weight').forEach(input => {
+      input.addEventListener('input', updatePercentages);
+      input.addEventListener('change', updatePercentages);
+    });
+
+    const textarea = popup.querySelector('#bulkTodoNames');
+    // Ensure autofocus works
+    setTimeout(() => textarea.focus(), 80);
+
+    popup.querySelector('#btnBulkAddSave').addEventListener('click', () => {
+      const lines = (textarea.value || '').split('\n');
+      const validNames = lines.map(line => line.trim()).filter(line => line.length > 0);
+      
+      if (validNames.length === 0) {
+        if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Enter at least one task!', { color: '#ff6666' });
+        }
+        return;
+      }
+
+      const isCluster = clusterCheck.checked;
+      let clusterId = null;
+      let clusterAttributes = null;
+      let fallbackAttribute = popup.querySelector('#bulkTodoAttr').value;
+
+      if (isCluster) {
+        let totalWeight = 0;
+        const weights = {};
+        
+        popup.querySelectorAll('.cluster-attr-row').forEach(row => {
+          const check = row.querySelector('.cluster-attr-check');
+          const weightInput = row.querySelector('.cluster-attr-weight');
+          const attr = check.dataset.attr;
+          
+          if (check.checked) {
+            const w = Math.max(1, parseInt(weightInput.value) || 1);
+            weights[attr] = w;
+            totalWeight += w;
+          }
+        });
+
+        const checkedKeys = Object.keys(weights);
+        if (checkedKeys.length === 0) {
+          if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Check at least 1 attribute!', { color: '#ff6666' });
+          }
+          return;
+        }
+
+        clusterId = TaskManager.generateTaskId();
+        clusterAttributes = {};
+        checkedKeys.forEach(attr => {
+          clusterAttributes[attr] = weights[attr] / totalWeight;
+        });
+
+        fallbackAttribute = checkedKeys[0];
+      }
+      
+      const difficulty = popup.querySelector('#bulkTodoDiff').value;
+      const deadlineInput = popup.querySelector('#bulkTodoDeadline').value;
+      const deadline = deadlineInput ? new Date(deadlineInput).getTime() : null;
+      
+      let addedCount = 0;
+      validNames.forEach((name, i) => {
+        const created = TaskManager.addTodo(name, difficulty, fallbackAttribute, deadline, []);
+        if (created) {
+          if (isCluster) {
+            created.clusterId = clusterId;
+            created.clusterIndex = i;
+            created.clusterAttributes = clusterAttributes;
+            created.layout = {
+              x: 20,
+              y: 20
+            };
+          }
+          addedCount++;
+        }
+      });
+      
+      if (addedCount > 0) {
+        this.closeAllPopups();
+        if (typeof UIManager !== 'undefined') {
+          UIManager.updateTodosList();
+          UIManager.positionTodoCards();
+          UIManager.renderEnemies();
+        }
+        state.save();
+        
+        if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+          const msg = isCluster ? `Created cluster with ${addedCount} To-Dos!` : `Added ${addedCount} To-Dos!`;
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: '#44ff44', duration: 1800 });
+        }
+      }
+    });
+
+    PopupAnimation.scale(popup);
+  }
 }

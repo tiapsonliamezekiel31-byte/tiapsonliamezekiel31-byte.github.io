@@ -598,7 +598,7 @@ class UIManager {
         <div>
           <button id="addTodoNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
           <button id="todosShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
-          <button id="todosAddBtn" class="btn-add">＋</button>
+          <button id="todosBulkAddBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Bulk</button>
           <button class="tab-close">✕</button>
         </div>
       </div>
@@ -1208,16 +1208,11 @@ class UIManager {
       }
     });
 
-    const todosAdd = document.getElementById('todosAddBtn');
-    if (todosAdd) todosAdd.addEventListener('click', () => {
-      const deadline = UIManager.quickDayDeadline || null;
-      const created = TaskManager.addTodo('', 'Easy', getGameState().config.attributes[0], deadline, []);
-      if (created) {
-        this.updateTodosList();
-        getGameState().save();
-        // Open edit popup so user can set name/deadline/attribute immediately
-        try { PopupsManager.showEditTodo(created.id); } catch (e) { /* ignore */ }
-      }
+
+
+    const todosBulkAdd = document.getElementById('todosBulkAddBtn');
+    if (todosBulkAdd) todosBulkAdd.addEventListener('click', () => {
+      try { PopupsManager.showBulkAddTodo(); } catch (e) { console.warn('Failed to show bulk add popup', e); }
     });
 
     // Quick Day feature
@@ -1378,8 +1373,9 @@ class UIManager {
 
         const deleteTodo = event.target.closest('.btn-todo-delete');
         if (deleteTodo && taskType === 'todo') {
-          const todoName = card.querySelector('.todo-title')?.textContent?.trim() || 'this to-do';
-          if (!confirm(`Delete "${todoName || 'this to-do'}"?`)) return;
+          const todoObj = TaskManager.getTaskById(taskId);
+          const todoName = todoObj?.name || card.querySelector('.todo-title')?.textContent?.trim() || 'this to-do';
+          if (!confirm(`Delete "${todoName}"?`)) return;
 
           if (TaskManager.removeTodo(taskId)) {
             try { state.save(); } catch (e) {}
@@ -3094,23 +3090,29 @@ class UIManager {
     return { width: size, height: size };
   }
 
-  static clampTodoLayout(layout, metrics, tileSize) {
-    const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
-    const maxY = Math.max(0, 100 - ((tileSize.height / metrics.height) * 100));
+  static clampTodoLayout(layout, metrics, tileSize, hasHeader = false) {
+    const minXPx = 20;
+    const minYPx = hasHeader ? 28 : 0;
+    const minX = (minXPx / metrics.width) * 100;
+    const minY = (minYPx / metrics.height) * 100;
+    const maxX = Math.max(minX, 100 - ((tileSize.width / metrics.width) * 100));
+    const maxY = Math.max(minY, 100 - ((tileSize.height / metrics.height) * 100));
     return {
-      x: Math.max(0, Math.min(maxX, Number(layout?.x) || 0)),
-      y: Math.max(0, Math.min(maxY, Number(layout?.y) || 0))
+      x: Math.max(minX, Math.min(maxX, Number(layout?.x) || 0)),
+      y: Math.max(minY, Math.min(maxY, Number(layout?.y) || 0))
     };
   }
 
-  static getDefaultTodoLayout(index, metrics, tileSize) {
-    const padding = 12;
+  static getDefaultTodoLayout(index, metrics, tileSize, hasHeader = false) {
+    const padding = 20;
     const gap = 12;
     const cols = Math.max(1, Math.floor((metrics.width - (padding * 2) + gap) / (tileSize.width + gap)));
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const xPx = Math.min(Math.max(0, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
-    const yPx = Math.min(Math.max(0, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
+    const minXPx = 20;
+    const minYPx = hasHeader ? 28 : 20;
+    const xPx = Math.min(Math.max(minXPx, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
+    const yPx = Math.min(Math.max(minYPx, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
     return {
       x: (xPx / metrics.width) * 100,
       y: (yPx / metrics.height) * 100
@@ -3125,23 +3127,51 @@ class UIManager {
     const tileSize = this.getTodoCardSize();
     let changed = false;
 
-    todos.forEach((todo, index) => {
+    // Group and sort cluster items to position them sequentially
+    const clusterPositions = {}; // maps clusterId -> { leftPx, topPx, heightPx }
+
+    // Sort todos so cluster items are grouped together and processed in sequential order of their index
+    const sortedTodos = [...todos].sort((a, b) => {
+      if (a.clusterId && b.clusterId) {
+        if (a.clusterId === b.clusterId) {
+          return (a.clusterIndex || 0) - (b.clusterIndex || 0);
+        }
+        return a.clusterId.localeCompare(b.clusterId);
+      }
+      if (a.clusterId) return -1;
+      if (b.clusterId) return 1;
+      return 0;
+    });
+
+    sortedTodos.forEach((todo, index) => {
       const card = metrics.board.querySelector(`.task-card-todo[data-id="${todo.id}"]`);
       if (!card) return;
 
-      // Allow card height to be dynamic (subtasks may increase height).
       const actualTileHeight = card.offsetHeight || tileSize.height;
 
+      // Check if this card belongs to an active cluster and has a predecessor positioned
+      if (todo.clusterId && clusterPositions[todo.clusterId]) {
+        const prev = clusterPositions[todo.clusterId];
+        const leftPx = prev.leftPx;
+        const topPx = prev.topPx + prev.heightPx;
+
+        card.style.width = `${tileSize.width}px`;
+        card.style.left = `${leftPx}px`;
+        card.style.top = `${topPx}px`;
+
+        // Update the track position for the next card in the cluster
+        clusterPositions[todo.clusterId] = {
+          leftPx,
+          topPx,
+          heightPx: actualTileHeight
+        };
+        return;
+      }
+
+      const hasHeader = !!todo.clusterId || (!!todo.deadline && !todo.completed);
       const layout = todo.layout
-        ? (() => {
-            const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
-            const maxY = Math.max(0, 100 - ((actualTileHeight / metrics.height) * 100));
-            return {
-              x: Math.max(0, Math.min(maxX, Number(todo.layout?.x) || 0)),
-              y: Math.max(0, Math.min(maxY, Number(todo.layout?.y) || 0))
-            };
-          })()
-        : this.getDefaultTodoLayout(index, metrics, tileSize);
+        ? this.clampTodoLayout(todo.layout, { width: metrics.width, height: metrics.height }, { width: tileSize.width, height: actualTileHeight }, hasHeader)
+        : this.getDefaultTodoLayout(index, metrics, { width: tileSize.width, height: actualTileHeight }, hasHeader);
 
       if (!todo.layout) {
         TaskManager.updateTodoLayout(todo.id, layout);
@@ -3149,9 +3179,19 @@ class UIManager {
       }
 
       card.style.width = `${tileSize.width}px`;
-      // Do not force a fixed height; let subtasks expand the card vertically.
       card.style.left = `${layout.x}%`;
       card.style.top = `${layout.y}%`;
+
+      // If this is the start of an active cluster, record its position
+      if (todo.clusterId) {
+        const leftPx = (layout.x / 100) * metrics.width;
+        const topPx = (layout.y / 100) * metrics.height;
+        clusterPositions[todo.clusterId] = {
+          leftPx,
+          topPx,
+          heightPx: actualTileHeight
+        };
+      }
     });
 
     if (changed) {
@@ -3191,10 +3231,65 @@ class UIManager {
       const todoId = card.dataset.id;
       if (!todoId) return;
 
+      const todo = TaskManager.getTaskById(todoId);
+      const isCluster = todo && todo.clusterId;
+      let clusterCards = [];
+      let firstCardTodo = null;
+      let firstCardElement = null;
+      
+      if (isCluster) {
+        clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
+          .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
+        
+        if (clusterCards.length > 0) {
+          firstCardElement = clusterCards[0];
+          firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
+        }
+      }
+
       const cardRect = card.getBoundingClientRect();
       const boardRect = board.getBoundingClientRect();
-      const startLeftPx = (parseFloat(card.style.left) || 0) * boardRect.width / 100;
-      const startTopPx = (parseFloat(card.style.top) || 0) * boardRect.height / 100;
+      
+      const styleLeft = card.style.left || '0px';
+      const styleTop = card.style.top || '0px';
+      let startLeftPx = 0;
+      let startTopPx = 0;
+      
+      if (styleLeft.includes('px')) {
+        startLeftPx = parseFloat(styleLeft) || 0;
+      } else {
+        startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
+      }
+      
+      if (styleTop.includes('px')) {
+        startTopPx = parseFloat(styleTop) || 0;
+      } else {
+        startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
+      }
+
+      const startLeftPercent = styleLeft.includes('px')
+        ? (startLeftPx / boardRect.width) * 100
+        : parseFloat(styleLeft) || 0;
+      const startTopPercent = styleTop.includes('px')
+        ? (startTopPx / boardRect.height) * 100
+        : parseFloat(styleTop) || 0;
+
+      let firstStartLeftPercent = 0;
+      let firstStartTopPercent = 0;
+      if (firstCardElement) {
+        const fStyleLeft = firstCardElement.style.left || '0px';
+        const fStyleTop = firstCardElement.style.top || '0px';
+        
+        firstStartLeftPercent = fStyleLeft.includes('px')
+          ? (parseFloat(fStyleLeft) / boardRect.width) * 100
+          : parseFloat(fStyleLeft) || 0;
+        firstStartTopPercent = fStyleTop.includes('px')
+          ? (parseFloat(fStyleTop) / boardRect.height) * 100
+          : parseFloat(fStyleTop) || 0;
+      }
+
+      const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
+
       this.todoDragState = {
         todoId,
         card,
@@ -3208,11 +3303,24 @@ class UIManager {
         moved: false,
         startX: event.clientX,
         startY: event.clientY,
-        nextX: parseFloat(card.style.left) || 0,
-        nextY: parseFloat(card.style.top) || 0
+        startLeftPercent,
+        startTopPercent,
+        nextX: startLeftPercent,
+        nextY: startTopPercent,
+        isCluster,
+        hasHeader,
+        firstCardElement,
+        firstStartLeftPercent,
+        firstStartTopPercent,
+        clusterCards
       };
 
       card.classList.add('dragging');
+      if (isCluster) {
+        clusterCards.forEach(c => {
+          c.classList.add('dragging');
+        });
+      }
       try { card.setPointerCapture(event.pointerId); } catch (error) {}
       event.preventDefault();
     });
@@ -3222,10 +3330,13 @@ class UIManager {
       if (!dragState || event.pointerId !== dragState.pointerId) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
-      const maxLeft = Math.max(0, boardRect.width - dragState.cardWidth);
-      const maxTop = Math.max(0, boardRect.height - dragState.cardHeight);
-      const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
-      const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
+      const minXPx = 20;
+      const minYPx = dragState.hasHeader ? 28 : 0;
+      const maxLeft = Math.max(minXPx, boardRect.width - dragState.cardWidth);
+      const maxTop = Math.max(minYPx, boardRect.height - dragState.cardHeight);
+      
+      const nextLeftPx = Math.max(minXPx, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
+      const nextTopPx = Math.max(minYPx, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
 
       if (!dragState.moved) {
         const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
@@ -3234,8 +3345,28 @@ class UIManager {
 
       dragState.nextX = (nextLeftPx / Math.max(1, boardRect.width)) * 100;
       dragState.nextY = (nextTopPx / Math.max(1, boardRect.height)) * 100;
-      dragState.card.style.left = `${dragState.nextX}%`;
-      dragState.card.style.top = `${dragState.nextY}%`;
+
+      if (dragState.isCluster && dragState.firstCardElement) {
+        const deltaX = dragState.nextX - dragState.startLeftPercent;
+        const deltaY = dragState.nextY - dragState.startTopPercent;
+        
+        // Update the first card's layout in memory to allow real-time rigid positioning
+        const firstCardTodo = TaskManager.getTaskById(dragState.firstCardElement.dataset.id);
+        if (firstCardTodo) {
+          firstCardTodo.layout = {
+            x: dragState.firstStartLeftPercent + deltaX,
+            y: dragState.firstStartTopPercent + deltaY
+          };
+        }
+        
+        dragState.firstCardElement.style.left = `${dragState.firstStartLeftPercent + deltaX}%`;
+        dragState.firstCardElement.style.top = `${dragState.firstStartTopPercent + deltaY}%`;
+        
+        this.positionTodoCards();
+      } else {
+        dragState.card.style.left = `${dragState.nextX}%`;
+        dragState.card.style.top = `${dragState.nextY}%`;
+      }
     };
 
     const endDrag = (event) => {
@@ -3247,12 +3378,37 @@ class UIManager {
       dragState.card.classList.remove('dragging');
       try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) {}
 
-      if (dragState.moved) {
+      if (dragState.isCluster && dragState.clusterCards) {
+        if (dragState.moved) {
+          dragState.clusterCards.forEach(c => {
+            c.classList.remove('dragging');
+            
+            const cRect = c.getBoundingClientRect();
+            const cTileSize = { width: cRect.width, height: cRect.height };
+            const cTodo = TaskManager.getTaskById(c.dataset.id);
+            const cHasHeader = !!cTodo?.clusterId || (!!cTodo?.deadline && !cTodo?.completed);
+            const cLayout = this.clampTodoLayout({
+              x: ((cRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
+              y: ((cRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
+            }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, cTileSize, cHasHeader);
+            
+            TaskManager.updateTodoLayout(c.dataset.id, cLayout);
+          });
+          try { getGameState().save(); } catch (error) {}
+          this.todoDragSuppressUntil = Date.now() + 250;
+        } else {
+          dragState.clusterCards.forEach(c => {
+            c.classList.remove('dragging');
+          });
+        }
+      } else if (dragState.moved) {
         const tileSize = { width: cardRect.width, height: cardRect.height };
+        const cTodo = TaskManager.getTaskById(dragState.todoId);
+        const cHasHeader = !!cTodo?.clusterId || (!!cTodo?.deadline && !cTodo?.completed);
         const layout = this.clampTodoLayout({
           x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
           y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
-        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
+        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize, cHasHeader);
 
         TaskManager.updateTodoLayout(dragState.todoId, layout);
         try { getGameState().save(); } catch (error) {}
@@ -3275,10 +3431,80 @@ class UIManager {
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedTodos;
-    const visibleTodos = showCompleted ? todos : todos.filter(todo => !todo.completed);
+    const visibleTodos = todos.filter(todo => {
+      if (todo.completed && !todo.clusterId) {
+        return showCompleted;
+      }
+      if (todo.clusterId) {
+        const clusterTodos = todos.filter(t => t.clusterId === todo.clusterId);
+        const allCompleted = clusterTodos.every(t => t.completed);
+        if (allCompleted) {
+          return showCompleted;
+        }
+        return !todo.completed || (todo.completed && todo.clusterId);
+      }
+      return true;
+    });
     
+    const palette = getGameState()?.config?.attributeColors || {};
+
     container.innerHTML = visibleTodos.map(todo => {
       const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
+
+      // Check if this is the first card in its cluster among visible todos
+      let isFirstInCluster = false;
+      let clusterHeader = '';
+      if (todo.clusterId) {
+        const clusterTodos = visibleTodos.filter(t => t.clusterId === todo.clusterId)
+          .sort((a, b) => (a.clusterIndex || 0) - (b.clusterIndex || 0));
+        if (clusterTodos.length > 0 && clusterTodos[0].id === todo.id) {
+          isFirstInCluster = true;
+          
+          const deadlineLabel = todo.deadline ? new Date(todo.deadline).toLocaleDateString() : 'No deadline';
+          const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
+          const attrTexts = [];
+          if (todo.clusterAttributes) {
+            for (const attr in todo.clusterAttributes) {
+              const pct = Math.round(todo.clusterAttributes[attr] * 100);
+              attrTexts.push(`${pct}% ${attr.toLowerCase()}`);
+            }
+          }
+          clusterHeader = `
+            <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
+                <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Press Start 2P', monospace; font-weight: bold;">${deadlineLabel}</div>
+                <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace;">${deadlineDistance}</div>
+              </div>
+              <div class="cluster-badge" style="font-size: 6px; color: #a04ef6; font-family: 'Press Start 2P', monospace; font-weight: bold; text-transform: lowercase;">${attrTexts.join(', ')}</div>
+            </div>
+          `;
+        }
+      } else if (todo.deadline && !todo.completed) {
+        const deadlineLabel = new Date(todo.deadline).toLocaleDateString();
+        const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
+        clusterHeader = `
+          <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
+              <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Press Start 2P', monospace; font-weight: bold;">${deadlineLabel}</div>
+              <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace;">${deadlineDistance}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Completed placeholder for cluster cards
+      if (todo.completed && todo.clusterId) {
+        return `
+        <div class="task-card task-card-todo completed-cluster-placeholder" data-id="${todo.id}" data-type="todo" data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}" style="background: transparent !important; border: none !important; box-shadow: none !important; height: 48px !important; min-height: 48px !important; display: flex !important; align-items: center !important; justify-content: center !important; pointer-events: auto !important; cursor: grab !important; position: relative !important;">
+          ${clusterHeader}
+          <div class="completed-cluster-chain" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; opacity: 0.45 !important; font-size: 16px !important; pointer-events: none !important; transform: rotate(90deg) !important;">⛓️</div>
+          <div class="task-card-actions task-card-actions-todo task-card-actions-small placeholder-actions hover-only" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%);">
+            <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
+          </div>
+        </div>
+        `;
+      }
+
       const subtasks = (todo.subtasks || []).map(st => `
         <div class="subtask ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
           <label class="subtask-label"><input type="checkbox" class="subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''}> <span class="subtask-name">${st.name}</span></label>
@@ -3286,32 +3512,41 @@ class UIManager {
         </div>
       `).join('');
       const subtaskCount = (todo.subtasks || []).length;
-      const deadlineLabel = todo.deadline ? new Date(todo.deadline).toLocaleDateString() : 'No deadline';
-      const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
+      
+      // Border and color configurations
+      const isCluster = todo.clusterId && !todo.completed;
+      const borderStyle = isCluster 
+        ? 'border-color: #6a0dad !important; --cluster-color: #6a0dad; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px rgba(106,13,173,0.5) !important;' 
+        : `border-color: ${palette[todo.attribute] || '#555'} !important; --task-accent: ${palette[todo.attribute] || '#555'}; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px ${(palette[todo.attribute] || '#555')}44 !important;`;
+      
+      const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
+
       return `
-      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0">
-        <div class="todo-card-top">
+      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
+        
+        ${clusterHeader}
+
+        <!-- Floating difficulty shape next to the card -->
+        <div class="todo-difficulty-shape shape-${shapeClass}" title="Difficulty: ${todo.difficulty}"></div>
+        
+        <div class="todo-card-top" style="gap: 4px;">
           <div class="task-title todo-title">${displayName}</div>
-          <div class="task-pill-row task-pill-row-left task-pill-row-right-side">
-            <div class="task-difficulty ${todo.difficulty.toLowerCase()}">${todo.difficulty}</div>
-            <div class="task-attr">${todo.attribute}</div>
-          </div>
         </div>
 
-        <div class="todo-card-body">
-          <div class="todo-date-big">${deadlineLabel}</div>
-          <div class="todo-date-subtext">${deadlineDistance}</div>
-          <div class="todo-subtasks-wrap">
-            <div class="todo-subtask-label">${subtaskCount} subtasks</div>
-            ${subtaskCount > 0 ? `<div class="subtasks">${subtasks}</div>` : '<div class="muted">No subtasks yet</div>'}
-            <div class="subtask-add">
-              <input class="subtask-input" placeholder="Add subtask..." data-todo-id="${todo.id}" />
-              <button class="subtask-add-btn" data-todo-id="${todo.id}">Add</button>
+        <div class="todo-card-body" style="margin-top: 2px;">
+          ${subtaskCount > 0 ? `
+            <div class="todo-subtasks-wrap" style="margin-top: 4px;">
+              <div class="todo-subtask-label" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace; margin-bottom: 4px;">${subtaskCount} subtasks</div>
+              <div class="subtasks">${subtasks}</div>
             </div>
+          ` : ''}
+          <div class="subtask-add hover-only" style="margin-top: 4px;">
+            <input class="subtask-input" placeholder="Add subtask..." data-todo-id="${todo.id}" />
+            <button class="subtask-add-btn" data-todo-id="${todo.id}">Add</button>
           </div>
         </div>
 
-        <div class="task-card-actions task-card-actions-todo task-card-actions-small">
+        <div class="task-card-actions task-card-actions-todo task-card-actions-small hover-only">
           <button class="btn-blood-oath" title="Blood Oath">🩸</button>
           <button class="btn-edit" title="Edit">✎</button>
           <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
