@@ -39,6 +39,12 @@ function ensureAnimationStyles() {
       100% { transform: scale(1); opacity: 1; }
     }
 
+    @keyframes nmPopupScaleCentered {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      70% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
     @keyframes nmMeterPulse {
       0%, 100% { box-shadow: 0 0 0 0 var(--nm-meter-color, #C00707); }
       50% { box-shadow: 0 0 20px 5px var(--nm-meter-color, #C00707); }
@@ -61,6 +67,7 @@ function ensureAnimationStyles() {
     }
 
     .nm-popup-scale { animation: nmPopupScale var(--nm-duration, 300ms) ease-out forwards; }
+    .nm-popup-scale-centered { animation: nmPopupScaleCentered var(--nm-duration, 300ms) ease-out forwards; }
     .nm-meter-pulse { animation: nmMeterPulse var(--nm-duration, 300ms) ease-out; }
     .nm-meter-shimmer { animation: nmMeterShimmer var(--nm-duration, 400ms) ease-in-out; }
     .nm-combo-scale { animation: nmComboScale 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
@@ -707,6 +714,12 @@ class PopupAnimation {
     ensureAnimationStyles();
     element.style.setProperty('--nm-duration', `${duration}ms`);
     restartAnimationClass(element, 'nm-popup-scale');
+  }
+
+  static scaleCentered(element, duration = 300) {
+    ensureAnimationStyles();
+    element.style.setProperty('--nm-duration', `${duration}ms`);
+    restartAnimationClass(element, 'nm-popup-scale-centered');
   }
 }
 

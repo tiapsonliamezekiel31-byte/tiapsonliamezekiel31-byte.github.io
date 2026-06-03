@@ -222,6 +222,8 @@ class GameState {
       gameStartTime: null,
       runCompletionHistory: [],
       dailyNotesByDate: {},
+      dailyNotes: [],
+      todoNotes: [],
       runStats: {
         startClass: null,
         enemiesDefeated: 0,
@@ -295,6 +297,8 @@ class GameState {
     this.systemState.lastCheckInTime = null;
     this.systemState.runCompletionHistory = [];
     this.systemState.dailyNotesByDate = {};
+    this.systemState.dailyNotes = [];
+    this.systemState.todoNotes = [];
     this.systemState.runStats = {
       startClass: null,
       enemiesDefeated: 0,
@@ -486,44 +490,19 @@ class GameState {
     this.eventBus.emit(EVENTS.GAME_SAVE, { data });
   }
 
-  getDailyNotesMap() {
-    if (!this.systemState || typeof this.systemState !== 'object') this.systemState = {};
-    if (!this.systemState.dailyNotesByDate || typeof this.systemState.dailyNotesByDate !== 'object') {
-      this.systemState.dailyNotesByDate = {};
+  getDailyNotes() {
+    if (!Array.isArray(this.systemState.dailyNotes)) {
+      this.systemState.dailyNotes = [];
     }
-    return this.systemState.dailyNotesByDate;
+    return this.systemState.dailyNotes;
   }
 
-  getDailyNotesForDate(dateKey = getLocalDayKey()) {
-    const notesMap = this.getDailyNotesMap();
-    const value = notesMap[dateKey];
-
-    if (Array.isArray(value)) {
-      notesMap[dateKey] = value.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
-      return notesMap[dateKey];
-    }
-
-    if (typeof value === 'string') {
-      notesMap[dateKey] = value.trim() ? [normalizeDailyNoteEntry(null, value)] : [];
-      return notesMap[dateKey];
-    }
-
-    if (value && typeof value === 'object') {
-      const legacyNotes = Array.isArray(value.notes) ? value.notes : [];
-      notesMap[dateKey] = legacyNotes.map((note) => normalizeDailyNoteEntry(note)).filter(Boolean);
-      return notesMap[dateKey];
-    }
-
-    notesMap[dateKey] = [];
-    return notesMap[dateKey];
+  getDailyNote() {
+    return this.getDailyNotes().map((note) => note.text).filter(Boolean).join('\n');
   }
 
-  getDailyNote(dateKey = getLocalDayKey()) {
-    return this.getDailyNotesForDate(dateKey).map((note) => note.text).filter(Boolean).join('\n');
-  }
-
-  addDailyNote(text = '', dateKey = getLocalDayKey(), position = {}) {
-    const notes = this.getDailyNotesForDate(dateKey);
+  addDailyNote(text = '', position = {}) {
+    const notes = this.getDailyNotes();
     const note = normalizeDailyNoteEntry({
       text,
       x: Number(position.x),
@@ -535,8 +514,8 @@ class GameState {
     return note;
   }
 
-  updateDailyNote(dateKey = getLocalDayKey(), noteId, updates = {}) {
-    const notes = this.getDailyNotesForDate(dateKey);
+  updateDailyNote(noteId, updates = {}) {
+    const notes = this.getDailyNotes();
     const note = notes.find((entry) => String(entry.id) === String(noteId));
     if (!note) return false;
     if (updates.text !== undefined) note.text = String(updates.text || '');
@@ -546,12 +525,12 @@ class GameState {
     return true;
   }
 
-  moveDailyNote(dateKey = getLocalDayKey(), noteId, position = {}) {
-    return this.updateDailyNote(dateKey, noteId, position);
+  moveDailyNote(noteId, position = {}) {
+    return this.updateDailyNote(noteId, position);
   }
 
-  removeDailyNote(dateKey = getLocalDayKey(), noteId) {
-    const notes = this.getDailyNotesForDate(dateKey);
+  removeDailyNote(noteId) {
+    const notes = this.getDailyNotes();
     const index = notes.findIndex((entry) => String(entry.id) === String(noteId));
     if (index < 0) return false;
     notes.splice(index, 1);
@@ -559,14 +538,58 @@ class GameState {
     return true;
   }
 
-  setDailyNote(text, dateKey = getLocalDayKey()) {
-    const notes = this.getDailyNotesForDate(dateKey);
+  setDailyNote(text) {
+    const notes = this.getDailyNotes();
     if (notes.length === 0) {
       const note = normalizeDailyNoteEntry(null, text);
       if (note) notes.push(note);
     } else {
       notes[0].text = String(text || '');
     }
+    this.save();
+    return true;
+  }
+
+  getTodoNotes() {
+    if (!Array.isArray(this.systemState.todoNotes)) {
+      this.systemState.todoNotes = [];
+    }
+    return this.systemState.todoNotes;
+  }
+
+  addTodoNote(text = '', position = {}) {
+    const notes = this.getTodoNotes();
+    const note = normalizeDailyNoteEntry({
+      text,
+      x: Number(position.x),
+      y: Number(position.y)
+    });
+    if (!note) return null;
+    notes.push(note);
+    this.save();
+    return note;
+  }
+
+  updateTodoNote(noteId, updates = {}) {
+    const notes = this.getTodoNotes();
+    const note = notes.find((entry) => String(entry.id) === String(noteId));
+    if (!note) return false;
+    if (updates.text !== undefined) note.text = String(updates.text || '');
+    if (updates.x !== undefined) note.x = Number(updates.x);
+    if (updates.y !== undefined) note.y = Number(updates.y);
+    this.save();
+    return true;
+  }
+
+  moveTodoNote(noteId, position = {}) {
+    return this.updateTodoNote(noteId, position);
+  }
+
+  removeTodoNote(noteId) {
+    const notes = this.getTodoNotes();
+    const index = notes.findIndex((entry) => String(entry.id) === String(noteId));
+    if (index < 0) return false;
+    notes.splice(index, 1);
     this.save();
     return true;
   }
@@ -676,6 +699,18 @@ class GameState {
           this.systemState.dailyNotesByDate[dateKey] = [];
         }
       });
+      if (!Array.isArray(this.systemState.dailyNotes)) {
+        const todayKey = getLocalDayKey();
+        const legacyNotesForToday = this.systemState.dailyNotesByDate?.[todayKey];
+        if (Array.isArray(legacyNotesForToday)) {
+          this.systemState.dailyNotes = legacyNotesForToday.map((n) => normalizeDailyNoteEntry(n)).filter(Boolean);
+        } else {
+          this.systemState.dailyNotes = [];
+        }
+      }
+      if (!Array.isArray(this.systemState.todoNotes)) {
+        this.systemState.todoNotes = [];
+      }
       if (!this.systemState.dialogueSeen) {
         this.systemState.dialogueSeen = {};
       }

@@ -596,6 +596,7 @@ class UIManager {
       <div class="tab-header">
         <h3>TO-DOS</h3>
         <div>
+          <button id="addTodoNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
           <button id="todosShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
           <button id="todosAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
@@ -1196,6 +1197,7 @@ class UIManager {
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
+    document.getElementById('addTodoNoteBtn')?.addEventListener('click', () => this.addTodoNote());
     // add buttons
     const dailiesAdd = document.getElementById('dailiesAddBtn');
     if (dailiesAdd) dailiesAdd.addEventListener('click', () => {
@@ -2149,8 +2151,7 @@ class UIManager {
 
   static addDailyNote() {
     const state = getGameState();
-    const dateKey = this.getDailyNoteDateKey();
-    const note = state.addDailyNote ? state.addDailyNote('', dateKey, {
+    const note = state.addDailyNote ? state.addDailyNote('', {
       x: 14 + (Math.random() * 18),
       y: 14 + (Math.random() * 22)
     }) : null;
@@ -2158,6 +2159,18 @@ class UIManager {
     if (!note) return;
     this._focusDailyNoteId = String(note.id);
     this.updateDailiesList();
+  }
+
+  static addTodoNote() {
+    const state = getGameState();
+    const note = state.addTodoNote ? state.addTodoNote('', {
+      x: 14 + (Math.random() * 18),
+      y: 14 + (Math.random() * 22)
+    }) : null;
+
+    if (!note) return;
+    this._focusTodoNoteId = String(note.id);
+    this.updateTodosList();
   }
 
   static handleCompleteDayClick() {
@@ -2636,8 +2649,7 @@ class UIManager {
     const board = document.getElementById('dailiesList');
     if (!board) return;
 
-    const dateKey = this.getDailyNoteDateKey();
-    const notes = Array.isArray(state.getDailyNotesForDate?.(dateKey)) ? state.getDailyNotesForDate(dateKey) : [];
+    const notes = Array.isArray(state.getDailyNotes?.()) ? state.getDailyNotes() : [];
     const existingNotes = new Map(Array.from(board.querySelectorAll('.daily-note-card')).map((note) => [String(note.dataset.noteId), note]));
     const activeIds = new Set();
 
@@ -2670,7 +2682,7 @@ class UIManager {
           deleteBtn.addEventListener('click', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            state.removeDailyNote?.(dateKey, noteId);
+            state.removeDailyNote?.(noteId);
             this.renderDailyNotes();
           });
         }
@@ -2678,16 +2690,16 @@ class UIManager {
         const textEl = noteEl.querySelector('.daily-note-text');
         if (textEl) {
           textEl.addEventListener('input', () => {
-            state.updateDailyNote?.(dateKey, noteId, { text: textEl.textContent || '' });
+            state.updateDailyNote?.(noteId, { text: textEl.textContent || '' });
           });
           textEl.addEventListener('blur', () => {
-            state.updateDailyNote?.(dateKey, noteId, { text: textEl.textContent || '' });
+            state.updateDailyNote?.(noteId, { text: textEl.textContent || '' });
           });
         }
 
         noteEl.addEventListener('pointerdown', (event) => {
           if (event.target.closest('.daily-note-delete')) return;
-          if (event.pointerType !== 'touch' && event.target.closest('button, [contenteditable="true"]')) return;
+          if (event.target.closest('button, [contenteditable="true"]')) return;
           if (event.button !== 0) return;
 
           const noteRect = noteEl.getBoundingClientRect();
@@ -2748,7 +2760,7 @@ class UIManager {
             document.removeEventListener('pointercancel', onUp);
 
             if (current.moved) {
-              state.moveDailyNote?.(dateKey, noteId, { x: current.nextX, y: current.nextY });
+              state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
             }
           };
 
@@ -2767,6 +2779,163 @@ class UIManager {
 
         if (String(this._focusDailyNoteId || '') === noteId) {
           this._focusDailyNoteId = null;
+          setTimeout(() => {
+            try {
+              textEl.focus();
+              const range = document.createRange();
+              range.selectNodeContents(textEl);
+              range.collapse(false);
+              const selection = window.getSelection();
+              selection.removeAllRanges();
+              selection.addRange(range);
+            } catch (error) {}
+          }, 0);
+        }
+      }
+    });
+
+    existingNotes.forEach((noteEl, noteId) => {
+      if (!activeIds.has(noteId)) {
+        noteEl.remove();
+      }
+    });
+  }
+
+  static renderTodoNotes() {
+    const state = getGameState();
+    const board = document.getElementById('todosList');
+    if (!board) return;
+
+    const notes = Array.isArray(state.getTodoNotes?.()) ? state.getTodoNotes() : [];
+    const existingNotes = new Map(Array.from(board.querySelectorAll('.todo-note-card')).map((note) => [String(note.dataset.noteId), note]));
+    const activeIds = new Set();
+
+    notes.forEach((noteData, index) => {
+      if (!noteData) return;
+      const noteId = String(noteData.id);
+      activeIds.add(noteId);
+
+      let noteEl = existingNotes.get(noteId);
+      if (!noteEl) {
+        noteEl = document.createElement('div');
+        noteEl.className = 'todo-note-card';
+        noteEl.dataset.noteId = noteId;
+        noteEl.innerHTML = `
+          <button class="todo-note-delete" type="button" aria-label="Delete note">✕</button>
+          <div class="todo-note-text" contenteditable="true" spellcheck="false"></div>
+        `;
+        board.appendChild(noteEl);
+      }
+
+      noteEl.style.left = `${Number.isFinite(Number(noteData.x)) ? Number(noteData.x) : 12}%`;
+      noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
+      noteEl.style.zIndex = String(40 + index);
+
+      if (!noteEl.dataset.bound) {
+        noteEl.dataset.bound = '1';
+
+        const deleteBtn = noteEl.querySelector('.todo-note-delete');
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            state.removeTodoNote?.(noteId);
+            this.renderTodoNotes();
+          });
+        }
+
+        const textEl = noteEl.querySelector('.todo-note-text');
+        if (textEl) {
+          textEl.addEventListener('input', () => {
+            state.updateTodoNote?.(noteId, { text: textEl.textContent || '' });
+          });
+          textEl.addEventListener('blur', () => {
+            state.updateTodoNote?.(noteId, { text: textEl.textContent || '' });
+          });
+        }
+
+        noteEl.addEventListener('pointerdown', (event) => {
+          if (event.target.closest('.todo-note-delete')) return;
+          if (event.target.closest('button, [contenteditable="true"]')) return;
+          if (event.button !== 0) return;
+
+          const noteRect = noteEl.getBoundingClientRect();
+          const boardRect = board.getBoundingClientRect();
+          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
+          const dragState = {
+            pointerId: event.pointerId,
+            boardRect,
+            noteWidth: noteRect.width,
+            noteHeight: noteRect.height,
+            offsetX: event.clientX - (boardRect.left + startLeftPx),
+            offsetY: event.clientY - (boardRect.top + startTopPx),
+            moved: false,
+            startX: event.clientX,
+            startY: event.clientY,
+            noteId,
+            nextX: Number(noteData.x) || 0,
+            nextY: Number(noteData.y) || 0
+          };
+
+          noteEl.classList.add('dragging');
+          noteEl.dataset.dragState = JSON.stringify(dragState);
+          try { noteEl.setPointerCapture(event.pointerId); } catch (error) {}
+          event.preventDefault();
+
+          const onMove = (moveEvent) => {
+            const stateRaw = noteEl.dataset.dragState;
+            if (!stateRaw) return;
+            const current = JSON.parse(stateRaw);
+            if (moveEvent.pointerId !== current.pointerId) return;
+
+            const boardNow = board.getBoundingClientRect();
+            const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
+            const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
+            if (!current.moved && Math.hypot(moveEvent.clientX - current.startX, moveEvent.clientY - current.startY) > 4) {
+              current.moved = true;
+            }
+
+            current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
+            current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+            noteEl.style.left = `${current.nextX}%`;
+            noteEl.style.top = `${current.nextY}%`;
+            noteEl.dataset.dragState = JSON.stringify(current);
+          };
+
+          const onUp = (upEvent) => {
+            const stateRaw = noteEl.dataset.dragState;
+            if (!stateRaw) return;
+            const current = JSON.parse(stateRaw);
+            if (upEvent.pointerId !== current.pointerId) return;
+
+            noteEl.classList.remove('dragging');
+            noteEl.removeAttribute('data-drag-state');
+            try { noteEl.releasePointerCapture(current.pointerId); } catch (error) {}
+            document.removeEventListener('pointermove', onMove);
+            document.removeEventListener('pointerup', onUp);
+            document.removeEventListener('pointercancel', onUp);
+
+            if (current.moved) {
+              state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
+            }
+          };
+
+          document.addEventListener('pointermove', onMove);
+          document.addEventListener('pointerup', onUp);
+          document.addEventListener('pointercancel', onUp);
+        });
+      }
+
+      const textEl = noteEl.querySelector('.todo-note-text');
+      if (textEl) {
+        const nextText = String(noteData.text || '');
+        if (textEl.textContent !== nextText && document.activeElement !== textEl) {
+          textEl.textContent = nextText;
+        }
+
+        if (String(this._focusTodoNoteId || '') === noteId) {
+          this._focusTodoNoteId = null;
           setTimeout(() => {
             try {
               textEl.focus();
@@ -3002,7 +3171,7 @@ class UIManager {
         if (!existingWizard.contains(event.target)) existingWizard.remove();
         return;
       }
-      if (event.target.closest('.task-card-todo')) return;
+      if (event.target.closest('.task-card-todo') || event.target.closest('.todo-note-card')) return;
       if (typeof PopupsManager !== 'undefined' && PopupsManager.showAddTodoWizard) {
         const boardRect = board.getBoundingClientRect();
         const xPx = event.clientX - boardRect.left + board.scrollLeft;
@@ -3154,6 +3323,7 @@ class UIManager {
     this.bindTaskInteractions();
     this.bindTodoBoardInteractions();
     this.positionTodoCards();
+    this.renderTodoNotes();
   }
 
   static renderEnemies() {

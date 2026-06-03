@@ -1496,6 +1496,64 @@ body::before {
   color: #fff6d8;
 }
 
+/* ============================================================
+   TO-DO NOTE CARD
+   ============================================================ */
+.todo-note-card {
+  position: absolute;
+  min-width: 112px;
+  max-width: 220px;
+  padding: 10px 12px 12px;
+  border: none;
+  border-radius: 14px;
+  background: rgba(214, 208, 255, 0.08);
+  box-shadow: none;
+  color: #e5e0ff;
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(1px);
+  touch-action: none;
+}
+
+.todo-note-card.dragging {
+  cursor: grabbing;
+}
+
+.todo-note-text {
+  font-family: inherit;
+  font-size: 8px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  outline: none;
+  color: inherit;
+  min-height: 28px;
+  padding-right: 16px;
+}
+
+.todo-note-text:empty::before {
+  content: 'New note';
+  color: rgba(214, 208, 255, 0.45);
+}
+
+.todo-note-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: rgba(214, 208, 255, 0.7);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  font-family: inherit;
+  font-size: 10px;
+}
+
+.todo-note-delete:hover {
+  color: #e5e0ff;
+}
+
 .task-card {
   background: var(--primary-dark);
   border: 2px solid var(--text-muted);
@@ -1506,6 +1564,12 @@ body::before {
   gap: 2px;
   position: relative;
   transition: all 0.2s;
+}
+
+.task-card.dragging,
+.daily-note-card.dragging,
+.todo-note-card.dragging {
+  transition: none !important;
 }
 
 .task-card-daily,

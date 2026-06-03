@@ -1111,6 +1111,7 @@ class PopupsManager {
         <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
         <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
+        <button class="btn-pause-action" id="resetLayoutBtn">📐 RESET LAYOUT</button>
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
         <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
       </div>
@@ -1164,6 +1165,17 @@ class PopupsManager {
 
     popup.querySelector('#backupBtn').addEventListener('click', () => {
       this.showDataBackup();
+    });
+
+    popup.querySelector('#resetLayoutBtn').addEventListener('click', () => {
+      this.showConfirm('Reset Layout', 'Reset positions of game circle, satchel, stats, weapons, and HUD to default?', () => {
+        localStorage.removeItem('nemesis_hud_pos');
+        localStorage.removeItem('nemesis_satchel_pos');
+        localStorage.removeItem('nemesis_weapon_pos');
+        localStorage.removeItem('nemesis_center_pos');
+        localStorage.removeItem('nemesis_run_graph_pos');
+        location.reload();
+      });
     });
     
     // attributes moved to center modal button; pause menu no longer exposes attributes here
@@ -1702,7 +1714,7 @@ class PopupsManager {
 
       const closeBtn = popup.querySelector('.btn-close');
       if (closeBtn) closeBtn.addEventListener('click', () => popup.remove());
-      PopupAnimation.scale(popup);
+      PopupAnimation.scaleCentered(popup);
     };
 
     const board = document.getElementById('todosList');
