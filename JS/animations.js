@@ -1,5 +1,5 @@
 /**
- * NEMESIS ROGUELIKE — ANIMATION SYSTEM
+ * NEMESIS ROGUELIKE â€” ANIMATION SYSTEM
  * Particles, screen shake, floating numbers, popups, juicy effects
  */
 
@@ -150,7 +150,7 @@ function variantForStack(baseColor, slotIndex) {
   if (!rgb) return baseColor;
   const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
   // stronger hue shift per slot and progressively darker for clearer separation
-  const hueShift = slotIndex * 10; // 10° per stacked slot
+  const hueShift = slotIndex * 10; // 10Â° per stacked slot
   const newH = (hsl.h + hueShift) % 360;
   const newL = Math.max(8, hsl.l - slotIndex * 8); // darken ~8% per slot
   return hslToCss(newH, hsl.s, newL);
@@ -443,11 +443,12 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
   div.style.textShadow = '1px 1px 0 rgba(0,0,0,0.8), 0 0 10px rgba(255,255,255,0.12)';
   div.style.color = opts.color;
   div.style.fontSize = `${(opts.isCrit ? 28 : 20) * opts.scale * 1.5}px`;
-
   opts.container.appendChild(div);
+  const measuredWidth = div.getBoundingClientRect().width || 80;
 
   const floatObj = {
     div,
+    width: measuredWidth,
     anchorRectFn,
     anchorKey: anchorKey ? String(anchorKey) : null,
     driftX: (Math.random() * 10) - 5,
@@ -513,9 +514,9 @@ FloatingDamageNumber._anchoredTick = function() {
     const baseY = rect.top || 0;
 
     const clampX = (() => {
-      const rectDiv = f.div.getBoundingClientRect();
-      const minX = rectDiv.width / 2 + 8;
-      const maxX = window.innerWidth - rectDiv.width / 2 - 8;
+      const w = f.width || 80;
+      const minX = w / 2 + 8;
+      const maxX = window.innerWidth - w / 2 - 8;
       return Math.min(Math.max(baseX, minX), Math.max(minX, maxX));
     })();
 
@@ -682,7 +683,7 @@ class ScreenEffects {
       clearTimeout(this.flashRemoveTimer);
     }
     this.flashRemoveTimer = setTimeout(() => {
-      // end the animation and hide overlay — reset background so it doesn't stay opaque
+      // end the animation and hide overlay â€” reset background so it doesn't stay opaque
       try {
         this.flashOverlay?.classList.remove('nm-screen-flash');
         this.flashOverlay.style.background = 'transparent';
@@ -773,7 +774,7 @@ class TypewriterEffect {
 class ComboAnimation {
   static show(element, combo) {
     ensureAnimationStyles();
-    element.textContent = `COMBO ×${combo}`;
+    element.textContent = `COMBO Ã—${combo}`;
     restartAnimationClass(element, 'nm-combo-scale');
   }
   
@@ -878,5 +879,907 @@ class HpBarAnimation {
     requestAnimationFrame(() => {
       element.style.width = newPercent + '%';
     });
+  }
+}
+
+class RetroHitAnimation {
+  static play(x, y, color = '#ff0044') {
+    const container = document.body;
+    const burstCount = 10;
+    
+    for(let i = 0; i < burstCount; i++) {
+      const square = document.createElement('div');
+      const size = 16 + Math.random() * 32;
+      
+      square.style.cssText = `
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        pointer-events: none;
+        z-index: 13000;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(square);
+      
+      const angle = (i / burstCount) * Math.PI * 2 + (Math.random() * 0.5);
+      const distance = 60 + Math.random() * 80;
+      
+      const targetX = Math.cos(angle) * distance;
+      const targetY = Math.sin(angle) * distance;
+      
+      const startTime = performance.now();
+      const duration = 450 + Math.random() * 250;
+      
+      const animate = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        // easeOutCubic
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        const curX = x + targetX * easeOut;
+        const curY = y + targetY * easeOut;
+        
+        // Shrink slower at first, then faster
+        const scale = 1 - Math.pow(progress, 2);
+        
+        square.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${scale})`;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          square.remove();
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    }
+    
+    // Quick flash square
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 80px;
+      background: #ffffff;
+      pointer-events: none;
+      z-index: 13001;
+      will-change: transform, opacity;
+    `;
+    container.appendChild(flash);
+    
+    const flashStart = performance.now();
+    const flashDuration = 200;
+    
+    const animateFlash = () => {
+      const elapsed = performance.now() - flashStart;
+      const progress = Math.min(1, elapsed / flashDuration);
+      flash.style.transform = `translate3d(${x - 40}px, ${y - 40}px, 0) scale(${1 + progress * 0.8}) rotate(${progress * 90}deg)`;
+      flash.style.opacity = 1 - Math.pow(progress, 1.5);
+      if (progress < 1) requestAnimationFrame(animateFlash);
+      else flash.remove();
+    };
+    requestAnimationFrame(animateFlash);
+  }
+}
+
+class RetroDodgeAnimation {
+  static play(cardElement, color = '#00e5ff') {
+    if (!cardElement) return;
+
+    const container = document.body;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+    const burstCount = lowPower ? 6 : 12;
+
+    // Coordinate overlapping animations on the card
+    const origTransform = cardElement.dataset.originalTransform !== undefined 
+      ? cardElement.dataset.originalTransform 
+      : (cardElement.style.transform || 'translate(-50%, -50%)');
+      
+    if (cardElement.dataset.originalTransform === undefined) {
+      cardElement.dataset.originalTransform = origTransform;
+    }
+    
+    cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
+    
+    if (cardElement.animResetTimeout) {
+      clearTimeout(cardElement.animResetTimeout);
+    }
+
+    const resetCard = () => {
+      cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
+      if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
+        cardElement.style.transform = cardElement.dataset.originalTransform;
+        cardElement.style.transition = '';
+        cardElement.style.opacity = '';
+        cardElement.style.willChange = '';
+        delete cardElement.dataset.originalTransform;
+        delete cardElement.dataset.activeAnimsCount;
+      }
+    };
+
+    // 1-second safety fallback: force reset after 1s of inactivity
+    cardElement.animResetTimeout = setTimeout(() => {
+      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
+      cardElement.style.transition = '';
+      cardElement.style.opacity = '';
+      cardElement.style.willChange = '';
+      delete cardElement.dataset.originalTransform;
+      delete cardElement.dataset.activeAnimsCount;
+    }, 1000);
+    
+    // 1. Squares collapse inwards
+    for(let i = 0; i < burstCount; i++) {
+      const square = document.createElement('div');
+      const size = (10 + Math.random() * 20) * scaleFactor;
+      
+      square.style.cssText = `
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        pointer-events: none;
+        z-index: 13000;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(square);
+      
+      const angle = (i / burstCount) * Math.PI * 2 + (Math.random() * 0.5);
+      const startDistance = 60 + Math.random() * 40;
+      
+      const startX = Math.cos(angle) * startDistance;
+      const startY = Math.sin(angle) * startDistance;
+      
+      const startTime = performance.now();
+      const collapseDuration = 200 + Math.random() * 100;
+      
+      const animateCollapse = () => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(1, elapsed / collapseDuration);
+        
+        // easeInCubic to accelerate inwards
+        const easeIn = Math.pow(progress, 3);
+        
+        const curX = cx + startX * (1 - easeIn);
+        const curY = cy + startY * (1 - easeIn);
+        
+        square.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${1 - progress})`;
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateCollapse);
+        } else {
+          square.remove();
+        }
+      };
+      
+      requestAnimationFrame(animateCollapse);
+    }
+
+    // 2. Card slides sideways and disappears briefly
+    // Wait for collapse to mostly finish (e.g. 150ms)
+    setTimeout(() => {
+      const slideDistance = 40; // Slide to the right
+      const slideDuration = 150;
+      const slideStart = performance.now();
+      
+      // Temporarily disable CSS transitions on the card itself to prevent layout thrashing
+      cardElement.style.transition = 'none';
+      cardElement.style.willChange = 'transform, opacity';
+      
+      const slideAnimate = () => {
+        const elapsed = performance.now() - slideStart;
+        const progress = Math.min(1, elapsed / slideDuration);
+        
+        // Move horizontally and fade out
+        cardElement.style.transform = `${origTransform} translateX(${slideDistance * progress}px)`;
+        cardElement.style.opacity = 1 - progress;
+        
+        if (progress < 1) {
+          requestAnimationFrame(slideAnimate);
+        } else {
+          // Stay invisible for a split second, then slide back
+          setTimeout(() => {
+            resetCard();
+            
+            // Reappear burst (outward)
+            const reappearCount = lowPower ? 4 : 8;
+            for(let j = 0; j < reappearCount; j++) {
+               const sq = document.createElement('div');
+               const sqSize = 15 * scaleFactor;
+               sq.style.cssText = `
+                 position: fixed; left: 0; top: 0;
+                 width: ${sqSize}px; height: ${sqSize}px; background: ${color};
+                 pointer-events: none; z-index: 13000;
+                 will-change: transform, opacity;
+               `;
+               container.appendChild(sq);
+               
+               const a = (j / reappearCount) * Math.PI * 2;
+               const dist = 30 + Math.random() * 20;
+               const tx = Math.cos(a) * dist;
+               const ty = Math.sin(a) * dist;
+               
+               const outStart = performance.now();
+               const outDur = 200;
+               
+               const animateOut = () => {
+                 const p2 = Math.min(1, (performance.now() - outStart) / outDur);
+                 sq.style.transform = `translate3d(${cx + tx * Math.pow(p2, 0.5) - sqSize/2}px, ${cy + ty * Math.pow(p2, 0.5) - sqSize/2}px, 0) scale(${1 - p2})`;
+                 if (p2 < 1) requestAnimationFrame(animateOut);
+                 else sq.remove();
+               };
+               requestAnimationFrame(animateOut);
+            }
+          }, 100);
+        }
+      };
+      requestAnimationFrame(slideAnimate);
+      
+    }, 150);
+  }
+}
+
+class RetroTaskCompleteAnimation {
+  static play(element) {
+    console.log('RetroTaskCompleteAnimation.play', element);
+    const activePanel = element ? (element.closest('.pull-tab') || element.closest('.popup-container') || element.closest('.shop-overlay')) : null;
+    const container = activePanel || document.body;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+    const burstCount = lowPower ? 10 : 20;
+    const colors = ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
+
+    // Determine center; fallback to screen center if no rect
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    let rect = null;
+    if (element) {
+      rect = element.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        cx = rect.left + rect.width / 2;
+        cy = rect.top + rect.height / 2;
+      }
+    }
+
+    // Particle burst
+    for(let i = 0; i < burstCount; i++) {
+      const square = document.createElement('div');
+      const size = (10 + Math.random() * 12) * scaleFactor;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      square.style.cssText = `
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        pointer-events: none;
+        z-index: 999998;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(square);
+      
+      // Arc motion variables
+      const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.5);
+      const velocity = 4 + Math.random() * 5;
+      let vx = Math.cos(angle) * velocity;
+      let vy = Math.sin(angle) * velocity - 3; // initial upward bias
+      
+      let x = cx;
+      let y = cy;
+      let life = 1.0;
+      const decay = 0.012 + Math.random() * 0.008; // slightly longer life
+      const gravity = 0.18;
+      
+      const animateParticle = () => {
+        vy += gravity;
+        x += vx;
+        y += vy;
+        life -= decay;
+        
+        if (life > 0) {
+          square.style.transform = `translate3d(${x - size/2}px, ${y - size/2}px, 0) scale(${life})`;
+          requestAnimationFrame(animateParticle);
+        } else {
+          square.remove();
+        }
+      };
+      requestAnimationFrame(animateParticle);
+    }
+  }
+}
+
+class RetroBossEntranceAnimation {
+  static play(bossCard) {
+    if (!bossCard) return;
+
+    // 1. Red overlay flash
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed; inset: 0;
+      background: rgba(255, 0, 0, 0.4);
+      pointer-events: none; z-index: 15000;
+      mix-blend-mode: multiply;
+      transition: opacity 2s ease-out;
+      will-change: opacity;
+    `;
+    document.body.appendChild(overlay);
+    
+    // 2. Glitch lines
+    const glitchLinesCount = (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower) ? 3 : 5;
+    for (let i = 0; i < glitchLinesCount; i++) {
+      const line = document.createElement('div');
+      const top = Math.random() * 100;
+      const height = 2 + Math.random() * 8;
+      line.style.cssText = `
+        position: fixed; left: 0; right: 0;
+        top: ${top}vh; height: ${height}px;
+        background: #fff; opacity: 0.8;
+        pointer-events: none; z-index: 15001;
+        mix-blend-mode: overlay;
+        transform: scaleX(0);
+        transform-origin: ${Math.random() > 0.5 ? 'left' : 'right'};
+        will-change: transform, opacity;
+      `;
+      document.body.appendChild(line);
+      
+      const animateGlitch = () => {
+        line.style.transition = 'transform 100ms steps(3), opacity 100ms';
+        line.style.transform = 'scaleX(1)';
+        setTimeout(() => {
+          line.style.opacity = '0';
+          setTimeout(() => line.remove(), 100);
+        }, 50 + Math.random() * 150);
+      };
+      setTimeout(animateGlitch, Math.random() * 200);
+    }
+
+    // 3. Screen shake (intense)
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(20, 600);
+    }
+
+    // 4. Boss card slam
+    const origTransform = bossCard.style.transform || 'translate(-50%, -50%)';
+    bossCard.style.transition = 'none';
+    bossCard.style.transform = `${origTransform} scale(3) translateY(-100px)`;
+    bossCard.style.opacity = '0';
+    bossCard.style.willChange = 'transform, opacity';
+    
+    // Force reflow
+    void bossCard.offsetWidth;
+
+    bossCard.style.transition = 'transform 300ms cubic-bezier(0.1, 0.9, 0.2, 1), opacity 300ms ease-out';
+    bossCard.style.transform = `${origTransform} scale(1) translateY(0)`;
+    bossCard.style.opacity = '1';
+
+    // Cleanup overlay and inline styles
+    setTimeout(() => {
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+        bossCard.style.transition = '';
+        bossCard.style.transform = '';
+        bossCard.style.opacity = '';
+        bossCard.style.willChange = '';
+      }, 2000);
+    }, 100);
+  }
+}
+
+class RetroWarpAnimation {
+  static play(cardElement) {
+    if (!cardElement) return;
+
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+
+    // Beam effect
+    const beam = document.createElement('div');
+    beam.style.cssText = `
+      position: fixed;
+      left: ${rect.left + rect.width * 0.1}px;
+      top: -100px;
+      width: ${rect.width * 0.8}px;
+      height: ${rect.top + 100}px;
+      background: linear-gradient(180deg, rgba(0, 229, 255, 0) 0%, rgba(0, 229, 255, 0.8) 100%);
+      pointer-events: none;
+      z-index: 12999;
+      mix-blend-mode: screen;
+      transform-origin: bottom;
+      transform: scaleY(0);
+      transition: transform 150ms ease-in, opacity 200ms ease-out;
+      will-change: transform, opacity;
+    `;
+    container.appendChild(beam);
+
+    // Initial card state
+    const origTransform = cardElement.style.transform || 'translate(-50%, -50%)';
+    cardElement.style.transition = 'none';
+    cardElement.style.transform = `${origTransform} scaleY(0) scaleX(0.2)`;
+    cardElement.style.opacity = '0';
+    cardElement.style.filter = 'brightness(2) contrast(1.5)';
+    cardElement.style.willChange = 'transform, opacity, filter';
+    
+    void cardElement.offsetWidth; // Reflow
+
+    // 1. Beam down
+    beam.style.transform = 'scaleY(1)';
+
+    setTimeout(() => {
+      // 2. Card materializes
+      cardElement.style.transition = 'transform 300ms steps(5), opacity 150ms, filter 400ms';
+      cardElement.style.transform = `${origTransform} scaleY(1) scaleX(1)`;
+      cardElement.style.opacity = '1';
+      cardElement.style.filter = 'brightness(1) contrast(1)';
+
+      // Fade beam
+      beam.style.opacity = '0';
+      setTimeout(() => beam.remove(), 200);
+
+      // Clean up inline styles once done
+      setTimeout(() => {
+        cardElement.style.transition = '';
+        cardElement.style.transform = '';
+        cardElement.style.opacity = '';
+        cardElement.style.filter = '';
+        cardElement.style.willChange = '';
+      }, 400);
+
+      // Particle scatter
+      const scatterCount = lowPower ? 4 : 8;
+      for (let i = 0; i < scatterCount; i++) {
+        const sq = document.createElement('div');
+        const size = (4 + Math.random() * 4) * scaleFactor;
+        sq.style.cssText = `
+          position: fixed; left: 0; top: 0;
+          width: ${size}px; height: ${size}px;
+          background: #00e5ff; pointer-events: none; z-index: 13000;
+          will-change: transform, opacity;
+        `;
+        container.appendChild(sq);
+
+        const a = Math.random() * Math.PI * 2;
+        const dist = 20 + Math.random() * 30;
+        const tx = Math.cos(a) * dist;
+        const ty = Math.sin(a) * dist;
+
+        const outStart = performance.now();
+        const outDur = 300;
+
+        const animateOut = () => {
+          const p = Math.min(1, (performance.now() - outStart) / outDur);
+          sq.style.transform = `translate3d(${cx + tx * p - size/2}px, ${cy + ty * p - size/2}px, 0) scale(${1 - p})`;
+          if (p < 1) requestAnimationFrame(animateOut);
+          else sq.remove();
+        };
+        requestAnimationFrame(animateOut);
+      }
+    }, 150);
+  }
+}
+
+
+class RetroLevelUpAnimation {
+  static play() {
+    const container = document.body;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+
+    // 1. Ascension Pillar (Light from bottom covering full width)
+    const pillar = document.createElement('div');
+    pillar.style.cssText = `
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(0deg, rgba(255, 215, 0, 0.7) 0%, rgba(0, 229, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      pointer-events: none;
+      z-index: 14000;
+      mix-blend-mode: screen;
+      transition: transform 400ms cubic-bezier(0.1, 0.8, 0.3, 1), opacity 400ms ease-in;
+      will-change: transform, opacity;
+    `;
+    container.appendChild(pillar);
+
+    // Trigger pillar to expand vertically
+    setTimeout(() => {
+      pillar.style.transform = 'scaleY(1)';
+    }, 50);
+
+    // 2. Floating glowing particles moving up across the entire screen width
+    const particlesCount = lowPower ? 20 : 45; // more particles since it's full screen now!
+    for(let i = 0; i < particlesCount; i++) {
+      const p = document.createElement('div');
+      const size = (6 + Math.random() * 12) * scaleFactor;
+      const isGold = Math.random() > 0.5;
+      
+      // Span across the entire viewport width
+      const startX = Math.random() * window.innerWidth;
+      
+      p.style.cssText = `
+        position: fixed;
+        left: ${startX}px;
+        bottom: -20px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${isGold ? '#FFD700' : '#00e5ff'};
+        box-shadow: 0 0 10px ${isGold ? '#FFD700' : '#00e5ff'};
+        pointer-events: none;
+        z-index: 14001;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(p);
+
+      const delay = Math.random() * 500;
+      const duration = 800 + Math.random() * 800;
+      const drift = -30 + Math.random() * 60; // slightly wider drift
+
+      setTimeout(() => {
+        const start = performance.now();
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const y = window.innerHeight - (progress * window.innerHeight * 1.25); // Shoot past top
+          const currentX = startX + drift * Math.sin(progress * Math.PI * 2);
+          
+          p.style.transform = `translate3d(${currentX - startX}px, ${y - window.innerHeight}px, 0) scale(${1 - progress * 0.4})`;
+          p.style.opacity = 1 - progress;
+
+          if (progress < 1) requestAnimationFrame(animate);
+          else p.remove();
+        };
+        requestAnimationFrame(animate);
+      }, delay);
+    }
+
+    // Cleanup pillar
+    setTimeout(() => {
+      pillar.style.opacity = '0';
+      setTimeout(() => pillar.remove(), 400);
+    }, 900);
+  }
+}
+
+class RetroHealAnimation {
+  static play(x = window.innerWidth / 2, y = window.innerHeight) {
+    const container = document.body;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+    
+    // Bubble particles
+    const bubbleCount = lowPower ? 8 : 15;
+    for (let i = 0; i < bubbleCount; i++) {
+      const bubble = document.createElement('div');
+      const size = (6 + Math.random() * 8) * scaleFactor;
+      bubble.style.cssText = `
+        position: fixed;
+        left: ${x - 40 + Math.random() * 80}px;
+        top: ${y - 40}px;
+        width: ${size}px;
+        height: ${size}px;
+        background: #00ff66;
+        border: 1px solid #fff;
+        pointer-events: none;
+        z-index: 14002;
+        border-radius: 2px; // slightly rounded retro bubble
+        will-change: transform, opacity;
+      `;
+      container.appendChild(bubble);
+
+      const drift = -15 + Math.random() * 30;
+      const startX = parseFloat(bubble.style.left);
+      const startY = parseFloat(bubble.style.top);
+      const duration = 600 + Math.random() * 400;
+      const delay = Math.random() * 200;
+
+      setTimeout(() => {
+        const start = performance.now();
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const currentY = startY - (progress * 150); // float up
+          const currentX = startX + drift * Math.sin(progress * Math.PI * 4); // wiggle
+          
+          bubble.style.transform = `translate3d(${currentX - startX}px, ${currentY - startY}px, 0) scale(${1 - progress * 0.3})`;
+          bubble.style.opacity = 1 - progress;
+
+          if (progress < 1) requestAnimationFrame(animate);
+          else bubble.remove();
+        };
+        requestAnimationFrame(animate);
+      }, delay);
+    }
+  }
+}
+
+class RetroCritSlashAnimation {
+  static play(cardElement) {
+    if (!cardElement) return;
+
+    const container = document.body;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+
+    // 1. Heavy screen effects
+    if (typeof ScreenEffects !== 'undefined') {
+      ScreenEffects.shake(12, 200);
+      ScreenEffects.flash('rgba(255, 0, 68, 0.18)', 150);
+    }
+
+    // Coordinate overlapping animations on the card
+    const origTransform = cardElement.dataset.originalTransform !== undefined 
+      ? cardElement.dataset.originalTransform 
+      : (cardElement.style.transform || 'translate(-50%, -50%)');
+      
+    if (cardElement.dataset.originalTransform === undefined) {
+      cardElement.dataset.originalTransform = origTransform;
+    }
+    
+    cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
+    
+    if (cardElement.animResetTimeout) {
+      clearTimeout(cardElement.animResetTimeout);
+    }
+
+    const resetCard = () => {
+      cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
+      if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
+        cardElement.style.transform = cardElement.dataset.originalTransform;
+        cardElement.style.transition = '';
+        cardElement.style.opacity = '';
+        cardElement.style.willChange = '';
+        delete cardElement.dataset.originalTransform;
+        delete cardElement.dataset.activeAnimsCount;
+      }
+    };
+
+    // 1-second safety fallback: force reset after 1s of inactivity
+    cardElement.animResetTimeout = setTimeout(() => {
+      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
+      cardElement.style.transition = '';
+      cardElement.style.opacity = '';
+      cardElement.style.willChange = '';
+      delete cardElement.dataset.originalTransform;
+      delete cardElement.dataset.activeAnimsCount;
+    }, 1000);
+
+    // 2. Snap scale card with skew for distortion
+    cardElement.style.transition = 'none';
+    cardElement.style.willChange = 'transform';
+    cardElement.style.transform = `${origTransform} scale(1.18) skew(4deg, 4deg)`;
+    
+    setTimeout(() => {
+      cardElement.style.transform = `${origTransform} scale(0.92) skew(-2deg, -2deg)`;
+      setTimeout(() => {
+        resetCard();
+      }, 100);
+    }, 80);
+
+    // 3. Double diagonal X-slash particles
+    const slashLength = Math.min(rect.width, rect.height) * 0.95;
+    const steps = lowPower ? 6 : 10;
+    
+    const drawSlash = (angleRad) => {
+      for (let i = 0; i < steps; i++) {
+        const sq = document.createElement('div');
+        const size = (16 + Math.random() * 8) * scaleFactor; // larger bolder particles
+        
+        const offset = (i - steps / 2) * (slashLength / steps);
+        const px = cx + Math.cos(angleRad) * offset;
+        const py = cy + Math.sin(angleRad) * offset;
+
+        sq.style.cssText = `
+          position: fixed;
+          left: ${px - size / 2}px;
+          top: ${py - size / 2}px;
+          width: ${size}px;
+          height: ${size}px;
+          background: #ff0044;
+          border: 2px solid #ffd700;
+          box-shadow: 0 0 12px rgba(255, 0, 68, 0.6);
+          pointer-events: none;
+          z-index: 13500;
+          will-change: transform, opacity;
+          border-radius: 2px;
+        `;
+        container.appendChild(sq);
+
+        // Sequence delays to simulate a cutting motion
+        const delay = i * 15;
+        setTimeout(() => {
+          const start = performance.now();
+          const duration = 250;
+          const animate = () => {
+            const progress = Math.min(1, (performance.now() - start) / duration);
+            sq.style.transform = `scale(${1.2 - progress * 1.2}) rotate(${progress * 90}deg)`;
+            sq.style.opacity = 1 - progress;
+            if (progress < 1) requestAnimationFrame(animate);
+            else sq.remove();
+          };
+          requestAnimationFrame(animate);
+        }, delay);
+      }
+    };
+
+    // Draw both diagonals of the X
+    drawSlash(-Math.PI / 4); // Top-left to bottom-right
+    setTimeout(() => {
+      drawSlash(Math.PI / 4);  // Bottom-left to top-right
+    }, 60); // slightly staggered for maximum style
+  }
+}
+
+class RetroComboFinisherAnimation {
+  static play(cardElement) {
+    if (!cardElement) return;
+
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
+
+    // 1. Heavy screen effects
+    if (typeof ScreenEffects !== 'undefined') {
+      ScreenEffects.shake(15, 350);
+      ScreenEffects.flash('rgba(255, 204, 0, 0.16)', 200);
+    }
+
+    // Coordinate overlapping animations on the card
+    const origTransform = cardElement.dataset.originalTransform !== undefined 
+      ? cardElement.dataset.originalTransform 
+      : (cardElement.style.transform || 'translate(-50%, -50%)');
+      
+    if (cardElement.dataset.originalTransform === undefined) {
+      cardElement.dataset.originalTransform = origTransform;
+    }
+    
+    cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
+    
+    if (cardElement.animResetTimeout) {
+      clearTimeout(cardElement.animResetTimeout);
+    }
+
+    const resetCard = () => {
+      cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
+      if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
+        cardElement.style.transform = cardElement.dataset.originalTransform;
+        cardElement.style.transition = '';
+        cardElement.style.opacity = '';
+        cardElement.style.willChange = '';
+        delete cardElement.dataset.originalTransform;
+        delete cardElement.dataset.activeAnimsCount;
+      }
+    };
+
+    // 1-second safety fallback: force reset after 1s of inactivity
+    cardElement.animResetTimeout = setTimeout(() => {
+      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
+      cardElement.style.transition = '';
+      cardElement.style.opacity = '';
+      cardElement.style.willChange = '';
+      delete cardElement.dataset.originalTransform;
+      delete cardElement.dataset.activeAnimsCount;
+    }, 1000);
+
+    // 2. Snappy Card Impact Bounce
+    cardElement.style.transition = 'none';
+    cardElement.style.willChange = 'transform';
+    cardElement.style.transform = `${origTransform} scale(1.22) translateY(20px)`;
+    
+    setTimeout(() => {
+      cardElement.style.transform = `${origTransform} scale(0.9) translateY(-10px)`;
+      setTimeout(() => {
+        resetCard();
+      }, 120);
+    }, 80);
+
+    // 3. Double Gold shockwave rings (expanding squares)
+    const createRing = (delay, borderSize, maxScale) => {
+      setTimeout(() => {
+        const ring = document.createElement('div');
+        const startSize = Math.min(rect.width, rect.height) * 0.5;
+        ring.style.cssText = `
+          position: fixed;
+          left: ${cx - startSize/2}px;
+          top: ${cy - startSize/2}px;
+          width: ${startSize}px;
+          height: ${startSize}px;
+          border: ${borderSize}px solid #ffd700;
+          box-shadow: 0 0 20px #ffaa00, inset 0 0 10px #ffd700;
+          background: rgba(255, 215, 0, 0.05);
+          pointer-events: none;
+          z-index: 13400;
+          will-change: transform, opacity;
+          border-radius: 6px;
+        `;
+        container.appendChild(ring);
+
+        const start = performance.now();
+        const duration = 450;
+        const animateRing = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const scale = 1 + progress * (maxScale - 1);
+          ring.style.transform = `scale(${scale})`;
+          ring.style.opacity = 1 - progress;
+          if (progress < 1) requestAnimationFrame(animateRing);
+          else ring.remove();
+        };
+        requestAnimationFrame(animateRing);
+      }, delay);
+    };
+
+    createRing(0, 6, 3.8);   // Outer Ring
+    if (!lowPower) {
+      createRing(100, 4, 3.2); // Inner staggered ring
+    }
+
+    // 4. Exploding golden square particles
+    const particleCount = lowPower ? 12 : 24;
+    for (let i = 0; i < particleCount; i++) {
+      const sq = document.createElement('div');
+      const size = (12 + Math.random() * 10) * scaleFactor;
+      sq.style.cssText = `
+        position: fixed;
+        left: 0; top: 0;
+        width: ${size}px; height: ${size}px;
+        background: #ffd700;
+        border: 2px solid #ff5500;
+        box-shadow: 0 0 10px #ffaa00;
+        pointer-events: none;
+        z-index: 13401;
+        will-change: transform, opacity;
+        border-radius: 1px;
+      `;
+      container.appendChild(sq);
+
+      const angle = (i / particleCount) * Math.PI * 2 + (Math.random() * 0.4 - 0.2);
+      const velocity = 6 + Math.random() * 8;
+      const vx = Math.cos(angle) * velocity;
+      const vy = Math.sin(angle) * velocity;
+
+      const pStart = performance.now();
+      const pDur = 500 + Math.random() * 200;
+
+      const animateParticle = () => {
+        const p = Math.min(1, (performance.now() - pStart) / pDur);
+        const curX = cx + vx * p * 18;
+        const curY = cy + vy * p * 18;
+        sq.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${1.2 - p * 1.2}) rotate(${p * 360}deg)`;
+        sq.style.opacity = 1 - p;
+
+        if (p < 1) requestAnimationFrame(animateParticle);
+        else sq.remove();
+      };
+      requestAnimationFrame(animateParticle);
+    }
   }
 }

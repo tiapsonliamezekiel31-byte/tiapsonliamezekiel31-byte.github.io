@@ -283,6 +283,7 @@ class CombatManager {
 
     let anyKilled = false;
     let primaryDamage = 0;
+    const hitDetails = [];
     targets.forEach(entry => {
       const tgt = entry.enemy;
       if (!tgt || tgt.isDead) return;
@@ -330,6 +331,13 @@ class CombatManager {
       const survivesFinalStand = EnemyManager.applyFinalStand(tgt, enforcedDamage);
       if (!survivesFinalStand) {
         tgt.takeDamage(enforcedDamage);
+
+        hitDetails.push({
+          enemyId: tgt.id,
+          damage: enforcedDamage,
+          isCrit: isCrit,
+          isDead: tgt.isDead
+        });
 
         if (attackPlan.specialId === 'vine') {
           const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
@@ -428,6 +436,13 @@ class CombatManager {
             }
           }
         }
+      } else {
+        hitDetails.push({
+          enemyId: tgt.id,
+          damage: enforcedDamage,
+          isCrit: isCrit,
+          isDead: false
+        });
       }
     });
     
@@ -516,7 +531,9 @@ class CombatManager {
       targetDead: target.isDead,
       apCost: actualCost,
       fireRate,
-      specialPopups
+      specialPopups,
+      combo: state.combatState.currentCombo,
+      hitDetails
     };
   }
   

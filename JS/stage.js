@@ -6,44 +6,50 @@
 const FORMATIONS = {
   1: {
     A: {
-      1: { enemies: [{ name: 'Goblin', count: '6-8' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Wolf', count: '1' }] },
-      2: { enemies: [{ name: 'Goblin', count: '7-9' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Goblin Wizard', count: '1' }] },
-      3: { enemies: [{ name: 'Goblin', count: '5-7' }, { name: 'Wolf', count: '1-2' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Goblin Wizard', count: '1-2' }] },
-      4: { isBoss: true, bossName: 'Demon' }
+      1: { enemies: [{ name: 'Goblin', count: '5-7' }, { name: 'Wolf', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Lion', count: '1' }] },
+      2: { enemies: [{ name: 'Goblin', count: '6-8' }, { name: 'Wolf', count: '1-2' }, { name: 'Goblin Wizard', count: '1' }, { name: 'Lion', count: '1' }] },
+      3: { enemies: [{ name: 'Goblin', count: '5-7' }, { name: 'Wolf', count: '1' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Goblin Wizard', count: '1-2' }] },
+      4: { enemies: [{ name: 'Goblin', count: '6-8' }, { name: 'Wolf', count: '1-2' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Lion', count: '1' }, { name: 'Goblin Wizard', count: '2' }] },
+      5: { isBoss: true, bossName: 'Demon' }
     },
     B: {
-      1: { enemies: [{ name: 'Giant Scorpion', count: '1' }, { name: 'Beetle', count: '1' }, { name: 'Outlaw', count: '6-8' }] },
-      2: { enemies: [{ name: 'Giant Scorpion', count: '1-2' }, { name: 'Outlaw', count: '6-8' }, { name: 'Beetle', count: '1' }] },
-      3: { enemies: [{ name: 'Giant Scorpion', count: '2' }, { name: 'Grave Guardian', count: '1' }, { name: 'Outlaw', count: '6-7' }] },
-      4: { isBoss: true, bossName: 'Mummified Marcher' }
+      1: { enemies: [{ name: 'Marcher', count: '1' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '5-7' }, { name: 'Raptor', count: '1-2' }] },
+      2: { enemies: [{ name: 'Marcher', count: '1-2' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '4-6' }, { name: 'Raptor', count: '2' }] },
+      3: { enemies: [{ name: 'Marcher', count: '2' }, { name: 'Grave Guardian', count: '1' }, { name: 'Drone', count: '4-6' }, { name: 'Raptor', count: '1-2' }] },
+      4: { enemies: [{ name: 'Marcher', count: '2' }, { name: 'Grave Guardian', count: '1-2' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '5-7' }, { name: 'Raptor', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'Mummified Marcher' }
     }
   },
   2: {
     A: {
-      1: { enemies: [{ name: 'Tarantula', count: '1-2' }, { name: 'Cave Saw', count: '1' }, { name: 'Brain Eater', count: '6-7' }] },
-      2: { enemies: [{ name: 'Brain Eater', count: '1' }, { name: 'Tarantula', count: '2-3' }, { name: 'Cave Saw', count: '6-7' }] },
-      3: { enemies: [{ name: 'Brain Eater', count: '1-2' }, { name: 'Tarantula', count: '2-3' }, { name: 'Cave Saw', count: '5-7' }] },
-      4: { isBoss: true, bossName: 'Crimson Wizard' }
+      1: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '1' }, { name: 'Dark Sorcerer', count: '1' }, { name: 'Death Bringer', count: '1' }] },
+      2: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '1-2' }, { name: 'Dark Sorcerer', count: '1-2' }, { name: 'Death Bringer', count: '1' }] },
+      3: { enemies: [{ name: 'Brain Eaters', count: '4-6' }, { name: 'Tarantulator', count: '2' }, { name: 'Dark Sorcerer', count: '1-2' }, { name: 'Death Bringer', count: '1-2' }] },
+      4: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '2' }, { name: 'Dark Sorcerer', count: '2' }, { name: 'Death Bringer', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'Crimson Wizard' }
     },
     B: {
-      1: { enemies: [{ name: 'Leech', count: '2-3' }, { name: 'Frog', count: '5-7' }, { name: 'Zombie', count: '1' }] },
-      2: { enemies: [{ name: 'Zombie', count: '1' }, { name: 'Leech', count: '2-3' }, { name: 'Frog', count: '6-7' }] },
-      3: { enemies: [{ name: 'Zombie', count: '1-2' }, { name: 'Leech', count: '2-3' }, { name: 'Frog', count: '5-6' }] },
-      4: { isBoss: true, bossName: 'Worm Eater' }
+      1: { enemies: [{ name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1' }, { name: 'Zombie', count: '1' }] },
+      2: { enemies: [{ name: 'Zombie', count: '1' }, { name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1' }, { name: 'Croc', count: '1' }] },
+      3: { enemies: [{ name: 'Zombie', count: '1-2' }, { name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1-2' }, { name: 'Croc', count: '1' }] },
+      4: { enemies: [{ name: 'Zombie', count: '2' }, { name: 'Leech', count: '3' }, { name: 'Giant Frog', count: '5-7' }, { name: 'Plagued', count: '2' }, { name: 'Croc', count: '1' }] },
+      5: { isBoss: true, bossName: 'Worm Eater' }
     }
   },
   3: {
     A: {
-      1: { enemies: [{ name: 'Ice Spirit', count: '6-8' }, { name: 'Stalker Bear', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
-      2: { enemies: [{ name: 'Ice Spirit', count: '7-9' }, { name: 'Stalker Bear', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
-      3: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Stalker Bear', count: '1-2' }, { name: 'Yeti Mage', count: '1' }] },
-      4: { isBoss: true, bossName: 'Jade Giant' }
+      1: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1' }, { name: 'Yeti Hunter', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
+      2: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1' }, { name: 'Yeti Hunter', count: '1-2' }, { name: 'Yeti Mage', count: '1' }] },
+      3: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1-2' }, { name: 'Yeti Hunter', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
+      4: { enemies: [{ name: 'Ice Spirit', count: '6-8' }, { name: 'Yeti Smasher', count: '2' }, { name: 'Yeti Hunter', count: '1-2' }, { name: 'Yeti Mage', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'Jade Giant' }
     },
     B: {
       1: { enemies: [{ name: 'Stone Lizard', count: '2' }, { name: 'Termite', count: '5-7' }, { name: 'Turret', count: '1' }] },
       2: { enemies: [{ name: 'Golem', count: '1' }, { name: 'Termite', count: '5-7' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Turret', count: '1' }] },
       3: { enemies: [{ name: 'Golem', count: '1-2' }, { name: 'Termite', count: '4-6' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Turret', count: '1-2' }] },
-      4: { isBoss: true, bossName: 'Star Computer' }
+      4: { enemies: [{ name: 'Golem', count: '2' }, { name: 'Turret', count: '2' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Termite', count: '4-6' }] },
+      5: { isBoss: true, bossName: 'Star Computer' }
     }
   },
   4: {
@@ -51,13 +57,15 @@ const FORMATIONS = {
       1: { enemies: [{ name: 'Skeleton', count: '6-8' }, { name: 'Ghost', count: '1' }, { name: 'Coffin Carrier', count: '1' }] },
       2: { enemies: [{ name: 'Skeleton', count: '7-9' }, { name: 'Ghost', count: '1' }, { name: 'Coffin Carrier', count: '1' }, { name: 'Ferryman', count: '1' }] },
       3: { enemies: [{ name: 'Skeleton', count: '5-7' }, { name: 'Ghost', count: '1-2' }, { name: 'Coffin Carrier', count: '1' }, { name: 'Ferryman', count: '1' }] },
-      4: { isBoss: true, bossName: 'Angel' }
+      4: { enemies: [{ name: 'Ghost', count: '2' }, { name: 'Ferryman', count: '1-2' }, { name: 'Skeleton', count: '5-7' }, { name: 'Coffin Carrier', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'Angel' }
     },
     B: {
       1: { enemies: [{ name: 'Flying Skull', count: '6-8' }, { name: 'Knight', count: '1' }, { name: 'Baby Dragon', count: '1' }] },
       2: { enemies: [{ name: 'Knight', count: '1' }, { name: 'Paladin', count: '1' }, { name: 'Fire Mage', count: '1' }, { name: 'Flying Skull', count: '6-8' }] },
       3: { enemies: [{ name: 'Knight', count: '1' }, { name: 'Paladin', count: '1' }, { name: 'Fire Mage', count: '1' }, { name: 'Baby Dragon', count: '2-3' }, { name: 'Flying Skull', count: '4-6' }] },
-      4: { isBoss: true, bossName: 'Killer Queen' }
+      4: { enemies: [{ name: 'Paladin', count: '2' }, { name: 'Fire Mage', count: '1' }, { name: 'Baby Dragon', count: '2-3' }, { name: 'Flying Skull', count: '5-7' }] },
+      5: { isBoss: true, bossName: 'Killer Queen' }
     }
   },
   5: {
@@ -65,13 +73,15 @@ const FORMATIONS = {
       1: { enemies: [{ name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '5-7' }, { name: 'Master', count: '1' }] },
       2: { enemies: [{ name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '4-6' }, { name: 'Master', count: '2' }, { name: 'Priest', count: '1' }] },
       3: { enemies: [{ name: 'Master', count: '2-3' }, { name: 'Ninja', count: '5-7' }, { name: 'Priest', count: '1' }, { name: 'Magma Blob', count: '2-3' }] },
-      4: { isBoss: true, bossName: 'Satan\'s Shark', special: 'survival' }
+      4: { enemies: [{ name: 'Priest', count: '1' }, { name: 'Master', count: '2-3' }, { name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '3-5' }] },
+      5: { isBoss: true, bossName: 'Satan\'s Shark', special: 'survival' }
     },
     B: {
       1: { enemies: [{ name: 'Air Wyvern', count: '1' }, { name: 'Water Drake', count: '1' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-7' }] },
       2: { enemies: [{ name: 'Air Wyvern', count: '1' }, { name: 'Water Drake', count: '2' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-7' }] },
       3: { enemies: [{ name: 'Air Wyvern', count: '2' }, { name: 'Water Drake', count: '1-2' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-6' }] },
-      4: { isBoss: true, bossName: 'Fire Turtle', special: 'survival' }
+      4: { enemies: [{ name: 'Aetherian Hydra', count: '2' }, { name: 'Air Wyvern', count: '2' }, { name: 'Water Drake', count: '1-2' }, { name: 'Earth Wyrm', count: '5-6' }] },
+      5: { isBoss: true, bossName: 'Fire Turtle', special: 'survival' }
     }
   },
   6: {
@@ -79,27 +89,24 @@ const FORMATIONS = {
       1: { enemies: [{ name: 'Dwarf', count: '7-9' }, { name: 'Driller', count: '1' }, { name: 'Atom', count: '1' }] },
       2: { enemies: [{ name: 'Dwarf', count: '8-10' }, { name: 'Driller', count: '1' }, { name: 'Atom', count: '1' }] },
       3: { enemies: [{ name: 'Driller', count: '2' }, { name: 'Atom', count: '1' }, { name: 'Dwarf', count: '6-8' }] },
-      4: { isBoss: true, bossName: 'Banished King' }
+      4: { enemies: [{ name: 'Atom', count: '2' }, { name: 'Driller', count: '1-2' }, { name: 'Dwarf', count: '6-8' }] },
+      5: { isBoss: true, bossName: 'Banished King' }
     },
     B: {
-      1: { enemies: [{ name: 'Soldier', count: '7-9' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }] },
-      2: { enemies: [{ name: 'Soldier', count: '6-8' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }, { name: 'Constellation Crusher', count: '1' }] },
-      3: { enemies: [{ name: 'Soldier', count: '7-9' }, { name: 'Kraken', count: '1' }, { name: 'Constellation Crusher', count: '1' }, { name: 'World Eating Snake', count: '1' }] },
-      4: { isBoss: true, bossName: 'The Sun' }
+      1: { enemies: [{ name: 'Megalodon', count: '6-8' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }] },
+      2: { enemies: [{ name: 'Megalodon', count: '5-7' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }, { name: 'Constellation Crusher', count: '1' }] },
+      3: { enemies: [{ name: 'Megalodon', count: '5-7' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }, { name: 'Constellation Crusher', count: '1' }] },
+      4: { enemies: [{ name: 'Megalodon', count: '6-8' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1-2' }, { name: 'Constellation Crusher', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'The Sun' }
     }
   },
   7: {
     A: {
-      1: { enemies: [{ name: 'Watcher', count: '1' }, { name: 'Soul', count: '6-8' }, { name: 'Chaos', count: '1' }] },
-      2: { enemies: [{ name: 'Watcher', count: '1' }, { name: 'Chaos', count: '1-2' }, { name: 'Soul', count: '6-8' }] },
-      3: { enemies: [{ name: 'Watcher', count: '1-2' }, { name: 'Chaos', count: '1-2' }, { name: 'Soul', count: '6-8' }] },
-      4: { isBoss: true, bossName: 'Nemesis', special: 'final' }
-    },
-    B: {
-      1: { enemies: [{ name: 'Watcher', count: '1' }, { name: 'Soul', count: '6-8' }, { name: 'Chaos', count: '1' }] },
-      2: { enemies: [{ name: 'Watcher', count: '1' }, { name: 'Chaos', count: '1-2' }, { name: 'Soul', count: '6-8' }] },
-      3: { enemies: [{ name: 'Watcher', count: '1-2' }, { name: 'Chaos', count: '1-2' }, { name: 'Soul', count: '6-8' }] },
-      4: { isBoss: true, bossName: 'Nemesis', special: 'final' }
+      1: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '1' }, { name: 'Porcupine', count: '1' }, { name: 'Phoenix', count: '1' }] },
+      2: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '1-2' }, { name: 'Porcupine', count: '1' }, { name: 'Phoenix', count: '1' }] },
+      3: { enemies: [{ name: 'Bat', count: '4-6' }, { name: 'Slug', count: '1-2' }, { name: 'Porcupine', count: '1-2' }, { name: 'Phoenix', count: '1' }] },
+      4: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '2' }, { name: 'Porcupine', count: '2' }, { name: 'Phoenix', count: '1-2' }] },
+      5: { isBoss: true, bossName: 'Nemesis', special: 'final' }
     }
   }
 };
@@ -138,8 +145,8 @@ class StageManager {
       daysSurvived: 0
     };
     
-    // Choose stage variation randomly
-    state.stageState.stageVariation = Math.random() < 0.5 ? 'A' : 'B';
+    // Choose stage variation (handles single-variant stages like Stage 7)
+    state.stageState.stageVariation = this.pickStageVariation(stage);
     
     this.generateLevel(1);
     this.syncUI();
@@ -297,7 +304,7 @@ class StageManager {
     }
     
     state.stageState.stage++;
-    state.stageState.stageVariation = Math.random() < 0.5 ? 'A' : 'B';
+    state.stageState.stageVariation = this.pickStageVariation(state.stageState.stage);
     
     state.eventBus.emit(EVENTS.STAGE_COMPLETE, {
       stage: state.stageState.stage - 1,
@@ -305,6 +312,13 @@ class StageManager {
     });
     
     return this.generateLevel(1);
+  }
+
+  static pickStageVariation(stage) {
+    // If the stage has only one variant (e.g., Stage 7), force 'A'
+    const stageFormations = FORMATIONS[stage];
+    if (stageFormations && !stageFormations.B) return 'A';
+    return Math.random() < 0.5 ? 'A' : 'B';
   }
   
   static getAllEnemies() {

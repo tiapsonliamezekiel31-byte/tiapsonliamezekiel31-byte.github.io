@@ -87,7 +87,16 @@ function getLocalDayKey(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-const USER_DATA_STORAGE_KEYS = ['nemesis_data', 'nemesis_planner_data', 'nemesis_shop_data'];
+const USER_DATA_STORAGE_KEYS = [
+  'nemesis_data', 
+  'nemesis_planner_data', 
+  'nemesis_shop_data',
+  'nemesis_hud_pos',
+  'nemesis_satchel_pos',
+  'nemesis_weapon_pos',
+  'nemesis_center_pos',
+  'nemesis_run_graph_pos'
+];
 const USER_DATA_EXPORT_VERSION = 1;
 
 function normalizeDailyNoteEntry(entry, fallbackText = '') {
@@ -859,7 +868,13 @@ function performCheckIn() {
       if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
         state.combatState.dodgeTarget = dodgeTargets.filter(id => id !== enemy.id);
         consumeReactiveWeaponEffect();
-        state.eventBus.emit(EVENTS.ATTACK, { type: 'dodgeAvoid', enemyId: enemy.id });
+        retaliationSteps.push({
+          enemyId: enemy.id,
+          name: enemy.name,
+          isBoss,
+          damage: 0,
+          isDodge: true
+        });
         return;
       }
 

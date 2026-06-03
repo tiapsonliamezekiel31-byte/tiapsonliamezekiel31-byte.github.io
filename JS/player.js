@@ -86,6 +86,10 @@ class PlayerManager {
     state.playerState.level++;
     state.eventBus.emit(EVENTS.LEVEL_UP, { level: state.playerState.level });
     
+    if (typeof RetroLevelUpAnimation !== 'undefined') {
+      RetroLevelUpAnimation.play();
+    }
+    
     return true;
   }
   
@@ -315,6 +319,10 @@ class PlayerManager {
         }
       }
     } catch (e) { console.warn('Failed to apply consumable effect', key, e); }
+    
+    if (typeof RetroHealAnimation !== 'undefined') {
+      RetroHealAnimation.play();
+    }
 
     // Persist
     if (state.save) state.save();

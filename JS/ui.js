@@ -16,6 +16,7 @@ class UIManager {
   static dailyDragSuppressUntil = 0;
   static todoDragState = null;
   static todoDragSuppressUntil = 0;
+  static quickDayDeadline = null; // timestamp or null – default deadline for new todos
   static _dailyHistoryCache = {};
   static _updateDailiesTimer = null;
   static _stageBackdropKey = '';
@@ -130,9 +131,6 @@ class UIManager {
     if (!state.combatState) state.combatState = {};
 
     const spinner = this.getSpinnerElement();
-    if (spinner && spinner.classList.contains('dodge-active')) {
-      return 333;
-    }
 
     const hoveredEnemyId = String(state.combatState.hoveredEnemyId || '');
     const attackTargetId = String(state.combatState.attackSpinnerTargetId || '');
@@ -210,7 +208,8 @@ class UIManager {
 
   static initializeUI() {
     document.body.innerHTML = '';
-    this.createHeadbar();
+    this.createHudWidget();
+    this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
     this.createPullTabs();
@@ -222,54 +221,132 @@ class UIManager {
   }
 
   static adjustLayout() {
-    const headbar = document.querySelector('.headbar');
     const gameArea = document.getElementById('gameArea');
-    if (!headbar || !gameArea) return;
-    const h = headbar.offsetHeight;
-    document.documentElement.style.setProperty('--headbar-height', `${h}px`);
-    // Position game area below the headbar and adjust available height
-    gameArea.style.top = h + 'px';
-    gameArea.style.height = `calc(100% - ${h}px - 60px)`;
+    if (!gameArea) return;
+    gameArea.style.top = '0px';
+    gameArea.style.height = `calc(100% - 60px)`;
   }
   
-  static createHeadbar() {
-    const headbar = document.createElement('div');
-    headbar.id = 'headbar';
-    headbar.className = 'headbar';
-    headbar.innerHTML = `
-      <div class="headbar-left">
-        <button id="homeBtn" class="btn-icon">🏠</button>
-        <button id="plannerBtn" class="btn-icon">📅</button>
-        <button id="shopBtn" class="btn-icon">🛒</button>
-        <button id="diamondRewardsBtn" class="btn-icon diamond-rewards-btn" title="Diamond Rewards">💎+</button>
-        <button id="checkInBtn" class="btn-icon">✅</button>
-        <button id="pauseBtn" class="btn-icon">⏸️</button>
-      </div>
-      <div class="headbar-center">
-        <div class="resource-bar">
-          <div class="resource">
-            <div class="bar hp-bar"><div id="hpFill" class="fill" style="width: 100%"></div></div>
-            <div class="resource-overlay"><label>HP</label><span id="hpValue">100</span>/<span id="hpMax">100</span></div>
-          </div>
-          <div class="resource">
-            <div class="bar mana-bar"><div id="manaFill" class="fill" style="width: 100%"></div></div>
-            <div class="resource-overlay"><label>Mana</label><span id="manaValue">0</span>/<span id="manaMax">0</span></div>
-          </div>
-          <div class="resource">
-            <div class="bar ap-bar"><div id="apFill" class="fill" style="width: 100%"></div></div>
-            <div class="resource-overlay"><label>AP</label><span id="apValue">0</span>/<span id="apMax">0</span></div>
-          </div>
+  static createHudWidget() {
+    const hud = document.createElement('div');
+    hud.id = 'draggableHud';
+    hud.className = 'draggable-hud';
+    hud.innerHTML = `
+      <div class="hud-drag-handle" id="hudDragHandle"></div>
+      <div class="hud-resources">
+        <div class="hud-resource">
+          <label>HP</label>
+          <div class="hud-bar hp-bar"><div id="hpFill" class="fill" style="width: 100%"></div></div>
+          <div class="hud-resource-text"><span id="hpValue">100</span>/<span id="hpMax">100</span></div>
+        </div>
+        <div class="hud-resource">
+          <label>Mana</label>
+          <div class="hud-bar mana-bar"><div id="manaFill" class="fill" style="width: 100%"></div></div>
+          <div class="hud-resource-text"><span id="manaValue">0</span>/<span id="manaMax">0</span></div>
+        </div>
+        <div class="hud-resource">
+          <label>AP</label>
+          <div class="hud-bar ap-bar"><div id="apFill" class="fill" style="width: 100%"></div></div>
+          <div class="hud-resource-text"><span id="apValue">0</span>/<span id="apMax">0</span></div>
         </div>
       </div>
-      <div class="headbar-right">
-        <div id="deathDefianceBadge" class="death-defiance-badge">DEFIANCE READY</div>
-        <div class="currency">
-          <span>💰 <span id="goldValue">0</span></span>
-          <span>💎 <span id="diamondValue">0</span></span>
-        </div>
+      <div class="hud-currencies">
+        <span>💰 <span id="goldValue">0</span></span>
+        <span>💎 <span id="diamondValue">0</span></span>
       </div>
     `;
-    document.body.appendChild(headbar);
+    document.body.appendChild(hud);
+
+    const handle = hud.querySelector('#hudDragHandle');
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+    const savedPos = localStorage.getItem('nemesis_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.right = 'auto';
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) {}
+    }
+
+    const onPointerDown = (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.right = 'auto';
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      handle.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const maxX = window.innerWidth - hud.offsetWidth;
+      const maxY = window.innerHeight - hud.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      hud.style.left = newLeft + 'px';
+      hud.style.top = newTop + 'px';
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    handle.addEventListener('pointerdown', onPointerDown);
+    handle.addEventListener('pointermove', onPointerMove);
+    handle.addEventListener('pointerup', onPointerUp);
+    handle.addEventListener('pointercancel', onPointerUp);
+  }
+
+  static createNavigationMenu() {
+    const hamburger = document.createElement('div');
+    hamburger.id = 'navHamburgerBtn';
+    hamburger.className = 'nav-hamburger-btn';
+    hamburger.innerHTML = '☰';
+    document.body.appendChild(hamburger);
+
+    const navPanel = document.createElement('div');
+    navPanel.id = 'navMenuPanel';
+    navPanel.className = 'nav-menu-panel';
+    navPanel.innerHTML = `
+      <div id="deathDefianceBadge" class="death-defiance-badge" style="margin-bottom: 4px;">DEFIANCE READY</div>
+      <button id="homeBtn" class="btn-nav-item">🏠 Home</button>
+      <button id="plannerBtn" class="btn-nav-item">📅 Planner</button>
+      <button id="diamondRewardsBtn" class="btn-nav-item diamond-rewards-btn">💎 Rewards</button>
+      <button id="checkInBtn" class="btn-nav-item">✅ Check In</button>
+      <button id="pauseBtn" class="btn-nav-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 4px;">⏸️ Pause</button>
+    `;
+    document.body.appendChild(navPanel);
+
+    hamburger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navPanel.classList.toggle('active');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (navPanel.classList.contains('active') && !navPanel.contains(e.target) && e.target !== hamburger) {
+        navPanel.classList.remove('active');
+      }
+    });
   }
   
   static createGameArea() {
@@ -277,13 +354,14 @@ class UIManager {
     gameArea.id = 'gameArea';
     gameArea.className = 'game-area';
     gameArea.innerHTML = `
-      <div class="stage-date-wrap">
-        <div id="dateDisplay" class="date-display stage-date"></div>
-      </div>
       <div class="game-top-left">
         <div id="weaponStrip" class="weapon-strip"></div>
       </div>
-      <div class="game-center">
+      <div id="gameCenter" class="game-center">
+        <div class="center-drag-handle" id="centerDragHandle"></div>
+        <div class="stage-date-wrap">
+          <div id="dateDisplay" class="date-display stage-date"></div>
+        </div>
         <div class="enemy-circle-container">
           <div id="levelIndicator" class="level-indicator"></div>
           <canvas id="enemyCanvas" class="enemy-canvas"></canvas>
@@ -298,6 +376,7 @@ class UIManager {
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
       <div id="runCompletionPanel" class="run-completion-panel" aria-label="Run completion graph">
+        <div class="run-completion-drag-handle" id="runCompletionDragHandle"></div>
         <div class="run-completion-head">
           <span>RUN COMPLETION</span>
           <span id="runCompletionRate">0%</span>
@@ -307,6 +386,117 @@ class UIManager {
       <div class="combo-indicator" id="comboIndicator"></div>
     `;
     document.body.appendChild(gameArea);
+
+    const centerGroup = gameArea.querySelector('#gameCenter');
+    const handle = gameArea.querySelector('#centerDragHandle');
+    let isDragging = false;
+    let startX = 0, startY = 0, currentTx = 0, currentTy = 0, initialTx = 0, initialTy = 0;
+
+    const savedPos = localStorage.getItem('nemesis_center_pos');
+    if (savedPos) {
+      try {
+        const { ty } = JSON.parse(savedPos);
+        currentTy = ty;
+        centerGroup.style.transform = `translate(0px, ${currentTy}px)`;
+      } catch (e) {}
+    }
+
+    const onDown = (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      initialTy = currentTy;
+      handle.setPointerCapture(e.pointerId);
+    };
+
+    const onMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dy = e.clientY - startY;
+      currentTy = initialTy + dy;
+      centerGroup.style.transform = `translate(0px, ${currentTy}px)`;
+    };
+
+    const onUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_center_pos', JSON.stringify({
+        tx: 0,
+        ty: currentTy
+      }));
+    };
+
+    if (handle) {
+      handle.addEventListener('pointerdown', onDown);
+      handle.addEventListener('pointermove', onMove);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
+    }
+
+    const rcPanel = gameArea.querySelector('#runCompletionPanel');
+    const rcHandle = gameArea.querySelector('#runCompletionDragHandle');
+    let isRcDragging = false;
+    let rcStartX = 0, rcStartY = 0, rcInitialLeft = 0, rcInitialTop = 0;
+
+    const savedRcPos = localStorage.getItem('nemesis_run_graph_pos');
+    if (savedRcPos) {
+      try {
+        const { left, top } = JSON.parse(savedRcPos);
+        rcPanel.style.right = 'auto';
+        rcPanel.style.bottom = 'auto';
+        rcPanel.style.left = left + 'px';
+        rcPanel.style.top = top + 'px';
+      } catch (e) {}
+    }
+
+    const onRcDown = (e) => {
+      isRcDragging = true;
+      rcStartX = e.clientX;
+      rcStartY = e.clientY;
+      const rect = rcPanel.getBoundingClientRect();
+      rcInitialLeft = rect.left;
+      rcInitialTop = rect.top;
+      rcPanel.style.right = 'auto';
+      rcPanel.style.bottom = 'auto';
+      rcPanel.style.left = rcInitialLeft + 'px';
+      rcPanel.style.top = rcInitialTop + 'px';
+      rcHandle.setPointerCapture(e.pointerId);
+    };
+
+    const onRcMove = (e) => {
+      if (!isRcDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - rcStartX;
+      const dy = e.clientY - rcStartY;
+      let newLeft = rcInitialLeft + dx;
+      let newTop = rcInitialTop + dy;
+
+      const maxX = window.innerWidth - rcPanel.offsetWidth;
+      const maxY = window.innerHeight - rcPanel.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      rcPanel.style.left = newLeft + 'px';
+      rcPanel.style.top = newTop + 'px';
+    };
+
+    const onRcUp = (e) => {
+      if (!isRcDragging) return;
+      isRcDragging = false;
+      rcHandle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
+        left: parseInt(rcPanel.style.left, 10) || 0,
+        top: parseInt(rcPanel.style.top, 10) || 0
+      }));
+    };
+
+    if (rcHandle) {
+      rcHandle.addEventListener('pointerdown', onRcDown);
+      rcHandle.addEventListener('pointermove', onRcMove);
+      rcHandle.addEventListener('pointerup', onRcUp);
+      rcHandle.addEventListener('pointercancel', onRcUp);
+    }
+
     this.updateStageBackdrop();
   }
   
@@ -344,7 +534,7 @@ class UIManager {
         btn.style.left = x + 'px';
         btn.style.top = y + 'px';
       } else if (btn.id === 'dodgeBtn') {
-        const x = centerX + circleRadius * 0.72;
+        const x = centerX + circleRadius * 0.90;
         const y = centerY + circleRadius * 0.72;
         btn.style.left = x + 'px';
         btn.style.top = y + 'px';
@@ -411,6 +601,11 @@ class UIManager {
           <button class="tab-close">✕</button>
         </div>
       </div>
+      <div class="quick-day-bar" id="quickDayBar">
+        <span class="quick-day-label">⚡ Quick Day:</span>
+        <button id="quickDayBtn" class="quick-day-value">Not set</button>
+        <button id="quickDayClearBtn" class="quick-day-clear" title="Clear quick day">✕</button>
+      </div>
       <div class="tab-content todo-board" id="todosList"></div>
     `;
     document.body.appendChild(rightTab);
@@ -453,6 +648,12 @@ class UIManager {
 
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
+
+    const shopBtn = document.createElement('button');
+    shopBtn.id = 'shopBtn';
+    shopBtn.className = 'floating-shop-btn';
+    shopBtn.innerHTML = '🛒 SHOP';
+    document.body.appendChild(shopBtn);
 
     panel.querySelector('.shop-close').addEventListener('click', () => this.closeShop());
     // close when clicking overlay outside the panel
@@ -1007,13 +1208,46 @@ class UIManager {
 
     const todosAdd = document.getElementById('todosAddBtn');
     if (todosAdd) todosAdd.addEventListener('click', () => {
-      const created = TaskManager.addTodo('', 'Easy', getGameState().config.attributes[0], null, []);
+      const deadline = UIManager.quickDayDeadline || null;
+      const created = TaskManager.addTodo('', 'Easy', getGameState().config.attributes[0], deadline, []);
       if (created) {
         this.updateTodosList();
         getGameState().save();
         // Open edit popup so user can set name/deadline/attribute immediately
         try { PopupsManager.showEditTodo(created.id); } catch (e) { /* ignore */ }
       }
+    });
+
+    // Quick Day feature
+    const quickDayBtn = document.getElementById('quickDayBtn');
+    const quickDayClearBtn = document.getElementById('quickDayClearBtn');
+    const updateQuickDayBar = () => {
+      const btn = document.getElementById('quickDayBtn');
+      const clearBtn = document.getElementById('quickDayClearBtn');
+      const bar = document.getElementById('quickDayBar');
+      if (!btn) return;
+      if (UIManager.quickDayDeadline) {
+        const d = new Date(UIManager.quickDayDeadline);
+        btn.textContent = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        btn.classList.add('active');
+        if (bar) bar.classList.add('active');
+        if (clearBtn) clearBtn.style.display = 'inline-flex';
+      } else {
+        btn.textContent = 'Not set';
+        btn.classList.remove('active');
+        if (bar) bar.classList.remove('active');
+        if (clearBtn) clearBtn.style.display = 'none';
+      }
+    };
+    UIManager._updateQuickDayBar = updateQuickDayBar;
+    updateQuickDayBar();
+
+    if (quickDayBtn) quickDayBtn.addEventListener('click', () => {
+      try { PopupsManager.showQuickDayPicker(updateQuickDayBar); } catch (e) { console.warn('QuickDay popup error', e); }
+    });
+    if (quickDayClearBtn) quickDayClearBtn.addEventListener('click', () => {
+      UIManager.quickDayDeadline = null;
+      updateQuickDayBar();
     });
 
     // Center attributes button opens attributes modal
@@ -1140,6 +1374,19 @@ class UIManager {
           return;
         }
 
+        const deleteTodo = event.target.closest('.btn-todo-delete');
+        if (deleteTodo && taskType === 'todo') {
+          const todoName = card.querySelector('.todo-title')?.textContent?.trim() || 'this to-do';
+          if (!confirm(`Delete "${todoName || 'this to-do'}"?`)) return;
+
+          if (TaskManager.removeTodo(taskId)) {
+            try { state.save(); } catch (e) {}
+            this.updateTodosList();
+            this.renderEnemies();
+          }
+          return;
+        }
+
         // allow Enter on inline input via delegated keydown handler (see below)
 
         // Edit handler (works even if completed)
@@ -1184,6 +1431,10 @@ class UIManager {
                 UIManager.showDailyApReward(card, res.rewards.ap);
               }
 
+              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                RetroTaskCompleteAnimation.play(card);
+              }
+
               setTimeout(() => {
                 this.scheduleUpdateDailiesList();
               }, 320);
@@ -1196,6 +1447,11 @@ class UIManager {
             try {
               PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
                 if (!TaskManager.completeTodo(taskId)) return;
+                
+                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                  RetroTaskCompleteAnimation.play(card);
+                }
+                
                 this.updateTodosList();
                 try { state.save(); } catch (e) {}
                 this.renderEnemies();
@@ -1508,12 +1764,24 @@ class UIManager {
         const rect = card.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
-          color: step.isBoss ? UIManager.themeColor('--accent-gold', '#FFB33F') : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
-          duration: 1600,
-          scale: step.isBoss ? 1.3 : 1.1,
-          isCrit: step.damage > 0 && step.damage >= 25
-        });
+        
+        if (step.isDodge) {
+          FloatingDamageNumber.show(x, y - 10, 'DODGED!', {
+            color: '#00e5ff',
+            duration: 1600,
+            scale: 1.2
+          });
+          if (typeof RetroDodgeAnimation !== 'undefined') {
+            RetroDodgeAnimation.play(card, '#00e5ff');
+          }
+        } else {
+          FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
+            color: step.isBoss ? UIManager.themeColor('--accent-gold', '#FFB33F') : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
+            duration: 1600,
+            scale: step.isBoss ? 1.3 : 1.1,
+            isCrit: step.damage > 0 && step.damage >= 25
+          });
+        }
         // Also show any mutator gains that apply to this enemy at the same time
         try {
           const matches = (mutatorGains || []).filter(m => String(m.enemyId) === String(step.enemyId));
@@ -1539,10 +1807,10 @@ class UIManager {
       }
 
       // Increase pacing so each retaliation feels heavier
-      await wait(step.isBoss ? 1100 : 700);
+      await wait(step.isBoss ? 1100 : (step.isDodge ? 500 : 700));
       if (card) card.classList.remove('checkin-hit');
       this.setEnemyCheckInHighlight(step.enemyId, false);
-      await wait(300);
+      await wait(step.isDodge ? 100 : 300);
     }
 
     // Fallback: show any remaining mutator gains that weren't shown during steps
@@ -1757,36 +2025,83 @@ class UIManager {
           return;
         }
 
-        const damageColor = result.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
-        const fireRate = Math.max(1, Number(result.fireRate || 1));
-        if (fireRate > 1) {
-          FloatingDamageNumber.showBurst(
-            window.innerWidth / 2,
-            window.innerHeight / 2,
-            Math.ceil(result.damage),
-            {
-              bursts: fireRate,
-              color: damageColor,
-              isCrit: result.isCrit,
-              duration: 1400,
-              fadeDelay: 900,
-              staggerMs: 60
-            }
-          );
-        } else {
-          FloatingDamageNumber.show(
-            window.innerWidth / 2,
-            window.innerHeight / 2,
-            Math.ceil(result.damage),
-            { isCrit: result.isCrit, color: damageColor }
-          );
+        const weapon = PlayerManager.getCurrentWeapon();
+        const maxCombo = weapon?.data?.comboMaxStacks || getGameState().config.comboMaxStacks || 4;
+        const isComboFinisher = result.combo >= maxCombo;
+
+        let delayMs = 0;
+        if (result.isCrit && isComboFinisher) {
+          delayMs = 350;
+        } else if (isComboFinisher) {
+          delayMs = 300;
+        } else if (result.isCrit) {
+          delayMs = 250;
         }
 
-        if (result.targetDead) {
-          EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2, true);
+        if (delayMs > 0) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
         }
+
+        const hits = Array.isArray(result.hitDetails) ? result.hitDetails : [{
+          enemyId: target.id,
+          damage: result.primaryDamage || result.damage || 0,
+          isCrit: result.isCrit,
+          isDead: result.targetDead
+        }];
+
+        hits.forEach(hit => {
+          const hitColor = hit.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
+          const fireRate = Math.max(1, Number(result.fireRate || 1));
+          
+          let targetX = window.innerWidth / 2;
+          let targetY = window.innerHeight / 2;
+          const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
+          if (targetCard) {
+            const rect = targetCard.getBoundingClientRect();
+            targetX = rect.left + rect.width / 2;
+            targetY = rect.top + rect.height / 2;
+          }
+
+          if (typeof RetroHitAnimation !== 'undefined') {
+            RetroHitAnimation.play(targetX, targetY, hitColor);
+          }
+
+          if (fireRate > 1) {
+            FloatingDamageNumber.showBurst(
+              targetX,
+              targetY,
+              Math.ceil(hit.damage),
+              {
+                bursts: fireRate,
+                color: hitColor,
+                isCrit: hit.isCrit,
+                duration: 1400,
+                fadeDelay: 900,
+                staggerMs: 60
+              }
+            );
+          } else {
+            FloatingDamageNumber.show(
+              targetX,
+              targetY,
+              Math.ceil(hit.damage),
+              {
+                color: hitColor,
+                isCrit: hit.isCrit,
+                duration: 1200,
+                fadeDelay: 800
+              }
+            );
+          }
+
+          if (hit.isDead) {
+            const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
+            EnemyDeathAnimation.burst(targetX, targetY, isElite);
+          }
+        });
 
         if (Array.isArray(result.specialPopups) && result.specialPopups.length) {
+          const damageColor = result.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
           result.specialPopups.forEach((popup, index) => {
             FloatingDamageNumber.show(
               window.innerWidth / 2 + ((index % 2 === 0) ? -42 : 42),
@@ -1896,28 +2211,7 @@ class UIManager {
     const enemies = (state.stageState.enemies || []);
     if (enemies.length === 0) return [];
     
-    // Get spinner rotation angle from the CSS transform matrix.
-    const computedStyle = window.getComputedStyle(spinner);
-    const transform = computedStyle.transform || '';
-    let spinnerAngleDeg = 0;
-
-    const matrixMatch = transform.match(/^matrix\(([^)]+)\)$/);
-    const matrix3dMatch = transform.match(/^matrix3d\(([^)]+)\)$/);
-    const rotateMatch = transform.match(/rotate\(([-\d.]+)deg\)/);
-
-    if (matrixMatch) {
-      const parts = matrixMatch[1].split(',').map(part => Number.parseFloat(part.trim()));
-      const a = parts[0] || 1;
-      const b = parts[1] || 0;
-      spinnerAngleDeg = Math.atan2(b, a) * (180 / Math.PI);
-    } else if (matrix3dMatch) {
-      const parts = matrix3dMatch[1].split(',').map(part => Number.parseFloat(part.trim()));
-      const a = parts[0] || 1;
-      const b = parts[1] || 0;
-      spinnerAngleDeg = Math.atan2(b, a) * (180 / Math.PI);
-    } else if (rotateMatch) {
-      spinnerAngleDeg = Number.parseFloat(rotateMatch[1]) || 0;
-    }
+    let spinnerAngleDeg = this.spinnerAngle || 0;
 
     // The spinner starts vertically, so offset by -90 degrees to line up with the top enemy.
     spinnerAngleDeg -= 90;
@@ -1936,23 +2230,29 @@ class UIManager {
     const alignedLiving = [];
 
     enemies.forEach((enemy, index) => {
-      const cardAngle = (Math.PI * 2 * index) / enemies.length - Math.PI / 2;
+      const capacityPerRing = 8;
+      const ringLevel = Math.floor(index / capacityPerRing);
+      const ringIndex = index % capacityPerRing;
+      const totalInRing = Math.min(capacityPerRing, enemies.length - ringLevel * capacityPerRing);
+      const cardAngle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
 
       let diff = Math.abs(spinnerRad - cardAngle);
       if (diff > Math.PI) diff = 2 * Math.PI - diff;
+      
+      const adjustedDiff = diff - (ringLevel * 0.0001);
 
-      if (!enemy.isDead && diff < bestAliveDiff) {
-        bestAliveDiff = diff;
+      if (!enemy.isDead && adjustedDiff < bestAliveDiff) {
+        bestAliveDiff = adjustedDiff;
         bestAlive = enemy;
       }
 
-      if (enemy.isDead && diff < bestDeadDiff) {
-        bestDeadDiff = diff;
+      if (enemy.isDead && adjustedDiff < bestDeadDiff) {
+        bestDeadDiff = adjustedDiff;
         bestDead = enemy;
       }
 
       if (!enemy.isDead && diff <= tolerance) {
-        alignedLiving.push({ enemy, diff });
+        alignedLiving.push({ enemy, diff: adjustedDiff });
       }
     });
 
@@ -2017,7 +2317,14 @@ class UIManager {
       const targets = this.getSpinnerTargetEnemies();
       if (targets.length > 0) {
         if (!state.combatState) state.combatState = {};
-        state.combatState.dodgeTarget = targets.map(enemy => enemy.id);
+        
+        const currentDodges = Array.isArray(state.combatState.dodgeTarget) 
+            ? state.combatState.dodgeTarget 
+            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+        const newDodges = targets.map(enemy => enemy.id);
+        
+        state.combatState.dodgeTarget = [...new Set([...currentDodges, ...newDodges])];
+
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
         this.renderEnemies();
       } else {
@@ -2039,14 +2346,21 @@ class UIManager {
   }
   
   static handlePauseClick() {
+    PopupsManager.showPauseMenu();
+  }
+
+  static updatePauseBtn() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (!pauseBtn) return;
     const state = getGameState();
-    
     if (state.systemState.isPaused) {
-      state.resume();
-      PopupsManager.closeAllPopups();
+      pauseBtn.innerHTML = '▶️ Resume';
+      pauseBtn.style.color = 'var(--accent-gold)';
+      pauseBtn.style.borderColor = 'var(--accent-gold)';
     } else {
-      state.pause();
-      PopupsManager.showPauseMenu();
+      pauseBtn.innerHTML = '⏸️ Pause';
+      pauseBtn.style.color = '';
+      pauseBtn.style.borderColor = '';
     }
   }
 
@@ -2060,8 +2374,29 @@ class UIManager {
   
   static handleAttackEvent(detail) {
     // Visual feedback for attacks
-    if (detail.type !== 'dodge' && detail.type !== 'pet') {
+    if (detail.type === 'dodgeAvoid' && typeof RetroDodgeAnimation !== 'undefined') {
+      const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${detail.enemyId}"]`);
+      if (targetCard) {
+        RetroDodgeAnimation.play(targetCard, '#00e5ff');
+      }
+      return;
+    }
+
+    if (detail.type !== 'dodge' && detail.type !== 'pet' && detail.type !== 'dodgeAvoid') {
       ScreenEffects.shake(2, 45);
+
+      const targetCard = detail.targetId ? document.querySelector(`.enemy-card[data-enemy-id="${detail.targetId}"]`) : null;
+      if (targetCard) {
+        if (detail.isCrit && typeof RetroCritSlashAnimation !== 'undefined') {
+          RetroCritSlashAnimation.play(targetCard);
+        }
+
+        const weapon = PlayerManager.getCurrentWeapon();
+        const maxCombo = weapon?.data?.comboMaxStacks || getGameState().config.comboMaxStacks || 4;
+        if (detail.combo >= maxCombo && typeof RetroComboFinisherAnimation !== 'undefined') {
+          RetroComboFinisherAnimation.play(targetCard);
+        }
+      }
     }
   }
   
@@ -2543,6 +2878,9 @@ class UIManager {
               if (res.rewards && res.rewards.ap) {
                 UIManager.showDailyApReward(dragState.card, res.rewards.ap);
               }
+              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                RetroTaskCompleteAnimation.play(dragState.card);
+              }
               setTimeout(() => {
                 this.scheduleUpdateDailiesList();
               }, 320);
@@ -2657,6 +2995,23 @@ class UIManager {
     if (!board || board.dataset.dragBound === '1') return;
 
     board.dataset.dragBound = '1';
+
+    board.addEventListener('click', (event) => {
+      const existingWizard = document.querySelector('.floating-wizard');
+      if (existingWizard) {
+        if (!existingWizard.contains(event.target)) existingWizard.remove();
+        return;
+      }
+      if (event.target.closest('.task-card-todo')) return;
+      if (typeof PopupsManager !== 'undefined' && PopupsManager.showAddTodoWizard) {
+        const boardRect = board.getBoundingClientRect();
+        const xPx = event.clientX - boardRect.left + board.scrollLeft;
+        const yPx = event.clientY - boardRect.top + board.scrollTop;
+        const xPercent = (xPx / board.scrollWidth) * 100;
+        const yPercent = (yPx / board.scrollHeight) * 100;
+        PopupsManager.showAddTodoWizard(xPercent, yPercent, xPx, yPx);
+      }
+    });
 
     board.addEventListener('pointerdown', (event) => {
       const card = event.target.closest('.task-card-todo');
@@ -2790,6 +3145,7 @@ class UIManager {
         <div class="task-card-actions task-card-actions-todo task-card-actions-small">
           <button class="btn-blood-oath" title="Blood Oath">🩸</button>
           <button class="btn-edit" title="Edit">✎</button>
+          <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
         </div>
       </div>
       `;
@@ -2812,7 +3168,7 @@ class UIManager {
     const centerY = rect.height / 2;
     // Position enemies ON the circle border (outer edge)
     // Tweak radius to keep cards inside the circle and avoid clipping
-    const radius = Math.min(rect.width, rect.height) / 2 - 46;
+    const radius = Math.min(rect.width, rect.height) / 2 - 16;
 
     if (!enemies.length) {
       layer.innerHTML = '<div class="enemy-empty">No enemies yet</div>';
@@ -2842,14 +3198,34 @@ class UIManager {
       const enemyId = String(enemy.id);
       activeEnemyIds.add(enemyId);
 
-      const angle = (Math.PI * 2 * index) / enemies.length - Math.PI / 2;
-      const x = centerX + Math.cos(angle) * radius;
-      const y = centerY + Math.sin(angle) * radius;
+      const capacityPerRing = 8;
+      const ringLevel = Math.floor(index / capacityPerRing);
+      const ringIndex = index % capacityPerRing;
+      const totalInRing = Math.min(capacityPerRing, enemies.length - ringLevel * capacityPerRing);
+      const currentRadius = radius - (ringLevel * 60);
+
+      const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+      const x = centerX + Math.cos(angle) * currentRadius;
+      const y = centerY + Math.sin(angle) * currentRadius;
 
       let card = existingCards.get(enemyId);
       if (!card) {
         card = this.createEnemyCardElement(enemyId);
         layer.appendChild(card);
+        
+        if (enemy.isBoss) {
+          if (typeof RetroBossEntranceAnimation !== 'undefined' && !enemy.entrancePlayed) {
+            enemy.entrancePlayed = true;
+            try { state.save(); } catch (e) {}
+            setTimeout(() => RetroBossEntranceAnimation.play(card), 50);
+          }
+        } else {
+          if (typeof RetroWarpAnimation !== 'undefined' && !enemy.spawnPlayed) {
+            enemy.spawnPlayed = true;
+            try { state.save(); } catch (e) {}
+            setTimeout(() => RetroWarpAnimation.play(card), 50);
+          }
+        }
       }
 
       this.patchEnemyCardElement(card, {
@@ -2900,7 +3276,7 @@ class UIManager {
     card.dataset.enemyId = String(enemyId);
     card.innerHTML = `
       <div class="enemy-emoji"></div>
-      <div class="dodge-marker" style="display:none;">⚡🌬️</div>
+      <div class="dodge-marker" style="display:none; font-size:12px; opacity:0.6; top:-16px;">💨</div>
       <div class="pet-badge" style="display:none;"></div>
       <div class="mutator-badges" style="display:inline-block;"></div>
       <div class="enemy-name"></div>
@@ -3012,7 +3388,8 @@ class UIManager {
     if (!strip) return;
 
     const state = getGameState();
-    strip.innerHTML = (state.playerState.weapons || []).map((weaponName, index) => {
+    let html = `<div class="weapon-drag-handle" id="weaponDragHandle"></div>`;
+    html += (state.playerState.weapons || []).map((weaponName, index) => {
       const activeClass = (index === state.playerState.activeWeapon) ? 'active' : '';
       const weaponElement = state.playerState.weaponElements?.[index] || '';
       const weaponLabel = weaponElement ? `${weaponName} · ${weaponElement}` : weaponName;
@@ -3022,6 +3399,60 @@ class UIManager {
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
     }).join('');
+    strip.innerHTML = html;
+
+    const container = strip.parentElement;
+    const handle = strip.querySelector('#weaponDragHandle');
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+    const onPointerDown = (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = container.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      container.style.right = 'auto';
+      container.style.bottom = 'auto';
+      container.style.left = initialLeft + 'px';
+      container.style.top = initialTop + 'px';
+      handle.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const maxX = window.innerWidth - container.offsetWidth;
+      const maxY = window.innerHeight - container.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      container.style.left = newLeft + 'px';
+      container.style.top = newTop + 'px';
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_weapon_pos', JSON.stringify({
+        left: parseInt(container.style.left, 10) || 0,
+        top: parseInt(container.style.top, 10) || 0
+      }));
+    };
+
+    if (handle) {
+      handle.addEventListener('pointerdown', onPointerDown);
+      handle.addEventListener('pointermove', onPointerMove);
+      handle.addEventListener('pointerup', onPointerUp);
+      handle.addEventListener('pointercancel', onPointerUp);
+    }
 
     // Click to switch weapon
     strip.querySelectorAll('.weapon-chip[data-slot]').forEach(btn => {
@@ -3046,7 +3477,30 @@ class UIManager {
       });
     });
 
+    this.positionWeaponStrip();
     this.updateActionCosts();
+  }
+
+  static positionWeaponStrip() {
+    const strip = document.getElementById('weaponStrip');
+    if (!strip) return;
+    const container = strip.parentElement;
+
+    const savedPos = localStorage.getItem('nemesis_weapon_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        container.style.bottom = 'auto';
+        container.style.right = 'auto';
+        container.style.left = left + 'px';
+        container.style.top = top + 'px';
+        return;
+      } catch (e) {}
+    }
+
+    container.style.bottom = '240px';
+    container.style.left = '16px';
+    container.style.top = 'auto';
   }
 
   static updateActionCosts() {
@@ -3104,6 +3558,7 @@ class UIManager {
     this.scheduleUpdateDailiesList();
     this.updateTodosList();
     this.updateDeathDefianceBadge();
+    this.updatePauseBtn();
     this.updateTaskVisibilityToggleLabels();
   }
 
@@ -3201,11 +3656,17 @@ class UIManager {
   static getDeadlineDistanceText(deadline) {
     if (!deadline) return 'No deadline set';
 
-    const diff = Number(deadline) - Date.now();
+    const dlDate = new Date(Number(deadline));
+    const dlMidnight = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate()).getTime();
+    
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    const diff = dlMidnight - todayMidnight;
     const dayMs = 24 * 60 * 60 * 1000;
     const days = Math.round(diff / dayMs);
 
-    if (days === 0) return diff >= 0 ? 'due today' : 'overdue today';
+    if (days === 0) return 'due today';
     if (days > 0) return `in ${days} day${days === 1 ? '' : 's'}`;
 
     const absDays = Math.abs(days);
@@ -3356,19 +3817,80 @@ class UIManager {
       if (!enemy) return;
 
       const muts = Array.isArray(enemy.mutators) && enemy.mutators.length ? enemy.mutators : [];
-      let message = '';
+      let mutatorHtml = '';
       if (!muts.length) {
-        message = 'No mutators.';
+        mutatorHtml = '<div class="muted" style="color:#aaa; font-size:11px; margin-top:8px;">No mutators active.</div>';
       } else {
-        message = muts.map(m => {
+        mutatorHtml = muts.map(m => {
           const meta = UIManager.MUTATOR_META[m] || { icon: '❗', label: m, desc: '' };
-          return `${meta.icon} ${meta.label} — ${meta.desc}`;
-        }).join('\n\n');
+          return `
+            <div class="enemy-info-mutator">
+              <span class="mutator-icon" style="color: ${meta.color || '#fff'}">${meta.icon}</span>
+              <div class="mutator-details">
+                <strong>${meta.label}</strong>
+                <span>${meta.desc}</span>
+              </div>
+            </div>`;
+        }).join('');
       }
 
-      try {
-        PopupsManager.showDialogue(enemy.name || 'Enemy Mutators', message);
-      } catch (e) { console.warn('showMutatorPopup error', e); }
+      const maxHp = enemy.maxHp || 1;
+      const hpPercent = Math.max(0, Math.min(100, (enemy.hp / maxHp) * 100));
+      const state = typeof getGameState === 'function' ? getGameState() : {};
+      const archetypeMeta = state?.config?.enemyArchetypes?.[enemy.archetype] || {};
+
+      PopupsManager.closeAllPopups();
+      const overlay = PopupsManager.createPopupOverlay();
+      const popup = document.createElement('div');
+      popup.className = 'popup enemy-info-popup';
+      
+      popup.innerHTML = `
+        <div class="enemy-sprite-placeholder">
+          <img src="https://placehold.co/100x100/241a34/FFFFFF?text=Sprite" alt="Enemy Sprite" />
+        </div>
+        <h2>${enemy.name} ${enemy.isElite ? '👑' : ''}</h2>
+        <button class="btn-close">✕</button>
+        <div class="enemy-info-content">
+          <div class="enemy-info-stats">
+            <div class="stat-row hp-row">
+              <span class="stat-label">HP</span>
+              <div class="stat-bar-container">
+                <div class="stat-bar-fill" style="width: ${hpPercent}%; background: ${hpPercent < 30 ? '#ff4444' : '#44ff44'}"></div>
+                <span class="stat-bar-text">${Math.ceil(enemy.hp)} / ${Math.ceil(maxHp)}</span>
+              </div>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Damage</span>
+              <span class="stat-value">${Math.round(enemy.dmgMult * 10) / 10}× Base</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Archetype</span>
+              <span class="stat-value" style="color:#ffd700">${enemy.archetype}</span>
+            </div>
+            ${archetypeMeta.description ? `<div class="archetype-desc">${archetypeMeta.description}</div>` : ''}
+            <div class="stat-row">
+              <span class="stat-label">Resist</span>
+              <span class="stat-value" style="color: #ff9a9a">${enemy.resist || '-'}</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Weakness</span>
+              <span class="stat-value" style="color: #9aff9a">${enemy.weak || '-'}</span>
+            </div>
+          </div>
+          <div class="enemy-info-mutators-section">
+            <h3>Mutators</h3>
+            ${mutatorHtml}
+          </div>
+        </div>
+      `;
+      
+      popup.querySelector('.btn-close').addEventListener('click', () => PopupsManager.closeAllPopups());
+      
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+      if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+        PopupAnimation.scale(popup);
+      }
     } catch (e) { console.warn('showMutatorPopup', e); }
   }
 
@@ -3434,6 +3956,7 @@ class UIManager {
     const ordered = Object.entries(active || {}).filter(([, count]) => Number(count) > 0);
 
     panel.innerHTML = `
+      <div class="satchel-drag-handle" id="satchelDragHandle"></div>
       <div class="satchel-head">
         <span class="satchel-title">SATCHEL</span>
         <span class="satchel-subtitle">Consumables</span>
@@ -3457,6 +3980,59 @@ class UIManager {
         }).join('') : '<div class="satchel-empty">No consumables yet</div>'}
       </div>
     `;
+
+    // Make Satchel Draggable
+    const handle = panel.querySelector('#satchelDragHandle');
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+    const onPointerDown = (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = panel.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+      panel.style.left = initialLeft + 'px';
+      panel.style.top = initialTop + 'px';
+      handle.setPointerCapture(e.pointerId);
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const maxX = window.innerWidth - panel.offsetWidth;
+      const maxY = window.innerHeight - panel.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      panel.style.left = newLeft + 'px';
+      panel.style.top = newTop + 'px';
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      handle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_satchel_pos', JSON.stringify({
+        left: parseInt(panel.style.left, 10) || 0,
+        top: parseInt(panel.style.top, 10) || 0
+      }));
+    };
+
+    if (handle) {
+      handle.addEventListener('pointerdown', onPointerDown);
+      handle.addEventListener('pointermove', onPointerMove);
+      handle.addEventListener('pointerup', onPointerUp);
+      handle.addEventListener('pointercancel', onPointerUp);
+    }
 
     panel.querySelectorAll('.satchel-item').forEach((item) => {
       item.addEventListener('click', (event) => {
@@ -3486,6 +4062,18 @@ class UIManager {
   static positionSatchelPanel() {
     const panel = document.getElementById('satchelPanel');
     if (!panel) return;
+
+    const savedPos = localStorage.getItem('nemesis_satchel_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        panel.style.bottom = 'auto';
+        panel.style.right = 'auto';
+        panel.style.left = left + 'px';
+        panel.style.top = top + 'px';
+        return;
+      } catch (e) {}
+    }
 
     panel.style.left = '12px';
     panel.style.bottom = '104px';

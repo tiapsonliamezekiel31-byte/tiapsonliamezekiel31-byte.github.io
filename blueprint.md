@@ -152,7 +152,7 @@ Madman         1   1    0      0        Fragile: miss any daily → die at check
 - Adjacent effects (Protector, Overkill spillover): only affect living adjacent enemies. If adjacent slot is dead, that portion is void.
 
 ============================================================
-ENEMIES TABLE (Letter grade mapping as above)
+ENEMIES TABLE (Letter grade mapping as above) — UPDATED v5.1
 ============================================================
 Stage 1 – Forest
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
@@ -160,47 +160,54 @@ Gorilla Rebel    1.0      1.0       Brute      Earth B    Water D
 Wolf             1.3      1.2       Brute      Air C      Earth D
 Goblin           0.3      0.5       Mana Drain  -          -
 Goblin Wizard    1.5      0.0       Healer     Aether B   Fire E
+Bear             1.8      1.0       Brute      Earth B    Fire D
+Lion             1.2      1.4       Brute      Earth C    Water D
 
 Stage 1 – Desert
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
-Giant Scorpion   1.2      1.0       Brute      Earth C    Water D
+Marcher          1.3      1.0       Brute      Earth B    Fire D
 Beetle           3.0      0.6       Protector  Earth B    Air D
 Grave Guardian   2.0      2.0       Protector  Aether C   Fire E
-Outlaw           1.0      1.0       Mana Drain  -          -
+Drone            0.5      0.6       Mana Drain Air C      Earth D
+Raptor           1.0      1.3       Brute      Air C      Earth D
 
 Stage 2 – Crimson Cave
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
-Tarantula        1.0      0.7       Brute      Earth C    Water D
-Brain Eater      1.0      1.5       Mana Drain Aether C   Earth D
-Cave Saw         1.0      0.7       Brute      Earth B    Water E
+Tarantulator     1.2      0.7       Brute      Earth C    Water D
+Brain Eaters     0.8      1.5       Mana Drain Aether C   Earth D
+Dark Sorcerer    1.5      1.0       Healer     Fire B     Water E
+Death Bringer    2.0      1.2       Brute      Aether C   Fire D
 
 Stage 2 – Infected Swamp
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Leech            0.5      1.0       Healer     Water C    Fire D
-Frog             0.5      1.0       Brute      Water D    Earth E
+Plagued          1.0      1.2       Brute      Water D    Earth E
+Giant Frog       0.5      1.0       Brute      Water D    Earth E
 Zombie           2.0      2.0       Brute      Earth C    Fire F (treat F as 1.3)
+Croc             1.5      1.5       Brute      Water C    Fire D
 
 Stage 3 – Glacier
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Ice Spirit       0.2      1.0       Mana Drain Water B    Fire E
-Stalker Bear     1.5      1.5       Brute      Water C    Earth D
 Yeti Mage        1.0      1.0       Healer     Water C    Fire D
+Yeti Smasher     1.8      1.5       Brute      Water C    Earth D
+Yeti Hunter      1.1      1.3       Brute      Air C      Earth D
 
-Stage 3 – Ruins
+Stage 3 – Ruins (unchanged)
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Stone Lizard     1.0      1.0       Brute      Earth B    Water D
 Golem            2.0      1.0       Protector  Earth B    Air D
 Termite          0.3      0.5       Mana Drain Earth C    Fire D
 Turret           1.0      2.0       Brute      Earth C    Water E
 
-Stage 4 – Graveyard
+Stage 4 – Graveyard (unchanged)
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Skeleton         0.7      0.7       Brute      Aether C   Fire D
 Ghost            2.0      1.0       Mana Drain Aether B   Earth E
 Coffin Carrier   1.0      1.0       Healer     Aether C   Fire E
 Ferryman         2.0      2.0       Brute      Aether C   Earth D
 
-Stage 4 – Castle
+Stage 4 – Castle (unchanged)
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Flying Skull     0.7      0.7       Brute      Air C      Earth D
 Knight           1.0      1.0       Brute      Earth B    Air D
@@ -208,21 +215,21 @@ Paladin          2.0      1.0       Protector  Earth B    Fire E
 Fire Mage        0.6      2.0       Brute      Fire B     Water E
 Baby Dragon      1.0      1.0       Brute      Fire C     Water D
 
-Stage 5 – Volcano
+Stage 5 – Volcano (unchanged)
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Magma Blob       1.2      1.0       Brute      Fire B     Water E
 Ninja            1.0      1.0       Mana Drain Air C      Earth D
 Master           1.0      1.3       Brute      Earth C    Water D
 Priest           4.0      0.0       Healer     Fire C     Water E
 
-Stage 5 – Dragon Isle
+Stage 5 – Dragon Isle (unchanged)
 Name              HP Mult  Dmg Mult  Archetype  Resist     Weak
 Air Wyvern        1.0      1.0       Brute      Air B      Earth E, Fire E
 Water Drake       1.0      1.0       Mana Drain Water B    Fire E
 Earth Wyrm        1.0      0.5       Protector  Earth B    Air E, Fire E
 Aetherian Hydra   1.0      2.0       Brute      Aether C   Earth D, Fire E
 
-Stage 6 – Golden Mountain
+Stage 6 – Golden Mountain (unchanged)
 Name             HP Mult  Dmg Mult  Archetype  Resist     Weak
 Dwarf            0.6      1.0       Mana Drain Aether C   Fire D
 Driller          2.0      2.0       Brute      Earth B    Water E
@@ -233,94 +240,89 @@ Name                   HP Mult  Dmg Mult  Archetype  Resist     Weak
 Kraken                 2.0      2.0       Brute      Water A    Air E
 World Eating Snake     3.0      3.0       Brute      Water C    Fire D, Aether E
 Constellation Crusher  4.0      4.0       Brute      Water A    Earth E, Aether E
-Soldier                1.0      1.0       Mana Drain Water C    Fire D, Aether E
+Megalodon              1.2      1.0       Mana Drain Water B    Earth E
 
-Stage 7 – The Void
-Name      HP Mult  Dmg Mult  Archetype  Resist     Weak
-Watcher   3.0      3.0       Mana Drain Aether B   Earth E
-Chaos     3.0      3.0       Brute      Aether B   Fire E
-Soul      3.0      3.0       Brute      Aether C   Earth D
+Stage 7 – The Void (single variant)
+Name       HP Mult  Dmg Mult  Archetype  Resist     Weak
+Bat        2.0      1.5       Mana Drain Air B      Earth D
+Slug       3.5      0.5       Healer     Water B    Fire E
+Porcupine  3.0      1.0       Protector  Earth B    Air D
+Phoenix    2.5      2.0       Brute      Fire A     Water E
 
 ============================================================
-FORMATIONS (8‑12 enemies per level, elite slots random 10% each)
+FORMATIONS (8‑12 enemies per level, elite slots random 10% each) — UPDATED v5.1
 ============================================================
 Stage 1 – Forest
-L1: Goblin ×6‑8, Gorilla Rebel ×1, Wolf ×1                   (8‑10)
-L2: Goblin ×7‑9, Gorilla Rebel ×1, Goblin Wizard ×1           (9‑11)
-L3: Goblin ×5‑7, Wolf ×1‑2, Gorilla Rebel ×1, Goblin Wizard ×1‑2   (8‑12)
-L4: Goblin ×6‑7, Wolf ×1‑2, Gorilla Rebel ×1, Goblin Wizard ×2     (10‑12)
+L1: Goblin ×5‑7, Wolf ×1, Bear ×1, Lion ×1                        (8‑10)
+L2: Goblin ×6‑8, Wolf ×1‑2, Goblin Wizard ×1, Lion ×1              (9‑12)
+L3: Goblin ×5‑7, Wolf ×1, Gorilla Rebel ×1, Bear ×1, Goblin Wizard ×1‑2  (9‑12)
 
 Stage 1 – Desert
-L1: Giant Scorpion ×1, Beetle ×1, Outlaw ×6‑8                 (8‑10)
-L2: Giant Scorpion ×1‑2, Outlaw ×6‑8, Beetle ×1               (8‑11)
-L3: Giant Scorpion ×2, Grave Guardian ×1, Outlaw ×6‑7          (9‑10)
-L4: Grave Guardian ×1‑2, Giant Scorpion ×1‑2, Beetle ×1, Outlaw ×5‑7   (8‑12)
+L1: Marcher ×1, Beetle ×1, Drone ×5‑7, Raptor ×1‑2                (8‑11)
+L2: Marcher ×1‑2, Beetle ×1, Drone ×4‑6, Raptor ×2                (8‑11)
+L3: Marcher ×2, Grave Guardian ×1, Drone ×4‑6, Raptor ×1‑2        (9‑11)
 
 Stage 2 – Crimson Cave
-L1: Tarantula ×1‑2, Cave Saw ×1, Brain Eater ×6‑7              (8‑10)
-L2: Brain Eater ×1, Tarantula ×2‑3, Cave Saw ×6‑7               (9‑11)
-L3: Brain Eater ×1‑2, Tarantula ×2‑3, Cave Saw ×5‑7             (8‑12)
-L4: Brain Eater ×2, Tarantula ×2‑3, Cave Saw ×6‑7               (10‑12)
+L1: Brain Eaters ×5‑7, Tarantulator ×1, Dark Sorcerer ×1, Death Bringer ×1    (8‑10)
+L2: Brain Eaters ×5‑7, Tarantulator ×1‑2, Dark Sorcerer ×1‑2, Death Bringer ×1  (8‑12)
+L3: Brain Eaters ×4‑6, Tarantulator ×2, Dark Sorcerer ×1‑2, Death Bringer ×1‑2  (8‑12)
 
 Stage 2 – Infected Swamp
-L1: Leech ×2‑3, Frog ×5‑7, Zombie ×1                           (8‑11)
-L2: Zombie ×1, Leech ×2‑3, Frog ×6‑7                            (9‑11)
-L3: Zombie ×1‑2, Leech ×2‑3, Frog ×5‑6                          (8‑11)
-L4: Zombie ×2, Leech ×3‑4, Frog ×5‑6                            (10‑12)
+L1: Leech ×2‑3, Giant Frog ×4‑6, Plagued ×1, Zombie ×1            (8‑11)
+L2: Zombie ×1, Leech ×2‑3, Giant Frog ×4‑6, Plagued ×1, Croc ×1   (9‑12)
+L3: Zombie ×1‑2, Leech ×2‑3, Giant Frog ×4‑6, Plagued ×1‑2, Croc ×1  (9‑12)
 
 Stage 3 – Glacier
-L1: Ice Spirit ×6‑8, Stalker Bear ×1, Yeti Mage ×1              (8‑10)
-L2: Ice Spirit ×7‑9, Stalker Bear ×1, Yeti Mage ×1               (9‑11)
-L3: Ice Spirit ×5‑7, Stalker Bear ×1‑2, Yeti Mage ×1             (8‑10)
-L4: Stalker Bear ×2, Yeti Mage ×1‑2, Ice Spirit ×5‑7             (9‑12)
+L1: Ice Spirit ×5‑7, Yeti Smasher ×1, Yeti Hunter ×1, Yeti Mage ×1   (8‑10)
+L2: Ice Spirit ×5‑7, Yeti Smasher ×1, Yeti Hunter ×1‑2, Yeti Mage ×1  (8‑11)
+L3: Ice Spirit ×5‑7, Yeti Smasher ×1‑2, Yeti Hunter ×1, Yeti Mage ×1  (8‑11)
 
-Stage 3 – Ruins
+Stage 3 – Ruins (unchanged)
 L1: Stone Lizard ×2, Termite ×5‑7, Turret ×1                     (8‑10)
 L2: Golem ×1, Termite ×5‑7, Stone Lizard ×1‑2, Turret ×1         (8‑11)
 L3: Golem ×1‑2, Termite ×4‑6, Stone Lizard ×1‑2, Turret ×1‑2     (8‑12)
 L4: Golem ×2, Turret ×2, Stone Lizard ×1‑2, Termite ×4‑6         (9‑12)
 
-Stage 4 – Graveyard
+Stage 4 – Graveyard (unchanged)
 L1: Skeleton ×6‑8, Ghost ×1, Coffin Carrier ×1                   (8‑10)
 L2: Skeleton ×7‑9, Ghost ×1, Coffin Carrier ×1, Ferryman ×1      (9‑12)
 L3: Skeleton ×5‑7, Ghost ×1‑2, Coffin Carrier ×1, Ferryman ×1    (8‑11)
 L4: Ghost ×2, Ferryman ×1‑2, Skeleton ×5‑7, Coffin Carrier ×1‑2  (9‑12)
 
-Stage 4 – Castle
+Stage 4 – Castle (unchanged)
 L1: Flying Skull ×6‑8, Knight ×1, Baby Dragon ×1                 (8‑10)
 L2: Knight ×1, Paladin ×1, Fire Mage ×1, Flying Skull ×6‑8       (9‑11)
 L3: Knight ×1, Paladin ×1, Fire Mage ×1, Baby Dragon ×2‑3, Flying Skull ×4‑6 (9‑12)
 L4: Paladin ×2, Fire Mage ×1, Baby Dragon ×2‑3, Flying Skull ×5‑7 (10‑12)
 
-Stage 5 – Volcano
+Stage 5 – Volcano (unchanged)
 L1: Magma Blob ×2‑3, Ninja ×5‑7, Master ×1                       (8‑11)
 L2: Magma Blob ×2‑3, Ninja ×4‑6, Master ×2, Priest ×1            (9‑12)
 L3: Master ×2‑3, Ninja ×5‑7, Priest ×1, Magma Blob ×2‑3          (10‑12)
 L4: Priest ×1, Master ×2‑3, Magma Blob ×2‑3, Ninja ×3‑5          (9‑12)
 
-Stage 5 – Dragon Isle
+Stage 5 – Dragon Isle (unchanged)
 L1: Air Wyvern ×1, Water Drake ×1, Earth Wyrm ×1, Aetherian Hydra ×5‑7  (8‑10)
 L2: Air Wyvern ×1, Water Drake ×2, Earth Wyrm ×1, Aetherian Hydra ×5‑7  (9‑11)
 L3: Air Wyvern ×2, Water Drake ×1‑2, Earth Wyrm ×1, Aetherian Hydra ×5‑6 (9‑12)
 L4: Aetherian Hydra ×2, Air Wyvern ×2, Water Drake ×1‑2, Earth Wyrm ×5‑6 (10‑12)
 
-Stage 6 – Golden Mountain
+Stage 6 – Golden Mountain (unchanged)
 L1: Dwarf ×7‑9, Driller ×1, Atom ×1                              (9‑11)
 L2: Dwarf ×8‑10, Driller ×1, Atom ×1                             (10‑12)
 L3: Driller ×2, Atom ×1, Dwarf ×6‑8                              (9‑11)
 L4: Atom ×2, Driller ×1‑2, Dwarf ×6‑8                            (9‑12)
 
 Stage 6 – Abyssal Sea
-L1: Soldier ×7‑9, Kraken ×1, World Eating Snake ×1               (9‑11)
-L2: Soldier ×6‑8, Kraken ×1, World Eating Snake ×1, Constellation Crusher ×1 (9‑11)
-L3: Soldier ×7‑9, Kraken ×1, Constellation Crusher ×1, World Eating Snake ×1 (10‑12)
-L4: Constellation Crusher ×1, World Eating Snake ×2, Kraken ×1, Soldier ×5‑7 (9‑12)
+L1: Megalodon ×6‑8, Kraken ×1, World Eating Snake ×1              (8‑10)
+L2: Megalodon ×5‑7, Kraken ×1, World Eating Snake ×1, Constellation Crusher ×1  (8‑10)
+L3: Megalodon ×5‑7, Kraken ×1, World Eating Snake ×1, Constellation Crusher ×1  (8‑10)
+L4: Constellation Crusher ×1, World Eating Snake ×2, Kraken ×1, Megalodon ×4‑6  (9‑11)
 
-Stage 7 – The Void
-L1: Watcher ×1, Soul ×6‑8, Chaos ×1                              (8‑10)
-L2: Watcher ×1, Chaos ×1‑2, Soul ×6‑8                            (8‑11)
-L3: Watcher ×1‑2, Chaos ×1‑2, Soul ×6‑8                          (8‑12)
-L4: Watcher ×2, Chaos ×2, Soul ×6‑7                              (10‑11)
+Stage 7 – The Void (single variant, no A/B split)
+L1: Bat ×5‑7, Slug ×1, Porcupine ×1, Phoenix ×1                  (8‑10)
+L2: Bat ×5‑7, Slug ×1‑2, Porcupine ×1, Phoenix ×1                (8‑11)
+L3: Bat ×4‑6, Slug ×1‑2, Porcupine ×1‑2, Phoenix ×1              (8‑11)
 
 ============================================================
 BOSSES (Scaling with N = pending damage after ×5)

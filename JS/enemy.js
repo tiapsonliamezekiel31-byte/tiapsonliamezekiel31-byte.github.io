@@ -3,66 +3,92 @@
  * Enemy creation, HP scaling, archetypes, attack resolution
  */
 
+// ============================================================
+// LEGACY ENEMY DATABASE — kept for save rehydration only.
+// These enemies no longer appear in new formations but may
+// exist in player saves from earlier versions.
+// ============================================================
+const LEGACY_ENEMY_DATABASE = {
+  'Giant Scorpion': { hpMult: 1.2, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 1 },
+  'Outlaw': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: '-', weak: '-', stage: 1 },
+  'Tarantula': { hpMult: 1.0, dmgMult: 0.7, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 2 },
+  'Brain Eater': { hpMult: 1.0, dmgMult: 1.5, archetype: 'Mana Drain', resist: 'Aether C', weak: 'Earth D', stage: 2 },
+  'Cave Saw': { hpMult: 1.0, dmgMult: 0.7, archetype: 'Brute', resist: 'Earth B', weak: 'Water E', stage: 2 },
+  'Frog': { hpMult: 0.5, dmgMult: 1.0, archetype: 'Brute', resist: 'Water D', weak: 'Earth E', stage: 2 },
+  'Stalker Bear': { hpMult: 1.5, dmgMult: 1.5, archetype: 'Brute', resist: 'Water C', weak: 'Earth D', stage: 3 },
+  'Soldier': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Water C', weak: 'Fire D, Aether E', stage: 6 },
+  'Watcher': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Mana Drain', resist: 'Aether B', weak: 'Earth E', stage: 7 },
+  'Chaos': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Aether B', weak: 'Fire E', stage: 7 },
+  'Soul': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Aether C', weak: 'Earth D', stage: 7 }
+};
+
 const ENEMY_DATABASE = {
   // Stage 1 – Forest
   'Gorilla Rebel': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth B', weak: 'Water D', stage: 1 },
   'Wolf': { hpMult: 1.3, dmgMult: 1.2, archetype: 'Brute', resist: 'Air C', weak: 'Earth D', stage: 1 },
   'Goblin': { hpMult: 0.3, dmgMult: 0.5, archetype: 'Mana Drain', resist: '-', weak: '-', stage: 1 },
   'Goblin Wizard': { hpMult: 1.5, dmgMult: 0.0, archetype: 'Healer', resist: 'Aether B', weak: 'Fire E', stage: 1 },
+  'Bear': { hpMult: 1.8, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth B', weak: 'Fire D', stage: 1 },
+  'Lion': { hpMult: 1.2, dmgMult: 1.4, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 1 },
   
   // Stage 1 – Desert
-  'Giant Scorpion': { hpMult: 1.2, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 1 },
+  'Marcher': { hpMult: 1.3, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth B', weak: 'Fire D', stage: 1 },
   'Beetle': { hpMult: 3.0, dmgMult: 0.6, archetype: 'Protector', resist: 'Earth B', weak: 'Air D', stage: 1 },
   'Grave Guardian': { hpMult: 2.0, dmgMult: 2.0, archetype: 'Protector', resist: 'Aether C', weak: 'Fire E', stage: 1 },
-  'Outlaw': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: '-', weak: '-', stage: 1 },
+  'Drone': { hpMult: 0.5, dmgMult: 0.6, archetype: 'Mana Drain', resist: 'Air C', weak: 'Earth D', stage: 1 },
+  'Raptor': { hpMult: 1.0, dmgMult: 1.3, archetype: 'Brute', resist: 'Air C', weak: 'Earth D', stage: 1 },
   
   // Stage 2 – Crimson Cave
-  'Tarantula': { hpMult: 1.0, dmgMult: 0.7, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 2 },
-  'Brain Eater': { hpMult: 1.0, dmgMult: 1.5, archetype: 'Mana Drain', resist: 'Aether C', weak: 'Earth D', stage: 2 },
-  'Cave Saw': { hpMult: 1.0, dmgMult: 0.7, archetype: 'Brute', resist: 'Earth B', weak: 'Water E', stage: 2 },
+  'Tarantulator': { hpMult: 1.2, dmgMult: 0.7, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 2 },
+  'Brain Eaters': { hpMult: 0.8, dmgMult: 1.5, archetype: 'Mana Drain', resist: 'Aether C', weak: 'Earth D', stage: 2 },
+  'Dark Sorcerer': { hpMult: 1.5, dmgMult: 1.0, archetype: 'Healer', resist: 'Fire B', weak: 'Water E', stage: 2 },
+  'Death Bringer': { hpMult: 2.0, dmgMult: 1.2, archetype: 'Brute', resist: 'Aether C', weak: 'Fire D', stage: 2 },
   
   // Stage 2 – Infected Swamp
   'Leech': { hpMult: 0.5, dmgMult: 1.0, archetype: 'Healer', resist: 'Water C', weak: 'Fire D', stage: 2 },
-  'Frog': { hpMult: 0.5, dmgMult: 1.0, archetype: 'Brute', resist: 'Water D', weak: 'Earth E', stage: 2 },
+  'Plagued': { hpMult: 1.0, dmgMult: 1.2, archetype: 'Brute', resist: 'Water D', weak: 'Earth E', stage: 2 },
+  'Giant Frog': { hpMult: 0.5, dmgMult: 1.0, archetype: 'Brute', resist: 'Water D', weak: 'Earth E', stage: 2 },
   'Zombie': { hpMult: 2.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Earth C', weak: 'Fire F', stage: 2 },
+  'Croc': { hpMult: 1.5, dmgMult: 1.5, archetype: 'Brute', resist: 'Water C', weak: 'Fire D', stage: 2 },
   
   // Stage 3 – Glacier
   'Ice Spirit': { hpMult: 0.2, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Water B', weak: 'Fire E', stage: 3 },
-  'Stalker Bear': { hpMult: 1.5, dmgMult: 1.5, archetype: 'Brute', resist: 'Water C', weak: 'Earth D', stage: 3 },
   'Yeti Mage': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Healer', resist: 'Water C', weak: 'Fire D', stage: 3 },
+  'Yeti Smasher': { hpMult: 1.8, dmgMult: 1.5, archetype: 'Brute', resist: 'Water C', weak: 'Earth D', stage: 3 },
+  'Yeti Hunter': { hpMult: 1.1, dmgMult: 1.3, archetype: 'Brute', resist: 'Air C', weak: 'Earth D', stage: 3 },
   
-  // Stage 3 – Ruins
+  // Stage 3 – Ruins (unchanged)
   'Stone Lizard': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth B', weak: 'Water D', stage: 3 },
   'Golem': { hpMult: 2.0, dmgMult: 1.0, archetype: 'Protector', resist: 'Earth B', weak: 'Air D', stage: 3 },
   'Termite': { hpMult: 0.3, dmgMult: 0.5, archetype: 'Mana Drain', resist: 'Earth C', weak: 'Fire D', stage: 3 },
   'Turret': { hpMult: 1.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Earth C', weak: 'Water E', stage: 3 },
   
-  // Stage 4 – Graveyard
+  // Stage 4 – Graveyard (unchanged)
   'Skeleton': { hpMult: 0.7, dmgMult: 0.7, archetype: 'Brute', resist: 'Aether C', weak: 'Fire D', stage: 4 },
   'Ghost': { hpMult: 2.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Aether B', weak: 'Earth E', stage: 4 },
   'Coffin Carrier': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Healer', resist: 'Aether C', weak: 'Fire E', stage: 4 },
   'Ferryman': { hpMult: 2.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Aether C', weak: 'Earth D', stage: 4 },
   
-  // Stage 4 – Castle
+  // Stage 4 – Castle (unchanged)
   'Flying Skull': { hpMult: 0.7, dmgMult: 0.7, archetype: 'Brute', resist: 'Air C', weak: 'Earth D', stage: 4 },
   'Knight': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Brute', resist: 'Earth B', weak: 'Air D', stage: 4 },
   'Paladin': { hpMult: 2.0, dmgMult: 1.0, archetype: 'Protector', resist: 'Earth B', weak: 'Fire E', stage: 4 },
   'Fire Mage': { hpMult: 0.6, dmgMult: 2.0, archetype: 'Brute', resist: 'Fire B', weak: 'Water E', stage: 4 },
   'Baby Dragon': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Brute', resist: 'Fire C', weak: 'Water D', stage: 4 },
   
-  // Stage 5 – Volcano
+  // Stage 5 – Volcano (unchanged)
   'Magma Blob': { hpMult: 1.2, dmgMult: 1.0, archetype: 'Brute', resist: 'Fire B', weak: 'Water E', stage: 5 },
   'Ninja': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Air C', weak: 'Earth D', stage: 5 },
   'Master': { hpMult: 1.0, dmgMult: 1.3, archetype: 'Brute', resist: 'Earth C', weak: 'Water D', stage: 5 },
   'Priest': { hpMult: 4.0, dmgMult: 0.0, archetype: 'Healer', resist: 'Fire C', weak: 'Water E', stage: 5 },
   
-  // Stage 5 – Dragon Isle
+  // Stage 5 – Dragon Isle (unchanged)
   'Air Wyvern': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Brute', resist: 'Air B', weak: 'Earth E, Fire E', stage: 5 },
   'Water Drake': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Water B', weak: 'Fire E', stage: 5 },
   'Earth Wyrm': { hpMult: 1.0, dmgMult: 0.5, archetype: 'Protector', resist: 'Earth B', weak: 'Air E, Fire E', stage: 5 },
   'Aetherian Hydra': { hpMult: 1.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Aether C', weak: 'Earth D, Fire E', stage: 5 },
   
-  // Stage 6 – Golden Mountain
+  // Stage 6 – Golden Mountain (unchanged)
   'Dwarf': { hpMult: 0.6, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Aether C', weak: 'Fire D', stage: 6 },
   'Driller': { hpMult: 2.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Earth B', weak: 'Water E', stage: 6 },
   'Atom': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Earth B', weak: 'Water D', stage: 6 },
@@ -71,17 +97,18 @@ const ENEMY_DATABASE = {
   'Kraken': { hpMult: 2.0, dmgMult: 2.0, archetype: 'Brute', resist: 'Water A', weak: 'Air E', stage: 6 },
   'World Eating Snake': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Water C', weak: 'Fire D, Aether E', stage: 6 },
   'Constellation Crusher': { hpMult: 4.0, dmgMult: 4.0, archetype: 'Brute', resist: 'Water A', weak: 'Earth E, Aether E', stage: 6 },
-  'Soldier': { hpMult: 1.0, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Water C', weak: 'Fire D, Aether E', stage: 6 },
+  'Megalodon': { hpMult: 1.2, dmgMult: 1.0, archetype: 'Mana Drain', resist: 'Water B', weak: 'Earth E', stage: 6 },
   
   // Stage 7 – The Void
-  'Watcher': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Mana Drain', resist: 'Aether B', weak: 'Earth E', stage: 7 },
-  'Chaos': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Aether B', weak: 'Fire E', stage: 7 },
-  'Soul': { hpMult: 3.0, dmgMult: 3.0, archetype: 'Brute', resist: 'Aether C', weak: 'Earth D', stage: 7 }
+  'Bat': { hpMult: 2.0, dmgMult: 1.5, archetype: 'Mana Drain', resist: 'Air B', weak: 'Earth D', stage: 7 },
+  'Slug': { hpMult: 3.5, dmgMult: 0.5, archetype: 'Healer', resist: 'Water B', weak: 'Fire E', stage: 7 },
+  'Porcupine': { hpMult: 3.0, dmgMult: 1.0, archetype: 'Protector', resist: 'Earth B', weak: 'Air D', stage: 7 },
+  'Phoenix': { hpMult: 2.5, dmgMult: 2.0, archetype: 'Brute', resist: 'Fire A', weak: 'Water E', stage: 7 }
 };
 
 class Enemy {
   constructor(name, maxAp, stage, isElite = false) {
-    const baseData = ENEMY_DATABASE[name];
+    const baseData = ENEMY_DATABASE[name] || LEGACY_ENEMY_DATABASE[name];
     if (!baseData) {
       throw new Error(`Unknown enemy: ${name}`);
     }
@@ -237,15 +264,24 @@ class EnemyManager {
   static getAdjacentEnemies(enemyList, targetIndex) {
     const adjacent = [];
     
-    if (targetIndex > 0) {
-      adjacent.push(enemyList[targetIndex - 1]);
+    const capacityPerRing = 8;
+    const ringLevel = Math.floor(targetIndex / capacityPerRing);
+    const ringStartIndex = ringLevel * capacityPerRing;
+    const ringEndIndex = Math.min(ringStartIndex + capacityPerRing, enemyList.length);
+    const totalInRing = ringEndIndex - ringStartIndex;
+    
+    if (totalInRing <= 1) return [];
+
+    const ringPos = targetIndex - ringStartIndex;
+    const prevPos = (ringPos - 1 + totalInRing) % totalInRing;
+    const nextPos = (ringPos + 1) % totalInRing;
+    
+    adjacent.push(enemyList[ringStartIndex + prevPos]);
+    if (prevPos !== nextPos) {
+      adjacent.push(enemyList[ringStartIndex + nextPos]);
     }
     
-    if (targetIndex < enemyList.length - 1) {
-      adjacent.push(enemyList[targetIndex + 1]);
-    }
-    
-    return adjacent.filter(e => !e.isDead);
+    return adjacent.filter(e => e && !e.isDead);
   }
   
   static applyOverkill(damage, targetEnemy, adjacentEnemies) {
@@ -273,6 +309,11 @@ class EnemyManager {
     // Do not allow final-stand mechanics to apply to bosses — bosses must be defeated normally
     if (enemy.isBoss) {
       console.debug(`[EnemyManager.applyFinalStand] skipping final stand for boss ${enemy.name}(${enemy.id})`);
+      return false;
+    }
+
+    // Only apply if the attack is lethal
+    if (enemy.hp - damage > 0) {
       return false;
     }
 

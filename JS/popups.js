@@ -75,41 +75,49 @@ class PopupsManager {
       const data = state.playerState.attributes[attr] || { points: 0, level: 1 };
       const nemData = state.nemesisState.attributes[attr] || { points: 0, level: 1 };
 
-      const prevP = thresholds[data.level - 1] || 0;
-      const nextP = thresholds[data.level] || (prevP + 10);
-      const playerPercent = Math.max(0, Math.min(100, ((data.points - prevP) / Math.max(1, (nextP - prevP))) * 100));
+      const playerLeads = data.points > nemData.points;
+      const nemesisLeads = nemData.points > data.points;
 
-      const prevN = thresholds[nemData.level - 1] || 0;
-      const nextN = thresholds[nemData.level] || (prevN + 10);
-      const nemPercent = Math.max(0, Math.min(100, ((nemData.points - prevN) / Math.max(1, (nextN - prevN))) * 100));
-
-      const playerLeads = data.level > nemData.level;
-      const nemesisLeads = nemData.level > data.level;
+      const pPts = Math.round(data.points * 100) / 100;
+      const nPts = Math.round(nemData.points * 100) / 100;
+      const total = pPts + nPts;
+      const playerPercent = total > 0 ? (pPts / total) * 100 : 50;
 
       html += `
         <div class="attr-row">
-          <span class="attr-name">${attr}</span>
-          <span class="attr-level">${data.level} · ${Math.round(playerPercent)}%</span>
-          <div class="attr-bar">
-            <div class="attr-fill" style="width: ${playerPercent}%"></div>
+          <div class="attr-row-header">
+            <div class="attr-side attr-left">
+              <span class="attr-val player-val">${pPts}</span>
+            </div>
+            <div class="attr-center">
+              <span class="attr-name">${attr}</span>
+              <span class="attr-level">Lv.${data.level}</span>
+            </div>
+            <div class="attr-side attr-right">
+              <span class="attr-lead">
+                ${playerLeads ? '⬆️' : ''}
+                ${nemesisLeads ? '⚠️' : ''}
+              </span>
+              <span class="attr-val nem-val">${nPts}</span>
+            </div>
           </div>
-          <span class="attr-points">${data.points}</span>
-          ${playerLeads ? '⬆️' : ''}
-          ${nemesisLeads ? '⚠️' : ''}
+          <div class="attr-bar-container">
+            <div class="attr-bar-player" style="width: ${playerPercent}%"></div>
+          </div>
         </div>
       `;
     });
     
     // Recompute nemesis leads count explicitly by attribute keys
-    let nemesisLeads = 0;
+    let nemesisLeadsCount = 0;
     (state.config.attributes || []).forEach(a => {
-      const p = state.playerState.attributes?.[a]?.level || 1;
-      const n = state.nemesisState.attributes?.[a]?.level || 1;
-      if (n > p) nemesisLeads++;
+      const p = state.playerState.attributes?.[a]?.points || 0;
+      const n = state.nemesisState.attributes?.[a]?.points || 0;
+      if (n > p) nemesisLeadsCount++;
     });
     
     html += '</div>';
-    html += `<div class="nemesis-info">Nemesis leads in ${nemesisLeads} attributes</div>`;
+    html += `<div class="nemesis-info">Nemesis leads in ${nemesisLeadsCount} attributes</div>`;
     
     popup.innerHTML = html;
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
@@ -1077,19 +1085,30 @@ class PopupsManager {
   // ============================================================
   
   static showPauseMenu() {
+    const state = getGameState();
+    const isPaused = !!state.systemState.isPaused;
+
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
     overlay.style.pointerEvents = 'auto';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        this.closeAllPopups();
+      }
+    });
     
     const popup = document.createElement('div');
     popup.className = 'popup pause-popup';
     popup.style.pointerEvents = 'auto';
     
     const html = `
-      <h2>⏸️ PAUSED</h2>
-      <p>All timers and regen are frozen.</p>
+      <h2>⚙️ GAME MENU</h2>
+      <p>All timers and regen are frozen when paused.</p>
       <div class="pause-menu">
-        <button class="btn-pause-action" id="resumeBtn">▶️ RESUME</button>
+        <button class="btn-pause-action ${isPaused ? 'active' : ''}" id="togglePauseBtn" style="${isPaused ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
+          ${isPaused ? '▶️ RESUME GAMEPLAY' : '⏸️ PAUSE GAMEPLAY'}
+        </button>
+        <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
         <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
@@ -1107,8 +1126,26 @@ class PopupsManager {
     
     popup.innerHTML = html;
     
-    popup.querySelector('#resumeBtn').addEventListener('click', () => {
-      getGameState().resume();
+    const toggleBtn = popup.querySelector('#togglePauseBtn');
+    toggleBtn.addEventListener('click', () => {
+      if (state.systemState.isPaused) {
+        state.resume();
+        toggleBtn.textContent = '⏸️ PAUSE GAMEPLAY';
+        toggleBtn.classList.remove('active');
+        toggleBtn.style.borderColor = '';
+        toggleBtn.style.color = '';
+      } else {
+        state.pause();
+        toggleBtn.textContent = '▶️ RESUME GAMEPLAY';
+        toggleBtn.classList.add('active');
+        toggleBtn.style.borderColor = 'var(--accent-gold)';
+        toggleBtn.style.color = 'var(--accent-gold)';
+      }
+      try { state.save(); } catch (e) {}
+      try { UIManager.refreshGameUI(); } catch (e) {}
+    });
+
+    popup.querySelector('#closeMenuBtn').addEventListener('click', () => {
       this.closeAllPopups();
     });
 
@@ -1132,17 +1169,17 @@ class PopupsManager {
     // attributes moved to center modal button; pause menu no longer exposes attributes here
 
     popup.querySelector('#resetDataBtn').addEventListener('click', () => {
-      if (confirm('Delete all local save data for Nemesis? This cannot be undone.')) {
+      this.showConfirm('Reset Save Data', 'Delete all local save data for Nemesis? This cannot be undone.', () => {
         localStorage.removeItem('nemesis_data');
         localStorage.removeItem('nemesis_planner_data');
         location.reload();
-      }
+      });
     });
     
     popup.querySelector('#quitBtn').addEventListener('click', () => {
-      if (confirm('Are you sure? Unsaved progress will be lost.')) {
+      this.showConfirm('Quit to Menu', 'Are you sure? Unsaved progress will be lost.', () => {
         location.reload();
-      }
+      });
     });
 
     const cheatInput = popup.querySelector('#cheatCommandInput');
@@ -1455,8 +1492,223 @@ class PopupsManager {
   }
 
   // ============================================================
-  // EDIT DAILY / TODO
+  // WIZARDS & EDIT DAILY / TODO
   // ============================================================
+
+  static showAddTodoWizard(xPercent, yPercent, xPx, yPx) {
+    const state = getGameState();
+    const attributes = state.config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
+    
+    // Default deadline: use quickDayDeadline if set, otherwise tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : null;
+    const defaultDeadline = quickTs || tomorrow.getTime();
+    const defaultDeadlineDate = new Date(defaultDeadline);
+    const tomorrowStr = defaultDeadlineDate.toISOString().slice(0,10);
+
+    const wizardData = {
+      name: '',
+      attribute: attributes[0],
+      difficulty: 'Easy',
+      deadline: defaultDeadline,
+      subtasks: []
+    };
+
+    // Remove existing floating wizards
+    const existing = document.querySelectorAll('.floating-wizard');
+    existing.forEach(el => el.remove());
+    
+    const popup = document.createElement('div');
+    popup.className = 'add-todo-wizard floating-wizard';
+    popup.style.position = 'absolute';
+    popup.style.left = xPx + 'px';
+    popup.style.top = yPx + 'px';
+    // Center it relative to the click
+    popup.style.transform = 'translate(-50%, -50%)';
+
+    // Prevent clicks inside the wizard from bubbling up and closing it
+    popup.addEventListener('click', (e) => e.stopPropagation());
+    
+    // We will update the HTML inside popup based on step
+    let currentStep = 1;
+
+    const renderStep = () => {
+      if (currentStep === 1) {
+        popup.innerHTML = `
+          <div class="wizard-step">
+            <h3 class="clear-title">What's your To-Do?</h3>
+            <input type="text" id="wizardTodoName" placeholder="Task name..." autocomplete="off" />
+            <button class="btn-small mt-8" id="wizardNameNext">ENTER</button>
+          </div>
+        `;
+        const input = popup.querySelector('#wizardTodoName');
+        input.value = wizardData.name;
+        // Need timeout for autofocus to work after DOM injection
+        setTimeout(() => input.focus(), 50);
+
+        const proceed = () => {
+          const val = input.value.trim();
+          if (val) {
+            wizardData.name = val;
+            currentStep = 2;
+            renderStep();
+          }
+        };
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') proceed();
+        });
+        popup.querySelector('#wizardNameNext').addEventListener('click', proceed);
+      } else if (currentStep === 2) {
+        const anglePerItem = 360 / attributes.length;
+        const wheelHTML = attributes.map((attr, i) => {
+          const angle = anglePerItem * i - 90; // Start at top
+          // Calculate position around a circle of radius 60px
+          const x = 50 + 40 * Math.cos(angle * Math.PI / 180);
+          const y = 50 + 40 * Math.sin(angle * Math.PI / 180);
+          const color = state.config.attributeColors?.[attr] || '#fff';
+          return `
+            <div class="wizard-attr-item" data-attr="${attr}" style="left: ${x}%; top: ${y}%; box-shadow: 0 0 10px ${color}88, inset 0 0 8px ${color}44; border-color: ${color};">
+              <span>${attr}</span>
+            </div>
+          `;
+        }).join('');
+
+        popup.innerHTML = `
+          <div class="wizard-step">
+            <h3 class="clear-title">Select Attribute</h3>
+            <div class="wizard-wheel-container">
+              ${wheelHTML}
+              <div class="wizard-wheel-center">Select</div>
+            </div>
+          </div>
+        `;
+
+        popup.querySelectorAll('.wizard-attr-item').forEach(item => {
+          item.addEventListener('click', () => {
+            wizardData.attribute = item.dataset.attr;
+            currentStep = 3;
+            renderStep();
+          });
+        });
+
+      } else if (currentStep === 3) {
+        popup.innerHTML = `
+          <div class="wizard-step">
+            <h3 class="clear-title">Details</h3>
+            <div class="wizard-details-col">
+              <div class="wizard-diff-col">
+                <label class="clear-label">Difficulty</label>
+                <div class="wizard-diff-options">
+                  <button class="btn-diff ${wizardData.difficulty==='Easy'?'active':''}" data-val="Easy">Easy</button>
+                  <button class="btn-diff ${wizardData.difficulty==='Medium'?'active':''}" data-val="Medium">Medium</button>
+                  <button class="btn-diff ${wizardData.difficulty==='Hard'?'active':''}" data-val="Hard">Hard</button>
+                  <button class="btn-diff ${wizardData.difficulty==='Ultra'?'active':''}" data-val="Ultra">Ultra</button>
+                </div>
+              </div>
+              <div class="wizard-deadline-col">
+                <label class="clear-label">Deadline</label>
+                <input type="date" class="clear-input wizard-deadline-input" id="wizardTodoDeadline" value="${tomorrowStr}" />
+              </div>
+            </div>
+            <button class="btn-small mt-8" id="wizardStep3Next">NEXT</button>
+          </div>
+        `;
+        
+        popup.querySelectorAll('.btn-diff').forEach(btn => {
+          btn.addEventListener('click', () => {
+            popup.querySelectorAll('.btn-diff').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wizardData.difficulty = btn.dataset.val;
+          });
+        });
+
+        popup.querySelector('#wizardStep3Next').addEventListener('click', () => {
+          const dlInput = popup.querySelector('#wizardTodoDeadline').value;
+          if (dlInput) wizardData.deadline = new Date(dlInput).getTime();
+          currentStep = 4;
+          renderStep();
+        });
+      } else if (currentStep === 4) {
+        popup.innerHTML = `
+          <div class="wizard-step">
+            <h3 class="clear-title">Subtasks (Optional)</h3>
+            <div id="wizardSubtaskList" class="wizard-subtask-list"></div>
+            <div class="wizard-subtask-form">
+              <input type="text" class="clear-input" id="wizardSubtaskName" placeholder="Add subtask..." />
+              <button class="btn-small" id="wizardAddSubtask">ADD</button>
+            </div>
+            <button class="btn-small mt-8 btn-success" id="wizardFinish">FINISH</button>
+          </div>
+        `;
+        
+        const renderSubtasks = () => {
+          const list = popup.querySelector('#wizardSubtaskList');
+          if (!list) return;
+          list.innerHTML = wizardData.subtasks.length ? wizardData.subtasks.map((st, i) => `
+            <div class="edit-subtask-row">
+              <span>${st}</span>
+              <button class="edit-subtask-remove" data-index="${i}">×</button>
+            </div>
+          `).join('') : '<div class="muted">No subtasks yet</div>';
+        };
+
+        renderSubtasks();
+
+        const input = popup.querySelector('#wizardSubtaskName');
+        const addSubtask = () => {
+          const name = (input.value || '').trim();
+          if (name) {
+            wizardData.subtasks.push(name);
+            input.value = '';
+            renderSubtasks();
+            input.focus();
+          }
+        };
+
+        popup.querySelector('#wizardAddSubtask').addEventListener('click', addSubtask);
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') addSubtask();
+        });
+
+        popup.addEventListener('click', (event) => {
+          const removeBtn = event.target.closest('.edit-subtask-remove');
+          if (removeBtn && popup.contains(removeBtn)) {
+            const i = Number(removeBtn.dataset.index);
+            wizardData.subtasks.splice(i, 1);
+            renderSubtasks();
+          }
+        });
+
+        popup.querySelector('#wizardFinish').addEventListener('click', () => {
+          const created = TaskManager.addTodo(
+            wizardData.name, 
+            wizardData.difficulty, 
+            wizardData.attribute, 
+            wizardData.deadline, 
+            wizardData.subtasks
+          );
+          if (created) {
+            // Apply coordinates based on wizard invocation
+            TaskManager.updateTodoLayout(created.id, { x: xPercent, y: yPercent });
+            this.closeAllPopups();
+            UIManager.updateTodosList();
+            UIManager.positionTodoCards();
+            getGameState().save();
+          }
+        });
+      }
+
+      const closeBtn = popup.querySelector('.btn-close');
+      if (closeBtn) closeBtn.addEventListener('click', () => popup.remove());
+      PopupAnimation.scale(popup);
+    };
+
+    const board = document.getElementById('todosList');
+    if (board) board.appendChild(popup);
+    renderStep();
+  }
 
   static showEditDaily(dailyId) {
     const state = getGameState();
@@ -1472,25 +1724,27 @@ class PopupsManager {
     popup.innerHTML = `
       <h2>EDIT DAILY</h2>
       <button class="btn-close">✕</button>
-      <label>Name</label>
-      <input id="editName" value="${daily.name}" />
-      <label>Attribute</label>
-      <select id="editAttr">${attrs}</select>
-      <label>Difficulty</label>
-      <select id="editDiff">
-        <option ${daily.difficulty==='Easy'?'selected':''}>Easy</option>
-        <option ${daily.difficulty==='Medium'?'selected':''}>Medium</option>
-        <option ${daily.difficulty==='Hard'?'selected':''}>Hard</option>
-        <option ${daily.difficulty==='Ultra'?'selected':''}>Ultra</option>
-      </select>
-      <label>Max completions per day</label>
-      <input id="editMax" type="number" min="1" value="${daily.maxCompletionsPerDay || 1}" />
-      <label>Size</label>
-      <input id="editSize" type="number" min="0.5" max="2" step="0.05" value="${Number(daily.size) || 1}" />
-      <label>Blood Oath</label>
-      <div class="blood-oath-row">
-        <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
-        <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
+      <div class="popup-scrollable-body">
+        <label>Name</label>
+        <input id="editName" value="${daily.name}" />
+        <label>Attribute</label>
+        <select id="editAttr">${attrs}</select>
+        <label>Difficulty</label>
+        <select id="editDiff">
+          <option ${daily.difficulty==='Easy'?'selected':''}>Easy</option>
+          <option ${daily.difficulty==='Medium'?'selected':''}>Medium</option>
+          <option ${daily.difficulty==='Hard'?'selected':''}>Hard</option>
+          <option ${daily.difficulty==='Ultra'?'selected':''}>Ultra</option>
+        </select>
+        <label>Max completions per day</label>
+        <input id="editMax" type="number" min="1" value="${daily.maxCompletionsPerDay || 1}" />
+        <label>Size</label>
+        <input id="editSize" type="number" min="0.5" max="2" step="0.05" value="${Number(daily.size) || 1}" />
+        <label>Blood Oath</label>
+        <div class="blood-oath-row">
+          <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
+          <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
+        </div>
       </div>
       <div class="edit-daily-actions">
         <button class="btn-large" id="saveDaily">SAVE</button>
@@ -1558,28 +1812,33 @@ class PopupsManager {
     popup.innerHTML = `
       <h2>EDIT TO-DO</h2>
       <button class="btn-close">✕</button>
-      <label>Name</label>
-      <input id="editName" value="${todo.name}" />
-      <label>Attribute</label>
-      <select id="editAttr">${attrs}</select>
-      <label>Difficulty</label>
-      <select id="editDiff">
-        <option ${todo.difficulty==='Easy'?'selected':''}>Easy</option>
-        <option ${todo.difficulty==='Medium'?'selected':''}>Medium</option>
-        <option ${todo.difficulty==='Hard'?'selected':''}>Hard</option>
-        <option ${todo.difficulty==='Ultra'?'selected':''}>Ultra</option>
-      </select>
-      <label>Deadline</label>
-      <input id="editDeadline" type="date" value="${deadlineVal}" />
-      <div class="edit-subtasks-panel">
-        <h3>Subtasks</h3>
-        <div class="edit-subtasks-list" id="editSubtasksList"></div>
-        <div class="edit-subtask-form">
-          <input id="newEditSubtaskName" placeholder="Add subtask..." />
-          <button class="btn-small" id="addEditSubtaskBtn">ADD</button>
+      <div class="popup-scrollable-body">
+        <label>Name</label>
+        <input id="editName" value="${todo.name}" />
+        <label>Attribute</label>
+        <select id="editAttr">${attrs}</select>
+        <label>Difficulty</label>
+        <select id="editDiff">
+          <option ${todo.difficulty==='Easy'?'selected':''}>Easy</option>
+          <option ${todo.difficulty==='Medium'?'selected':''}>Medium</option>
+          <option ${todo.difficulty==='Hard'?'selected':''}>Hard</option>
+          <option ${todo.difficulty==='Ultra'?'selected':''}>Ultra</option>
+        </select>
+        <label>Deadline</label>
+        <input id="editDeadline" type="date" value="${deadlineVal}" />
+        <div class="edit-subtasks-panel">
+          <h3>Subtasks</h3>
+          <div class="edit-subtasks-list" id="editSubtasksList"></div>
+          <div class="edit-subtask-form">
+            <input id="newEditSubtaskName" placeholder="Add subtask..." />
+            <button class="btn-small" id="addEditSubtaskBtn">ADD</button>
+          </div>
         </div>
       </div>
-      <button class="btn-large" id="saveTodo">SAVE</button>
+      <div class="edit-todo-actions">
+        <button class="btn-large" id="saveTodo">SAVE</button>
+        <button class="btn-large btn-danger" id="deleteTodo">DELETE TO-DO</button>
+      </div>
     `;
 
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
@@ -1651,6 +1910,108 @@ class PopupsManager {
       UIManager.updateTodosList();
       getGameState().save();
     });
+
+    popup.querySelector('#deleteTodo').addEventListener('click', () => {
+      const latestTodo = getGameState().dailiesState.todos.find(t => t.id === todoId);
+      const todoName = latestTodo?.name || todo.name || 'this to-do';
+      if (!confirm(`Delete ${todoName}?`)) return;
+
+      const removed = TaskManager.removeTodo(todoId);
+      if (!removed) return;
+
+      this.closeAllPopups();
+      UIManager.updateTodosList();
+      UIManager.renderEnemies();
+      getGameState().save();
+    });
+
+    PopupAnimation.scale(popup);
+  }
+
+  // ============================================================
+  // QUICK DAY PICKER
+  // ============================================================
+
+  static showQuickDayPicker(onConfirm) {
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup quick-day-popup';
+
+    // Build the next 14 days as options
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      days.push(d);
+    }
+
+    const currentTs = UIManager.quickDayDeadline;
+
+    const dayBtnsHTML = days.map((d, i) => {
+      const ts = d.getTime();
+      const isActive = currentTs && new Date(currentTs).toDateString() === d.toDateString();
+      let dayLabel;
+      if (i === 0) dayLabel = 'Today';
+      else if (i === 1) dayLabel = 'Tmrw';
+      else dayLabel = dayNames[d.getDay()];
+      return `
+        <button class="quick-day-option${isActive ? ' active' : ''}" data-ts="${ts}">
+          <span class="qd-weekday">${dayLabel}</span>
+          <span class="qd-date">${monthNames[d.getMonth()]} ${d.getDate()}</span>
+        </button>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <h2>⚡ QUICK DAY</h2>
+      <button class="btn-close">✕</button>
+      <p class="quick-day-desc">Set a default deadline for new to-dos you add this session.</p>
+      <div class="quick-day-grid">
+        ${dayBtnsHTML}
+      </div>
+      <div class="quick-day-custom-row">
+        <label class="clear-label">Custom date</label>
+        <input type="date" id="quickDayCustomInput" class="clear-input" />
+        <button class="btn-small" id="quickDayCustomBtn">SET</button>
+      </div>
+      <button class="btn-small btn-danger mt-8" id="quickDayClearPopupBtn">CLEAR</button>
+    `;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+
+    popup.querySelectorAll('.quick-day-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ts = Number(btn.dataset.ts);
+        UIManager.quickDayDeadline = ts;
+        this.closeAllPopups();
+        if (typeof onConfirm === 'function') onConfirm();
+      });
+    });
+
+    const customInput = popup.querySelector('#quickDayCustomInput');
+    popup.querySelector('#quickDayCustomBtn').addEventListener('click', () => {
+      if (!customInput.value) return;
+      UIManager.quickDayDeadline = new Date(customInput.value).getTime();
+      this.closeAllPopups();
+      if (typeof onConfirm === 'function') onConfirm();
+    });
+
+    popup.querySelector('#quickDayClearPopupBtn').addEventListener('click', () => {
+      UIManager.quickDayDeadline = null;
+      this.closeAllPopups();
+      if (typeof onConfirm === 'function') onConfirm();
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
   }
 }

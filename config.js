@@ -167,7 +167,7 @@ const DEFAULT_GAME_CONFIG = {
   overkillChance: 0.4,
   finalStandThreshold: 0.2, // 20% of max HP
   finalStandChance: 0.4, // 40% chance
-  dodgeCost: 0.3, // 30% of MAX_AP
+  dodgeCost: 0.15, // 15% of MAX_AP
   dodgeSpinnerMultiplier: 2,
   dodgeDamageReduction: 0.7, // for next attack
   
