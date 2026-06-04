@@ -241,6 +241,10 @@ class StageManager {
         }
       },
       heal(amount) {
+        if (this.statusEffects?.unstableConcoction?.preventHeal) {
+          console.debug(`[Boss.heal] heal blocked by unstable concoction`);
+          return;
+        }
         this.hp = Math.min(this.maxHp, this.hp + amount);
       },
       getResistanceMultiplier(/* elementGrade */) { return 1.0; },
@@ -305,6 +309,7 @@ class StageManager {
     
     state.stageState.stage++;
     state.stageState.stageVariation = this.pickStageVariation(state.stageState.stage);
+    state.stageState.stageClearedToday = true;
     
     state.eventBus.emit(EVENTS.STAGE_COMPLETE, {
       stage: state.stageState.stage - 1,
@@ -367,7 +372,13 @@ class StageManager {
               state.stageState.bossData.isDead = this.isDead;
             }
           },
-          heal(amount) { this.hp = Math.min(this.maxHp, this.hp + amount); },
+          heal(amount) {
+            if (this.statusEffects?.unstableConcoction?.preventHeal) {
+              console.debug(`[Boss.heal] heal blocked by unstable concoction`);
+              return;
+            }
+            this.hp = Math.min(this.maxHp, this.hp + amount);
+          },
           getResistanceMultiplier() { return 1.0; },
           getWeaknessMultiplier() { return 1.0; }
         };

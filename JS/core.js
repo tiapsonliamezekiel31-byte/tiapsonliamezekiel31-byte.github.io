@@ -174,7 +174,8 @@ class GameState {
       level: 1,
       enemies: [],
       bossData: null,
-      nextBossAtLevel: 5
+      nextBossAtLevel: 5,
+      stageClearedToday: false
     };
     
     this.combatState = {
@@ -270,6 +271,7 @@ class GameState {
     this.stageState.enemies = [];
     this.stageState.bossData = null;
     this.stageState.nextBossAtLevel = 5;
+    this.stageState.stageClearedToday = false;
 
     this.combatState = {
       currentCombo: 0,
@@ -845,7 +847,29 @@ function performCheckIn() {
     return;
   }
 
-  // 2) Pet attacks random enemy (before enemy retaliation)
+  // 2) Pet attacks & Poison status ticks (before enemy retaliation)
+  // 2a) Resolve Poison DoT first
+  try {
+    const alive = StageManager.getAliveEnemies();
+    alive.forEach(enemy => {
+      if (enemy && !enemy.isDead && enemy.statusEffects && enemy.statusEffects.poison) {
+        const poison = enemy.statusEffects.poison;
+        if (poison.daysRemaining > 0 && poison.damagePerDay > 0) {
+          const dmg = poison.damagePerDay;
+          enemy.takeDamage(dmg);
+          state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: dmg, source: 'poison', targetId: enemy.id });
+          poison.daysRemaining--;
+          if (poison.daysRemaining <= 0) {
+            delete enemy.statusEffects.poison;
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('Poison DoT application failed during check-in', e);
+  }
+
+  // 2b) Pet attacks random enemy
   try {
     const petBase = typeof state.config.petBaseDamageFormula === 'function'
       ? state.config.petBaseDamageFormula(state.playerState.maxAp, state.playerState.level)
@@ -855,11 +879,18 @@ function performCheckIn() {
       ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
 
     const petDamage = petBase * petMultiplier;
-    const alive = StageManager.getAliveEnemies();
-    if (alive.length > 0) {
-      const target = alive[Math.floor(Math.random() * alive.length)];
-      target.takeDamage(petDamage);
-      state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
+    
+    // Druid shadowPet skill allows pet to attack twice today
+    const skillFx = state.combatState?.skillEffects || {};
+    const petAttacksCount = skillFx.shadowPet ? 2 : 1;
+
+    for (let i = 0; i < petAttacksCount; i++) {
+      const alive = StageManager.getAliveEnemies();
+      if (alive.length > 0) {
+        const target = alive[Math.floor(Math.random() * alive.length)];
+        target.takeDamage(petDamage);
+        state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
+      }
     }
   } catch (e) {
     console.warn('Pet attack failed during check-in', e);
@@ -875,137 +906,182 @@ function performCheckIn() {
     const totalNormal = aliveNormalEnemies.length || 1;
     const passive = PlayerManager.getClassPassive();
 
-    const resolveOneAttack = (enemy, damage, { isBoss = false } = {}) => {
-      console.debug(`[resolveOneAttack] target=${enemy?.name || 'unknown'} id=${enemy?.id || 'n/a'} damage=${damage} isBoss=${isBoss}`);
-      const consumeReactiveWeaponEffect = () => {
-        const effect = enemy?.statusEffects?.reactiveWeapon;
-        if (!effect || !effect.pending) return;
+    if (state.stageState.stageClearedToday) {
+      aliveNormalEnemies.forEach(enemy => {
+        retaliationSteps.push({
+          enemyId: enemy.id,
+          name: enemy.name,
+          isBoss: false,
+          damage: 0,
+          hpBefore: state.playerState.hp,
+          hpAfter: state.playerState.hp,
+          isImmune: true
+        });
+      });
+      if (bossEnemy && !bossEnemy.isDead) {
+        retaliationSteps.push({
+          enemyId: bossEnemy.id,
+          name: bossEnemy.name,
+          isBoss: true,
+          damage: 0,
+          hpBefore: state.playerState.hp,
+          hpAfter: state.playerState.hp,
+          isImmune: true
+        });
+      }
+    } else {
+      const resolveOneAttack = (enemy, damage, { isBoss = false } = {}) => {
+        console.debug(`[resolveOneAttack] target=${enemy?.name || 'unknown'} id=${enemy?.id || 'n/a'} damage=${damage} isBoss=${isBoss}`);
+        const consumeReactiveWeaponEffect = () => {
+          const effect = enemy?.statusEffects?.reactiveWeapon;
+          if (!effect || !effect.pending) return;
 
-        if (effect.rewardType === 'ap') {
-          const reward = Math.ceil((state.playerState.maxAp || 0) * (Number(effect.rewardValue) || 0));
-          if (reward > 0) state.addAp(reward);
-        } else if (effect.rewardType === 'mana') {
-          const reward = Math.ceil(Number(effect.rewardValue) || 0);
-          if (reward > 0) state.addMana(reward);
+          if (effect.rewardType === 'ap') {
+            const reward = Math.ceil((state.playerState.maxAp || 0) * (Number(effect.rewardValue) || 0));
+            if (reward > 0) state.addAp(reward);
+          } else if (effect.rewardType === 'mana') {
+            const reward = Math.ceil(Number(effect.rewardValue) || 0);
+            if (reward > 0) state.addMana(reward);
+          }
+
+          effect.pending = false;
+          if (enemy?.statusEffects) {
+            delete enemy.statusEffects.reactiveWeapon;
+          }
+        };
+
+        // Check for dodge target
+        const dodgeTarget = state.combatState?.dodgeTarget;
+        const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
+        // Swift mutator can bypass player dodge
+        const swiftBypassDodge = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassDodge ?? false);
+        if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
+          state.combatState.dodgeTarget = dodgeTargets.filter(id => id !== enemy.id);
+          consumeReactiveWeaponEffect();
+          retaliationSteps.push({
+            enemyId: enemy.id,
+            name: enemy.name,
+            isBoss,
+            damage: 0,
+            isDodge: true
+          });
+          return;
         }
 
-        effect.pending = false;
-        if (enemy?.statusEffects) {
-          delete enemy.statusEffects.reactiveWeapon;
+        // Apply class-based multiplicative damageTaken modifiers
+        if (passive && typeof passive.damageTaken === 'number') {
+          damage *= passive.damageTaken;
         }
-      };
 
-      // Check for dodge target
-      const dodgeTarget = state.combatState?.dodgeTarget;
-      const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
-      // Swift mutator can bypass player dodge
-      const swiftBypassDodge = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassDodge ?? false);
-      if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
-        state.combatState.dodgeTarget = dodgeTargets.filter(id => id !== enemy.id);
-        consumeReactiveWeaponEffect();
+        // Apply skill effects (Knight Iron Bastion, Juggernaut Fortress)
+        const skillFx = state.combatState?.skillEffects || {};
+
+        // Knight: Iron Bastion - reduce incoming damage while shield charges remain
+        if (skillFx.shieldCharges && skillFx.shieldCharges > 0) {
+          damage *= (typeof skillFx.shieldDamageMultiplier === 'number' ? skillFx.shieldDamageMultiplier : 0.4);
+          skillFx.shieldCharges--;
+        }
+
+        // Juggernaut: Fortress - invincible + reflect damage
+        if (skillFx.fortressCharges && skillFx.fortressCharges > 0) {
+          const reflectDamage = Math.ceil(damage * (typeof skillFx.fortressReflect === 'number' ? skillFx.fortressReflect : 0.5));
+          // Reflect damage back to the attacking enemy
+          if (reflectDamage > 0 && typeof enemy.takeDamage === 'function') {
+            enemy.takeDamage(reflectDamage);
+          }
+          damage = 0; // invincible
+          skillFx.fortressCharges--;
+        }
+
+        // Swift mutator can bypass flat reductions / shields
+        const swiftBypassShields = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassShields ?? false);
+
+        // Apply flat reductions (do NOT apply to late-todo damage; only enemy attacks)
+        if (!swiftBypassShields) {
+          if (passive && typeof passive.damageReduction === 'number') {
+            damage = Math.max(0, damage - passive.damageReduction);
+          }
+
+          if (state.hasBuff('Iron Skin')) {
+            const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
+            if (typeof reduction === 'number') {
+              damage = Math.max(0, damage - reduction);
+            }
+          }
+        }
+
+        const reactiveWeapon = enemy?.statusEffects?.reactiveWeapon;
+        if (reactiveWeapon && reactiveWeapon.pending) {
+          damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+        }
+
         retaliationSteps.push({
           enemyId: enemy.id,
           name: enemy.name,
           isBoss,
-          damage: 0,
-          isDodge: true
+          damage,
+          hpBefore: state.playerState.hp
         });
-        return;
-      }
 
-      // Apply class-based multiplicative damageTaken modifiers
-      if (passive && typeof passive.damageTaken === 'number') {
-        damage *= passive.damageTaken;
-      }
+        state.takeDamage(damage);
+        console.debug(`[resolveOneAttack] playerHP now=${state.playerState.hp}`);
+        state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: enemy.name, isBoss });
+        consumeReactiveWeaponEffect();
 
-      // Swift mutator can bypass flat reductions / shields
-      const swiftBypassShields = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassShields ?? false);
-
-      // Apply flat reductions (do NOT apply to late-todo damage; only enemy attacks)
-      if (!swiftBypassShields) {
-        if (passive && typeof passive.damageReduction === 'number') {
-          damage = Math.max(0, damage - passive.damageReduction);
+        const step = retaliationSteps[retaliationSteps.length - 1];
+        if (step) {
+          step.hpAfter = state.playerState.hp;
         }
 
-        if (state.hasBuff('Iron Skin')) {
-          const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
-          if (typeof reduction === 'number') {
-            damage = Math.max(0, damage - reduction);
+        // Buff: Thorns
+        if (state.hasBuff('Thorns')) {
+          const thorn = state.config.buffs?.Thorns?.effect?.thornsDamage;
+          const thornDamage = typeof thorn === 'number' ? thorn : 2;
+          if (typeof enemy.takeDamage === 'function') {
+            enemy.takeDamage(thornDamage);
+            console.debug(`[resolveOneAttack] thorns hit ${enemy.name}(${enemy.id}) for ${thornDamage}, enemyHP=${enemy.hp}`);
+          } else if (typeof enemy.hp === 'number') {
+            enemy.hp = Math.max(0, enemy.hp - thornDamage);
+            if (enemy.hp === 0) enemy.isDead = true;
           }
+        // Mutators that trigger when this enemy attacks
+        try {
+          if (typeof EnemyManager !== 'undefined' && typeof EnemyManager.applyMutatorsOnAttack === 'function') {
+            EnemyManager.applyMutatorsOnAttack(enemy, damage);
+          }
+        } catch (e) {
+          console.warn('Mutator apply failed on attack', e);
         }
-      }
+        }
+      };
 
-      const reactiveWeapon = enemy?.statusEffects?.reactiveWeapon;
-      if (reactiveWeapon && reactiveWeapon.pending) {
-        damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
-      }
+      aliveNormalEnemies.forEach(enemy => {
+        // Base enemy damage calculation (normal enemies split N)
+        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal);
 
-      retaliationSteps.push({
-        enemyId: enemy.id,
-        name: enemy.name,
-        isBoss,
-        damage,
-        hpBefore: state.playerState.hp
+        // Incantation multiplier (applies to THIS check-in, then clears)
+        const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;
+        damage *= incantMult;
+        enemy.incantationDamageMult = 1;
+
+        // Archetype adjustments
+        const bruteMult = EnemyManager.applyBrutePassive(enemy, state.stageState.stage) || 1.0;
+        damage *= bruteMult;
+
+        resolveOneAttack(enemy, damage, { isBoss: false });
+
+        // Archetype effects trigger when the enemy attacks (after damage)
+        EnemyManager.applyHealerPassive(enemy);
+        EnemyManager.applyManaDrainPassive(enemy, state.stageState.stage);
       });
 
-      state.takeDamage(damage);
-      console.debug(`[resolveOneAttack] playerHP now=${state.playerState.hp}`);
-      state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: enemy.name, isBoss });
-      consumeReactiveWeaponEffect();
-
-      const step = retaliationSteps[retaliationSteps.length - 1];
-      if (step) {
-        step.hpAfter = state.playerState.hp;
+      // Boss retaliation: proportional to N (no random flat variance)
+      if (bossEnemy && !bossEnemy.isDead) {
+        const bossMult = typeof bossEnemy.dmgMult === 'number' ? bossEnemy.dmgMult : 1.0;
+        // Boss damage should also be doubled to match global enemy damage scaling
+        const bossDamage = Math.max(0, N * bossMult) * 2;
+        resolveOneAttack(bossEnemy, bossDamage, { isBoss: true });
       }
-
-      // Buff: Thorns
-      if (state.hasBuff('Thorns')) {
-        const thorn = state.config.buffs?.Thorns?.effect?.thornsDamage;
-        const thornDamage = typeof thorn === 'number' ? thorn : 2;
-        if (typeof enemy.takeDamage === 'function') {
-          enemy.takeDamage(thornDamage);
-          console.debug(`[resolveOneAttack] thorns hit ${enemy.name}(${enemy.id}) for ${thornDamage}, enemyHP=${enemy.hp}`);
-        } else if (typeof enemy.hp === 'number') {
-          enemy.hp = Math.max(0, enemy.hp - thornDamage);
-          if (enemy.hp === 0) enemy.isDead = true;
-        }
-      // Mutators that trigger when this enemy attacks
-      try {
-        if (typeof EnemyManager !== 'undefined' && typeof EnemyManager.applyMutatorsOnAttack === 'function') {
-          EnemyManager.applyMutatorsOnAttack(enemy, damage);
-        }
-      } catch (e) {
-        console.warn('Mutator apply failed on attack', e);
-      }
-      }
-    };
-
-    aliveNormalEnemies.forEach(enemy => {
-      // Base enemy damage calculation (normal enemies split N)
-      let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal);
-
-      // Incantation multiplier (applies to THIS check-in, then clears)
-      const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;
-      damage *= incantMult;
-      enemy.incantationDamageMult = 1;
-
-      // Archetype adjustments
-      const bruteMult = EnemyManager.applyBrutePassive(enemy, state.stageState.stage) || 1.0;
-      damage *= bruteMult;
-
-      resolveOneAttack(enemy, damage, { isBoss: false });
-
-      // Archetype effects trigger when the enemy attacks (after damage)
-      EnemyManager.applyHealerPassive(enemy);
-      EnemyManager.applyManaDrainPassive(enemy, state.stageState.stage);
-    });
-
-    // Boss retaliation: proportional to N (no random flat variance)
-    if (bossEnemy && !bossEnemy.isDead) {
-      const bossMult = typeof bossEnemy.dmgMult === 'number' ? bossEnemy.dmgMult : 1.0;
-      // Boss damage should also be doubled to match global enemy damage scaling
-      const bossDamage = Math.max(0, N * bossMult) * 2;
-      resolveOneAttack(bossEnemy, bossDamage, { isBoss: true });
     }
   } catch (e) {
     console.warn('Enemy retaliation failed during check-in', e);
@@ -1090,6 +1166,11 @@ function performCheckIn() {
     const chance = state.config.mutatorChancePerDay ?? 0.3;
     const maxPer = state.config.maxMutatorsPerEnemy ?? 3;
     aliveForMutator.forEach(enemy => {
+      // Block mutations under Unstable Concoction
+      if (enemy.statusEffects?.unstableConcoction?.preventMutate) {
+        console.debug(`[Mutator] Mutation blocked for ${enemy.name} by unstable concoction`);
+        return;
+      }
       enemy.daysAlive = (enemy.daysAlive || 0) + 1;
       enemy.mutators = Array.isArray(enemy.mutators) ? enemy.mutators : [];
       if (enemy.mutators.length >= maxPer) return;
@@ -1221,6 +1302,28 @@ function performCheckIn() {
     TaskManager.resetDailies();
     state.systemState.lastCheckInTime = nowMs;
     state.systemState.runStats.daysSurvived = (state.systemState.runStats.daysSurvived || 0) + 1;
+    state.stageState.stageClearedToday = false;
+
+    // Clear today's active skill effects
+    if (state.combatState && state.combatState.skillEffects) {
+      const skillFx = state.combatState.skillEffects;
+      delete skillFx.wrathUnleashed;
+      delete skillFx.wrathDamageMultiplier;
+      delete skillFx.cannotDodge;
+      delete skillFx.shadowPet;
+      delete skillFx.stormVolley;
+      delete skillFx.chronoShiftCharges;
+    }
+
+    // Clear unstableConcoction status effects from enemies
+    try {
+      const enemies = state.stageState.enemies || [];
+      enemies.forEach(e => {
+        if (e && e.statusEffects && e.statusEffects.unstableConcoction) {
+          delete e.statusEffects.unstableConcoction;
+        }
+      });
+    } catch (e) {}
   } catch (e) {
     console.warn('Failed to reset dailies during check-in', e);
   }

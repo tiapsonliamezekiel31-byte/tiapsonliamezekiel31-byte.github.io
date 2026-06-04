@@ -88,72 +88,128 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   classes: {
     Knight: {
-      hp: 180, mana: 200, hpRegen: 20, manaRegen: 50,
-      passive: 'Sturdy: all enemy damage reduced by 2',
-      skill: 'Raise Shield – next 2 attacks against you deal 0.7× damage (cost: 60 mana)'
+      hp: 180, mana: 200, hpRegen: 20, manaRegen: 100,
+      passive: 'Sturdy: all enemy damage reduced by 5',
+      skill: 'Iron Bastion – next 4 attacks against you deal 0.4× damage (cost: 60 mana)'
     },
     Rogue: {
-      hp: 70, mana: 250, hpRegen: 10, manaRegen: 60,
-      passive: 'Quick Hands: +15% crit chance',
-      skill: 'Shadow Strike – next attack deals double damage, ignores resistances (cost: 30 mana)'
+      hp: 70, mana: 250, hpRegen: 10, manaRegen: 120,
+      passive: 'Quick Hands: +25% crit chance',
+      skill: 'Phantom Blow – next attack deals 4× damage, ignores resistances, steals 30 mana on hit (cost: 30 mana)'
     },
     Wizard: {
-      hp: 90, mana: 300, hpRegen: 10, manaRegen: 70,
+      hp: 90, mana: 300, hpRegen: 10, manaRegen: 140,
       passive: 'Elemental Attunement: attacking an enemy\'s weakness auto-crits',
-      skill: 'Arcane Surge – for today, weapon element changes to chosen type (cost: 40 mana)'
+      skill: 'Chrono-Shift – bend time; your next 3 attacks are echoed at 50% damage at the end of the turn (cost: 50 mana)'
     },
     Brute: {
-      hp: 100, mana: 150, hpRegen: 15, manaRegen: 40,
-      passive: 'Berserk: deal +40% damage, take +30% damage',
-      skill: 'Blood Frenzy – today all attacks cost 50% less AP, but you take double damage (cost: 50 mana)'
+      hp: 100, mana: 150, hpRegen: 15, manaRegen: 80,
+      passive: 'Berserk: deal +60% damage, take +40% damage',
+      skill: 'Wrath Unleashed – +200% damage for today, but cannot dodge (cost: 50 mana)'
     },
     Ranger: {
-      hp: 80, mana: 180, hpRegen: 12, manaRegen: 50,
+      hp: 80, mana: 180, hpRegen: 12, manaRegen: 100,
       passive: 'Master of Arms: equip 3 weapons; gain Kill Tags every 3 kills instead of 5',
-      skill: 'Volley – attack 3 random enemies with 50% of current weapon\'s damage each (cost: 40 mana)'
+      skill: 'Storm Volley – next attack deals full damage to target + 60% to all other enemies (cost: 40 mana)'
     },
     Druid: {
-      hp: 120, mana: 220, hpRegen: 20, manaRegen: 60,
-      passive: 'Whisperer: pet damage ×3',
-      skill: 'Mend – heal self 20 HP, then pet attacks twice today (cost: 50 mana)'
+      hp: 120, mana: 220, hpRegen: 20, manaRegen: 120,
+      passive: 'Whisperer: pet damage ×5',
+      skill: 'Nature\'s Embrace – heal 40 HP, summon shadow pet for today (2× pet attacks) (cost: 50 mana)'
     },
     Alchemist: {
-      hp: 90, mana: 250, hpRegen: 10, manaRegen: 70,
-      passive: 'Potion Master: consumable effects 50% stronger, last 1 extra day',
-      skill: 'Acid Flask – deal 10% of each enemy\'s max HP as damage (cost: 40 mana)'
+      hp: 90, mana: 250, hpRegen: 10, manaRegen: 140,
+      passive: 'Potion Master: consumable effects 80% stronger, last 2 extra days',
+      skill: 'Unstable Concoction – reverse target\'s weaknesses/resistances permanently, block healing/mutating next check-in. If weak to current element, deal 15% max HP splash damage to adjacent enemies (cost: 50 mana)'
     },
     Juggernaut: {
-      hp: 250, mana: 100, hpRegen: 30, manaRegen: 30,
-      passive: 'Immovable: multiply damage by 0.6',
-      skill: 'Taunt – cannot dodge today, but take 60% less damage (cost: 60 mana)'
+      hp: 250, mana: 100, hpRegen: 30, manaRegen: 60,
+      passive: 'Immovable: multiply damage taken by 0.85',
+      skill: 'Fortress – invincible for next 2 attacks + reflect 50% damage back (cost: 60 mana)'
     },
     Madman: {
       hp: 1, mana: 1, hpRegen: 0, manaRegen: 0,
       passive: 'Fragile: miss any daily → die at check-in, no death defiance',
-      skill: 'immediately gain 5 diamonds (cost: 1 mana, re-usable)'
+      skill: 'Scream into the Void – gain 1 diamond. That\'s it. You\'re a Madman. (cost: 1 mana)'
     }
   },
   classPassives: {
-    Knight: { damageReduction: 2 },
-    Rogue: { critBonus: 0.15 },
+    Knight: { damageReduction: 5 },
+    Rogue: { critBonus: 0.25 },
     Wizard: null, // handled in combat
-    Brute: { damageDealt: 1.4, damageTaken: 1.3 },
+    Brute: { damageDealt: 1.6, damageTaken: 1.4 },
     Ranger: null, // handled in shop
-    Druid: { petDamageMultiplier: 3 },
-    Alchemist: { consumableMultiplier: 1.5 },
-    Juggernaut: { damageMultiplier: 0.6 },
+    Druid: { petDamageMultiplier: 5 },
+    Alchemist: { consumableMultiplier: 1.8 },
+    Juggernaut: { damageMultiplier: 0.85 },
     Madman: null // special case
   },
   skillManaCosts: {
     Knight: 60,
     Rogue: 30,
-    Wizard: 40,
+    Wizard: 50,
     Brute: 50,
     Ranger: 40,
     Druid: 50,
-    Alchemist: 40,
+    Alchemist: 50,
     Juggernaut: 60,
     Madman: 1
+  },
+  classSkillMeta: {
+    Knight: {
+      name: 'Iron Bastion',
+      icon: '🛡️',
+      color: '#4a9eff',
+      flavorText: '"The shield becomes the world."'
+    },
+    Rogue: {
+      name: 'Phantom Blow',
+      icon: '🗡️',
+      color: '#a855f7',
+      flavorText: '"You never saw the blade."'
+    },
+    Wizard: {
+      name: 'Chrono-Shift',
+      icon: '⏳',
+      color: '#a855f7',
+      flavorText: '"Time is a loop. Let it replay."'
+    },
+    Brute: {
+      name: 'Wrath Unleashed',
+      icon: '💀',
+      color: '#ef4444',
+      flavorText: '"Pain is just fuel."'
+    },
+    Ranger: {
+      name: 'Storm Volley',
+      icon: '🏹',
+      color: '#22c55e',
+      flavorText: '"Every arrow finds its mark."'
+    },
+    Druid: {
+      name: "Nature's Embrace",
+      icon: '🌿',
+      color: '#10b981',
+      flavorText: '"The wild answers your call."'
+    },
+    Alchemist: {
+      name: 'Unstable Concoction',
+      icon: '🧪',
+      color: '#84cc16',
+      flavorText: '"A volatile blend of elements."'
+    },
+    Juggernaut: {
+      name: 'Fortress',
+      icon: '🏰',
+      color: '#f59e0b',
+      flavorText: '"I am the wall that does not break."'
+    },
+    Madman: {
+      name: 'Scream into the Void',
+      icon: '🤡',
+      color: '#ec4899',
+      flavorText: '"...was it worth it?"'
+    }
   },
   
   // ============================================================
@@ -512,7 +568,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0,
       fireRate: 1,
       price: 8,
-      special: 'Kills enemy at ≤30% HP instantly'
+      special: 'Kills enemy at ≤40% HP instantly'
     },
     'Heavy Hammer': {
       type: 'Heavy',

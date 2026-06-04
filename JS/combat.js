@@ -42,6 +42,15 @@ class WeaponAttack {
     const apCost = this.getScaledApCost();
     let damage = apCost * this.damageMultiplier;
     
+    if (this.weaponName === 'Death Spell') {
+      const hpPct = (target && target.maxHp > 0) ? (target.hp / target.maxHp) : 1;
+      if (hpPct <= 0.40) {
+        damage = Infinity;
+      } else {
+        damage = 0;
+      }
+    }
+    
     // × class_passive
     const passive = PlayerManager.getClassPassive();
     if (passive) {
@@ -76,6 +85,31 @@ class WeaponAttack {
     
     if (state.hasBuff('Fury')) {
       // +5% max potential AP (handled elsewhere, this is just display bonus)
+    }
+
+    // Apply active skill effects
+    const skillFx = state.combatState?.skillEffects || {};
+
+    // Brute: Wrath Unleashed - 3× damage multiplier
+    if (skillFx.wrathUnleashed && skillFx.wrathDamageMultiplier) {
+      damage *= skillFx.wrathDamageMultiplier;
+    }
+
+    // Rogue: Phantom Blow - 4× damage, ignore resistances (re-apply base without weakness)
+    if (skillFx.phantomBlow) {
+      // Override with 4× base damage (ignoring the weakness multiplier already applied)
+      const baseDamage = apCost * this.damageMultiplier;
+      damage = baseDamage * 4;
+      // Re-apply crit and passive if applicable
+      if (passive) {
+        if (passive.damageDealt) damage *= passive.damageDealt;
+        if (passive.damageMultiplier) damage *= passive.damageMultiplier;
+      }
+      if (isCrit) damage *= 2;
+      // Steal 30 mana on hit
+      try { state.addMana(30); } catch (e) {}
+      // Consume the effect (one-time use)
+      skillFx.phantomBlow = false;
     }
     
     return damage;
@@ -256,7 +290,15 @@ class CombatManager {
       specialPopups.push({ text, color });
     };
 
-    if (weaponData.special && weaponData.special.includes('Hits ALL')) {
+    const skillFx = state.combatState?.skillEffects || {};
+
+    if (skillFx.stormVolley) {
+      targets.push({ enemy: target, damageMultiplier: 1 });
+      const otherEnemies = aliveList.filter(enemy => enemy && enemy.id !== target.id);
+      targets.push(...otherEnemies.map(enemy => ({ enemy, damageMultiplier: 0.6 })));
+      pushSpecialPopup('STORM VOLLEY', '#22c55e');
+      delete skillFx.stormVolley;
+    } else if (weaponData.special && weaponData.special.includes('Hits ALL')) {
       targets.push(...aliveList.map(enemy => ({ enemy, damageMultiplier: 1 }))); 
       pushSpecialPopup('ALL HIT', '#ffd76a');
     } else if (weaponData.special && weaponData.special.includes('adjacent')) {
@@ -297,6 +339,10 @@ class CombatManager {
         damage *= entry.damageMultiplier;
       }
 
+      if (attackPlan.weaponName === 'Death Spell' && damage === 0) {
+        pushSpecialPopup('RESISTED', '#ef4444');
+      }
+
       if (attackPlan.specialId === 'vine') {
         const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
           dayKey: getLocalDayKey(),
@@ -323,9 +369,15 @@ class CombatManager {
       // record damage to primary target for UI feedback
       if (tgt === target) primaryDamage = damage;
 
-      // Ensure at least 1 damage from player attacks so 1-HP enemies can be finished
-      const enforcedDamage = Math.max(1, damage);
-      if (enforcedDamage !== damage) console.debug(`[CombatManager] damage rounded up to ${enforcedDamage} from ${damage} for ${tgt.name}(${tgt.id})`);
+      // Ensure at least 1 damage from player attacks so 1-HP enemies can be finished,
+      // except when Death Spell is resisted (which must deal exactly 0 damage)
+      let enforcedDamage = Math.max(1, damage);
+      if (attackPlan.weaponName === 'Death Spell' && damage === 0) {
+        enforcedDamage = 0;
+      }
+      if (enforcedDamage !== damage && enforcedDamage > 0) {
+        console.debug(`[CombatManager] damage rounded up to ${enforcedDamage} from ${damage} for ${tgt.name}(${tgt.id})`);
+      }
 
       // Final Stand check (use enforcedDamage)
       const survivesFinalStand = EnemyManager.applyFinalStand(tgt, enforcedDamage);
@@ -524,6 +576,20 @@ class CombatManager {
         }
       }
     } catch (e) { console.warn('Post-kill progression check failed', e); }
+    const chronoShiftEcho = (skillFx.chronoShiftCharges && skillFx.chronoShiftCharges > 0) ? {
+      targetId: targetEnemyId,
+      damage: damage,
+      weaponName: weapon.name,
+      element: weapon.element
+    } : null;
+
+    if (chronoShiftEcho) {
+      skillFx.chronoShiftCharges--;
+      if (skillFx.chronoShiftCharges <= 0) {
+        delete skillFx.chronoShiftCharges;
+      }
+    }
+
     return {
       success: true,
       damage,
@@ -533,12 +599,19 @@ class CombatManager {
       fireRate,
       specialPopups,
       combo: state.combatState.currentCombo,
-      hitDetails
+      hitDetails,
+      chronoShiftEcho
     };
   }
   
   static attemptDodge() {
     const state = getGameState();
+
+    // Brute: Wrath Unleashed prevents dodging
+    const skillFx = state.combatState?.skillEffects || {};
+    if (skillFx.cannotDodge) {
+      return { success: false, reason: 'Wrath forbids dodging' };
+    }
     
     const dodgeCost = state.playerState.maxAp * state.config.dodgeCost;
     

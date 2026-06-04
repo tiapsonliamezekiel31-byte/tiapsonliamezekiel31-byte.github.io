@@ -101,7 +101,7 @@ class UIManager {
       if (typeof document === 'undefined') return fallback;
       const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
       if (v && v.trim()) return v.trim();
-    } catch (e) {}
+    } catch (e) { }
     return fallback;
   }
 
@@ -226,7 +226,7 @@ class UIManager {
     gameArea.style.top = '0px';
     gameArea.style.height = `calc(100% - 60px)`;
   }
-  
+
   static createHudWidget() {
     const hud = document.createElement('div');
     hud.id = 'draggableHud';
@@ -268,7 +268,7 @@ class UIManager {
         hud.style.right = 'auto';
         hud.style.left = left + 'px';
         hud.style.top = top + 'px';
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const onPointerDown = (e) => {
@@ -348,7 +348,7 @@ class UIManager {
       }
     });
   }
-  
+
   static createGameArea() {
     const gameArea = document.createElement('div');
     gameArea.id = 'gameArea';
@@ -398,7 +398,7 @@ class UIManager {
         const { ty } = JSON.parse(savedPos);
         currentTy = ty;
         centerGroup.style.transform = `translate(0px, ${currentTy}px)`;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const onDown = (e) => {
@@ -446,7 +446,7 @@ class UIManager {
         rcPanel.style.bottom = 'auto';
         rcPanel.style.left = left + 'px';
         rcPanel.style.top = top + 'px';
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const onRcDown = (e) => {
@@ -499,7 +499,7 @@ class UIManager {
 
     this.updateStageBackdrop();
   }
-  
+
   static createActionButtons() {
     const ring = document.querySelector('.action-ring');
     if (!ring) return;
@@ -553,7 +553,7 @@ class UIManager {
       }
     });
   }
-  
+
   static createPullTabs() {
     const leftHandle = document.createElement('button');
     leftHandle.id = 'dailiesTabHandle';
@@ -587,7 +587,7 @@ class UIManager {
       <div class="tab-content daily-board" id="dailiesList"></div>
     `;
     document.body.appendChild(leftTab);
-    
+
     // Right tab - To-Dos
     const rightTab = document.createElement('div');
     rightTab.id = 'todosPanel';
@@ -672,9 +672,9 @@ class UIManager {
       PopupsManager.showConfiguredDialogue('shopOpen', {
         text: 'text'
       }, 'shopOpen:first');
-    } catch (e) {}
+    } catch (e) { }
     // generate offers once per open so consumables/weapons don't reroll on purchase
-    try { if (ShopManager && typeof ShopManager.generateShopOffers === 'function') ShopManager.generateShopOffers(); } catch (e) {}
+    try { if (ShopManager && typeof ShopManager.generateShopOffers === 'function') ShopManager.generateShopOffers(); } catch (e) { }
     this.buildShopItems();
   }
 
@@ -691,7 +691,7 @@ class UIManager {
 
       const openDetails = () => {
         longPressed = true;
-        try { PopupsManager.showShopItemDetails(itemData); } catch (e) {}
+        try { PopupsManager.showShopItemDetails(itemData); } catch (e) { }
       };
 
       const startPress = (e) => {
@@ -743,8 +743,8 @@ class UIManager {
             <div class="shop-item-icon">${iconFor(name, iconMap.smith || '⚒️')}</div>
             <div class="shop-item-meta">
               <div class="shop-item-name">${name}</div>
+              <div class="shop-item-price">💰 ${String(price || 0)}</div>
             </div>
-            <div class="shop-item-price">${String(price || 0)}</div>
           `;
           smithList.appendChild(row);
 
@@ -755,7 +755,7 @@ class UIManager {
                   const res = ShopManager.buyWeapon ? ShopManager.buyWeapon(name, element) : { success: false, reason: 'not_implemented' };
                   console.log('Shop buyWeapon response', name, element, res);
                   if (res && res.success) {
-                    FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Purchased ${name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Purchased ${name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
                     this.buildShopItems();
                     return;
                   }
@@ -776,7 +776,7 @@ class UIManager {
                   else if (reason === 'not_found') msg = 'Item not found';
                   else if (reason === 'no_player_manager') msg = 'Player system unavailable';
                   else if (reason === 'not_implemented') msg = 'Buy not implemented';
-                  FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
                 });
               }
             } catch (e) { console.warn('Failed to open element chooser', e); }
@@ -802,22 +802,22 @@ class UIManager {
               <div class="shop-item-icon">${iconFor(upgrade.name, iconMap.smith || '⚒️')}</div>
               <div class="shop-item-meta">
                 <div class="shop-item-name">${upgrade.name}</div>
+                <div class="shop-item-price">💰 ${upgrade.price}</div>
               </div>
-              <div class="shop-item-price">${upgrade.price}</div>
             `;
             smithList.appendChild(upRow);
             const buyUpgrade = () => {
               const res = ShopManager.purchase ? ShopManager.purchase(upgrade.id) : { success: false, reason: 'not_implemented' };
               console.log('Shop purchase upgrade response', upgrade.id, res);
               if (res && res.success) {
-                FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Purchased ${upgrade.name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Purchased ${upgrade.name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
                 this.buildShopItems();
                 return true;
               } else {
                 const reason = res?.reason || 'unknown';
                 let msg = 'Cannot buy';
                 if (reason === 'no_gold') msg = 'Not enough gold';
-                FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
                 return false;
               }
             };
@@ -847,8 +847,8 @@ class UIManager {
             <div class="shop-item-icon">${iconFor(name, iconMap.consumable || '🧪')}</div>
             <div class="shop-item-meta">
               <div class="shop-item-name">${name}</div>
+              <div class="shop-item-price">💰 ${String(price || 0)}</div>
             </div>
-            <div class="shop-item-price">${String(price || 0)}</div>
           `;
           shelfList.appendChild(row);
 
@@ -856,7 +856,7 @@ class UIManager {
             const res = ShopManager.buyConsumable ? ShopManager.buyConsumable(name, 1) : { success: false, reason: 'not_implemented' };
             console.log('Shop buyConsumable response', name, res);
             if (res && res.success) {
-              FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Purchased ${name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Purchased ${name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
               this.buildShopItems();
               return true;
             } else {
@@ -867,7 +867,7 @@ class UIManager {
               else if (reason === 'not_found') msg = 'Item not found';
               else if (reason === 'no_player_manager') msg = 'Player system unavailable';
               else if (reason === 'not_implemented') msg = 'Buy not implemented';
-              FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
               return false;
             }
           };
@@ -967,7 +967,7 @@ class UIManager {
             }
           }
           if (res && res.success) {
-            FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Purchased ${item.name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Purchased ${item.name}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F') });
             this.renderShop();
           } else {
             const reason = res?.reason || 'unknown';
@@ -986,13 +986,13 @@ class UIManager {
             else if (reason === 'not_found') msg = 'Item not found';
             else if (reason === 'no_player_manager') msg = 'Player system unavailable';
             else if (reason === 'not_implemented') msg = 'Buy not implemented';
-            FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: UIManager.themeColor('--danger-red', '#C00707') });
           }
         } catch (err) { console.warn('Purchase failed', err); }
       });
     });
   }
-  
+
   static bindEventListeners() {
     if (this.eventListenersBound) return;
     this.eventListenersBound = true;
@@ -1002,8 +1002,8 @@ class UIManager {
       if (window.SoundManager) {
         SoundManager.init(state.config.soundEnabled !== false, state.config.soundVolume || 0.6);
       }
-    } catch (e) {}
-    
+    } catch (e) { }
+
     // Resource updates
     state.eventBus.on(EVENTS.HP_CHANGED, (detail) => this.updateHpBar(detail));
     state.eventBus.on(EVENTS.MANA_CHANGED, (detail) => this.updateManaBar(detail));
@@ -1013,7 +1013,7 @@ class UIManager {
     state.eventBus.on(EVENTS.DEATH_DEFIANCE, (detail) => this.updateDeathDefianceBadge(detail));
     state.eventBus.on(EVENTS.GAME_LOAD, () => { this.updateDeathDefianceBadge(); this.updateConsumableStrip && this.updateConsumableStrip(); this.renderBuffPanel && this.renderBuffPanel(); });
     state.eventBus.on(EVENTS.GAME_SAVE, () => { this.updateConsumableStrip && this.updateConsumableStrip(); });
-    state.eventBus.on(EVENTS.BUFF_GAINED, (detail) => { try { this.renderBuffPanel && this.renderBuffPanel(); this.onBuffGained && this.onBuffGained(detail); } catch (e) {} });
+    state.eventBus.on(EVENTS.BUFF_GAINED, (detail) => { try { this.renderBuffPanel && this.renderBuffPanel(); this.onBuffGained && this.onBuffGained(detail); } catch (e) { } });
     state.eventBus.on(EVENTS.COMBO_CHANGED, (detail) => this.updateComboDisplay(detail));
     state.eventBus.on(EVENTS.ATTACK, (detail) => this.handleAttackEvent(detail));
     // Pet attack visual: show pet icon above targeted enemy and persist today's target
@@ -1025,7 +1025,7 @@ class UIManager {
 
           // persist today's pet target so a badge is shown for the rest of the day
           const now = new Date();
-          const today = now.toISOString().slice(0,10); // YYYY-MM-DD
+          const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
           const gs = getGameState();
           if (!gs.playerState) gs.playerState = {};
           gs.playerState.petTarget = { enemyId: detail.targetId, date: today };
@@ -1036,10 +1036,10 @@ class UIManager {
       } catch (e) { }
     });
     state.eventBus.on(EVENTS.ENEMY_HEALED, (detail) => {
-      try { this.showFloatingText(detail.enemyId, `+${Math.ceil(detail.amount)} healed`, { color: UIManager.themeColor('--success-green', '#44ff44') }); } catch (e) {}
+      try { this.showFloatingText(detail.enemyId, `+${Math.ceil(detail.amount)} healed`, { color: UIManager.themeColor('--success-green', '#44ff44') }); } catch (e) { }
     });
     state.eventBus.on(EVENTS.ENEMY_REVIVED, (detail) => {
-      try { this.showFloatingText(detail.enemyId, 'Revived', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 2000 }); } catch (e) {}
+      try { this.showFloatingText(detail.enemyId, 'Revived', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 2000 }); } catch (e) { }
     });
     // Mutator gained: refresh enemy badges and play cue; floating numbers for check-in are shown in the check-in sequence
     state.eventBus.on(EVENTS.ENEMY_MUTATED, (detail) => {
@@ -1050,7 +1050,7 @@ class UIManager {
         // Refresh visuals
         this.renderEnemies();
         // Play soft cue
-        try { if (window.SoundManager) SoundManager.play('mutator'); else this.playMutatorSound(); } catch (e) {}
+        try { if (window.SoundManager) SoundManager.play('mutator'); else this.playMutatorSound(); } catch (e) { }
 
         // Animate badge briefly (visual feedback regardless of source)
         setTimeout(() => {
@@ -1064,7 +1064,7 @@ class UIManager {
                 setTimeout(() => { badge.classList.remove('mutator-gain'); }, 900);
               }
             }
-          } catch (e) {}
+          } catch (e) { }
         }, 120);
 
         // Non-checkin sources get a short toast immediately; check-in floating text will be shown in playCheckInSequence
@@ -1074,16 +1074,16 @@ class UIManager {
             const name = enemy?.name || 'Enemy';
             const meta = UIManager.MUTATOR_META[mut] || { icon: '❗', label: mut };
             this.showMutatorToast(`${meta.icon} ${name} gained ${meta.label}`);
-          } catch (e) {}
+          } catch (e) { }
         }
-      } catch (e) {}
+      } catch (e) { }
     });
     state.eventBus.on(EVENTS.ATTACK, (detail) => {
       try {
         if (detail && detail.type === 'dodgeAvoid') {
           this.renderEnemies();
         }
-      } catch (e) {}
+      } catch (e) { }
     });
     // When a dodge is queued/ready, the card gets a dodge-ready class (rendered elsewhere).
     // When the dodge actually avoids an attack, an ATTACK event with type 'dodgeAvoid' is emitted.
@@ -1097,10 +1097,10 @@ class UIManager {
           // Add temporary visual and floating text
           card.classList.add('dodged');
           const rect = card.getBoundingClientRect();
-          FloatingDamageNumber.show(rect.left + rect.width/2, rect.top - 18, 'Dodged!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 1200 });
-          setTimeout(() => { try { card.classList.remove('dodged'); } catch (e) {} }, 1200);
+          FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'Dodged!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 1200 });
+          setTimeout(() => { try { card.classList.remove('dodged'); } catch (e) { } }, 1200);
         }
-      } catch (e) {}
+      } catch (e) { }
     });
     // Sound hooks
     try {
@@ -1120,32 +1120,32 @@ class UIManager {
             if (detail && detail.isCrit) {
               SoundManager.play('crit');
             }
-          } catch (e) {}
+          } catch (e) { }
         });
 
-        state.eventBus.on(EVENTS.DAMAGE_TAKEN, (d) => { try { SoundManager.play('hit'); } catch (e) {} });
-        state.eventBus.on(EVENTS.KILL_ENEMY, (d) => { try { SoundManager.play('kill'); } catch (e) {} });
-        state.eventBus.on(EVENTS.ENEMY_HEALED, (d) => { try { SoundManager.play('heal'); } catch (e) {} });
-        state.eventBus.on(EVENTS.ENEMY_REVIVED, (d) => { try { SoundManager.play('revive'); } catch (e) {} });
-        state.eventBus.on(EVENTS.GOLD_CHANGED, (d) => { try { SoundManager.play('coin'); } catch (e) {} });
-        state.eventBus.on(EVENTS.CHECK_IN, (d) => { try { SoundManager.play('checkin'); } catch (e) {} });
+        state.eventBus.on(EVENTS.DAMAGE_TAKEN, (d) => { try { SoundManager.play('hit'); } catch (e) { } });
+        state.eventBus.on(EVENTS.KILL_ENEMY, (d) => { try { SoundManager.play('kill'); } catch (e) { } });
+        state.eventBus.on(EVENTS.ENEMY_HEALED, (d) => { try { SoundManager.play('heal'); } catch (e) { } });
+        state.eventBus.on(EVENTS.ENEMY_REVIVED, (d) => { try { SoundManager.play('revive'); } catch (e) { } });
+        state.eventBus.on(EVENTS.GOLD_CHANGED, (d) => { try { SoundManager.play('coin'); } catch (e) { } });
+        state.eventBus.on(EVENTS.CHECK_IN, (d) => { try { SoundManager.play('checkin'); } catch (e) { } });
         state.eventBus.on(EVENTS.CHECK_IN_COMPLETE, (detail) => {
           try {
             const D = detail?.missedDailyDamage ?? 0;
             const N = detail?.scaledN ?? 0;
             const late = detail?.lateTodoDamage ?? 0;
-                this.playCheckInSequence(detail || {});
+            this.playCheckInSequence(detail || {});
           } catch (e) { }
         });
         state.eventBus.on(EVENTS.DEATH_DEFIANCE, (detail) => {
           try {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Death Defied!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 2000, fadeDelay: 1200 });
-            try { SoundManager.play('checkin'); } catch (e) {}
+            try { SoundManager.play('checkin'); } catch (e) { }
           } catch (e) { }
         });
-        state.eventBus.on(EVENTS.DEATH, (d) => { try { SoundManager.play('death'); } catch (e) {} });
+        state.eventBus.on(EVENTS.DEATH, (d) => { try { SoundManager.play('death'); } catch (e) { } });
       }
-    } catch (e) {}
+    } catch (e) { }
     state.eventBus.on(EVENTS.TASK_COMPLETED, (detail) => {
       if (detail?.type === 'daily') this.scheduleUpdateDailiesList();
       if (detail?.type === 'todo') this.updateTodosList();
@@ -1164,7 +1164,7 @@ class UIManager {
         PopupsManager.showVictoryScreen(stats);
       } catch (e) { console.warn('Failed to show victory screen', e); }
     });
-    
+
     // Button handlers
     const attackBtn = document.getElementById('attackBtn');
     if (attackBtn) {
@@ -1178,7 +1178,17 @@ class UIManager {
       attackBtn.addEventListener('mouseleave', () => this.releaseAttackSpinnerPress());
       attackBtn.addEventListener('click', () => this.handleAttackClick());
     }
-    document.getElementById('skillBtn').addEventListener('click', () => this.handleSkillClick());
+    const skillBtn = document.getElementById('skillBtn');
+    if (skillBtn) {
+      skillBtn.addEventListener('pointerdown', () => {
+        const target = this.getSpinnerTargetEnemy();
+        if (target) this.beginAttackSpinner(target.id);
+      });
+      skillBtn.addEventListener('pointerup', () => this.releaseAttackSpinnerPress());
+      skillBtn.addEventListener('pointercancel', () => this.releaseAttackSpinnerPress());
+      skillBtn.addEventListener('mouseleave', () => this.releaseAttackSpinnerPress());
+      skillBtn.addEventListener('click', () => this.handleSkillClick());
+    }
     // Dodge button now uses hold/release, see setupDodgeButton()
     document.getElementById('pauseBtn').addEventListener('click', () => this.handlePauseClick());
     document.getElementById('plannerBtn').addEventListener('click', () => window.location.href = 'planner.html');
@@ -1250,7 +1260,7 @@ class UIManager {
     // Center attributes button opens attributes modal
     const centerAttrBtn = document.getElementById('centerAttrBtn');
     if (centerAttrBtn) centerAttrBtn.addEventListener('click', () => {
-      try { PopupsManager.showAttributes(); } catch (e) {}
+      try { PopupsManager.showAttributes(); } catch (e) { }
     });
 
     this.bindTaskInteractions();
@@ -1327,7 +1337,7 @@ class UIManager {
           const subtaskId = subtaskCheckbox.dataset.subtaskId;
           if (todoId && subtaskId) {
             TaskManager.toggleSubtask(todoId, subtaskId);
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             this.updateTodosList();
           }
           return;
@@ -1339,7 +1349,7 @@ class UIManager {
           const subtaskId = subtaskRemove.dataset.subtaskId;
           if (todoId && subtaskId) {
             TaskManager.removeSubtask(todoId, subtaskId);
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             this.updateTodosList();
           }
           return;
@@ -1352,7 +1362,7 @@ class UIManager {
           const name = input ? input.value.trim() : '';
           if (name) {
             TaskManager.addSubtask(todoId, name);
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             this.updateTodosList();
           }
           return;
@@ -1364,7 +1374,7 @@ class UIManager {
           if (!confirm(`Delete ${dailyName}?`)) return;
 
           if (TaskManager.removeDaily(taskId)) {
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             this.scheduleUpdateDailiesList();
             this.renderEnemies();
           }
@@ -1378,7 +1388,7 @@ class UIManager {
           if (!confirm(`Delete "${todoName}"?`)) return;
 
           if (TaskManager.removeTodo(taskId)) {
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             this.updateTodosList();
             this.renderEnemies();
           }
@@ -1445,13 +1455,13 @@ class UIManager {
             try {
               PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
                 if (!TaskManager.completeTodo(taskId)) return;
-                
+
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                   RetroTaskCompleteAnimation.play(card);
                 }
-                
+
                 this.updateTodosList();
-                try { state.save(); } catch (e) {}
+                try { state.save(); } catch (e) { }
                 this.renderEnemies();
               });
             } catch (e) {
@@ -1475,7 +1485,7 @@ class UIManager {
         const name = input.value ? input.value.trim() : '';
         if (!name) return;
         TaskManager.addSubtask(todoId, name);
-        try { state.save(); } catch (e) {}
+        try { state.save(); } catch (e) { }
         this.updateTodosList();
         event.preventDefault();
       });
@@ -1484,7 +1494,7 @@ class UIManager {
     bindContainer('dailiesList', 'daily');
     bindContainer('todosList', 'todo');
   }
-  
+
   static updateHpBar(detail) {
     const newHp = Number(detail?.newHp) || 0;
     const maxHp = Number(detail?.maxHp) || 0;
@@ -1497,10 +1507,10 @@ class UIManager {
     if (hpFillEl) hpFillEl.style.width = percent + '%';
 
     if (hpFillEl && maxHp > 0 && newHp < maxHp * 0.25) {
-      try { MeterAnimation.pulse(hpFillEl, UIManager.themeColor('--hp-red', '#C00707')); } catch (e) {}
+      try { MeterAnimation.pulse(hpFillEl, UIManager.themeColor('--hp-red', '#C00707')); } catch (e) { }
     }
   }
-  
+
   static updateManaBar(detail) {
     const newMana = Number(detail?.newMana) || 0;
     const maxMana = Number(detail?.maxMana) || 0;
@@ -1513,10 +1523,10 @@ class UIManager {
     if (manaFillEl) manaFillEl.style.width = percent + '%';
 
     if (manaFillEl && maxMana > 0 && newMana >= maxMana) {
-      try { MeterAnimation.shimmer(manaFillEl, UIManager.themeColor('--mana-blue', '#134E8E')); } catch (e) {}
+      try { MeterAnimation.shimmer(manaFillEl, UIManager.themeColor('--mana-blue', '#134E8E')); } catch (e) { }
     }
   }
-  
+
   static updateApBar(detail) {
     const newAp = Number(detail?.newAp) || 0;
     const oldAp = Number(detail?.oldAp) || 0;
@@ -1532,16 +1542,16 @@ class UIManager {
     const delta = Math.abs(newAp - oldAp);
     const crackleThreshold = Math.max(2, Math.ceil(maxAp * 0.03));
     if (apFillEl && delta >= crackleThreshold) {
-      try { MeterAnimation.crackle(apFillEl, UIManager.themeColor('--ap-gold', '#FFB33F')); } catch (e) {}
+      try { MeterAnimation.crackle(apFillEl, UIManager.themeColor('--ap-gold', '#FFB33F')); } catch (e) { }
     }
     this.updateActionCosts();
   }
-  
+
   static updateGoldDisplay(detail) {
     const goldEl = document.getElementById('goldValue');
     if (goldEl) goldEl.textContent = Math.ceil(Number(detail?.newGold) || 0);
   }
-  
+
   static updateDiamondDisplay(detail) {
     const diamondEl = document.getElementById('diamondValue');
     if (diamondEl) diamondEl.textContent = Math.ceil(Number(detail?.newDiamonds) || 0);
@@ -1604,7 +1614,7 @@ class UIManager {
           }
 
           state.spendDiamonds(cost);
-          try { state.save(); } catch (e) {}
+          try { state.save(); } catch (e) { }
           renderRewards();
 
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `${reward.name} bought`, {
@@ -1617,7 +1627,7 @@ class UIManager {
         button.addEventListener('click', (event) => {
           const index = Number(event.currentTarget.dataset.index);
           state.systemState.diamondRewards.splice(index, 1);
-          try { state.save(); } catch (e) {}
+          try { state.save(); } catch (e) { }
           renderRewards();
         });
       });
@@ -1668,13 +1678,13 @@ class UIManager {
 
       if (nameInput) nameInput.value = '';
       if (costInput) costInput.value = '10';
-      try { state.save(); } catch (e) {}
+      try { state.save(); } catch (e) { }
       renderRewards();
     });
 
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
-    try { PopupAnimation.scale(popup); } catch (e) {}
+    try { PopupAnimation.scale(popup); } catch (e) { }
     renderRewards();
   }
 
@@ -1741,7 +1751,7 @@ class UIManager {
             const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
             // show slightly longer so it fits the slowed sequence
             this.showFloatingText(m.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 });
-          } catch (e) {}
+          } catch (e) { }
         });
         // remove shown entries
         mutatorGains = mutatorGains.filter(m => !initial.includes(m));
@@ -1762,7 +1772,7 @@ class UIManager {
         const rect = card.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        
+
         if (step.isDodge) {
           FloatingDamageNumber.show(x, y - 10, 'DODGED!', {
             color: '#00e5ff',
@@ -1772,6 +1782,12 @@ class UIManager {
           if (typeof RetroDodgeAnimation !== 'undefined') {
             RetroDodgeAnimation.play(card, '#00e5ff');
           }
+        } else if (step.isImmune) {
+          FloatingDamageNumber.show(x, y - 10, 'IMMUNE!', {
+            color: UIManager.themeColor('--success-green', '#22c55e'),
+            duration: 1600,
+            scale: 1.2
+          });
         } else {
           FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
             color: step.isBoss ? UIManager.themeColor('--accent-gold', '#FFB33F') : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
@@ -1783,17 +1799,17 @@ class UIManager {
         // Also show any mutator gains that apply to this enemy at the same time
         try {
           const matches = (mutatorGains || []).filter(m => String(m.enemyId) === String(step.enemyId));
-                if (matches.length) {
+          if (matches.length) {
             matches.forEach(m => {
               try {
                 const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
                 try { this.showFloatingText(step.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 }); } catch (e) { /* ignore */ }
-              } catch (e) {}
+              } catch (e) { }
             });
             // remove shown entries
             mutatorGains = (mutatorGains || []).filter(m => String(m.enemyId) !== String(step.enemyId));
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       if (step.isBoss) {
@@ -1814,14 +1830,14 @@ class UIManager {
     // Fallback: show any remaining mutator gains that weren't shown during steps
     try {
       if (Array.isArray(mutatorGains) && mutatorGains.length > 0) {
-            mutatorGains.forEach(m => {
+        mutatorGains.forEach(m => {
           try {
             const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
             this.showFloatingText(m.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 });
-          } catch (e) {}
+          } catch (e) { }
         });
       }
-    } catch (e) {}
+    } catch (e) { }
 
     if (detail?.lateTodoDamage > 0) {
       FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: '#ff9a2e', duration: 2200 });
@@ -1899,10 +1915,10 @@ class UIManager {
       dailiesEditBtn.classList.toggle('active', editMode);
     }
   }
-  
+
   static updateComboDisplay(detail) {
     const comboEl = document.getElementById('comboIndicator');
-    
+
     if (detail.combo === 0) {
       comboEl.style.display = 'none';
     } else {
@@ -1910,7 +1926,7 @@ class UIManager {
       ComboAnimation.show(comboEl, detail.combo);
     }
   }
-  
+
   static resolveAttackTarget(targetEnemyId = null) {
     if (targetEnemyId) {
       const target = StageManager.getAllEnemies().find(enemy => String(enemy.id) === String(targetEnemyId) && !enemy.isDead);
@@ -1975,12 +1991,12 @@ class UIManager {
         const isApFailure = typeof preview.reason === 'string' && preview.reason.toLowerCase().includes('not enough ap');
         if (isApFailure) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
         } else {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
-          try { state.resetCombo(); } catch (e) {}
+          try { state.resetCombo(); } catch (e) { }
           ScreenEffects.shake(2, 80);
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
         }
         this.finishAttackSpinner();
         return;
@@ -1994,14 +2010,14 @@ class UIManager {
           await new Promise(resolve => setTimeout(resolve, preview.impactDelayMs));
         }
 
-        try { ScreenEffects.flash && ScreenEffects.flash('rgba(255,255,255,1)', 17); } catch (e) {}
+        try { ScreenEffects.flash && ScreenEffects.flash('rgba(255,255,255,1)', 17); } catch (e) { }
         let result;
         try {
           result = CombatManager.attemptAttack(state.playerState.activeWeapon, target.id, attackRolls);
         } catch (attackError) {
           console.error('[UI] attack failed', attackError);
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack failed', { color: '#ff6666' });
-          try { state.resetCombo(); } catch (e) {}
+          try { state.resetCombo(); } catch (e) { }
           return;
         }
 
@@ -2013,14 +2029,53 @@ class UIManager {
           const isApFailure = typeof result.reason === 'string' && result.reason.toLowerCase().includes('not enough ap');
           if (isApFailure) {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           } else {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Miss', { color: '#bbbbbb' });
-            try { state.resetCombo(); } catch (e) {}
+            try { state.resetCombo(); } catch (e) { }
             ScreenEffects.shake(2, 80);
-            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+            try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           }
           return;
+        }
+
+        // Chrono-Shift echo processing
+        if (result && result.chronoShiftEcho) {
+          const echo = result.chronoShiftEcho;
+          setTimeout(() => {
+            try {
+              const echoTarget = StageManager.getEnemyById(echo.targetId) || (StageManager.getAliveEnemies && StageManager.getAliveEnemies()[0]);
+              if (echoTarget && !echoTarget.isDead) {
+                const echoDmg = Math.max(1, Math.ceil(echo.damage * 0.5));
+                echoTarget.takeDamage(echoDmg);
+                
+                let targetX = window.innerWidth / 2;
+                let targetY = window.innerHeight / 2;
+                const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${echoTarget.id}"]`);
+                if (targetCard) {
+                  const rect = targetCard.getBoundingClientRect();
+                  targetX = rect.left + rect.width / 2;
+                  targetY = rect.top + rect.height / 2;
+                }
+                
+                if (typeof RetroHitAnimation !== 'undefined') {
+                  RetroHitAnimation.play(targetX, targetY, '#a855f7');
+                }
+                
+                FloatingDamageNumber.show(
+                  targetX,
+                  targetY - 20,
+                  `ECHO: -${echoDmg} ⏳`,
+                  { color: '#a855f7', scale: 1.2, duration: 1500 }
+                );
+                
+                try { this.renderEnemies(); } catch (e) {}
+                try { this.refreshGameUI(); } catch (e) {}
+              }
+            } catch (e) {
+              console.warn('Chrono-Shift echo failed', e);
+            }
+          }, 450);
         }
 
         const weapon = PlayerManager.getCurrentWeapon();
@@ -2050,7 +2105,7 @@ class UIManager {
         hits.forEach(hit => {
           const hitColor = hit.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
           const fireRate = Math.max(1, Number(result.fireRate || 1));
-          
+
           let targetX = window.innerWidth / 2;
           let targetY = window.innerHeight / 2;
           const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
@@ -2125,15 +2180,211 @@ class UIManager {
       FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack blocked', { color: '#ff6666' });
     }
   }
-  
+
   static handleSkillClick() {
-    const result = CombatManager.useSkill();
-    
-    if (!result.success) {
-      console.warn('Skill not available:', result.reason);
+    const state = getGameState();
+    const className = state.playerState.className;
+
+    // Alchemist requires an alive target
+    let alchemistTarget = null;
+    if (className === 'Alchemist') {
+      alchemistTarget = this.resolveAttackTarget();
+      if (!alchemistTarget) {
+        try {
+          FloatingDamageNumber.show(
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            'No target to select',
+            { color: '#ff6666', duration: 1200 }
+          );
+        } catch (e) {}
+        this.finishAttackSpinner();
+        return;
+      }
     }
+
+    const result = CombatManager.useSkill();
+
+    if (!result.success) {
+      // Show a subtle error floating text
+      try {
+        const reason = result.reason || 'Skill unavailable';
+        FloatingDamageNumber.show(
+          window.innerWidth / 2,
+          window.innerHeight / 2,
+          reason,
+          { color: '#ff6666', duration: 1200 }
+        );
+      } catch (e) {}
+      this.finishAttackSpinner();
+      return;
+    }
+
+    // Apply skill mechanical effects
+    try {
+      const state = getGameState();
+      const className = state.playerState.className;
+      if (!state.combatState) state.combatState = {};
+      if (!state.combatState.skillEffects) state.combatState.skillEffects = {};
+
+      switch (className) {
+        case 'Knight':
+          // Iron Bastion: next 4 attacks deal 0.4× damage
+          state.combatState.skillEffects.shieldCharges = (state.combatState.skillEffects.shieldCharges || 0) + 4;
+          state.combatState.skillEffects.shieldDamageMultiplier = 0.4;
+          break;
+
+        case 'Rogue':
+          // Phantom Blow: next attack deals 4×, ignores resistances, steals 30 mana
+          state.combatState.skillEffects.phantomBlow = true;
+          break;
+
+        case 'Wizard':
+          // Chrono-Shift: next 3 attacks are echoed at 50% damage
+          state.combatState.skillEffects.chronoShiftCharges = 3;
+          break;
+
+        case 'Brute':
+          // Wrath Unleashed: +200% damage today, cannot dodge
+          state.combatState.skillEffects.wrathUnleashed = true;
+          state.combatState.skillEffects.wrathDamageMultiplier = 3.0; // base 1.0 + 200% = 3.0×
+          state.combatState.skillEffects.cannotDodge = true;
+          break;
+
+        case 'Ranger':
+          // Storm Volley: applies to the next attack
+          state.combatState.skillEffects.stormVolley = true;
+          break;
+
+        case 'Druid':
+          // Nature's Embrace: heal 40 HP, summon shadow pet for today
+          state.addHp(40);
+          state.combatState.skillEffects.shadowPet = true; // pet attacks 2× today
+          break;
+
+        case 'Alchemist':
+          // Unstable Concoction: reverse target's weaknesses/resistances permanently, block healing/mutating next check-in.
+          // If weak to current element, deal 15% max HP splash damage to adjacent enemies.
+          try {
+            const target = alchemistTarget || this.resolveAttackTarget();
+            if (target) {
+              const tempResist = target.resist;
+              target.resist = target.weak;
+              target.weak = tempResist;
+
+              target.statusEffects = target.statusEffects || {};
+              target.statusEffects.unstableConcoction = {
+                preventHeal: true,
+                preventMutate: true
+              };
+
+              try {
+                const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                if (targetCard) {
+                  const rect = targetCard.getBoundingClientRect();
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
+                }
+              } catch (e) {}
+
+              const weapon = PlayerManager.getCurrentWeapon();
+              if (weapon) {
+                const isWeak = resolveWeaponWeaknessMultiplier(target, weapon.element) > 1.0;
+                if (isWeak) {
+                  const all = StageManager.getAllEnemies ? StageManager.getAllEnemies() : [];
+                  const idx = all.indexOf(target);
+                  if (idx > -1) {
+                    const adjacents = EnemyManager.getAdjacentEnemies(all, idx);
+                    adjacents.forEach(adj => {
+                      if (adj && !adj.isDead && adj.maxHp > 0) {
+                        const splashDmg = Math.ceil(adj.maxHp * 0.15);
+                        adj.takeDamage(splashDmg);
+                        
+                        try {
+                          const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
+                          if (adjCard) {
+                            const rect = adjCard.getBoundingClientRect();
+                            FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                          }
+                        } catch (e) {}
+                      }
+                    });
+
+                    if (adjacents.length > 0) {
+                      try {
+                        FloatingDamageNumber.show(
+                          window.innerWidth / 2,
+                          window.innerHeight / 2 - 50,
+                          'CONCOCTION EXPLOSION! 💥',
+                          { color: '#84cc16', duration: 1500 }
+                        );
+                      } catch (e) {}
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Alchemist skill failed', e);
+          }
+          break;
+
+        case 'Juggernaut':
+          // Fortress: invincible for next 2 attacks + reflect 50% damage
+          state.combatState.skillEffects.fortressCharges = (state.combatState.skillEffects.fortressCharges || 0) + 2;
+          state.combatState.skillEffects.fortressReflect = 0.5;
+          break;
+
+        case 'Madman':
+          // Scream into the Void: gain 1 diamond
+          state.addDiamonds(1);
+          break;
+      }
+
+      // Persist state after skill activation
+      try { state.save(); } catch (e) {}
+      // Refresh enemies display if AoE killed something
+      try { this.renderEnemies(); } catch (e) {}
+      try { this.refreshGameUI(); } catch (e) {}
+    } catch (e) {
+      console.warn('Failed to apply skill effects', e);
+    }
+
+    // Show dramatic skill activation popup
+    try {
+      const state = getGameState();
+      const className = state.playerState.className;
+      const meta = (state.config.classSkillMeta && state.config.classSkillMeta[className]) || {};
+      const skillName = meta.name || 'Skill';
+      const skillIcon = meta.icon || '✨';
+      const skillColor = meta.color || '#ffd700';
+      const flavorText = meta.flavorText || '';
+
+      // Create and show the dramatic popup
+      const popup = document.createElement('div');
+      popup.className = 'skill-activation-popup';
+      popup.style.setProperty('--skill-color', skillColor);
+      popup.innerHTML = `
+        <div class="skill-activation-icon">${skillIcon}</div>
+        <div class="skill-activation-name" style="color: ${skillColor}">${skillName}</div>
+        ${flavorText ? `<div class="skill-activation-flavor">${flavorText}</div>` : ''}
+      `;
+      document.body.appendChild(popup);
+
+      // Screen flash with class color
+      try {
+        ScreenEffects.flash(skillColor + '18', 300);
+      } catch (e) {}
+
+      // Auto-remove after animation completes
+      setTimeout(() => {
+        try { popup.remove(); } catch (e) {}
+      }, 3200);
+    } catch (e) {
+      console.warn('Failed to show skill activation popup', e);
+    }
+    this.finishAttackSpinner();
   }
-  
+
   static handleSatchelClick() {
     // Satchel is now a permanent panel.
     this.updateConsumableStrip();
@@ -2195,7 +2446,7 @@ class UIManager {
       completeNow();
     }
   }
-  
+
   static handleDodgeClick() {
     // This is now a placeholder; dodge is handled via hold/release
     const result = CombatManager.attemptDodge();
@@ -2214,19 +2465,19 @@ class UIManager {
   static getSpinnerTargetEnemies() {
     const state = getGameState();
     const spinner = document.getElementById('spinner');
-    
+
     if (!spinner) return [];
-    
+
     const enemies = (state.stageState.enemies || []);
     if (enemies.length === 0) return [];
-    
+
     let spinnerAngleDeg = this.spinnerAngle || 0;
 
     // The spinner starts vertically, so offset by -90 degrees to line up with the top enemy.
     spinnerAngleDeg -= 90;
     while (spinnerAngleDeg < 0) spinnerAngleDeg += 360;
     while (spinnerAngleDeg >= 360) spinnerAngleDeg -= 360;
-    
+
     // Convert to radians
     const spinnerRad = (spinnerAngleDeg * Math.PI) / 180;
     const degreesToRadians = Math.PI / 180;
@@ -2247,7 +2498,7 @@ class UIManager {
 
       let diff = Math.abs(spinnerRad - cardAngle);
       if (diff > Math.PI) diff = 2 * Math.PI - diff;
-      
+
       const adjustedDiff = diff - (ringLevel * 0.0001);
 
       if (!enemy.isDead && adjustedDiff < bestAliveDiff) {
@@ -2278,7 +2529,7 @@ class UIManager {
   static setupDodgeButton() {
     const dodgeBtn = document.getElementById('dodgeBtn');
     if (!dodgeBtn) return;
-    
+
     let isDodging = false;
     let activePointerId = null;
 
@@ -2294,7 +2545,7 @@ class UIManager {
       this.syncSpinnerSpeed();
       dodgeBtn.classList.add('active');
       if (activePointerId !== null && typeof dodgeBtn.setPointerCapture === 'function') {
-        try { dodgeBtn.setPointerCapture(activePointerId); } catch (e) {}
+        try { dodgeBtn.setPointerCapture(activePointerId); } catch (e) { }
       }
     };
 
@@ -2315,23 +2566,23 @@ class UIManager {
 
       if (state.playerState.ap < dodgeCost) {
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-        try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+        try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
         return;
       }
 
       state.spendAp(dodgeCost);
       FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
-      
+
       // Determine target and set dodge
       const targets = this.getSpinnerTargetEnemies();
       if (targets.length > 0) {
         if (!state.combatState) state.combatState = {};
-        
-        const currentDodges = Array.isArray(state.combatState.dodgeTarget) 
-            ? state.combatState.dodgeTarget 
-            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+        const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+          ? state.combatState.dodgeTarget
+          : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
         const newDodges = targets.map(enemy => enemy.id);
-        
+
         state.combatState.dodgeTarget = [...new Set([...currentDodges, ...newDodges])];
 
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
@@ -2340,7 +2591,7 @@ class UIManager {
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Miss!', { color: '#ff4444' });
       }
       if (pointerId !== null && typeof dodgeBtn.releasePointerCapture === 'function') {
-        try { dodgeBtn.releasePointerCapture(pointerId); } catch (e) {}
+        try { dodgeBtn.releasePointerCapture(pointerId); } catch (e) { }
       }
     };
 
@@ -2353,7 +2604,7 @@ class UIManager {
       if (isDodging && activePointerId === null) finishDodge();
     });
   }
-  
+
   static handlePauseClick() {
     PopupsManager.showPauseMenu();
   }
@@ -2380,7 +2631,7 @@ class UIManager {
       console.warn('Check-in is not wired yet.');
     }
   }
-  
+
   static handleAttackEvent(detail) {
     // Visual feedback for attacks
     if (detail.type === 'dodgeAvoid' && typeof RetroDodgeAnimation !== 'undefined') {
@@ -2408,11 +2659,11 @@ class UIManager {
       }
     }
   }
-  
+
   static updateDailiesList() {
     const dailies = TaskManager.getAllDailies();
     const container = document.getElementById('dailiesList');
-    
+
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
@@ -2422,7 +2673,7 @@ class UIManager {
       const completedCount = dailies.filter(daily => daily.completed).length;
       summaryEl.textContent = `${completedCount}/${dailies.length} complete`;
     }
-    
+
     const computeDailyStreak = (dailyId) => {
       const state = getGameState();
       const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
@@ -2510,8 +2761,8 @@ class UIManager {
 
         const toggleBloodOath = () => {
           longPressed = true;
-          try { TaskManager.toggleBloodOath(card.dataset.id); } catch (e) {}
-          try { getGameState().save(); } catch (e) {}
+          try { TaskManager.toggleBloodOath(card.dataset.id); } catch (e) { }
+          try { getGameState().save(); } catch (e) { }
           this.scheduleUpdateDailiesList();
           // mark briefly so delegated click handlers can ignore the click
           card.dataset.longPressed = '1';
@@ -2519,7 +2770,7 @@ class UIManager {
         };
 
         const startPress = (e) => {
-          if (e) try { e.preventDefault(); } catch (er) {}
+          if (e) try { e.preventDefault(); } catch (er) { }
           longPressed = false;
           clearTimeout(pressTimer);
           pressTimer = setTimeout(toggleBloodOath, longPressMs);
@@ -2695,46 +2946,69 @@ class UIManager {
 
         noteEl.addEventListener('pointerdown', (event) => {
           if (event.target.closest('.daily-note-delete')) return;
-          if (event.target.closest('button, [contenteditable="true"]')) return;
+          if (event.target.closest('button')) return;
           if (event.button !== 0) return;
 
-          const noteRect = noteEl.getBoundingClientRect();
-          const boardRect = board.getBoundingClientRect();
-          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
-          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
-          const dragState = {
-            pointerId: event.pointerId,
-            boardRect,
-            noteWidth: noteRect.width,
-            noteHeight: noteRect.height,
-            offsetX: event.clientX - (boardRect.left + startLeftPx),
-            offsetY: event.clientY - (boardRect.top + startTopPx),
-            moved: false,
-            startX: event.clientX,
-            startY: event.clientY,
-            noteId,
-            nextX: Number(noteData.x) || 0,
-            nextY: Number(noteData.y) || 0
-          };
+          const textEl = noteEl.querySelector('.daily-note-text');
+          const isFocused = document.activeElement === textEl;
 
-          noteEl.classList.add('dragging');
-          noteEl.dataset.dragState = JSON.stringify(dragState);
-          try { noteEl.setPointerCapture(event.pointerId); } catch (error) {}
-          event.preventDefault();
+          if (!isFocused) {
+            event.preventDefault();
+          }
+
+          let isLongPressed = false;
+          const startX = event.clientX;
+          const startY = event.clientY;
+
+          const timer = setTimeout(() => {
+            isLongPressed = true;
+            if (isFocused && textEl) {
+              textEl.blur();
+            }
+
+            const noteRect = noteEl.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+            const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
+            const dragState = {
+              pointerId: event.pointerId,
+              boardRect,
+              noteWidth: noteRect.width,
+              noteHeight: noteRect.height,
+              offsetX: event.clientX - (boardRect.left + startLeftPx),
+              offsetY: event.clientY - (boardRect.top + startTopPx),
+              moved: false,
+              startX: event.clientX,
+              startY: event.clientY,
+              noteId,
+              nextX: Number(noteData.x) || 0,
+              nextY: Number(noteData.y) || 0
+            };
+
+            noteEl.classList.add('dragging');
+            noteEl.dataset.dragState = JSON.stringify(dragState);
+            try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
+          }, 500);
 
           const onMove = (moveEvent) => {
+            if (moveEvent.pointerId !== event.pointerId) return;
+            if (!isLongPressed) {
+              const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+              if (dist > 10) {
+                clearTimeout(timer);
+                cleanup();
+              }
+              return;
+            }
+
             const stateRaw = noteEl.dataset.dragState;
             if (!stateRaw) return;
             const current = JSON.parse(stateRaw);
-            if (moveEvent.pointerId !== current.pointerId) return;
-
             const boardNow = board.getBoundingClientRect();
             const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
             const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
-            if (!current.moved && Math.hypot(moveEvent.clientX - current.startX, moveEvent.clientY - current.startY) > 4) {
-              current.moved = true;
-            }
-
+            
+            current.moved = true;
             current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
             current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
             noteEl.style.left = `${current.nextX}%`;
@@ -2743,21 +3017,42 @@ class UIManager {
           };
 
           const onUp = (upEvent) => {
-            const stateRaw = noteEl.dataset.dragState;
-            if (!stateRaw) return;
-            const current = JSON.parse(stateRaw);
-            if (upEvent.pointerId !== current.pointerId) return;
+            if (upEvent.pointerId !== event.pointerId) return;
+            clearTimeout(timer);
+            cleanup();
 
-            noteEl.classList.remove('dragging');
-            noteEl.removeAttribute('data-drag-state');
-            try { noteEl.releasePointerCapture(current.pointerId); } catch (error) {}
+            if (isLongPressed) {
+              const stateRaw = noteEl.dataset.dragState;
+              if (!stateRaw) return;
+              const current = JSON.parse(stateRaw);
+
+              noteEl.classList.remove('dragging');
+              noteEl.removeAttribute('data-drag-state');
+              try { noteEl.releasePointerCapture(current.pointerId); } catch (error) { }
+
+              if (current.moved) {
+                state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
+              }
+            } else {
+              // It was a tap!
+              if (!isFocused && textEl) {
+                textEl.focus();
+                try {
+                  const range = document.createRange();
+                  range.selectNodeContents(textEl);
+                  range.collapse(false);
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                } catch (err) {}
+              }
+            }
+          };
+
+          const cleanup = () => {
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
             document.removeEventListener('pointercancel', onUp);
-
-            if (current.moved) {
-              state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
-            }
           };
 
           document.addEventListener('pointermove', onMove);
@@ -2784,7 +3079,7 @@ class UIManager {
               const selection = window.getSelection();
               selection.removeAllRanges();
               selection.addRange(range);
-            } catch (error) {}
+            } catch (error) { }
           }, 0);
         }
       }
@@ -2852,46 +3147,69 @@ class UIManager {
 
         noteEl.addEventListener('pointerdown', (event) => {
           if (event.target.closest('.todo-note-delete')) return;
-          if (event.target.closest('button, [contenteditable="true"]')) return;
+          if (event.target.closest('button')) return;
           if (event.button !== 0) return;
 
-          const noteRect = noteEl.getBoundingClientRect();
-          const boardRect = board.getBoundingClientRect();
-          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
-          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
-          const dragState = {
-            pointerId: event.pointerId,
-            boardRect,
-            noteWidth: noteRect.width,
-            noteHeight: noteRect.height,
-            offsetX: event.clientX - (boardRect.left + startLeftPx),
-            offsetY: event.clientY - (boardRect.top + startTopPx),
-            moved: false,
-            startX: event.clientX,
-            startY: event.clientY,
-            noteId,
-            nextX: Number(noteData.x) || 0,
-            nextY: Number(noteData.y) || 0
-          };
+          const textEl = noteEl.querySelector('.todo-note-text');
+          const isFocused = document.activeElement === textEl;
 
-          noteEl.classList.add('dragging');
-          noteEl.dataset.dragState = JSON.stringify(dragState);
-          try { noteEl.setPointerCapture(event.pointerId); } catch (error) {}
-          event.preventDefault();
+          if (!isFocused) {
+            event.preventDefault();
+          }
+
+          let isLongPressed = false;
+          const startX = event.clientX;
+          const startY = event.clientY;
+
+          const timer = setTimeout(() => {
+            isLongPressed = true;
+            if (isFocused && textEl) {
+              textEl.blur();
+            }
+
+            const noteRect = noteEl.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+            const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
+            const dragState = {
+              pointerId: event.pointerId,
+              boardRect,
+              noteWidth: noteRect.width,
+              noteHeight: noteRect.height,
+              offsetX: event.clientX - (boardRect.left + startLeftPx),
+              offsetY: event.clientY - (boardRect.top + startTopPx),
+              moved: false,
+              startX: event.clientX,
+              startY: event.clientY,
+              noteId,
+              nextX: Number(noteData.x) || 0,
+              nextY: Number(noteData.y) || 0
+            };
+
+            noteEl.classList.add('dragging');
+            noteEl.dataset.dragState = JSON.stringify(dragState);
+            try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
+          }, 500);
 
           const onMove = (moveEvent) => {
+            if (moveEvent.pointerId !== event.pointerId) return;
+            if (!isLongPressed) {
+              const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+              if (dist > 10) {
+                clearTimeout(timer);
+                cleanup();
+              }
+              return;
+            }
+
             const stateRaw = noteEl.dataset.dragState;
             if (!stateRaw) return;
             const current = JSON.parse(stateRaw);
-            if (moveEvent.pointerId !== current.pointerId) return;
-
             const boardNow = board.getBoundingClientRect();
             const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
             const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
-            if (!current.moved && Math.hypot(moveEvent.clientX - current.startX, moveEvent.clientY - current.startY) > 4) {
-              current.moved = true;
-            }
-
+            
+            current.moved = true;
             current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
             current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
             noteEl.style.left = `${current.nextX}%`;
@@ -2900,21 +3218,42 @@ class UIManager {
           };
 
           const onUp = (upEvent) => {
-            const stateRaw = noteEl.dataset.dragState;
-            if (!stateRaw) return;
-            const current = JSON.parse(stateRaw);
-            if (upEvent.pointerId !== current.pointerId) return;
+            if (upEvent.pointerId !== event.pointerId) return;
+            clearTimeout(timer);
+            cleanup();
 
-            noteEl.classList.remove('dragging');
-            noteEl.removeAttribute('data-drag-state');
-            try { noteEl.releasePointerCapture(current.pointerId); } catch (error) {}
+            if (isLongPressed) {
+              const stateRaw = noteEl.dataset.dragState;
+              if (!stateRaw) return;
+              const current = JSON.parse(stateRaw);
+
+              noteEl.classList.remove('dragging');
+              noteEl.removeAttribute('data-drag-state');
+              try { noteEl.releasePointerCapture(current.pointerId); } catch (error) { }
+
+              if (current.moved) {
+                state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
+              }
+            } else {
+              // It was a tap!
+              if (!isFocused && textEl) {
+                textEl.focus();
+                try {
+                  const range = document.createRange();
+                  range.selectNodeContents(textEl);
+                  range.collapse(false);
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+                } catch (err) {}
+              }
+            }
+          };
+
+          const cleanup = () => {
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
             document.removeEventListener('pointercancel', onUp);
-
-            if (current.moved) {
-              state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
-            }
           };
 
           document.addEventListener('pointermove', onMove);
@@ -2941,7 +3280,7 @@ class UIManager {
               const selection = window.getSelection();
               selection.removeAllRanges();
               selection.addRange(range);
-            } catch (error) {}
+            } catch (error) { }
           }, 0);
         }
       }
@@ -2969,22 +3308,87 @@ class UIManager {
       const dailyId = card.dataset.id;
       if (!dailyId) return;
 
-      const cardRect = card.getBoundingClientRect();
-      this.dailyDragState = {
-        dailyId,
-        card,
-        board,
-        pointerId: event.pointerId,
-        offsetX: event.clientX - cardRect.left,
-        offsetY: event.clientY - cardRect.top,
-        moved: false,
-        startX: event.clientX,
-        startY: event.clientY
+      event.preventDefault();
+
+      let isLongPressed = false;
+      const startX = event.clientX;
+      const startY = event.clientY;
+
+      const timer = setTimeout(() => {
+        isLongPressed = true;
+        
+        const cardRect = card.getBoundingClientRect();
+        this.dailyDragState = {
+          dailyId,
+          card,
+          board,
+          pointerId: event.pointerId,
+          offsetX: event.clientX - cardRect.left,
+          offsetY: event.clientY - cardRect.top,
+          moved: false,
+          startX: event.clientX,
+          startY: event.clientY
+        };
+
+        card.classList.add('dragging');
+        try { card.setPointerCapture(event.pointerId); } catch (error) { }
+      }, 500);
+
+      const onMoveDuringHold = (moveEvent) => {
+        if (moveEvent.pointerId !== event.pointerId) return;
+        if (!isLongPressed) {
+          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+          if (dist > 10) {
+            clearTimeout(timer);
+            cleanupHold();
+          }
+        }
       };
 
-      card.classList.add('dragging');
-      try { card.setPointerCapture(event.pointerId); } catch (error) {}
-      event.preventDefault();
+      const onUpDuringHold = (upEvent) => {
+        if (upEvent.pointerId !== event.pointerId) return;
+        clearTimeout(timer);
+        cleanupHold();
+
+        if (!isLongPressed) {
+          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+          if (editModeDailies) {
+            try { PopupsManager.showEditDaily(dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
+          } else {
+            const res = TaskManager.completeDaily(dailyId);
+            if (!res || !res.success) return;
+            try {
+              card.classList.add('just-completed');
+              card.style.transition = 'transform 220ms ease, opacity 400ms ease';
+              const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
+              card.style.transform = `scale(${sizeScale * 1.04})`;
+              if (res.rewards && res.rewards.ap) {
+                UIManager.showDailyApReward(card, res.rewards.ap);
+              }
+              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                RetroTaskCompleteAnimation.play(card);
+              }
+              setTimeout(() => {
+                this.scheduleUpdateDailiesList();
+              }, 320);
+            } catch (error) {
+              this.scheduleUpdateDailiesList();
+            }
+            try { getGameState().save(); } catch (saveError) { }
+            this.renderEnemies();
+          }
+        }
+      };
+
+      const cleanupHold = () => {
+        document.removeEventListener('pointermove', onMoveDuringHold);
+        document.removeEventListener('pointerup', onUpDuringHold);
+        document.removeEventListener('pointercancel', onUpDuringHold);
+      };
+
+      document.addEventListener('pointermove', onMoveDuringHold);
+      document.addEventListener('pointerup', onUpDuringHold);
+      document.addEventListener('pointercancel', onUpDuringHold);
     });
 
     const onMove = (event) => {
@@ -3014,7 +3418,7 @@ class UIManager {
       const boardRect = dragState.board.getBoundingClientRect();
       const cardRect = dragState.card.getBoundingClientRect();
       dragState.card.classList.remove('dragging');
-      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) {}
+      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
 
       if (dragState.moved) {
         const tileSize = { width: cardRect.width, height: cardRect.height };
@@ -3024,38 +3428,8 @@ class UIManager {
         }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
 
         TaskManager.updateDailyLayout(dragState.dailyId, layout);
-        try { getGameState().save(); } catch (error) {}
+        try { getGameState().save(); } catch (error) { }
         this.dailyDragSuppressUntil = Date.now() + 250;
-      } else {
-        const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-        const longPressed = dragState.card.dataset.longPressed === '1';
-        if (!longPressed) {
-          if (editModeDailies) {
-            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
-          } else {
-            const res = TaskManager.completeDaily(dragState.dailyId);
-            if (!res || !res.success) return;
-            try {
-              dragState.card.classList.add('just-completed');
-              dragState.card.style.transition = 'transform 220ms ease, opacity 400ms ease';
-              const sizeScale = Math.max(0.5, Number(dragState.card.dataset.sizeScale) || 1);
-              dragState.card.style.transform = `scale(${sizeScale * 1.04})`;
-              if (res.rewards && res.rewards.ap) {
-                UIManager.showDailyApReward(dragState.card, res.rewards.ap);
-              }
-              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                RetroTaskCompleteAnimation.play(dragState.card);
-              }
-              setTimeout(() => {
-                this.scheduleUpdateDailiesList();
-              }, 320);
-            } catch (error) {
-              this.scheduleUpdateDailiesList();
-            }
-            try { getGameState().save(); } catch (saveError) {}
-            this.renderEnemies();
-          }
-        }
       }
 
       this.dailyDragState = null;
@@ -3195,7 +3569,7 @@ class UIManager {
     });
 
     if (changed) {
-      try { getGameState().save(); } catch (error) {}
+      try { getGameState().save(); } catch (error) { }
     }
   }
 
@@ -3208,121 +3582,220 @@ class UIManager {
     board.addEventListener('click', (event) => {
       const existingWizard = document.querySelector('.floating-wizard');
       if (existingWizard) {
+        if (Date.now() - (this.wizardOpenedTime || 0) < 300) {
+          return;
+        }
         if (!existingWizard.contains(event.target)) existingWizard.remove();
         return;
-      }
-      if (event.target.closest('.task-card-todo') || event.target.closest('.todo-note-card')) return;
-      if (typeof PopupsManager !== 'undefined' && PopupsManager.showAddTodoWizard) {
-        const boardRect = board.getBoundingClientRect();
-        const xPx = event.clientX - boardRect.left + board.scrollLeft;
-        const yPx = event.clientY - boardRect.top + board.scrollTop;
-        const xPercent = (xPx / board.scrollWidth) * 100;
-        const yPercent = (yPx / board.scrollHeight) * 100;
-        PopupsManager.showAddTodoWizard(xPercent, yPercent, xPx, yPx);
       }
     });
 
     board.addEventListener('pointerdown', (event) => {
-      const card = event.target.closest('.task-card-todo');
-      if (!card || !board.contains(card)) return;
-      if (event.target.closest('button, input, textarea, select, label')) return;
       if (event.button !== 0) return;
+      if (event.target.closest('button, input, textarea, select, label')) return;
 
-      const todoId = card.dataset.id;
-      if (!todoId) return;
+      const card = event.target.closest('.task-card-todo');
+      const isNote = event.target.closest('.todo-note-card');
+      if (isNote) return;
 
-      const todo = TaskManager.getTaskById(todoId);
-      const isCluster = todo && todo.clusterId;
-      let clusterCards = [];
-      let firstCardTodo = null;
-      let firstCardElement = null;
-      
-      if (isCluster) {
-        clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
-          .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
-        
-        if (clusterCards.length > 0) {
-          firstCardElement = clusterCards[0];
-          firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
-        }
-      }
+      const startX = event.clientX;
+      const startY = event.clientY;
+      let isLongPressed = false;
 
-      const cardRect = card.getBoundingClientRect();
-      const boardRect = board.getBoundingClientRect();
-      
-      const styleLeft = card.style.left || '0px';
-      const styleTop = card.style.top || '0px';
-      let startLeftPx = 0;
-      let startTopPx = 0;
-      
-      if (styleLeft.includes('px')) {
-        startLeftPx = parseFloat(styleLeft) || 0;
+      if (card) {
+        const todoId = card.dataset.id;
+        if (!todoId) return;
+
+        event.preventDefault();
+
+        const timer = setTimeout(() => {
+          isLongPressed = true;
+
+          const todo = TaskManager.getTaskById(todoId);
+          const isCluster = todo && todo.clusterId;
+          let clusterCards = [];
+          let firstCardTodo = null;
+          let firstCardElement = null;
+
+          if (isCluster) {
+            clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
+              .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
+
+            if (clusterCards.length > 0) {
+              firstCardElement = clusterCards[0];
+              firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
+            }
+          }
+
+          const cardRect = card.getBoundingClientRect();
+          const boardRect = board.getBoundingClientRect();
+
+          const styleLeft = card.style.left || '0px';
+          const styleTop = card.style.top || '0px';
+          let startLeftPx = 0;
+          let startTopPx = 0;
+
+          if (styleLeft.includes('px')) {
+            startLeftPx = parseFloat(styleLeft) || 0;
+          } else {
+            startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
+          }
+
+          if (styleTop.includes('px')) {
+            startTopPx = parseFloat(styleTop) || 0;
+          } else {
+            startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
+          }
+
+          const startLeftPercent = styleLeft.includes('px')
+            ? (startLeftPx / boardRect.width) * 100
+            : parseFloat(styleLeft) || 0;
+          const startTopPercent = styleTop.includes('px')
+            ? (startTopPx / boardRect.height) * 100
+            : parseFloat(styleTop) || 0;
+
+          let firstStartLeftPercent = 0;
+          let firstStartTopPercent = 0;
+          if (firstCardElement) {
+            const fStyleLeft = firstCardElement.style.left || '0px';
+            const fStyleTop = firstCardElement.style.top || '0px';
+
+            firstStartLeftPercent = fStyleLeft.includes('px')
+              ? (parseFloat(fStyleLeft) / boardRect.width) * 100
+              : parseFloat(fStyleLeft) || 0;
+            firstStartTopPercent = fStyleTop.includes('px')
+              ? (parseFloat(fStyleTop) / boardRect.height) * 100
+              : parseFloat(fStyleTop) || 0;
+          }
+
+          const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
+
+          this.todoDragState = {
+            todoId,
+            card,
+            board,
+            pointerId: event.pointerId,
+            boardRect,
+            cardWidth: cardRect.width,
+            cardHeight: cardRect.height,
+            offsetX: event.clientX - (boardRect.left + startLeftPx),
+            offsetY: event.clientY - (boardRect.top + startTopPx),
+            moved: false,
+            startX: event.clientX,
+            startY: event.clientY,
+            startLeftPercent,
+            startTopPercent,
+            nextX: startLeftPercent,
+            nextY: startTopPercent,
+            isCluster,
+            hasHeader,
+            firstCardElement,
+            firstStartLeftPercent,
+            firstStartTopPercent,
+            clusterCards
+          };
+
+          card.classList.add('dragging');
+          if (isCluster) {
+            clusterCards.forEach(c => {
+              c.classList.add('dragging');
+            });
+          }
+          try { card.setPointerCapture(event.pointerId); } catch (error) { }
+        }, 500);
+
+        const onMove = (moveEvent) => {
+          if (moveEvent.pointerId !== event.pointerId) return;
+          if (!isLongPressed) {
+            const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+            if (dist > 10) {
+              clearTimeout(timer);
+              cleanup();
+            }
+          }
+        };
+
+        const onUp = (upEvent) => {
+          if (upEvent.pointerId !== event.pointerId) return;
+          clearTimeout(timer);
+          cleanup();
+
+          if (!isLongPressed) {
+            const todoName = card.querySelector('.todo-title')?.textContent || '';
+            const state = getGameState();
+            try {
+              PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
+                if (!TaskManager.completeTodo(todoId)) return;
+
+                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                  RetroTaskCompleteAnimation.play(card);
+                }
+
+                this.updateTodosList();
+                try { state.save(); } catch (e) { }
+                this.renderEnemies();
+              });
+            } catch (e) {
+              if (TaskManager.completeTodo(todoId)) {
+                this.updateTodosList();
+                try { state.save(); } catch (err) { }
+                this.renderEnemies();
+              }
+            }
+          }
+        };
+
+        const cleanup = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+        };
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+
       } else {
-        startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
+        const existingWizard = document.querySelector('.floating-wizard');
+        if (existingWizard && existingWizard.contains(event.target)) return;
+
+        const timer = setTimeout(() => {
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showAddTodoWizard) {
+            const boardRect = board.getBoundingClientRect();
+            const xPx = event.clientX - boardRect.left + board.scrollLeft;
+            const yPx = event.clientY - boardRect.top + board.scrollTop;
+            const xPercent = (xPx / board.scrollWidth) * 100;
+            const yPercent = (yPx / board.scrollHeight) * 100;
+            PopupsManager.showAddTodoWizard(xPercent, yPercent, xPx, yPx);
+            this.wizardOpenedTime = Date.now();
+          }
+        }, 500);
+
+        const onMove = (moveEvent) => {
+          if (moveEvent.pointerId !== event.pointerId) return;
+          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+          if (dist > 10) {
+            clearTimeout(timer);
+            cleanup();
+          }
+        };
+
+        const onUp = (upEvent) => {
+          if (upEvent.pointerId !== event.pointerId) return;
+          clearTimeout(timer);
+          cleanup();
+        };
+
+        const cleanup = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+        };
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
       }
-      
-      if (styleTop.includes('px')) {
-        startTopPx = parseFloat(styleTop) || 0;
-      } else {
-        startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
-      }
-
-      const startLeftPercent = styleLeft.includes('px')
-        ? (startLeftPx / boardRect.width) * 100
-        : parseFloat(styleLeft) || 0;
-      const startTopPercent = styleTop.includes('px')
-        ? (startTopPx / boardRect.height) * 100
-        : parseFloat(styleTop) || 0;
-
-      let firstStartLeftPercent = 0;
-      let firstStartTopPercent = 0;
-      if (firstCardElement) {
-        const fStyleLeft = firstCardElement.style.left || '0px';
-        const fStyleTop = firstCardElement.style.top || '0px';
-        
-        firstStartLeftPercent = fStyleLeft.includes('px')
-          ? (parseFloat(fStyleLeft) / boardRect.width) * 100
-          : parseFloat(fStyleLeft) || 0;
-        firstStartTopPercent = fStyleTop.includes('px')
-          ? (parseFloat(fStyleTop) / boardRect.height) * 100
-          : parseFloat(fStyleTop) || 0;
-      }
-
-      const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
-
-      this.todoDragState = {
-        todoId,
-        card,
-        board,
-        pointerId: event.pointerId,
-        boardRect,
-        cardWidth: cardRect.width,
-        cardHeight: cardRect.height,
-        offsetX: event.clientX - (boardRect.left + startLeftPx),
-        offsetY: event.clientY - (boardRect.top + startTopPx),
-        moved: false,
-        startX: event.clientX,
-        startY: event.clientY,
-        startLeftPercent,
-        startTopPercent,
-        nextX: startLeftPercent,
-        nextY: startTopPercent,
-        isCluster,
-        hasHeader,
-        firstCardElement,
-        firstStartLeftPercent,
-        firstStartTopPercent,
-        clusterCards
-      };
-
-      card.classList.add('dragging');
-      if (isCluster) {
-        clusterCards.forEach(c => {
-          c.classList.add('dragging');
-        });
-      }
-      try { card.setPointerCapture(event.pointerId); } catch (error) {}
-      event.preventDefault();
     });
 
     const onMove = (event) => {
@@ -3334,7 +3807,7 @@ class UIManager {
       const minYPx = dragState.hasHeader ? 28 : 0;
       const maxLeft = Math.max(minXPx, boardRect.width - dragState.cardWidth);
       const maxTop = Math.max(minYPx, boardRect.height - dragState.cardHeight);
-      
+
       const nextLeftPx = Math.max(minXPx, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
       const nextTopPx = Math.max(minYPx, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
 
@@ -3349,7 +3822,7 @@ class UIManager {
       if (dragState.isCluster && dragState.firstCardElement) {
         const deltaX = dragState.nextX - dragState.startLeftPercent;
         const deltaY = dragState.nextY - dragState.startTopPercent;
-        
+
         // Update the first card's layout in memory to allow real-time rigid positioning
         const firstCardTodo = TaskManager.getTaskById(dragState.firstCardElement.dataset.id);
         if (firstCardTodo) {
@@ -3358,10 +3831,10 @@ class UIManager {
             y: dragState.firstStartTopPercent + deltaY
           };
         }
-        
+
         dragState.firstCardElement.style.left = `${dragState.firstStartLeftPercent + deltaX}%`;
         dragState.firstCardElement.style.top = `${dragState.firstStartTopPercent + deltaY}%`;
-        
+
         this.positionTodoCards();
       } else {
         dragState.card.style.left = `${dragState.nextX}%`;
@@ -3376,13 +3849,13 @@ class UIManager {
       const boardRect = dragState.board.getBoundingClientRect();
       const cardRect = dragState.card.getBoundingClientRect();
       dragState.card.classList.remove('dragging');
-      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) {}
+      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
 
       if (dragState.isCluster && dragState.clusterCards) {
         if (dragState.moved) {
           dragState.clusterCards.forEach(c => {
             c.classList.remove('dragging');
-            
+
             const cRect = c.getBoundingClientRect();
             const cTileSize = { width: cRect.width, height: cRect.height };
             const cTodo = TaskManager.getTaskById(c.dataset.id);
@@ -3391,10 +3864,10 @@ class UIManager {
               x: ((cRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
               y: ((cRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
             }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, cTileSize, cHasHeader);
-            
+
             TaskManager.updateTodoLayout(c.dataset.id, cLayout);
           });
-          try { getGameState().save(); } catch (error) {}
+          try { getGameState().save(); } catch (error) { }
           this.todoDragSuppressUntil = Date.now() + 250;
         } else {
           dragState.clusterCards.forEach(c => {
@@ -3411,7 +3884,7 @@ class UIManager {
         }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize, cHasHeader);
 
         TaskManager.updateTodoLayout(dragState.todoId, layout);
-        try { getGameState().save(); } catch (error) {}
+        try { getGameState().save(); } catch (error) { }
         this.todoDragSuppressUntil = Date.now() + 250;
       }
 
@@ -3423,11 +3896,11 @@ class UIManager {
     document.addEventListener('pointerup', endDrag);
     document.addEventListener('pointercancel', endDrag);
   }
-  
+
   static updateTodosList() {
     const todos = TaskManager.getAllTodos();
     const container = document.getElementById('todosList');
-    
+
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedTodos;
@@ -3445,7 +3918,7 @@ class UIManager {
       }
       return true;
     });
-    
+
     const palette = getGameState()?.config?.attributeColors || {};
 
     container.innerHTML = visibleTodos.map(todo => {
@@ -3459,7 +3932,7 @@ class UIManager {
           .sort((a, b) => (a.clusterIndex || 0) - (b.clusterIndex || 0));
         if (clusterTodos.length > 0 && clusterTodos[0].id === todo.id) {
           isFirstInCluster = true;
-          
+
           const deadlineLabel = todo.deadline ? new Date(todo.deadline).toLocaleDateString() : 'No deadline';
           const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
           const attrTexts = [];
@@ -3512,13 +3985,13 @@ class UIManager {
         </div>
       `).join('');
       const subtaskCount = (todo.subtasks || []).length;
-      
+
       // Border and color configurations
       const isCluster = todo.clusterId && !todo.completed;
-      const borderStyle = isCluster 
-        ? 'border-color: #6a0dad !important; --cluster-color: #6a0dad; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px rgba(106,13,173,0.5) !important;' 
+      const borderStyle = isCluster
+        ? 'border-color: #6a0dad !important; --cluster-color: #6a0dad; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px rgba(106,13,173,0.5) !important;'
         : `border-color: ${palette[todo.attribute] || '#555'} !important; --task-accent: ${palette[todo.attribute] || '#555'}; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px ${(palette[todo.attribute] || '#555')}44 !important;`;
-      
+
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
       return `
@@ -3581,7 +4054,7 @@ class UIManager {
     }
 
     const petTarget = state.playerState && state.playerState.petTarget ? state.playerState.petTarget : null;
-    const todayStr = (new Date()).toISOString().slice(0,10);
+    const todayStr = (new Date()).toISOString().slice(0, 10);
 
     const emptyNode = layer.querySelector('.enemy-empty');
     if (emptyNode) emptyNode.remove();
@@ -3617,17 +4090,17 @@ class UIManager {
       if (!card) {
         card = this.createEnemyCardElement(enemyId);
         layer.appendChild(card);
-        
+
         if (enemy.isBoss) {
           if (typeof RetroBossEntranceAnimation !== 'undefined' && !enemy.entrancePlayed) {
             enemy.entrancePlayed = true;
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             setTimeout(() => RetroBossEntranceAnimation.play(card), 50);
           }
         } else {
           if (typeof RetroWarpAnimation !== 'undefined' && !enemy.spawnPlayed) {
             enemy.spawnPlayed = true;
-            try { state.save(); } catch (e) {}
+            try { state.save(); } catch (e) { }
             setTimeout(() => RetroWarpAnimation.play(card), 50);
           }
         }
@@ -3660,9 +4133,9 @@ class UIManager {
         }, `enemyFirstSeen:${firstUnseenEnemyName}`);
         if (shown) {
           state.systemState.runSeenEnemies[firstUnseenEnemyName] = true;
-          try { state.save(); } catch (e) {}
+          try { state.save(); } catch (e) { }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     existingCards.forEach((card, enemyId) => {
@@ -3900,7 +4373,7 @@ class UIManager {
         container.style.left = left + 'px';
         container.style.top = top + 'px';
         return;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     container.style.bottom = '240px';
@@ -3936,9 +4409,9 @@ class UIManager {
     this.renderEnemies();
     this.updateRunCompletionGraph();
     // Consumables and buffs are part of the HUD and must update here
-    try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) {}
-    try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) {}
-    try { this.positionSatchelPanel && this.positionSatchelPanel(); } catch (e) {}
+    try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
+    try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) { }
+    try { this.positionSatchelPanel && this.positionSatchelPanel(); } catch (e) { }
     // Update central level indicator
     try {
       const el = document.getElementById('levelIndicator');
@@ -4063,7 +4536,7 @@ class UIManager {
 
     const dlDate = new Date(Number(deadline));
     const dlMidnight = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate()).getTime();
-    
+
     const now = new Date();
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
@@ -4113,9 +4586,9 @@ class UIManager {
       ${fillPath ? `<path d="${fillPath}" fill="url(#runGraphFill)" />` : ''}
       ${linePath ? `<path d="${linePath}" fill="none" stroke="rgba(255,215,106,0.95)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />` : ''}
       ${points.map(point => {
-        const [x, y] = point.split(',');
-        return `<circle cx="${x}" cy="${y}" r="1.8" fill="rgba(255,255,255,0.92)" />`;
-      }).join('')}
+      const [x, y] = point.split(',');
+      return `<circle cx="${x}" cy="${y}" r="1.8" fill="rgba(255,255,255,0.92)" />`;
+    }).join('')}
     `;
     rateEl.textContent = `${Math.round(lastPct * 100)}%`;
   }
@@ -4163,12 +4636,12 @@ class UIManager {
       }
       tip.innerHTML = `<div class="mutator-tooltip-title">${enemy.name}</div><div class="mutator-tooltip-desc">HP: ${hpText}</div>${mutsHtml}`;
       document.body.appendChild(tip);
-      let x = ev?.clientX || (window.innerWidth/2);
-      let y = ev?.clientY || (window.innerHeight/2);
+      let x = ev?.clientX || (window.innerWidth / 2);
+      let y = ev?.clientY || (window.innerHeight / 2);
       tip.style.left = Math.min(window.innerWidth - 12 - tip.offsetWidth, x + 8) + 'px';
       tip.style.top = Math.max(8, y - 8 - tip.offsetHeight) + 'px';
       setTimeout(() => tip.classList.add('visible'), 10);
-      setTimeout(() => { try { tip.classList.remove('visible'); setTimeout(() => tip.remove(), 220); } catch(e) {} }, 3000);
+      setTimeout(() => { try { tip.classList.remove('visible'); setTimeout(() => tip.remove(), 220); } catch (e) { } }, 3000);
     } catch (e) { console.warn('showEnemyTooltip', e); }
   }
 
@@ -4248,7 +4721,7 @@ class UIManager {
       const overlay = PopupsManager.createPopupOverlay();
       const popup = document.createElement('div');
       popup.className = 'popup enemy-info-popup';
-      
+
       popup.innerHTML = `
         <div class="enemy-sprite-placeholder">
           <img src="https://placehold.co/100x100/241a34/FFFFFF?text=Sprite" alt="Enemy Sprite" />
@@ -4288,9 +4761,9 @@ class UIManager {
           </div>
         </div>
       `;
-      
+
       popup.querySelector('.btn-close').addEventListener('click', () => PopupsManager.closeAllPopups());
-      
+
       overlay.appendChild(popup);
       document.body.appendChild(overlay);
       if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
@@ -4302,13 +4775,13 @@ class UIManager {
   static showMutatorToast(text) {
     try {
       if (typeof FloatingDamageNumber !== 'undefined') {
-        FloatingDamageNumber.show(window.innerWidth/2, 60, text, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 1600 });
+        FloatingDamageNumber.show(window.innerWidth / 2, 60, text, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 1600 });
       } else {
         const el = document.createElement('div');
         el.className = 'mutator-toast';
         el.textContent = text;
         document.body.appendChild(el);
-        setTimeout(() => { try { el.remove(); } catch (e) {} }, 1600);
+        setTimeout(() => { try { el.remove(); } catch (e) { } }, 1600);
       }
     } catch (e) { console.warn('showMutatorToast error', e); }
   }
@@ -4317,8 +4790,8 @@ class UIManager {
     try {
       const a = new Audio('assets/sounds/attack.mp3');
       a.volume = 0.6;
-      a.play().catch(() => {});
-    } catch (e) {}
+      a.play().catch(() => { });
+    } catch (e) { }
   }
 
   static showPetIcon(enemyId, options = {}) {
@@ -4348,7 +4821,7 @@ class UIManager {
 
     const duration = options.duration || 900;
     setTimeout(() => {
-      try { icon.remove(); } catch (e) {}
+      try { icon.remove(); } catch (e) { }
     }, duration);
   }
 
@@ -4368,9 +4841,9 @@ class UIManager {
       </div>
       <div class="satchel-list">
         ${ordered.length ? ordered.map(([name, count]) => {
-          const data = state.config?.consumables?.[name] || {};
-          const icon = consumableIcons[name] || data.icon || '🧪';
-          return `
+      const data = state.config?.consumables?.[name] || {};
+      const icon = consumableIcons[name] || data.icon || '🧪';
+      return `
             <button class="satchel-item" type="button" data-consumable="${name}">
               <span class="satchel-item-icon">${icon}</span>
               <span class="satchel-item-name-wrap">
@@ -4382,7 +4855,7 @@ class UIManager {
               </span>
             </button>
           `;
-        }).join('') : '<div class="satchel-empty">No consumables yet</div>'}
+    }).join('') : '<div class="satchel-empty">No consumables yet</div>'}
       </div>
     `;
 
@@ -4477,7 +4950,7 @@ class UIManager {
         panel.style.left = left + 'px';
         panel.style.top = top + 'px';
         return;
-      } catch (e) {}
+      } catch (e) { }
     }
 
     panel.style.left = '12px';
@@ -4506,7 +4979,7 @@ class UIManager {
       btn.textContent = meta.icon || '🔸';
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        try { PopupsManager.showDialogue(name, meta.description || ''); } catch (err) {}
+        try { PopupsManager.showDialogue(name, meta.description || ''); } catch (err) { }
       });
       panel.appendChild(btn);
     });
@@ -4519,14 +4992,14 @@ class UIManager {
     try {
       const icon = (getGameState().config?.buffs?.[buffName]?.icon) || '';
       FloatingDamageNumber.show(window.innerWidth - 120, 80, `${icon} ${buffName}`, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 1600 });
-    } catch (e) {}
+    } catch (e) { }
     try {
       const el = document.querySelector(`#buffPanel .buff-icon[data-buff="${buffName}"]`);
       if (el) {
         el.classList.add('buff-gain');
         setTimeout(() => el.classList.remove('buff-gain'), 950);
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
 }
@@ -4550,7 +5023,7 @@ function getAsset(type, id) {
 }
 
 // Debug helper: force-apply a mutator to an enemy and trigger UI + event
-window.debugAddMutator = function(enemyId, mutator) {
+window.debugAddMutator = function (enemyId, mutator) {
   try {
     const enemy = (typeof StageManager !== 'undefined' && StageManager.getEnemyById) ? StageManager.getEnemyById(enemyId) : (StageManager.getAllEnemies && StageManager.getAllEnemies().find(e => String(e.id) === String(enemyId)));
     if (!enemy) { console.warn('debugAddMutator: enemy not found', enemyId); return; }
@@ -4559,8 +5032,8 @@ window.debugAddMutator = function(enemyId, mutator) {
       console.info('Enemy already has mutator', mutator); return;
     }
     enemy.mutators.push(mutator);
-    try { getGameState().save(); } catch (e) {}
-    try { getGameState().eventBus.emit(EVENTS.ENEMY_MUTATED, { enemyId: String(enemy.id), mutator, source: 'debug' }); } catch (e) {}
-    try { if (typeof UIManager !== 'undefined') UIManager.renderEnemies(); } catch (e) {}
+    try { getGameState().save(); } catch (e) { }
+    try { getGameState().eventBus.emit(EVENTS.ENEMY_MUTATED, { enemyId: String(enemy.id), mutator, source: 'debug' }); } catch (e) { }
+    try { if (typeof UIManager !== 'undefined') UIManager.renderEnemies(); } catch (e) { }
   } catch (e) { console.warn('debugAddMutator failed', e); }
 };

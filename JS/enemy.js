@@ -159,6 +159,10 @@ class Enemy {
   }
   
   heal(amount) {
+    if (this.statusEffects?.unstableConcoction?.preventHeal) {
+      console.debug(`[Enemy.heal] heal blocked by unstable concoction`);
+      return;
+    }
     const before = this.hp;
     this.hp = Math.min(this.hp + amount, this.maxHp);
     console.debug(`[Enemy.heal] ${this.name}(${this.id}) before=${before} heal=${amount} after=${this.hp}`);

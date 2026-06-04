@@ -796,6 +796,9 @@ class PopupsManager {
     
     const state = getGameState();
     Object.entries(state.config.classes).forEach(([className, data]) => {
+      const skillMeta = (state.config.classSkillMeta && state.config.classSkillMeta[className]) || {};
+      const skillIcon = skillMeta.icon || '✨';
+      const skillColor = skillMeta.color || '#38bdf8';
       html += `
         <div class="class-card" data-class="${className}">
           <h3>${className}</h3>
@@ -804,6 +807,7 @@ class PopupsManager {
             <p>Mana: ${data.mana}</p>
           </div>
           <p class="class-passive">${data.passive}</p>
+          <p class="class-skill" style="color: ${skillColor}">${skillIcon} ${data.skill || 'No skill'}</p>
           <button class="btn-select-class">SELECT</button>
         </div>
       `;
@@ -1118,10 +1122,10 @@ class PopupsManager {
       <div class="pause-cheat-box">
         <label for="cheatCommandInput">CHEAT COMMAND</label>
         <div class="pause-cheat-row">
-          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | boss 5 a | gold 999 | help" />
+          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | class Knight | gold 999 | help" />
           <button class="btn-pause-action" id="runCheatBtn">RUN</button>
         </div>
-        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>boss 5 a</span> · <span>weapon Uzi</span> · <span>gold 999</span></div>
+        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>class Knight</span> · <span>weapon Uzi</span> · <span>gold 999</span></div>
       </div>
     `;
     
@@ -1382,7 +1386,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -1488,6 +1492,55 @@ class PopupsManager {
         state.playerState.killTagsByWeapon[weaponName] = Math.max(0, Math.floor(count));
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'Kill tags set' };
+      }
+
+      if (lower.startsWith('class ') || lower.startsWith('change class ') || lower.startsWith('changeclass ')) {
+        const classNameQuery = command
+          .replace(/^change\s+class\s+/i, '')
+          .replace(/^changeclass\s+/i, '')
+          .replace(/^class\s+/i, '')
+          .trim();
+        const classNames = Object.keys(state.config?.classes || {});
+        const matchedClassName = classNames.find(c => c.toLowerCase() === classNameQuery.toLowerCase());
+        
+        if (!matchedClassName) {
+          return { ok: false, message: `Class not found. Available: ${classNames.join(', ')}` };
+        }
+        
+        const classData = state.config.classes[matchedClassName];
+        
+        // Update class and stats on the fly
+        state.playerState.className = matchedClassName;
+        
+        // Update HP/Mana bounds while scaling/clamping current values
+        const prevMaxHp = state.playerState.maxHp || 1;
+        const prevHp = state.playerState.hp || 0;
+        state.playerState.maxHp = classData.hp;
+        state.playerState.hp = Math.min(state.playerState.maxHp, Math.ceil((prevHp / prevMaxHp) * classData.hp));
+        
+        const prevMaxMana = state.playerState.maxMana || 1;
+        const prevMana = state.playerState.mana || 0;
+        state.playerState.maxMana = classData.mana;
+        state.playerState.mana = Math.min(state.playerState.maxMana, Math.ceil((prevMana / prevMaxMana) * classData.mana));
+        
+        // Ranger gets 3 weapon slots, others get 2
+        if (matchedClassName === 'Ranger') {
+          if (state.playerState.weapons.length < 3) {
+            state.playerState.weapons.push(null);
+          }
+        } else {
+          if (state.playerState.weapons.length > 2) {
+            state.playerState.weapons = state.playerState.weapons.slice(0, 2);
+          }
+        }
+        state.playerState.weaponElements = new Array(state.playerState.weapons.length).fill(null);
+        if (state.playerState.activeWeapon >= state.playerState.weapons.length) {
+          state.playerState.activeWeapon = 0;
+        }
+        
+        state.save();
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Changed class to ${matchedClassName}` };
       }
 
       if (lower === 'resume' || lower === 'close') {
