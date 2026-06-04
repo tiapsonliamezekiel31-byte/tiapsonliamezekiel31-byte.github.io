@@ -88,12 +88,12 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   classes: {
     Knight: {
-      hp: 180, mana: 200, hpRegen: 20, manaRegen: 100,
+      hp: 180, mana: 300, hpRegen: 20, manaRegen: 150,
       passive: 'Sturdy: all enemy damage reduced by 5',
       skill: 'Iron Bastion – next 4 attacks against you deal 0.4× damage (cost: 60 mana)'
     },
     Rogue: {
-      hp: 70, mana: 250, hpRegen: 10, manaRegen: 120,
+      hp: 70, mana: 300, hpRegen: 10, manaRegen: 144,
       passive: 'Quick Hands: +25% crit chance',
       skill: 'Phantom Blow – next attack deals 4× damage, ignores resistances, steals 30 mana on hit (cost: 30 mana)'
     },
@@ -103,32 +103,32 @@ const DEFAULT_GAME_CONFIG = {
       skill: 'Chrono-Shift – bend time; your next 3 attacks are echoed at 50% damage at the end of the turn (cost: 50 mana)'
     },
     Brute: {
-      hp: 100, mana: 150, hpRegen: 15, manaRegen: 80,
+      hp: 100, mana: 300, hpRegen: 15, manaRegen: 160,
       passive: 'Berserk: deal +60% damage, take +40% damage',
       skill: 'Wrath Unleashed – +200% damage for today, but cannot dodge (cost: 50 mana)'
     },
     Ranger: {
-      hp: 80, mana: 180, hpRegen: 12, manaRegen: 100,
+      hp: 80, mana: 300, hpRegen: 12, manaRegen: 167,
       passive: 'Master of Arms: equip 3 weapons; gain Kill Tags every 3 kills instead of 5',
       skill: 'Storm Volley – next attack deals full damage to target + 60% to all other enemies (cost: 40 mana)'
     },
     Druid: {
-      hp: 120, mana: 220, hpRegen: 20, manaRegen: 120,
+      hp: 120, mana: 300, hpRegen: 20, manaRegen: 164,
       passive: 'Whisperer: pet damage ×5',
       skill: 'Nature\'s Embrace – heal 40 HP, summon shadow pet for today (2× pet attacks) (cost: 50 mana)'
     },
     Alchemist: {
-      hp: 90, mana: 250, hpRegen: 10, manaRegen: 140,
+      hp: 90, mana: 300, hpRegen: 10, manaRegen: 168,
       passive: 'Potion Master: consumable effects 80% stronger, last 2 extra days',
       skill: 'Unstable Concoction – reverse target\'s weaknesses/resistances permanently, block healing/mutating next check-in. If weak to current element, deal 15% max HP splash damage to adjacent enemies (cost: 50 mana)'
     },
     Juggernaut: {
-      hp: 250, mana: 100, hpRegen: 30, manaRegen: 60,
+      hp: 250, mana: 300, hpRegen: 30, manaRegen: 180,
       passive: 'Immovable: multiply damage taken by 0.85',
       skill: 'Fortress – invincible for next 2 attacks + reflect 50% damage back (cost: 60 mana)'
     },
     Madman: {
-      hp: 1, mana: 1, hpRegen: 0, manaRegen: 0,
+      hp: 1, mana: 300, hpRegen: 0, manaRegen: 0,
       passive: 'Fragile: miss any daily → die at check-in, no death defiance',
       skill: 'Scream into the Void – gain 1 diamond. That\'s it. You\'re a Madman. (cost: 1 mana)'
     }
@@ -444,7 +444,7 @@ const DEFAULT_GAME_CONFIG = {
     // BASIC WEAPONS (6)
     'Rusty Sword': {
       type: 'Standard',
-      baseApCost: 30,
+      baseApCost: 15,
       damageMultiplier: 1.0,
       critChance: 0.05,
       fireRate: 1,
@@ -453,7 +453,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Great Hammer': {
       type: 'Heavy',
-      baseApCost: 55,
+      baseApCost: 28,
       damageMultiplier: 1.8,
       critChance: 0.05,
       fireRate: 1,
@@ -462,7 +462,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Dagger': {
       type: 'Light',
-      baseApCost: 22,
+      baseApCost: 11,
       damageMultiplier: 0.6,
       critChance: 0.5,
       fireRate: 3,
@@ -471,7 +471,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bomb': {
       type: 'AoE',
-      baseApCost: 55,
+      baseApCost: 28,
       damageMultiplier: 0.2,
       critChance: 0.08,
       fireRate: 1,
@@ -480,7 +480,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Buckler': {
       type: 'Shield',
-      baseApCost: 50,
+      baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
       fireRate: 1,
@@ -491,7 +491,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Grimoire': {
       type: 'Special',
-      baseApCost: 40,
+      baseApCost: 20,
       damageMultiplier: 1.1,
       critChance: 0.1,
       fireRate: 2,
@@ -502,7 +502,7 @@ const DEFAULT_GAME_CONFIG = {
     // EXPANDED WEAPONS (10 more)
     'Vampire Dagger': {
       type: 'Light/Leg',
-      baseApCost: 38,
+      baseApCost: 19,
       damageMultiplier: 0.7,
       critChance: 0.28,
       fireRate: 4,
@@ -511,7 +511,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bazooka': {
       type: 'Heavy/AoE',
-      baseApCost: 65,
+      baseApCost: 33,
       damageMultiplier: 2.8,
       critChance: 0.0,
       fireRate: 1,
@@ -520,7 +520,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Uzi': {
       type: 'Light',
-      baseApCost: 12,
+      baseApCost: 6,
       damageMultiplier: 2.0,
       critChance: 0.08,
       fireRate: 6,
@@ -532,7 +532,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Thunder Hammer': {
       type: 'Heavy/Leg',
-      baseApCost: 100,
+      baseApCost: 50,
       damageMultiplier: 1.5,
       critChance: 0.15,
       fireRate: 1,
@@ -541,7 +541,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Lazer': {
       type: 'Special',
-      baseApCost: 50,
+      baseApCost: 25,
       damageMultiplier: 0.8,
       critChance: 0.2,
       fireRate: 2,
@@ -552,7 +552,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Vine Spell': {
       type: 'Special/AoE',
-      baseApCost: 45,
+      baseApCost: 22,
       damageMultiplier: 0.5,
       critChance: 0.08,
       fireRate: 2,
@@ -563,7 +563,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Death Spell': {
       type: 'Legendary',
-      baseApCost: 300,
+      baseApCost: 150,
       damageMultiplier: Infinity, // instakill
       critChance: 0,
       fireRate: 1,
@@ -572,7 +572,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Heavy Hammer': {
       type: 'Heavy',
-      baseApCost: 55,
+      baseApCost: 28,
       damageMultiplier: 2.2,
       critChance: 0.15,
       fireRate: 1,
@@ -581,7 +581,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Echo Bow': {
       type: 'Light/Spec',
-      baseApCost: 35,
+      baseApCost: 18,
       damageMultiplier: 1.0,
       critChance: 0.1,
       fireRate: 3,
@@ -590,7 +590,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Aegis': {
       type: 'Shield/Leg',
-      baseApCost: 50,
+      baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
       fireRate: 1,

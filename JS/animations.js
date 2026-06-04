@@ -13,7 +13,7 @@ const AnimationRuntime = (() => {
     lowPower,
     particleScale: lowPower ? 0.6 : 1,
     maxBurstParticles: lowPower ? 18 : 60,
-    flashMinInterval: lowPower ? 110 : 70,
+    flashMinInterval: lowPower ? 60 : 70,
     shakeMinInterval: lowPower ? 80 : 40,
     shakeIntensityScale: lowPower ? 0.7 : 1,
     apCrackleMinInterval: lowPower ? 120 : 80
@@ -672,10 +672,11 @@ class ScreenEffects {
         left: 0;
         width: 100%;
         height: 100%;
-        pointer-events: none;
-        z-index: 100500; /* ensure above any other UI overlays */
-        mix-blend-mode: normal;
-        background-blend-mode: normal;
+         pointer-events: none;
+         will-change: opacity, background;
+         z-index: 100500; /* ensure above any other UI overlays */
+         mix-blend-mode: normal;
+         background-blend-mode: normal;
       `;
       this.flashOverlay = overlay;
       // append at end of body so it sits on top
