@@ -2920,10 +2920,10 @@ class UIManager {
         const textEl = noteEl.querySelector('.daily-note-text');
         if (textEl) {
           textEl.addEventListener('input', () => {
-            state.updateDailyNote?.(noteId, { text: textEl.textContent || '' });
+            state.updateDailyNote?.(noteId, { text: textEl.innerText || '' });
           });
           textEl.addEventListener('blur', () => {
-            state.updateDailyNote?.(noteId, { text: textEl.textContent || '' });
+            state.updateDailyNote?.(noteId, { text: textEl.innerText || '' });
           });
         }
 
@@ -3051,7 +3051,7 @@ class UIManager {
       const textEl = noteEl.querySelector('.daily-note-text');
       if (textEl) {
         const nextText = String(noteData.text || '');
-        if (textEl.textContent !== nextText && document.activeElement !== textEl) {
+        if ((textEl.innerText || '').trimEnd() !== nextText.trimEnd() && document.activeElement !== textEl) {
           textEl.textContent = nextText;
         }
 

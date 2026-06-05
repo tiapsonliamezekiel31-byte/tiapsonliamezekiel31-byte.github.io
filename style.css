@@ -1300,6 +1300,7 @@ body::before {
   transform: none;
   z-index: 12000;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1333,6 +1334,7 @@ body::before {
   transform: none;
   z-index: 12000;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
