@@ -2762,7 +2762,7 @@ class UIManager {
       }
 
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
@@ -3300,35 +3300,18 @@ class UIManager {
       try { card.setPointerCapture(event.pointerId); } catch (error) { }
 
       const boardRect = board.getBoundingClientRect();
-      const styleLeft = card.style.left || '0px';
-      const styleTop = card.style.top || '0px';
-      let startLeftPx = 0;
-      let startTopPx = 0;
-
-      if (styleLeft.includes('px')) {
-        startLeftPx = parseFloat(styleLeft) || 0;
-      } else {
-        startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
-      }
-
-      if (styleTop.includes('px')) {
-        startTopPx = parseFloat(styleTop) || 0;
-      } else {
-        startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
-      }
+      const cardRect = card.getBoundingClientRect();
 
       this.dailyDragState = {
         dailyId,
         card,
         board,
         pointerId: event.pointerId,
-        offsetX: event.clientX - (boardRect.left + startLeftPx),
-        offsetY: event.clientY - (boardRect.top + startTopPx),
+        offsetX: event.clientX - cardRect.left,
+        offsetY: event.clientY - cardRect.top,
         moved: false,
         startX: event.clientX,
-        startY: event.clientY,
-        startLeftPercent: styleLeft.includes('px') ? (startLeftPx / boardRect.width) * 100 : parseFloat(styleLeft) || 0,
-        startTopPercent: styleTop.includes('px') ? (startTopPx / boardRect.height) * 100 : parseFloat(styleTop) || 0
+        startY: event.clientY
       };
 
       // Set up unified long-press timer for Blood Oath toggle
