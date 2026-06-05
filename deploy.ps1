@@ -82,7 +82,7 @@ git log -5 --oneline origin/$branch
 # Fetch raw sw.js from repo and live site
 $owner, $repo = Get-RepoInfo
 $rawUrl = "https://raw.githubusercontent.com/$owner/$repo/$branch/sw.js"
-$liveUrl = "https://$owner.github.io/$repo/sw.js"
+$liveUrl = if ($repo -eq "$owner.github.io") { "https://$owner.github.io/sw.js" } else { "https://$owner.github.io/$repo/sw.js" }
 Write-Host "Fetching raw sw.js from $rawUrl"
 $rawContent = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing | Select-Object -ExpandProperty Content
 Write-Host "RAW CACHE_NAME:"
