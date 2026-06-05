@@ -11,7 +11,7 @@ $pollLiveSwSecs = 30
 
 function Get-RepoInfo {
     $remoteUrl = git config --get remote.origin.url
-    if ($remoteUrl -match "[:/]([^/]+)/([^/.]+)(\.git)?$") {
+    if ($remoteUrl -match "[:/]([^/]+)/([^/]+?)(?:\.git)?$") {
         $owner = $matches[1]
         $repo = $matches[2]
     } else {
