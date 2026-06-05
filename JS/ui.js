@@ -1371,8 +1371,8 @@ class UIManager {
 
         const deleteDaily = event.target.closest('.btn-delete-daily');
         if (deleteDaily && taskType === 'daily') {
-          const dailyName = card.querySelector('.daily-title')?.textContent || 'this daily';
-          if (!confirm(`Delete ${dailyName}?`)) return;
+          const dailyName = card.querySelector('.daily-title')?.textContent || card.querySelector('.task-shape-name')?.textContent || 'this daily';
+          if (!confirm(`Delete "${dailyName}"?`)) return;
 
           if (TaskManager.removeDaily(taskId)) {
             try { state.save(); } catch (e) { }
@@ -2990,8 +2990,10 @@ class UIManager {
             if (!stateRaw) return;
             const current = JSON.parse(stateRaw);
             const boardNow = board.getBoundingClientRect();
-            const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
-            const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
+            const halfWidth = current.noteWidth / 2;
+            const halfHeight = current.noteHeight / 2;
+            const nextLeftPx = Math.max(halfWidth, Math.min(boardNow.width - halfWidth, moveEvent.clientX - boardNow.left - current.offsetX));
+            const nextTopPx = Math.max(halfHeight, Math.min(boardNow.height - halfHeight, moveEvent.clientY - boardNow.top - current.offsetY));
             
             current.moved = true;
             current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
