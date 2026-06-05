@@ -1754,8 +1754,9 @@ body::before {
 
 .daily-note-card {
   position: absolute;
-  min-width: 112px;
-  max-width: 220px;
+  width: max-content;
+  min-width: 100px;
+  max-width: 280px;
   padding: 10px 12px 12px;
   border: none;
   border-radius: 14px;
@@ -1765,10 +1766,19 @@ body::before {
   transform: translate(-50%, -50%);
   backdrop-filter: blur(1px);
   touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .daily-note-card.dragging {
   cursor: grabbing;
+}
+
+.daily-note-card.editing {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .daily-note-text {
@@ -1783,7 +1793,7 @@ body::before {
 }
 
 .daily-note-text:empty::before {
-  content: 'New note';
+  content: 'Tap to type...';
   color: rgba(255, 246, 216, 0.45);
 }
 
@@ -1812,8 +1822,9 @@ body::before {
    ============================================================ */
 .todo-note-card {
   position: absolute;
-  min-width: 112px;
-  max-width: 220px;
+  width: max-content;
+  min-width: 100px;
+  max-width: 280px;
   padding: 10px 12px 12px;
   border: none;
   border-radius: 14px;
@@ -1823,10 +1834,19 @@ body::before {
   transform: translate(-50%, -50%);
   backdrop-filter: blur(1px);
   touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .todo-note-card.dragging {
   cursor: grabbing;
+}
+
+.todo-note-card.editing {
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .todo-note-text {
@@ -1841,7 +1861,7 @@ body::before {
 }
 
 .todo-note-text:empty::before {
-  content: 'New note';
+  content: 'Tap to type...';
   color: rgba(214, 208, 255, 0.45);
 }
 

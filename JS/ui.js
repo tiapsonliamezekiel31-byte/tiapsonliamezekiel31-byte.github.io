@@ -2895,7 +2895,7 @@ class UIManager {
         noteEl.dataset.noteId = noteId;
         noteEl.innerHTML = `
           <button class="daily-note-delete" type="button" aria-label="Delete note">✕</button>
-          <div class="daily-note-text" contenteditable="true" spellcheck="false"></div>
+          <div class="daily-note-text" contenteditable="false" spellcheck="false"></div>
         `;
         board.appendChild(noteEl);
       }
@@ -2924,6 +2924,8 @@ class UIManager {
           });
           textEl.addEventListener('blur', () => {
             state.updateDailyNote?.(noteId, { text: textEl.innerText || '' });
+            textEl.contentEditable = 'false';
+            noteEl.classList.remove('editing');
           });
         }
 
@@ -2933,11 +2935,8 @@ class UIManager {
           if (event.button !== 0) return;
 
           const textEl = noteEl.querySelector('.daily-note-text');
-          const isFocused = document.activeElement === textEl;
-
-          if (!isFocused) {
-            event.preventDefault();
-          }
+          // Always prevent default so the browser never starts text-selection during a long press
+          event.preventDefault();
 
           let isLongPressed = false;
           const startX = event.clientX;
@@ -2947,8 +2946,8 @@ class UIManager {
 
           const timer = setTimeout(() => {
             isLongPressed = true;
-            if (isFocused && textEl) {
-              textEl.blur();
+            if (textEl && noteEl.classList.contains('editing')) {
+              textEl.blur(); // blur listener disables contenteditable and removes .editing
             }
 
             const noteRect = noteEl.getBoundingClientRect();
@@ -3020,8 +3019,10 @@ class UIManager {
                 state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
               }
             } else {
-              // It was a tap!
-              if (!isFocused && textEl) {
+              // Tap - enable edit mode
+              if (textEl) {
+                textEl.contentEditable = 'true';
+                noteEl.classList.add('editing');
                 textEl.focus();
                 try {
                   const range = document.createRange();
@@ -3100,7 +3101,7 @@ class UIManager {
         noteEl.dataset.noteId = noteId;
         noteEl.innerHTML = `
           <button class="todo-note-delete" type="button" aria-label="Delete note">✕</button>
-          <div class="todo-note-text" contenteditable="true" spellcheck="false"></div>
+          <div class="todo-note-text" contenteditable="false" spellcheck="false"></div>
         `;
         board.appendChild(noteEl);
       }
@@ -3125,10 +3126,12 @@ class UIManager {
         const textEl = noteEl.querySelector('.todo-note-text');
         if (textEl) {
           textEl.addEventListener('input', () => {
-            state.updateTodoNote?.(noteId, { text: textEl.textContent || '' });
+            state.updateTodoNote?.(noteId, { text: textEl.innerText || '' });
           });
           textEl.addEventListener('blur', () => {
-            state.updateTodoNote?.(noteId, { text: textEl.textContent || '' });
+            state.updateTodoNote?.(noteId, { text: textEl.innerText || '' });
+            textEl.contentEditable = 'false';
+            noteEl.classList.remove('editing');
           });
         }
 
@@ -3138,11 +3141,8 @@ class UIManager {
           if (event.button !== 0) return;
 
           const textEl = noteEl.querySelector('.todo-note-text');
-          const isFocused = document.activeElement === textEl;
-
-          if (!isFocused) {
-            event.preventDefault();
-          }
+          // Always prevent default so the browser never starts text-selection during a long press
+          event.preventDefault();
 
           let isLongPressed = false;
           const startX = event.clientX;
@@ -3152,8 +3152,8 @@ class UIManager {
 
           const timer = setTimeout(() => {
             isLongPressed = true;
-            if (isFocused && textEl) {
-              textEl.blur();
+            if (textEl && noteEl.classList.contains('editing')) {
+              textEl.blur(); // blur listener disables contenteditable and removes .editing
             }
 
             const noteRect = noteEl.getBoundingClientRect();
@@ -3223,8 +3223,10 @@ class UIManager {
                 state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
               }
             } else {
-              // It was a tap!
-              if (!isFocused && textEl) {
+              // Tap - enable edit mode
+              if (textEl) {
+                textEl.contentEditable = 'true';
+                noteEl.classList.add('editing');
                 textEl.focus();
                 try {
                   const range = document.createRange();
