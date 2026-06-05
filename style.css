@@ -1170,6 +1170,7 @@ body::before {
 
 .action-ring .btn-action-circle {
   pointer-events: auto;
+  touch-action: manipulation;
   width: 60px;
   height: 60px;
   border-radius: 50% !important;
@@ -1207,6 +1208,7 @@ body::before {
 
 /* Larger primary attack button */
 #attackBtn {
+  touch-action: manipulation;
   width: 110px !important;
   height: 110px !important;
   font-size: 34px !important;
@@ -1225,6 +1227,7 @@ body::before {
 }
 
 .btn-action {
+  touch-action: manipulation;
   background: linear-gradient(180deg, rgba(24, 18, 50, 0.98), rgba(9, 10, 20, 0.98));
   border: 2px solid rgba(161, 92, 255, 0.72);
   color: var(--text-white);

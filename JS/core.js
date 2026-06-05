@@ -950,6 +950,20 @@ function performCheckIn() {
           }
         };
 
+        if (enemy?.statusEffects?.stunned) {
+          enemy.statusEffects.stunned = false;
+          retaliationSteps.push({
+            enemyId: enemy.id,
+            name: enemy.name,
+            isBoss,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isStunned: true
+          });
+          return;
+        }
+
         // Check for dodge target
         const dodgeTarget = state.combatState?.dodgeTarget;
         const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);

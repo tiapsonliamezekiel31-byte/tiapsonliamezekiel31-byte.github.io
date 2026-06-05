@@ -255,6 +255,13 @@ class CombatManager {
       return { success: false, reason: 'Target not found or dead', apCost: actualCost };
     }
 
+    if (weapon.name === 'Echo Bow') {
+      state.combatState.echoBowCount = (state.combatState.echoBowCount || 0) + 1;
+      if (state.combatState.echoBowCount % 3 === 0) {
+        attackPlan._echoBowMultiplier = 2;
+      }
+    }
+
     // Check combo window and update combo state (combo affects next attack bonuses)
     if (attackPlan.isWithinComboWindow()) {
       state.incrementCombo(attackPlan.comboMaxStacks);
@@ -323,6 +330,10 @@ class CombatManager {
       targets.push({ enemy: target, damageMultiplier: 1 });
     }
 
+    if (weapon.name === 'Echo Bow' && attackPlan._echoBowMultiplier === 2) {
+      pushSpecialPopup('ECHO x2', '#ff55ff');
+    }
+
     let anyKilled = false;
     let primaryDamage = 0;
     const hitDetails = [];
@@ -337,6 +348,10 @@ class CombatManager {
       }
       if (entry.damageMultiplier && entry.damageMultiplier !== 1) {
         damage *= entry.damageMultiplier;
+      }
+
+      if (attackPlan._echoBowMultiplier) {
+        damage *= attackPlan._echoBowMultiplier;
       }
 
       if (attackPlan.weaponName === 'Death Spell' && damage === 0) {
@@ -414,6 +429,12 @@ class CombatManager {
           pushSpecialPopup(attackPlan.specialId === 'buckler' ? 'BUCKLER READY' : 'AEGIS READY', attackPlan.specialId === 'buckler' ? '#ffd700' : '#4ea3ff');
         }
 
+        if (isCrit && weapon.name === 'Thunder Hammer' && !tgt.isDead) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.stunned = true;
+          pushSpecialPopup('STUNNED', '#facc15');
+        }
+
         // Boss phase-2 trigger at <= 30% HP (dialogue + phase flag only)
         if (tgt.isBoss) {
           const bossData = state.stageState.bossData || {};
@@ -464,6 +485,13 @@ class CombatManager {
             state.addHp(lifeSteal);
           }
 
+          if (weapon.name === 'Grimoire') {
+            state.addMana(20);
+          }
+          if (weapon.name === 'Vampire Dagger') {
+            state.addHp(30);
+          }
+
           state.eventBus.emit(EVENTS.KILL_ENEMY, {
             enemyId: tgt.id,
             damage,
@@ -495,6 +523,12 @@ class CombatManager {
           isCrit: isCrit,
           isDead: false
         });
+
+        if (isCrit && weapon.name === 'Thunder Hammer' && !tgt.isDead) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.stunned = true;
+          pushSpecialPopup('STUNNED', '#facc15');
+        }
       }
     });
     

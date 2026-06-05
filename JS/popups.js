@@ -1000,7 +1000,7 @@ class PopupsManager {
 
     popup.querySelector('.btn-cancel').addEventListener('click', () => this.closeAllPopups());
     popup.querySelector('.btn-confirm').addEventListener('click', () => {
-      try { if (typeof onConfirm === 'function') onConfirm(); } catch (e) {}
+      try { if (typeof onConfirm === 'function') onConfirm(); } catch (e) { console.error('Confirm error:', e); }
       this.closeAllPopups();
     });
 

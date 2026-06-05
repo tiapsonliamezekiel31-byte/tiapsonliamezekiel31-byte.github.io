@@ -340,10 +340,10 @@ class TaskManager {
     todo.completed = true;
     
     // Calculate rewards with subtask multiplier
-    const reward = state.config.taskRewards[todo.difficulty];
-    const completedSubtasks = todo.subtasks.filter(st => st.completed).length;
+    const reward = state.config.taskRewards[todo.difficulty] || state.config.taskRewards['Easy'];
+    const completedSubtasks = (todo.subtasks || []).filter(st => st.completed).length;
     const subtaskMultiplier = Math.pow(
-      state.config.subtaskMultiplier,
+      state.config.subtaskMultiplier || 1.2,
       completedSubtasks
     );
     
@@ -544,6 +544,7 @@ class TaskManager {
       completed: false
     };
     
+    if (!todo.subtasks) todo.subtasks = [];
     todo.subtasks.push(subtask);
     return subtask;
   }
@@ -554,7 +555,7 @@ class TaskManager {
     
     if (!todo) return false;
     
-    const subtask = todo.subtasks.find(st => st.id === subtaskId);
+    const subtask = (todo.subtasks || []).find(st => st.id === subtaskId);
     if (!subtask) return false;
     
     subtask.completed = !subtask.completed;
@@ -567,7 +568,7 @@ class TaskManager {
     
     if (!todo) return false;
     
-    const index = todo.subtasks.findIndex(st => st.id === subtaskId);
+    const index = (todo.subtasks || []).findIndex(st => st.id === subtaskId);
     if (index === -1) return false;
     
     todo.subtasks.splice(index, 1);
