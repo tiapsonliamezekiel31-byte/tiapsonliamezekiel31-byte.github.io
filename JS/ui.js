@@ -14,6 +14,7 @@ class UIManager {
   static queuedAttackCount = 0;
   static dailyDragState = null;
   static dailyDragSuppressUntil = 0;
+  static dailyBloodOathTimer = null;
   static todoDragState = null;
   static todoDragSuppressUntil = 0;
   static quickDayDeadline = null; // timestamp or null – default deadline for new todos
@@ -2771,45 +2772,6 @@ class UIManager {
     });
     container.innerHTML = html;
 
-    // Attach long-press-to-edit handlers for daily cards (touch + mouse)
-    try {
-      const gs = getGameState();
-      const longPressMs = Number((gs && gs.config && (gs.config.longPressMs || gs.config.shopLongPressMs)) || 450);
-      const cards = container.querySelectorAll('.task-card-daily');
-      cards.forEach(card => {
-        let pressTimer = null;
-        let longPressed = false;
-
-        const toggleBloodOath = () => {
-          longPressed = true;
-          try { TaskManager.toggleBloodOath(card.dataset.id); } catch (e) { }
-          try { getGameState().save(); } catch (e) { }
-          this.scheduleUpdateDailiesList();
-          // mark briefly so delegated click handlers can ignore the click
-          card.dataset.longPressed = '1';
-          setTimeout(() => { delete card.dataset.longPressed; }, 700);
-        };
-
-        const startPress = (e) => {
-          if (e) try { e.preventDefault(); } catch (er) { }
-          longPressed = false;
-          clearTimeout(pressTimer);
-          pressTimer = setTimeout(toggleBloodOath, longPressMs);
-        };
-
-        const endPress = () => {
-          clearTimeout(pressTimer);
-        };
-
-        card.addEventListener('mousedown', startPress);
-        card.addEventListener('touchstart', startPress, { passive: false });
-        card.addEventListener('mouseup', endPress);
-        card.addEventListener('mouseleave', endPress);
-        card.addEventListener('touchend', endPress);
-        card.addEventListener('touchcancel', endPress);
-
-      });
-    } catch (e) { console.warn('Failed to bind long-press edit for dailies', e); }
 
     const completeDayBtn = document.getElementById('completeDayBtn');
     if (completeDayBtn) {
@@ -3335,87 +3297,53 @@ class UIManager {
 
       event.preventDefault();
 
-      let isLongPressed = false;
-      const startX = event.clientX;
-      const startY = event.clientY;
-
       try { card.setPointerCapture(event.pointerId); } catch (error) { }
 
-      const timer = setTimeout(() => {
-        isLongPressed = true;
-        
-        const cardRect = card.getBoundingClientRect();
-        this.dailyDragState = {
-          dailyId,
-          card,
-          board,
-          pointerId: event.pointerId,
-          offsetX: event.clientX - cardRect.left,
-          offsetY: event.clientY - cardRect.top,
-          moved: false,
-          startX: event.clientX,
-          startY: event.clientY
-        };
+      const boardRect = board.getBoundingClientRect();
+      const styleLeft = card.style.left || '0px';
+      const styleTop = card.style.top || '0px';
+      let startLeftPx = 0;
+      let startTopPx = 0;
 
-        card.classList.add('dragging');
-      }, 500);
+      if (styleLeft.includes('px')) {
+        startLeftPx = parseFloat(styleLeft) || 0;
+      } else {
+        startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
+      }
 
-      const onMoveDuringHold = (moveEvent) => {
-        if (moveEvent.pointerId !== event.pointerId) return;
-        if (!isLongPressed) {
-          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-          if (dist > 10) {
-            clearTimeout(timer);
-            cleanupHold();
-          }
+      if (styleTop.includes('px')) {
+        startTopPx = parseFloat(styleTop) || 0;
+      } else {
+        startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
+      }
+
+      this.dailyDragState = {
+        dailyId,
+        card,
+        board,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - (boardRect.left + startLeftPx),
+        offsetY: event.clientY - (boardRect.top + startTopPx),
+        moved: false,
+        startX: event.clientX,
+        startY: event.clientY,
+        startLeftPercent: styleLeft.includes('px') ? (startLeftPx / boardRect.width) * 100 : parseFloat(styleLeft) || 0,
+        startTopPercent: styleTop.includes('px') ? (startTopPx / boardRect.height) * 100 : parseFloat(styleTop) || 0
+      };
+
+      // Set up unified long-press timer for Blood Oath toggle
+      const longPressMs = Number((getGameState()?.config?.longPressMs || getGameState()?.config?.shopLongPressMs) || 450);
+      clearTimeout(this.dailyBloodOathTimer);
+      this.dailyBloodOathTimer = setTimeout(() => {
+        const dragState = this.dailyDragState;
+        if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
+          try { TaskManager.toggleBloodOath(dailyId); } catch (e) { }
+          try { getGameState().save(); } catch (e) { }
+          this.scheduleUpdateDailiesList();
+          card.dataset.longPressed = '1';
+          setTimeout(() => { delete card.dataset.longPressed; }, 700);
         }
-      };
-
-      const onUpDuringHold = (upEvent) => {
-        if (upEvent.pointerId !== event.pointerId) return;
-        clearTimeout(timer);
-        cleanupHold();
-
-        if (!isLongPressed) {
-          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-          if (editModeDailies) {
-            try { PopupsManager.showEditDaily(dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
-          } else {
-            const res = TaskManager.completeDaily(dailyId);
-            if (!res || !res.success) return;
-            try {
-              card.classList.add('just-completed');
-              card.style.transition = 'transform 220ms ease, opacity 400ms ease';
-              const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
-              card.style.transform = `scale(${sizeScale * 1.04})`;
-              if (res.rewards && res.rewards.ap) {
-                UIManager.showDailyApReward(card, res.rewards.ap);
-              }
-              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                RetroTaskCompleteAnimation.play(card);
-              }
-              setTimeout(() => {
-                this.scheduleUpdateDailiesList();
-              }, 320);
-            } catch (error) {
-              this.scheduleUpdateDailiesList();
-            }
-            try { getGameState().save(); } catch (saveError) { }
-            this.renderEnemies();
-          }
-        }
-      };
-
-      const cleanupHold = () => {
-        try { card.releasePointerCapture(event.pointerId); } catch (error) { }
-        document.removeEventListener('pointermove', onMoveDuringHold);
-        document.removeEventListener('pointerup', onUpDuringHold);
-        document.removeEventListener('pointercancel', onUpDuringHold);
-      };
-
-      document.addEventListener('pointermove', onMoveDuringHold);
-      document.addEventListener('pointerup', onUpDuringHold);
-      document.addEventListener('pointercancel', onUpDuringHold);
+      }, longPressMs);
     });
 
     const onMove = (event) => {
@@ -3424,23 +3352,32 @@ class UIManager {
       if (event.clientX === 0 && event.clientY === 0) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
-      const cardRect = dragState.card.getBoundingClientRect();
-      const maxLeft = Math.max(0, boardRect.width - cardRect.width);
-      const maxTop = Math.max(0, boardRect.height - cardRect.height);
-      const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
-      const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
 
       if (!dragState.moved) {
         const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
-        if (distance > 4) dragState.moved = true;
+        if (distance > 6) {
+          dragState.moved = true;
+          dragState.card.classList.add('dragging');
+          clearTimeout(this.dailyBloodOathTimer);
+        }
       }
 
-      dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
-      dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+      if (dragState.moved) {
+        const tileSize = this.getDailyCardSize();
+        const maxLeft = Math.max(0, boardRect.width - tileSize.width);
+        const maxTop = Math.max(0, boardRect.height - tileSize.height);
+        const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
+        const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
+
+        dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
+        dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+      }
     };
 
     const endDrag = (event) => {
       const dragState = this.dailyDragState;
+      clearTimeout(this.dailyBloodOathTimer);
+
       if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
@@ -3449,7 +3386,7 @@ class UIManager {
       try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
 
       if (dragState.moved) {
-        const tileSize = { width: cardRect.width, height: cardRect.height };
+        const tileSize = this.getDailyCardSize();
         const layout = this.clampDailyLayout({
           x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
           y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
@@ -3458,6 +3395,40 @@ class UIManager {
         TaskManager.updateDailyLayout(dragState.dailyId, layout);
         try { getGameState().save(); } catch (error) { }
         this.dailyDragSuppressUntil = Date.now() + 250;
+      } else {
+        // It was a tap/click!
+        const card = dragState.card;
+        if (card.dataset.longPressed === '1') {
+          // Ignore, Blood Oath was toggled via long press
+        } else {
+          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+          if (editModeDailies) {
+            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
+          } else {
+            const res = TaskManager.completeDaily(dragState.dailyId);
+            if (res && res.success) {
+              try {
+                card.classList.add('just-completed');
+                card.style.transition = 'transform 220ms ease, opacity 400ms ease';
+                const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
+                card.style.transform = `scale(${sizeScale * 1.04})`;
+                if (res.rewards && res.rewards.ap) {
+                  UIManager.showDailyApReward(card, res.rewards.ap);
+                }
+                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                  RetroTaskCompleteAnimation.play(card);
+                }
+                setTimeout(() => {
+                  this.scheduleUpdateDailiesList();
+                }, 320);
+              } catch (error) {
+                this.scheduleUpdateDailiesList();
+              }
+              try { getGameState().save(); } catch (saveError) { }
+              this.renderEnemies();
+            }
+          }
+        }
       }
 
       this.dailyDragState = null;
