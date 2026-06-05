@@ -213,6 +213,7 @@
       color: #f5f5f7;
       cursor: grab;
       z-index: 50;
+      touch-action: none;
     }
 
     .sticky-note.dragging {
@@ -1774,26 +1775,38 @@
 
         let isDragging = false;
         let offsetX, offsetY;
+        let activePointerId = null;
 
-        note.addEventListener('mousedown', (e) => {
+        note.addEventListener('pointerdown', (e) => {
           if (e.target.classList.contains('note-btn')) return;
+          if (e.button !== 0) return;
           isDragging = true;
+          activePointerId = e.pointerId;
           offsetX = e.clientX - note.offsetLeft;
           offsetY = e.clientY - note.offsetTop;
           note.classList.add('dragging');
+          try { note.setPointerCapture(e.pointerId); } catch (err) {}
         });
 
-        document.addEventListener('mousemove', (e) => {
-          if (isDragging) {
+        document.addEventListener('pointermove', (e) => {
+          if (isDragging && e.pointerId === activePointerId) {
+            if (e.clientX === 0 && e.clientY === 0) return;
             note.style.left = (e.clientX - offsetX) + 'px';
             note.style.top = (e.clientY - offsetY) + 'px';
           }
         });
 
-        document.addEventListener('mouseup', () => {
-          isDragging = false;
-          note.classList.remove('dragging');
-        });
+        const endDrag = (e) => {
+          if (isDragging && e.pointerId === activePointerId) {
+            isDragging = false;
+            activePointerId = null;
+            note.classList.remove('dragging');
+            try { note.releasePointerCapture(e.pointerId); } catch (err) {}
+          }
+        };
+
+        document.addEventListener('pointerup', endDrag);
+        document.addEventListener('pointercancel', endDrag);
 
         note.querySelector('button:nth-child(2)').addEventListener('click', () => {
           note.remove();

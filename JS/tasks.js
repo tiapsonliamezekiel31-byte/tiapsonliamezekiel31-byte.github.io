@@ -45,6 +45,7 @@ class TaskManager {
     const daily = {
       id: this.generateTaskId(),
       name,
+      baseName: name,
       difficulty,
       attribute,
       completed: false,
@@ -53,7 +54,9 @@ class TaskManager {
       maxCompletionsPerDay: Math.max(1, Number(maxCompletions) || 1),
       completionsToday: 0,
       size: 1,
-      layout: null
+      layout: null,
+      dailySurplusEnabled: false,
+      surplusMilestones: []
     };
     
     state.dailiesState.dailies.push(daily);
@@ -101,6 +104,15 @@ class TaskManager {
     if (updates.size !== undefined) {
       daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
     }
+    
+    if (updates.name !== undefined) {
+      daily.baseName = updates.name;
+    }
+
+    if (updates.surplusMilestones !== undefined) {
+      daily.dailySurplusEnabled = (updates.surplusMilestones.length > 0);
+    }
+
     Object.assign(daily, updates);
     if (updates.maxCompletionsPerDay !== undefined) {
       daily.maxCompletionsPerDay = Math.max(1, Number(updates.maxCompletionsPerDay) || 1);
@@ -108,6 +120,10 @@ class TaskManager {
     if (updates.size !== undefined) {
       daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
     }
+
+    // Refresh name prefix based on surplus and streak
+    this.updateDailySurplusState(daily);
+
     return true;
   }
   
@@ -140,6 +156,34 @@ class TaskManager {
       diamondReward *= state.config.bloodOathRewardMultiplier;
       attrReward *= state.config.bloodOathRewardMultiplier;
     }
+
+    // Apply surplus rewards multiplier
+    let surplusMultiplier = 1;
+    if (daily.dailySurplusEnabled) {
+      const streak = this.computeDailyStreak(daily.id);
+      const milestones = Array.isArray(daily.surplusMilestones) ? daily.surplusMilestones : [];
+      let milestonesReached = 0;
+      milestones.forEach(m => {
+        if (streak >= m.streak) {
+          milestonesReached++;
+        }
+      });
+      if (milestonesReached > 0) {
+        surplusMultiplier = Math.pow(1.5, milestonesReached);
+      }
+    }
+
+    if (daily.dailySurplusEnabled && surplusMultiplier > 1) {
+      apReward *= surplusMultiplier;
+      goldReward *= surplusMultiplier;
+      diamondReward *= surplusMultiplier;
+    }
+
+    // Round values to prevent floating point issues
+    apReward = this.roundValue(apReward, 1);
+    goldReward = this.roundValue(goldReward, 1);
+    diamondReward = this.roundValue(diamondReward, 1);
+    attrReward = this.roundValue(attrReward, 2);
     
     state.addAp(apReward);
     state.addGold(goldReward);
@@ -595,6 +639,62 @@ class TaskManager {
     const state = getGameState();
     return state.dailiesState.streakCompletion * state.config.perfectDayStreakDamageBonus;
   }
+
+  static computeDailyStreak(dailyId) {
+    const state = getGameState();
+    const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
+    let positive = 0;
+    let negative = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+      const entry = history[i];
+      const completed = Array.isArray(entry.completedDailies) && entry.completedDailies.some(d => String(d.id) === String(dailyId));
+      const missed = Array.isArray(entry.missedDailies) && entry.missedDailies.some(d => String(d.id) === String(dailyId));
+      if (completed) {
+        if (negative > 0) break;
+        positive++;
+        continue;
+      }
+      if (missed) {
+        if (positive > 0) break;
+        negative++;
+        continue;
+      }
+      break;
+    }
+    return positive > 0 ? positive : negative > 0 ? -negative : 0;
+  }
+
+  static updateDailySurplusState(daily) {
+    if (!daily.baseName) {
+      daily.baseName = daily.name;
+    }
+
+    if (!daily.dailySurplusEnabled) {
+      daily.name = daily.baseName;
+      return;
+    }
+
+    const streak = this.computeDailyStreak(daily.id);
+    const milestones = Array.isArray(daily.surplusMilestones) ? daily.surplusMilestones : [];
+    
+    // Sort ascending by streak threshold
+    const sortedMilestones = [...milestones].sort((a, b) => a.streak - b.streak);
+
+    let activeMilestone = null;
+    for (let i = 0; i < sortedMilestones.length; i++) {
+      if (streak >= sortedMilestones[i].streak) {
+        activeMilestone = sortedMilestones[i];
+      } else {
+        break;
+      }
+    }
+
+    if (activeMilestone && activeMilestone.name) {
+      daily.name = activeMilestone.name;
+    } else {
+      daily.name = daily.baseName;
+    }
+  }
   
   static resetDailies() {
     const state = getGameState();
@@ -608,6 +708,9 @@ class TaskManager {
     PlayerManager.recalculateMaxAp();
     
     state.dailiesState.dailies.forEach(daily => {
+      // Update surplus name prefix based on updated streak in history
+      this.updateDailySurplusState(daily);
+
       daily.completed = false;
       daily.bloodOath = false;
       daily.bloodOathActive = false;

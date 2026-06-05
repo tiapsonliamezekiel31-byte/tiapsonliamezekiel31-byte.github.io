@@ -1784,6 +1784,8 @@ class PopupsManager {
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup edit-daily-popup';
+    const currentStreak = TaskManager.computeDailyStreak(dailyId);
+    let currentMilestones = Array.isArray(daily.surplusMilestones) ? JSON.parse(JSON.stringify(daily.surplusMilestones)) : [];
 
     const attrs = state.config.attributes.map(a => `<option value="${a}" ${a===daily.attribute? 'selected':''}>${a}</option>`).join('');
     popup.innerHTML = `
@@ -1791,7 +1793,7 @@ class PopupsManager {
       <button class="btn-close">✕</button>
       <div class="popup-scrollable-body">
         <label>Name</label>
-        <input id="editName" value="${daily.name}" />
+        <input id="editName" value="${daily.baseName || daily.name}" />
         <label>Attribute</label>
         <select id="editAttr">${attrs}</select>
         <label>Difficulty</label>
@@ -1810,6 +1812,13 @@ class PopupsManager {
           <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
           <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
         </div>
+        <label>Daily Surplus</label>
+        <div class="surplus-row" style="margin-bottom: 12px; display: block;">
+          <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #a855f7; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
+            <div id="surplusStreakInfo" style="font-size: 11px; color: #a855f7; margin-bottom: 8px; font-family: monospace;"></div>
+            <div id="surplusMilestonesContainer"></div>
+          </div>
+        </div>
       </div>
       <div class="edit-daily-actions">
         <button class="btn-large" id="saveDaily">SAVE</button>
@@ -1821,13 +1830,91 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
+    const renderMilestonesList = () => {
+      const container = popup.querySelector('#surplusMilestonesContainer');
+      if (!container) return;
+
+      // Sort ascending by streak threshold
+      currentMilestones.sort((a, b) => a.streak - b.streak);
+
+      // Re-calculate the active multiplier and streak info label
+      let milestonesReached = 0;
+      currentMilestones.forEach(m => {
+        if (currentStreak >= m.streak) {
+          milestonesReached++;
+        }
+      });
+      const mult = milestonesReached > 0 ? Math.pow(1.5, milestonesReached) : 1.0;
+      const streakInfoEl = popup.querySelector('#surplusStreakInfo');
+      if (streakInfoEl) {
+        streakInfoEl.innerHTML = `Current Streak: <strong>${currentStreak} days</strong> (Multiplier: <strong>${mult.toFixed(2)}x</strong>)`;
+      }
+
+      let html = '<div class="milestones-list" style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 4px;">';
+      if (currentMilestones.length === 0) {
+        html += '<p style="font-size: 11px; color: #7a7a7a; margin: 0; font-family: monospace;">No streak milestones configured yet.</p>';
+      } else {
+        currentMilestones.forEach((m, idx) => {
+          html += `
+            <div class="milestone-item" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+              <span style="font-size: 11px; font-family: monospace; color: #f5f5f7;">Streak ${m.streak}d ➔ ${m.name}</span>
+              <button type="button" class="btn-remove-milestone" data-idx="${idx}" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 11px; font-family: monospace; padding: 2px 6px;">✕</button>
+            </div>
+          `;
+        });
+      }
+      html += '</div>';
+
+      // Input form to add a new milestone
+      html += `
+        <div class="add-milestone-form" style="margin-top: 10px; display: flex; gap: 6px; align-items: center;">
+          <input id="newMilestoneStreak" type="number" min="1" placeholder="Streak" style="width: 70px; font-size: 11px; padding: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
+          <input id="newMilestoneName" type="text" placeholder="Task name when reached" style="flex: 1; font-size: 11px; padding: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
+          <button type="button" id="btnAddMilestone" style="padding: 4px 8px; font-size: 10px; background: rgba(168,85,247,0.2); border: 1px solid #a855f7; color: #fff; cursor: pointer;">ADD</button>
+        </div>
+      `;
+
+      container.innerHTML = html;
+
+      // Attach delete handlers
+      container.querySelectorAll('.btn-remove-milestone').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.idx);
+          currentMilestones.splice(idx, 1);
+          renderMilestonesList();
+        });
+      });
+
+      // Attach add handler
+      container.querySelector('#btnAddMilestone').addEventListener('click', () => {
+        const streakVal = parseInt(container.querySelector('#newMilestoneStreak').value);
+        const nameVal = container.querySelector('#newMilestoneName').value.trim();
+        if (!streakVal || streakVal < 1 || !nameVal) {
+          return;
+        }
+        // Check if streak already exists
+        const existingIdx = currentMilestones.findIndex(m => m.streak === streakVal);
+        if (existingIdx !== -1) {
+          currentMilestones[existingIdx].name = nameVal;
+        } else {
+          currentMilestones.push({ streak: streakVal, name: nameVal });
+        }
+        renderMilestonesList();
+      });
+    };
+
+    // Initialize milestones rendering
+    renderMilestonesList();
+
     popup.querySelector('#saveDaily').addEventListener('click', () => {
       const updates = {
         name: popup.querySelector('#editName').value,
         attribute: popup.querySelector('#editAttr').value,
         difficulty: popup.querySelector('#editDiff').value,
         maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1),
-        size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1)
+        size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1),
+        dailySurplusEnabled: currentMilestones.length > 0,
+        surplusMilestones: currentMilestones
       };
       // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
       try {

@@ -1,13 +1,13 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "auto-deploy: commit pending changes"
+$commitMsg = "feat: style daily name, todo cards, subtasks, and fix enemy hp cutoff"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
 $triggerPagesRebuild = $false
 $confirmBeforePush = $false
-$pollLiveSwSecs = 0
+$pollLiveSwSecs = 30
 
 function Get-RepoInfo {
     $remoteUrl = git config --get remote.origin.url
@@ -80,14 +80,15 @@ git fetch origin $branch
 git log -5 --oneline origin/$branch
 
 # Fetch raw sw.js from repo and live site
-list $owner $repo = Get-RepoInfo
+$owner, $repo = Get-RepoInfo
 $rawUrl = "https://raw.githubusercontent.com/$owner/$repo/$branch/sw.js"
 $liveUrl = "https://$owner.github.io/$repo/sw.js"
 Write-Host "Fetching raw sw.js from $rawUrl"
 $rawContent = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing | Select-Object -ExpandProperty Content
 Write-Host "RAW CACHE_NAME:"
 ($rawContent -match "const CACHE_NAME = '([^']+)'") | Out-Null
-Write-Host $matches[1]
+$repoTag = $matches[1]
+Write-Host $repoTag
 Write-Host "Fetching live sw.js from $liveUrl"
 $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing | Select-Object -ExpandProperty Content
 ($liveContent -match "const CACHE_NAME = '([^']+)'") | Out-Null
@@ -97,15 +98,23 @@ Write-Host $matches[1]
 if ($pollLiveSwSecs -gt 0) {
     $maxAttempts = [Math]::Ceiling(300 / $pollLiveSwSecs)
     $attempt = 0
+    $liveTag = ""
     while ($attempt -lt $maxAttempts) {
+        Write-Host "Polling attempt $($attempt + 1) of $maxAttempts..."
         Start-Sleep -Seconds $pollLiveSwSecs
-        $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing | Select-Object -ExpandProperty Content
-        ($liveContent -match "const CACHE_NAME = '([^']+)'") | Out-Null
-        $liveTag = $matches[1]
-        if ($liveTag -eq $matches[1]) { break }
+        try {
+            $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing -ErrorAction Stop | Select-Object -ExpandProperty Content
+            if ($liveContent -match "const CACHE_NAME = '([^']+)'") {
+                $liveTag = $matches[1]
+                Write-Host "Live tag is: $liveTag"
+                if ($liveTag -eq $repoTag) { break }
+            }
+        } catch {
+            Write-Warning "Failed to fetch live sw.js: $_"
+        }
         $attempt++
     }
-    if ($liveTag -eq $matches[1]) { Write-Host "Live service worker matches repo tag." } else { Write-Warning "Live service worker did not update within timeout." }
+    if ($liveTag -eq $repoTag) { Write-Host "Live service worker matches repo tag ($repoTag)." } else { Write-Warning "Live service worker did not update within timeout (current: $liveTag, expected: $repoTag)." }
 }
 
 Write-Host "Deployment script completed."

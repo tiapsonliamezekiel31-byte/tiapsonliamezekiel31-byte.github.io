@@ -2675,6 +2675,9 @@ class UIManager {
     }
 
     const computeDailyStreak = (dailyId) => {
+      if (typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyStreak === 'function') {
+        return TaskManager.computeDailyStreak(dailyId);
+      }
       const state = getGameState();
       const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
       let positive = 0;
@@ -2740,12 +2743,30 @@ class UIManager {
       const strokeWidth = Math.min(6, 1 + Math.abs(streak));
       const progressText = `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
+
+      // Check for surplus multiplier indicator
+      let surplusIndicator = '';
+      if (daily.dailySurplusEnabled) {
+        const milestones = Array.isArray(daily.surplusMilestones) ? daily.surplusMilestones : [];
+        let milestonesReached = 0;
+        milestones.forEach(m => {
+          if (streak >= m.streak) {
+            milestonesReached++;
+          }
+        });
+        if (milestonesReached > 0) {
+          const mult = Math.pow(1.5, milestonesReached);
+          surplusIndicator = '<span class="task-surplus-indicator" title="Streak Multiplier Active: ' + mult.toFixed(2) + 'x" style="position: absolute; bottom: 4px; left: 4px; font-size: 8px; color: #ffd700; font-family: monospace; z-index: 2; text-shadow: 1px 1px 0px #000; letter-spacing: -0.5px;">⚡' + mult.toFixed(2) + 'x</span>';
+        }
+      }
+
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;">';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
       html += '<div class="task-shape-progress">' + progressText + '</div>';
+      if (surplusIndicator) html += surplusIndicator;
       html += '</div>';
     });
     container.innerHTML = html;
@@ -2960,6 +2981,8 @@ class UIManager {
           const startX = event.clientX;
           const startY = event.clientY;
 
+          try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
+
           const timer = setTimeout(() => {
             isLongPressed = true;
             if (isFocused && textEl) {
@@ -2987,11 +3010,11 @@ class UIManager {
 
             noteEl.classList.add('dragging');
             noteEl.dataset.dragState = JSON.stringify(dragState);
-            try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
           }, 500);
 
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
+            if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
             if (!isLongPressed) {
               const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
               if (dist > 10) {
@@ -3028,7 +3051,6 @@ class UIManager {
 
               noteEl.classList.remove('dragging');
               noteEl.removeAttribute('data-drag-state');
-              try { noteEl.releasePointerCapture(current.pointerId); } catch (error) { }
 
               if (current.moved) {
                 state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
@@ -3050,6 +3072,7 @@ class UIManager {
           };
 
           const cleanup = () => {
+            try { noteEl.releasePointerCapture(event.pointerId); } catch (error) { }
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
             document.removeEventListener('pointercancel', onUp);
@@ -3161,6 +3184,8 @@ class UIManager {
           const startX = event.clientX;
           const startY = event.clientY;
 
+          try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
+
           const timer = setTimeout(() => {
             isLongPressed = true;
             if (isFocused && textEl) {
@@ -3188,11 +3213,11 @@ class UIManager {
 
             noteEl.classList.add('dragging');
             noteEl.dataset.dragState = JSON.stringify(dragState);
-            try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
           }, 500);
 
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
+            if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
             if (!isLongPressed) {
               const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
               if (dist > 10) {
@@ -3229,7 +3254,6 @@ class UIManager {
 
               noteEl.classList.remove('dragging');
               noteEl.removeAttribute('data-drag-state');
-              try { noteEl.releasePointerCapture(current.pointerId); } catch (error) { }
 
               if (current.moved) {
                 state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
@@ -3251,6 +3275,7 @@ class UIManager {
           };
 
           const cleanup = () => {
+            try { noteEl.releasePointerCapture(event.pointerId); } catch (error) { }
             document.removeEventListener('pointermove', onMove);
             document.removeEventListener('pointerup', onUp);
             document.removeEventListener('pointercancel', onUp);
@@ -3314,6 +3339,8 @@ class UIManager {
       const startX = event.clientX;
       const startY = event.clientY;
 
+      try { card.setPointerCapture(event.pointerId); } catch (error) { }
+
       const timer = setTimeout(() => {
         isLongPressed = true;
         
@@ -3331,7 +3358,6 @@ class UIManager {
         };
 
         card.classList.add('dragging');
-        try { card.setPointerCapture(event.pointerId); } catch (error) { }
       }, 500);
 
       const onMoveDuringHold = (moveEvent) => {
@@ -3381,6 +3407,7 @@ class UIManager {
       };
 
       const cleanupHold = () => {
+        try { card.releasePointerCapture(event.pointerId); } catch (error) { }
         document.removeEventListener('pointermove', onMoveDuringHold);
         document.removeEventListener('pointerup', onUpDuringHold);
         document.removeEventListener('pointercancel', onUpDuringHold);
@@ -3394,6 +3421,7 @@ class UIManager {
     const onMove = (event) => {
       const dragState = this.dailyDragState;
       if (!dragState || event.pointerId !== dragState.pointerId) return;
+      if (event.clientX === 0 && event.clientY === 0) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
       const cardRect = dragState.card.getBoundingClientRect();
@@ -3608,6 +3636,8 @@ class UIManager {
 
         event.preventDefault();
 
+        try { card.setPointerCapture(event.pointerId); } catch (error) { }
+
         const timer = setTimeout(() => {
           isLongPressed = true;
 
@@ -3701,7 +3731,6 @@ class UIManager {
               c.classList.add('dragging');
             });
           }
-          try { card.setPointerCapture(event.pointerId); } catch (error) { }
         }, 500);
 
         const onMove = (moveEvent) => {
@@ -3746,6 +3775,7 @@ class UIManager {
         };
 
         const cleanup = () => {
+          try { card.releasePointerCapture(event.pointerId); } catch (error) { }
           document.removeEventListener('pointermove', onMove);
           document.removeEventListener('pointerup', onUp);
           document.removeEventListener('pointercancel', onUp);
@@ -3801,6 +3831,7 @@ class UIManager {
     const onMove = (event) => {
       const dragState = this.todoDragState;
       if (!dragState || event.pointerId !== dragState.pointerId) return;
+      if (event.clientX === 0 && event.clientY === 0) return;
 
       const boardRect = dragState.board.getBoundingClientRect();
       const minXPx = 20;
@@ -4192,7 +4223,7 @@ class UIManager {
     if (hpFillEl) hpFillEl.style.width = hpPercent + '%';
 
     const hpTextEl = card.querySelector('.enemy-hptext');
-    if (hpTextEl) hpTextEl.textContent = `${Math.ceil(enemy.hp || 0)} / ${Math.ceil(enemy.maxHp || 0)}`;
+    if (hpTextEl) hpTextEl.textContent = `${Math.ceil(enemy.hp || 0)}/${Math.ceil(enemy.maxHp || 0)}`;
 
     const dodgeMarkerEl = card.querySelector('.dodge-marker');
     if (dodgeMarkerEl) dodgeMarkerEl.style.display = showDodgeMarker ? '' : 'none';
