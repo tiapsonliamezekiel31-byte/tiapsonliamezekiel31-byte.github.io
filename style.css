@@ -5018,7 +5018,7 @@ button:hover,
     border-radius: 12px;
     padding: 24px 36px;
     text-align: center;
-    box-shadow: none !important;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.85), 0 0 15px var(--skill-color) !important;
     pointer-events: none;
     opacity: 0;
     animation: skillPopupIntro 3.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
