@@ -490,6 +490,33 @@ class CombatManager {
           state.addGold(goldDrop);
           PlayerManager.incrementKillTags(weapon.name);
 
+          // Roll for lootbox key drop (15% chance)
+          if (Math.random() < 0.15) {
+            state.addLootboxKeys(1);
+            try {
+              if (window.SoundManager) {
+                SoundManager.play('coin');
+              }
+            } catch (e) {}
+            try {
+              if (typeof FloatingDamageNumber !== 'undefined' && typeof FloatingDamageNumber.show === 'function') {
+                const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${tgt.id}"]`);
+                let tx = window.innerWidth / 2;
+                let ty = window.innerHeight / 2;
+                if (targetCard) {
+                  const rect = targetCard.getBoundingClientRect();
+                  tx = rect.left + rect.width / 2;
+                  ty = rect.top + rect.height / 2;
+                }
+                FloatingDamageNumber.show(tx, ty - 60, '+1 Lootbox Key 🔑', {
+                  color: '#ffb33f',
+                  scale: 1.1,
+                  duration: 1500
+                });
+              }
+            } catch (e) {}
+          }
+
           // Apply kill-based buffs per kill
           if (state.hasBuff('Bloodlust')) {
             state.addHp(5);

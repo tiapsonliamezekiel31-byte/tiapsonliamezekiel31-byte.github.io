@@ -1152,8 +1152,18 @@ class RetroTaskCompleteAnimation {
 
     const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
-    const burstCount = lowPower ? 10 : 20;
-    const colors = ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
+    
+    // Retrieve task difficulty from TaskManager
+    const taskId = element?.dataset?.id;
+    const task = (taskId && typeof TaskManager !== 'undefined') ? TaskManager.getTaskById(taskId) : null;
+    const difficulty = task ? task.difficulty : 'Easy';
+    const isHard = (difficulty === 'Hard' || difficulty === 'Ultra');
+
+    // Scale options by difficulty
+    const burstCount = isHard ? (lowPower ? 30 : 60) : (lowPower ? 15 : 30);
+    const colors = isHard 
+      ? ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF'] 
+      : ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
 
     // Determine center; fallback to screen center if no rect
     let cx = window.innerWidth / 2;
@@ -1167,10 +1177,39 @@ class RetroTaskCompleteAnimation {
       }
     }
 
-    // Particle burst
+    // Play radial shockwave ring from element center
+    if (rect && rect.width > 0 && rect.height > 0) {
+      const shockwave = document.createElement('div');
+      shockwave.className = isHard ? 'task-complete-shockwave rainbow' : 'task-complete-shockwave';
+      shockwave.style.left = `${cx}px`;
+      shockwave.style.top = `${cy}px`;
+      shockwave.style.width = `${rect.width}px`;
+      shockwave.style.height = `${rect.height}px`;
+      document.body.appendChild(shockwave);
+
+      requestAnimationFrame(() => {
+        shockwave.classList.add('active');
+      });
+
+      setTimeout(() => {
+        try { shockwave.remove(); } catch (e) {}
+      }, 850);
+    }
+
+    // Play screen flash & shake (juicy feedback)
+    if (typeof ScreenEffects !== 'undefined') {
+      if (ScreenEffects.flash) {
+        ScreenEffects.flash(isHard ? 'rgba(255, 51, 102, 0.16)' : 'rgba(255, 215, 0, 0.12)', 200);
+      }
+      if (ScreenEffects.shake) {
+        ScreenEffects.shake(isHard ? 14 : 6, isHard ? 250 : 160);
+      }
+    }
+
+    // Spawn traveling particles
     for(let i = 0; i < burstCount; i++) {
       const square = document.createElement('div');
-      const size = (10 + Math.random() * 12) * scaleFactor;
+      const size = (8 + Math.random() * 15) * scaleFactor;
       const color = colors[Math.floor(Math.random() * colors.length)];
       
       square.style.cssText = `
@@ -1182,21 +1221,21 @@ class RetroTaskCompleteAnimation {
         background: ${color};
         pointer-events: none;
         z-index: 999998;
+        box-shadow: 0 0 8px ${color};
         will-change: transform, opacity;
       `;
       container.appendChild(square);
       
-      // Arc motion variables
-      const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.5);
-      const velocity = 4 + Math.random() * 5;
+      const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.4 - 0.2);
+      const velocity = 5 + Math.random() * 8;
       let vx = Math.cos(angle) * velocity;
-      let vy = Math.sin(angle) * velocity - 3; // initial upward bias
+      let vy = Math.sin(angle) * velocity - 4; // upward bias
       
       let x = cx;
       let y = cy;
       let life = 1.0;
-      const decay = 0.012 + Math.random() * 0.008; // slightly longer life
-      const gravity = 0.18;
+      const decay = 0.005 + Math.random() * 0.004;
+      const gravity = 0.2;
       
       const animateParticle = () => {
         vy += gravity;
@@ -1208,7 +1247,7 @@ class RetroTaskCompleteAnimation {
           square.style.transform = `translate3d(${x - size/2}px, ${y - size/2}px, 0) scale(${life})`;
           requestAnimationFrame(animateParticle);
         } else {
-          square.remove();
+          try { square.remove(); } catch (e) {}
         }
       };
       requestAnimationFrame(animateParticle);
@@ -1529,123 +1568,41 @@ class RetroHealAnimation {
 }
 
 class RetroCritSlashAnimation {
-  static play(cardElement) {
+  static play(cardElement, elementColor = '#ffb33f') {
     if (!cardElement) return;
-
-    const container = document.body;
     const rect = cardElement.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-
-    const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
-    const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
-
-    // 1. Heavy screen effects
-    if (typeof ScreenEffects !== 'undefined') {
-      ScreenEffects.shake(12, 200);
-      ScreenEffects.flash('rgba(255, 0, 68, 0.18)', 150);
-    }
-
-    // Coordinate overlapping animations on the card
-    const origTransform = cardElement.dataset.originalTransform !== undefined 
-      ? cardElement.dataset.originalTransform 
-      : (cardElement.style.transform || 'translate(-50%, -50%)');
-      
-    if (cardElement.dataset.originalTransform === undefined) {
-      cardElement.dataset.originalTransform = origTransform;
-    }
     
-    cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
+    // Create the absolute wrapper matching card bounds
+    const wrapper = document.createElement('div');
+    wrapper.className = 'crit-slash-wrapper';
+    wrapper.style.left = `${rect.left}px`;
+    wrapper.style.top = `${rect.top}px`;
+    wrapper.style.width = `${rect.width}px`;
+    wrapper.style.height = `${rect.height}px`;
+    wrapper.style.setProperty('--slash-color', elementColor);
     
-    if (cardElement.animResetTimeout) {
-      clearTimeout(cardElement.animResetTimeout);
-    }
-
-    const resetCard = () => {
-      cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
-      if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
-        cardElement.style.transform = cardElement.dataset.originalTransform;
-        cardElement.style.transition = '';
-        cardElement.style.opacity = '';
-        cardElement.style.willChange = '';
-        delete cardElement.dataset.originalTransform;
-        delete cardElement.dataset.activeAnimsCount;
-      }
-    };
-
-    // 1-second safety fallback: force reset after 1s of inactivity
-    cardElement.animResetTimeout = setTimeout(() => {
-      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
-      cardElement.style.transition = '';
-      cardElement.style.opacity = '';
-      cardElement.style.willChange = '';
-      delete cardElement.dataset.originalTransform;
-      delete cardElement.dataset.activeAnimsCount;
-    }, 1000);
-
-    // 2. Snap scale card with skew for distortion
-    cardElement.style.transition = 'none';
-    cardElement.style.willChange = 'transform';
-    cardElement.style.transform = `${origTransform} scale(1.18) skew(4deg, 4deg)`;
+    // Create the two slashes
+    const slash1 = document.createElement('div');
+    slash1.className = 'crit-slash-line slash-1';
     
+    const slash2 = document.createElement('div');
+    slash2.className = 'crit-slash-line slash-2';
+    
+    wrapper.appendChild(slash1);
+    wrapper.appendChild(slash2);
+    document.body.appendChild(wrapper);
+    
+    // Trigger card shake
+    cardElement.classList.add('crit-shaking');
+    
+    // Remove classes and elements after animation finishes
     setTimeout(() => {
-      cardElement.style.transform = `${origTransform} scale(0.92) skew(-2deg, -2deg)`;
-      setTimeout(() => {
-        resetCard();
-      }, 100);
-    }, 80);
+      try { cardElement.classList.remove('crit-shaking'); } catch (e) {}
+    }, 260);
 
-    // 3. Double diagonal X-slash particles
-    const slashLength = Math.min(rect.width, rect.height) * 0.95;
-    const steps = lowPower ? 6 : 10;
-    
-    const drawSlash = (angleRad) => {
-      for (let i = 0; i < steps; i++) {
-        const sq = document.createElement('div');
-        const size = (16 + Math.random() * 8) * scaleFactor; // larger bolder particles
-        
-        const offset = (i - steps / 2) * (slashLength / steps);
-        const px = cx + Math.cos(angleRad) * offset;
-        const py = cy + Math.sin(angleRad) * offset;
-
-        sq.style.cssText = `
-          position: fixed;
-          left: ${px - size / 2}px;
-          top: ${py - size / 2}px;
-          width: ${size}px;
-          height: ${size}px;
-          background: #ff0044;
-          border: 2px solid #ffd700;
-          box-shadow: 0 0 12px rgba(255, 0, 68, 0.6);
-          pointer-events: none;
-          z-index: 13500;
-          will-change: transform, opacity;
-          border-radius: 2px;
-        `;
-        container.appendChild(sq);
-
-        // Sequence delays to simulate a cutting motion
-        const delay = i * 15;
-        setTimeout(() => {
-          const start = performance.now();
-          const duration = 250;
-          const animate = () => {
-            const progress = Math.min(1, (performance.now() - start) / duration);
-            sq.style.transform = `scale(${1.2 - progress * 1.2}) rotate(${progress * 90}deg)`;
-            sq.style.opacity = 1 - progress;
-            if (progress < 1) requestAnimationFrame(animate);
-            else sq.remove();
-          };
-          requestAnimationFrame(animate);
-        }, delay);
-      }
-    };
-
-    // Draw both diagonals of the X
-    drawSlash(-Math.PI / 4); // Top-left to bottom-right
     setTimeout(() => {
-      drawSlash(Math.PI / 4);  // Bottom-left to top-right
-    }, 60); // slightly staggered for maximum style
+      try { wrapper.remove(); } catch (e) {}
+    }, 450);
   }
 }
 
@@ -1889,6 +1846,66 @@ class RetroResistanceAnimation {
         square.remove();
       }
     };
+    requestAnimationFrame(animate);
+  }
+}
+
+class DodgeTetherAnimation {
+  static play(fromX, fromY, cardElement) {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    
+    // Create projectile
+    const proj = document.createElement('div');
+    proj.className = 'dodge-tether-projectile';
+    proj.style.left = `${fromX}px`;
+    proj.style.top = `${fromY}px`;
+    document.body.appendChild(proj);
+    
+    const startTime = performance.now();
+    const duration = 250; // 250ms
+    
+    const animate = () => {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      
+      const curX = fromX + (cx - fromX) * progress;
+      const curY = fromY + (cy - fromY) * progress;
+      
+      proj.style.left = `${curX}px`;
+      proj.style.top = `${curY}px`;
+      proj.style.transform = `translate(-50%, -50%) scale(${1 + progress * 0.3})`;
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        proj.remove();
+        
+        // Spawn collapsing forcefield
+        const ff = document.createElement('div');
+        ff.className = 'dodge-tether-forcefield';
+        ff.style.left = `${cx}px`;
+        ff.style.top = `${cy}px`;
+        ff.style.width = `${rect.width}px`;
+        ff.style.height = `${rect.height}px`;
+        document.body.appendChild(ff);
+        
+        // Trigger transition to active state
+        requestAnimationFrame(() => {
+          ff.classList.add('active');
+        });
+        
+        // Keep active for 1.2s, then fade out
+        setTimeout(() => {
+          ff.classList.remove('active');
+          ff.classList.add('fade-out');
+          setTimeout(() => ff.remove(), 300);
+        }, 1200);
+      }
+    };
+    
     requestAnimationFrame(animate);
   }
 }

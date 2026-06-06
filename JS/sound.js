@@ -56,6 +56,8 @@ class SoundManager {
         case 'coin': this._playSequence([1000,1200], [0.04,0.06], 'triangle', 0.14); break;
         case 'checkin': this._playSequence([400,520,660], [0.06,0.08,0.12], 'sine', 0.12); break;
         case 'death': this._playSequence([200,160,120], [0.12,0.12,0.18], 'sine', 0.18); break;
+        case 'lootbox_drop': this._playSequence([300, 450, 600], [0.08, 0.08, 0.12], 'sine', 0.15); break;
+        case 'lootbox_open': this._playSequence([500, 650, 800, 950, 1100], [0.06, 0.06, 0.06, 0.08, 0.15], 'triangle', 0.2); break;
         default: this._playTone(600, 0.05, 'sine', 0.08); break;
       }
     } catch (e) { console.warn('Sound play failed', e); }

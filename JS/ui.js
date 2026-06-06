@@ -657,6 +657,14 @@ class UIManager {
     shopBtn.innerHTML = '🛒 SHOP';
     document.body.appendChild(shopBtn);
 
+    const lootboxBtn = document.createElement('button');
+    lootboxBtn.id = 'lootboxBtn';
+    lootboxBtn.className = 'floating-lootbox-btn';
+    const state = getGameState();
+    const keys = state?.playerState?.lootboxKeys || 0;
+    lootboxBtn.innerHTML = `🎁 LOOTBOX (${keys})`;
+    document.body.appendChild(lootboxBtn);
+
     panel.querySelector('.shop-close').addEventListener('click', () => this.closeShop());
     // close when clicking overlay outside the panel
     overlay.addEventListener('click', (e) => {
@@ -1011,6 +1019,7 @@ class UIManager {
     state.eventBus.on(EVENTS.AP_CHANGED, (detail) => this.updateApBar(detail));
     state.eventBus.on(EVENTS.GOLD_CHANGED, (detail) => this.updateGoldDisplay(detail));
     state.eventBus.on(EVENTS.DIAMONDS_CHANGED, (detail) => this.updateDiamondDisplay(detail));
+    state.eventBus.on(EVENTS.LOOTBOX_KEYS_CHANGED, (detail) => this.updateLootboxKeysDisplay(detail));
     state.eventBus.on(EVENTS.DEATH_DEFIANCE, (detail) => this.updateDeathDefianceBadge(detail));
     state.eventBus.on(EVENTS.GAME_LOAD, () => { this.updateDeathDefianceBadge(); this.updateConsumableStrip && this.updateConsumableStrip(); this.renderBuffPanel && this.renderBuffPanel(); });
     state.eventBus.on(EVENTS.GAME_SAVE, () => { this.updateConsumableStrip && this.updateConsumableStrip(); });
@@ -1194,6 +1203,25 @@ class UIManager {
     document.getElementById('pauseBtn').addEventListener('click', () => this.handlePauseClick());
     document.getElementById('plannerBtn').addEventListener('click', () => window.location.href = 'planner.html');
     document.getElementById('shopBtn').addEventListener('click', () => this.toggleShopPanel());
+    const lootboxBtnEl = document.getElementById('lootboxBtn');
+    if (lootboxBtnEl) {
+      lootboxBtnEl.addEventListener('click', () => {
+        const gs = getGameState();
+        const keys = gs.playerState.lootboxKeys || 0;
+        if (keys <= 0) {
+          try {
+            if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Requires 1 Lootbox Key 🔑', { color: '#ff6666' });
+            }
+          } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          return;
+        }
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showLootbox === 'function') {
+          PopupsManager.showLootbox();
+        }
+      });
+    }
     document.getElementById('diamondRewardsBtn').addEventListener('click', () => {
       try { UIManager.showDiamondRewards(); } catch (e) { console.warn('Failed to open diamond rewards popup', e); }
     });
@@ -1556,6 +1584,14 @@ class UIManager {
   static updateDiamondDisplay(detail) {
     const diamondEl = document.getElementById('diamondValue');
     if (diamondEl) diamondEl.textContent = Math.ceil(Number(detail?.newDiamonds) || 0);
+  }
+
+  static updateLootboxKeysDisplay(detail) {
+    const btn = document.getElementById('lootboxBtn');
+    if (btn) {
+      const keys = Math.ceil(Number(detail?.newKeys) || 0);
+      btn.innerHTML = `🎁 LOOTBOX (${keys})`;
+    }
   }
 
   static showDiamondRewards() {
@@ -2130,6 +2166,10 @@ class UIManager {
                 });
               } catch (e) {}
             }
+
+            if (hit.isCrit && typeof RetroCritSlashAnimation !== 'undefined') {
+              RetroCritSlashAnimation.play(targetCard, elementColor);
+            }
           }
 
           if (typeof RetroHitAnimation !== 'undefined') {
@@ -2603,6 +2643,26 @@ class UIManager {
         state.combatState.dodgeTarget = [...new Set([...currentDodges, ...newDodges])];
 
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+        // Trigger dodge tether animation for each target
+        try {
+          const spinner = document.getElementById('spinner');
+          if (spinner) {
+            const spinRect = spinner.getBoundingClientRect();
+            const sx = spinRect.left + spinRect.width / 2;
+            const sy = spinRect.top + spinRect.height / 2;
+            
+            targets.forEach(enemy => {
+              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+              if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                DodgeTetherAnimation.play(sx, sy, card);
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('Failed to play DodgeTetherAnimation', e);
+        }
+
         this.renderEnemies();
       } else {
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Miss!', { color: '#ff4444' });
@@ -4435,6 +4495,7 @@ class UIManager {
       this.updateApBar({ oldAp: state.playerState?.ap, newAp: state.playerState?.ap, maxAp: state.playerState?.maxAp });
       this.updateGoldDisplay({ oldGold: state.playerState?.gold, newGold: state.playerState?.gold });
       this.updateDiamondDisplay({ oldDiamonds: state.playerState?.diamonds, newDiamonds: state.playerState?.diamonds });
+      this.updateLootboxKeysDisplay({ oldKeys: state.playerState?.lootboxKeys, newKeys: state.playerState?.lootboxKeys });
     } catch (e) {
       console.warn('refreshGameUI: failed to sync resources', e);
     }

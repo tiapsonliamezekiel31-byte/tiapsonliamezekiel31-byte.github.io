@@ -43,6 +43,7 @@ const EVENTS = {
   AP_CHANGED: 'resource:apChanged',
   GOLD_CHANGED: 'resource:goldChanged',
   DIAMONDS_CHANGED: 'resource:diamondsChanged',
+  LOOTBOX_KEYS_CHANGED: 'resource:lootboxKeysChanged',
   
   // Tasks
   TASK_COMPLETED: 'task:completed',
@@ -143,6 +144,7 @@ class GameState {
       maxAp: 0, // MAX_AP (sum of daily rewards if completed)
       gold: 0,
       diamonds: 0,
+      lootboxKeys: 0,
       attributes: {
         STR: { points: 0, level: 1 },
         INT: { points: 0, level: 1 },
@@ -248,6 +250,7 @@ class GameState {
     this.playerState.maxAp = 0;
     this.playerState.gold = 0;
     this.playerState.diamonds = 0;
+    this.playerState.lootboxKeys = 0;
     this.playerState.attributes = {
       STR: { points: 0, level: 1 },
       INT: { points: 0, level: 1 },
@@ -409,6 +412,25 @@ class GameState {
 
   spendDiamonds(amount) {
     this.setDiamonds(this.playerState.diamonds - amount);
+  }
+
+  setLootboxKeys(newVal) {
+    const old = this.playerState.lootboxKeys || 0;
+    this.playerState.lootboxKeys = Math.max(0, Math.round(Number(newVal) || 0));
+    if (old !== this.playerState.lootboxKeys) {
+      this.eventBus.emit(EVENTS.LOOTBOX_KEYS_CHANGED, {
+        oldKeys: old,
+        newKeys: this.playerState.lootboxKeys
+      });
+    }
+  }
+
+  addLootboxKeys(amount) {
+    this.setLootboxKeys((this.playerState.lootboxKeys || 0) + amount);
+  }
+
+  spendLootboxKeys(amount) {
+    this.setLootboxKeys((this.playerState.lootboxKeys || 0) - amount);
   }
   
   // Attributes
