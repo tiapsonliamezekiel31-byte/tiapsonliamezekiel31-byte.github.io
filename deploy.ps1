@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: element weakness and resistance animation matching for grade C"
+$commitMsg = "feat: add enemy attack flash & shake animation to cards during check-in"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
