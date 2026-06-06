@@ -210,8 +210,8 @@ class StageManager {
     state.stageState.enemies = [];
     state.stageState.bossData = {
       name: bossName,
-      hp: state.playerState.maxAp * 5 * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName) * DEFAULT_GAME_CONFIG.enemyHpMultiplier,
-      maxHp: state.playerState.maxAp * 5 * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName) * DEFAULT_GAME_CONFIG.enemyHpMultiplier,
+      hp: state.playerState.maxAp * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName),
+      maxHp: state.playerState.maxAp * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName),
       phase: 1,
       special: special,
       daysSurvived: 0
@@ -406,17 +406,7 @@ class StageManager {
       return rebuilt;
     });
 
-    // If any rallyist mutators were saved, recompute and apply rallyist buff additively
-    try {
-      const all = state.stageState.enemies || [];
-      const rallyCount = all.reduce((acc, e) => acc + ((e && Array.isArray(e.mutators) && e.mutators.includes('rallyist')) ? 1 : 0), 0);
-      if (rallyCount > 0) {
-        state.stageState.rallyistCount = rallyCount;
-        EnemyManager.applyRallyistBuffToAll(rallyCount);
-      }
-    } catch (e) {
-      console.warn('Failed to reapply saved rallyist buffs', e);
-    }
+
 
     this.syncUI();
   }

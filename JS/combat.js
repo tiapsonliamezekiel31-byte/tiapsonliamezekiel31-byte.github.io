@@ -73,10 +73,19 @@ class WeaponAttack {
     damage *= (1 + comboBonus);
     
     // × resistance/weakness multiplier
+    let elementMult = 1.0;
     const weaknessMultiplier = resolveWeaponWeaknessMultiplier(target, this.weaponElement);
     if (weaknessMultiplier !== 1) {
-      damage *= weaknessMultiplier;
+      elementMult *= weaknessMultiplier;
     }
+    const resistanceMultiplier = resolveWeaponResistanceMultiplier(target, this.weaponElement);
+    if (resistanceMultiplier !== 1) {
+      const ignoresResistance = (passive && passive.ignoreResistances) || state.hasBuff('Catalyzer');
+      if (!ignoresResistance) {
+        elementMult *= resistanceMultiplier;
+      }
+    }
+    damage *= elementMult;
     
     // Apply buffs
     if (state.hasBuff('Sharp Edge')) {
@@ -124,26 +133,26 @@ class WeaponAttack {
 }
 
 function resolveWeaponWeaknessMultiplier(target, weaponElement) {
-  if (!target || !target.weak) return 1;
+  if (!target || !target.weak || !weaponElement) return 1;
   const weaknessEntries = String(target.weak).split(',').map(part => part.trim()).filter(Boolean);
   if (!weaknessEntries.length) return 1;
 
-  if (weaponElement) {
-    const matchedEntry = weaknessEntries.find(entry => entry.startsWith(weaponElement));
-    return matchedEntry ? target.getWeaknessMultiplier(matchedEntry) : 1;
-  }
+  const matchedEntry = weaknessEntries.find(entry => entry.startsWith(weaponElement));
+  return matchedEntry ? target.getWeaknessMultiplier(matchedEntry) : 1;
+}
 
-  return target.getWeaknessMultiplier(target.weak);
+function resolveWeaponResistanceMultiplier(target, weaponElement) {
+  if (!target || !target.resist || !weaponElement) return 1;
+  const resistanceEntries = String(target.resist).split(',').map(part => part.trim()).filter(Boolean);
+  if (!resistanceEntries.length) return 1;
+
+  const matchedEntry = resistanceEntries.find(entry => entry.startsWith(weaponElement));
+  return matchedEntry ? target.getResistanceMultiplier(matchedEntry) : 1;
 }
 
 class CombatManager {
   static calculateAttackImpactDelay(damage, target) {
-    const maxHp = Math.max(1, Number(target?.maxHp || 0));
-    const ratio = Math.max(0, Math.min(1, damage / maxHp));
-    // Base impact delay scales with damage ratio (originally 80..320ms).
-    // Double the delay globally so impacts feel slower (now 160..640ms).
-    const base = Math.round(80 + (ratio * 240));
-    return Math.max(160, Math.min(640, base * 2));
+    return 0;
   }
 
   static previewAttackImpact(weaponIndex, targetEnemyId, attackOptions = {}) {
@@ -341,6 +350,9 @@ class CombatManager {
       const tgt = entry.enemy;
       if (!tgt || tgt.isDead) return;
 
+      const weaknessMatch = Boolean(attackPlan.weaponElement && tgt.weak && String(tgt.weak).split(',').map(p => p.trim().split(' ')[0]).includes(attackPlan.weaponElement));
+      const resistanceMatch = Boolean(attackPlan.weaponElement && tgt.resist && String(tgt.resist).split(',').map(p => p.trim().split(' ')[0]).includes(attackPlan.weaponElement));
+
       let damage = attackPlan.calculateDamage(tgt, isCrit, { comboCount: state.combatState.currentCombo });
       // apply weapon-specific damage upgrades (combined multiplicative)
       if (dmgUp && dmgUp > 0) {
@@ -403,7 +415,10 @@ class CombatManager {
           enemyId: tgt.id,
           damage: enforcedDamage,
           isCrit: isCrit,
-          isDead: tgt.isDead
+          isDead: tgt.isDead,
+          weaknessMatch,
+          resistanceMatch,
+          element: attackPlan.weaponElement
         });
 
         if (attackPlan.specialId === 'vine') {
@@ -521,7 +536,10 @@ class CombatManager {
           enemyId: tgt.id,
           damage: enforcedDamage,
           isCrit: isCrit,
-          isDead: false
+          isDead: false,
+          weaknessMatch,
+          resistanceMatch,
+          element: attackPlan.weaponElement
         });
 
         if (isCrit && weapon.name === 'Thunder Hammer' && !tgt.isDead) {

@@ -125,12 +125,11 @@ class Enemy {
     this.statusEffects = {};
     this.daysAlive = 0;
     
-    // HP scaling: (MAX_AP × 5 × stage_HP% × enemy_HP_multiplier) / (number_of_enemies)
-    // Will be set later when we know number of enemies
+    // HP scaling: MAX_AP × stage_HP% × enemy_HP_multiplier
     const stagePercentage = DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100;
     const hpMultiplier = baseData.hpMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyHpMultiplier : 1);
     
-    this.baseMaxHp = maxAp * 5 * stagePercentage * hpMultiplier * DEFAULT_GAME_CONFIG.enemyHpMultiplier;
+    this.baseMaxHp = maxAp * stagePercentage * hpMultiplier;
     this.maxHp = this.baseMaxHp;
     this.hp = this.maxHp;
     
@@ -141,8 +140,7 @@ class Enemy {
   }
   
   setEnemyCount(count) {
-    // Adjust HP based on number of enemies in level
-    this.maxHp = this.baseMaxHp / count;
+    this.maxHp = this.baseMaxHp;
     this.hp = this.maxHp;
   }
   
@@ -200,7 +198,15 @@ class EnemyManager {
     if (baseN > 0 && damage < 1) damage = 1;
 
     // Multiply all enemy damage by 2 (global scaling)
-    const final = Math.max(0, damage) * 2;
+    let final = Math.max(0, damage) * 2;
+    
+    // Rallyist Buff: multiplies damage of all enemies
+    const rallyistCount = (state.stageState.enemies || []).filter(e => e && !e.isDead && Array.isArray(e.mutators) && e.mutators.includes('rallyist')).length;
+    if (rallyistCount > 0) {
+      const rallyistMult = state.config.mutators?.rallyist?.multiplier ?? 1.2;
+      final *= Math.pow(rallyistMult, rallyistCount);
+    }
+    
     return final;
   }
   
@@ -461,31 +467,5 @@ class EnemyManager {
     }
   }
 
-  static applyRallyistBuffToAll(rallyCount) {
-    try {
-      const state = getGameState();
-      const enemies = state.stageState.enemies || [];
-      if (!enemies.length) return;
-      const multiplier = state.config.mutators?.rallyist?.multiplier ?? 2.0;
-      const addPerRally = (multiplier - 1.0);
-      const total = enemies.length;
 
-      enemies.forEach(e => {
-        if (!e || e.isBoss) return;
-        // base per-enemy value is e.baseMaxHp / total
-        const basePerEnemy = (e.baseMaxHp || e.maxHp || 1) / total;
-        const newMax = Math.max(1, Math.ceil(basePerEnemy * (1 + rallyCount * addPerRally)));
-        // scale current HP proportionally to new max to keep percent HP similar
-        const prevMax = e.maxHp || 1;
-        const prevHp = e.hp || 0;
-        e.maxHp = newMax;
-        if (!e.isDead) {
-          e.hp = Math.min(newMax, Math.ceil((prevHp / prevMax) * newMax));
-        }
-      });
-      try { if (typeof UIManager !== 'undefined') UIManager.refreshGameUI(); } catch (e) {}
-    } catch (e) {
-      console.warn('applyRallyistBuffToAll failed', e);
-    }
-  }
 }

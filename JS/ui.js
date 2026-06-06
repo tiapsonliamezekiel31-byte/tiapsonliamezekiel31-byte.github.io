@@ -77,7 +77,7 @@ class UIManager {
   static MUTATOR_META = {
     vampiric: { icon: '🩸', color: '#C00707', label: 'Vampiric', desc: 'Heals itself when it deals damage' },
     regenerator: { icon: '🌿', color: '#30C85A', label: 'Regenerator', desc: 'Heals every check-in' },
-    rallyist: { icon: '📣', color: '#FFB84D', label: 'Rallyist', desc: 'Doubles allies\' max HP (on gain)' },
+    rallyist: { icon: '📣', color: '#FFB84D', label: 'Rallyist', desc: 'Multiplies damage of all enemies by 1.2x per Rallyist' },
     turret: { icon: '🔫', color: '#8B0000', label: 'Turret', desc: 'Deals backlash damage when you attack others' },
     swift: { icon: '⚡', color: '#FFD700', label: 'Swift', desc: 'Bypasses dodge and shields' },
     necromancer: { icon: '☠️', color: '#6B3E8B', label: 'Necromancer', desc: 'May revive dead allies when it attacks' }
@@ -2007,11 +2007,7 @@ class UIManager {
       state.combatState.attackInProgress = true;
 
       try {
-        if (preview.impactDelayMs > 0) {
-          await new Promise(resolve => setTimeout(resolve, preview.impactDelayMs));
-        }
-
-        try { ScreenEffects.flash && ScreenEffects.flash('rgba(255,255,255,1)', 17); } catch (e) { }
+        // Intentional impact delay and screen flash removed
         let result;
         try {
           result = CombatManager.attemptAttack(state.playerState.activeWeapon, target.id, attackRolls);
@@ -2083,18 +2079,7 @@ class UIManager {
         const maxCombo = weapon?.data?.comboMaxStacks || getGameState().config.comboMaxStacks || 4;
         const isComboFinisher = result.combo >= maxCombo;
 
-        let delayMs = 0;
-        if (result.isCrit && isComboFinisher) {
-          delayMs = 350;
-        } else if (isComboFinisher) {
-          delayMs = 300;
-        } else if (result.isCrit) {
-          delayMs = 250;
-        }
-
-        if (delayMs > 0) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
+        // Combo finisher and crit delays removed
 
         const hits = Array.isArray(result.hitDetails) ? result.hitDetails : [{
           enemyId: target.id,
@@ -2114,6 +2099,37 @@ class UIManager {
             const rect = targetCard.getBoundingClientRect();
             targetX = rect.left + rect.width / 2;
             targetY = rect.top + rect.height / 2;
+
+            const elementColors = {
+              Earth: '#30C85A',
+              Water: '#134E8E',
+              Fire: '#FF4400',
+              Air: '#cbd5e1',
+              Aether: '#A15CFF'
+            };
+            const elementColor = elementColors[hit.element] || '#ffffff';
+
+            if (hit.weaknessMatch && typeof RetroWeaknessAnimation !== 'undefined') {
+              RetroWeaknessAnimation.play(targetCard, elementColor);
+              try {
+                FloatingDamageNumber.show(targetX, targetY - 45, 'WEAK!', {
+                  color: elementColor,
+                  duration: 1100,
+                  scale: 1.2,
+                  fadeDelay: 700
+                });
+              } catch (e) {}
+            } else if (hit.resistanceMatch && typeof RetroResistanceAnimation !== 'undefined') {
+              RetroResistanceAnimation.play(targetCard, elementColor);
+              try {
+                FloatingDamageNumber.show(targetX, targetY - 45, 'RESISTED!', {
+                  color: '#888888',
+                  duration: 1100,
+                  scale: 0.9,
+                  fadeDelay: 700
+                });
+              } catch (e) {}
+            }
           }
 
           if (typeof RetroHitAnimation !== 'undefined') {

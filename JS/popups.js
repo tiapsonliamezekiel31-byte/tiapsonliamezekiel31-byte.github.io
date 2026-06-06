@@ -1386,7 +1386,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -1440,6 +1440,22 @@ class PopupsManager {
         }
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: `Given ${weaponName}` };
+      }
+
+      if (lower.startsWith('element ')) {
+        const query = command.slice(8).trim().toLowerCase();
+        const elements = state.config.weaponElementTypes || ['Air', 'Earth', 'Fire', 'Water', 'Aether'];
+        let matched = elements.find(el => el.toLowerCase() === query);
+        if (query === 'none' || query === 'neutral' || query === 'null' || query === 'clear') {
+          matched = null;
+        } else if (!matched) {
+          return { ok: false, message: `Element not found. Available: ${elements.join(', ')}, None` };
+        }
+        
+        const activeIdx = state.playerState.activeWeapon || 0;
+        state.playerState.weaponElements[activeIdx] = matched;
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Active weapon element set to ${matched || 'Neutral'}` };
       }
 
       if (lower.startsWith('gold ')) {

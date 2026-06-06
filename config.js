@@ -290,8 +290,8 @@ const DEFAULT_GAME_CONFIG = {
       regenPct: 0.50
     },
     rallyist: {
-      // additive stacking: each rallyist contributes this multiplier (2 => +100% per rallyist)
-      multiplier: 2.0
+      // multiplies damage of all enemies by 1.2x per rallyist (multiplicatively)
+      multiplier: 1.2
     },
     turret: {
       // damage dealt to player when player attacks other enemies (unblockable)

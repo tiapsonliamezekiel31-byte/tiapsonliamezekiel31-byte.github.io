@@ -1196,13 +1196,7 @@ function performCheckIn() {
           enemy.mutators.push(mut);
           mutatorGains.push({ enemyId: enemy.id, mutator: mut });
           try { state.eventBus.emit(EVENTS.ENEMY_MUTATED, { enemyId: enemy.id, mutator: mut, source: 'checkin' }); } catch (e) {}
-          // immediate application for certain mutators
-          if (mut === 'rallyist') {
-            state.stageState.rallyistCount = (state.stageState.rallyistCount || 0) + 1;
-            if (typeof EnemyManager !== 'undefined' && typeof EnemyManager.applyRallyistBuffToAll === 'function') {
-              EnemyManager.applyRallyistBuffToAll(state.stageState.rallyistCount);
-            }
-          }
+          // Rallyist buff is now applied multiplicatively to damage during combat, no immediate application needed.
         }
       }
     });

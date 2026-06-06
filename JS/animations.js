@@ -1797,3 +1797,98 @@ class RetroComboFinisherAnimation {
     }
   }
 }
+
+class RetroWeaknessAnimation {
+  static play(cardElement, color = '#ff0000') {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    const circle = document.createElement('div');
+    const startSize = Math.max(rect.width, rect.height) * 2.0;
+    
+    circle.style.cssText = `
+      position: fixed;
+      left: ${cx - startSize/2}px;
+      top: ${cy - startSize/2}px;
+      width: ${startSize}px;
+      height: ${startSize}px;
+      border: 6px solid ${color};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 13600;
+      will-change: transform, opacity;
+      transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+    `;
+    container.appendChild(circle);
+
+    const start = performance.now();
+    const duration = 500;
+    
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      const currentScale = 1 - progress;
+      const currentRotation = progress * 360;
+      const opacity = 1 - Math.pow(progress, 3);
+      
+      circle.style.transform = `scale(${currentScale}) rotate(${currentRotation}deg)`;
+      circle.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        circle.remove();
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+class RetroResistanceAnimation {
+  static play(cardElement, color = '#0000ff') {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    const square = document.createElement('div');
+    const maxSize = Math.max(rect.width, rect.height) * 2.0;
+    
+    square.style.cssText = `
+      position: fixed;
+      left: ${cx - maxSize/2}px;
+      top: ${cy - maxSize/2}px;
+      width: ${maxSize}px;
+      height: ${maxSize}px;
+      border: 6px solid ${color};
+      pointer-events: none;
+      z-index: 13600;
+      will-change: transform, opacity;
+      transform: translate3d(0, 0, 0) scale(0.1) rotate(0deg);
+    `;
+    container.appendChild(square);
+
+    const start = performance.now();
+    const duration = 500;
+    
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      const currentScale = 0.1 + progress * 0.9;
+      const currentRotation = progress * 360;
+      const opacity = 1 - Math.pow(progress, 3);
+      
+      square.style.transform = `scale(${currentScale}) rotate(${currentRotation}deg)`;
+      square.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        square.remove();
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
