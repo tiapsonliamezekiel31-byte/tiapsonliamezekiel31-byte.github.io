@@ -96,6 +96,32 @@ class WeaponAttack {
       // +5% max potential AP (handled elsewhere, this is just display bonus)
     }
 
+    // --- TALISMANS (Damage calculation) ---
+    if (state.playerState.talismans?.includes('Bloodpact Seal')) {
+      const bloodpactBonus = comboCount * 0.05;
+      damage *= (1 + bloodpactBonus);
+    }
+
+    if (state.playerState.talismans?.includes('Wrathstone')) {
+      const hpPct = state.playerState.maxHp > 0 ? state.playerState.hp / state.playerState.maxHp : 1;
+      if (hpPct <= 0.3) {
+        damage *= 1.4;
+      }
+    }
+
+    if (isCrit && state.playerState.talismans?.includes('Predator\'s Eye')) {
+      const tgtHpPct = target && target.maxHp > 0 ? target.hp / target.maxHp : 1;
+      if (tgtHpPct < 0.5) {
+        damage *= 1.5;
+      }
+    }
+
+    if (state.playerState.talismans?.includes('Void Lens') && state.combatState.voidLensTarget === target.id) {
+      damage *= 2.0;
+      // We clear this flag in attemptAttack after the hit resolves.
+    }
+    // --------------------------------------
+
     // Apply active skill effects
     const skillFx = state.combatState?.skillEffects || {};
 
@@ -201,6 +227,9 @@ class CombatManager {
     if (state.hasBuff('Critical Precision') && precisionRoll < 0.05) {
       isCrit = true;
     }
+    if (state.playerState.talismans?.includes('Starweave') && state.combatState.starweaveCritsLeft > 0) {
+      isCrit = true;
+    }
 
     let primaryDamage = attackPlan.calculateDamage(target, isCrit, { comboCount: nextComboCount });
     if (dmgUp && dmgUp > 0) {
@@ -297,6 +326,11 @@ class CombatManager {
         isCrit = true;
       }
     }
+
+    if (state.playerState.talismans?.includes('Starweave') && state.combatState.starweaveCritsLeft > 0) {
+      isCrit = true;
+      state.combatState.starweaveCritsLeft--;
+    }
     
     // Support AoE and special weapons
     const targets = [];
@@ -364,6 +398,14 @@ class CombatManager {
 
       if (attackPlan._echoBowMultiplier) {
         damage *= attackPlan._echoBowMultiplier;
+      }
+
+      if (state.playerState.talismans?.includes('Void Lens')) {
+        if (resistanceMatch) {
+          state.combatState.voidLensTarget = tgt.id;
+        } else if (state.combatState.voidLensTarget === tgt.id) {
+          state.combatState.voidLensTarget = null;
+        }
       }
 
       if (attackPlan.weaponName === 'Death Spell' && damage === 0) {
@@ -662,6 +704,18 @@ class CombatManager {
       element: weapon.element
     } : null;
 
+    let echoShardEcho = null;
+    if (state.playerState.talismans?.includes('Echo Shard') && state.combatState.echoShardActive) {
+      state.combatState.echoShardActive = false;
+      echoShardEcho = {
+        targetId: targetEnemyId,
+        damage: damage,
+        weaponName: weapon.name,
+        element: weapon.element
+      };
+      pushSpecialPopup('ECHO SHARD', '#ff55ff');
+    }
+
     if (chronoShiftEcho) {
       skillFx.chronoShiftCharges--;
       if (skillFx.chronoShiftCharges <= 0) {
@@ -679,7 +733,8 @@ class CombatManager {
       specialPopups,
       combo: state.combatState.currentCombo,
       hitDetails,
-      chronoShiftEcho
+      chronoShiftEcho,
+      echoShardEcho
     };
   }
   
@@ -737,6 +792,10 @@ class CombatManager {
     
     state.drainMana(skillCost);
     
+    if (state.playerState.talismans?.includes('Starweave')) {
+      state.combatState.starweaveCritsLeft = 2;
+    }
+
     // Skill logic handled in UI layer
     return { success: true, skillCost };
   }

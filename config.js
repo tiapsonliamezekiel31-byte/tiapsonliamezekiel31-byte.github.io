@@ -653,6 +653,53 @@ const DEFAULT_GAME_CONFIG = {
     Rift: '🕳️',
     Echo: '🔁'
   },
+  
+  // ============================================================
+  // SPECIAL EVENTS & TALISMANS
+  // ============================================================
+  specialEvents: {
+    chanceNone: 0.3,
+    types: ['Shrine', 'Statue', 'Sacred Tree']
+  },
+  talismans: {
+    'Bloodpact Seal': {
+      icon: '🩸',
+      description: 'Each consecutive attack in a streak adds +5% max AP damage. Unlimited stacking. Resets on taking damage.'
+    },
+    'Starweave': {
+      icon: '✨',
+      description: 'After using any active skill, your next 2 attacks are guaranteed critical hits.'
+    },
+    'Mana Siphon': {
+      icon: '💧',
+      description: 'Every 50 mana spent permanently increases your maximum mana by +5 (capped at +100).'
+    },
+    'Wrathstone': {
+      icon: '🔴',
+      description: 'Being at or below 30% HP grants +40% damage bonus.'
+    },
+    'Echo Shard': {
+      icon: '🔔',
+      description: 'After using any consumable item, your next attack is echoed at 100% damage for free.'
+    },
+    'Verdant Heart': {
+      icon: '🌿',
+      description: 'Each perfect daily streak day permanently adds +3 Max HP and +5 Max Mana.'
+    },
+    'Predator\'s Eye': {
+      icon: '👁️',
+      description: 'Critical hits against enemies below 50% HP deal an extra ×1.5 bonus damage.'
+    },
+    'Titan\'s Mantle': {
+      icon: '🏔️',
+      description: 'Damage reduction stacks from all sources (buffs, class passives, shields) are doubled.'
+    },
+    'Void Lens': {
+      icon: '🌀',
+      description: 'Each time an enemy resists your attack, your next hit against that enemy deals +100% bonus damage.'
+    }
+  },
+
   dialogueCards: {
     shopOpen: {
       title: 'Shopkeeper',

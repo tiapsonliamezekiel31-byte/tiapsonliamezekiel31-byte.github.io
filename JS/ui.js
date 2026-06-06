@@ -384,6 +384,14 @@ class UIManager {
         </div>
         <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
       </div>
+      <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
+        <div class="event-banner-drag-handle" id="eventBannerDragHandle"></div>
+        <div class="event-banner-content">
+          <div id="eventBannerTitle" class="event-banner-title">Event Name</div>
+          <div id="eventBannerDesc" class="event-banner-desc">Event description</div>
+          <button id="eventBannerClaimBtn" class="btn-action-circle btn-claim-event" disabled>CLAIM</button>
+        </div>
+      </div>
       <div class="combo-indicator" id="comboIndicator"></div>
     `;
     document.body.appendChild(gameArea);
@@ -496,6 +504,74 @@ class UIManager {
       rcHandle.addEventListener('pointermove', onRcMove);
       rcHandle.addEventListener('pointerup', onRcUp);
       rcHandle.addEventListener('pointercancel', onRcUp);
+    }
+
+    const ebPanel = gameArea.querySelector('#eventBannerPanel');
+    const ebHandle = gameArea.querySelector('#eventBannerDragHandle');
+    let isEbDragging = false;
+    let ebStartX = 0, ebStartY = 0, ebInitialLeft = 0, ebInitialTop = 0;
+
+    const savedEbPos = localStorage.getItem('nemesis_event_banner_pos');
+    if (savedEbPos) {
+      try {
+        const { left, top } = JSON.parse(savedEbPos);
+        ebPanel.style.right = 'auto';
+        ebPanel.style.left = left + 'px';
+        ebPanel.style.top = top + 'px';
+      } catch (e) { }
+    } else {
+      // Default position top center
+      ebPanel.style.left = '50%';
+      ebPanel.style.top = '10px';
+      ebPanel.style.transform = 'translateX(-50%)';
+    }
+
+    const onEbDown = (e) => {
+      isEbDragging = true;
+      ebStartX = e.clientX;
+      ebStartY = e.clientY;
+      const rect = ebPanel.getBoundingClientRect();
+      ebInitialLeft = rect.left;
+      ebInitialTop = rect.top;
+      ebPanel.style.right = 'auto';
+      ebPanel.style.transform = 'none';
+      ebPanel.style.left = ebInitialLeft + 'px';
+      ebPanel.style.top = ebInitialTop + 'px';
+      ebHandle.setPointerCapture(e.pointerId);
+    };
+
+    const onEbMove = (e) => {
+      if (!isEbDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - ebStartX;
+      const dy = e.clientY - ebStartY;
+      let newLeft = ebInitialLeft + dx;
+      let newTop = ebInitialTop + dy;
+
+      const maxX = window.innerWidth - ebPanel.offsetWidth;
+      const maxY = window.innerHeight - ebPanel.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      ebPanel.style.left = newLeft + 'px';
+      ebPanel.style.top = newTop + 'px';
+    };
+
+    const onEbUp = (e) => {
+      if (!isEbDragging) return;
+      isEbDragging = false;
+      ebHandle.releasePointerCapture(e.pointerId);
+      localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
+        left: parseInt(ebPanel.style.left, 10) || 0,
+        top: parseInt(ebPanel.style.top, 10) || 0
+      }));
+    };
+
+    if (ebHandle) {
+      ebHandle.addEventListener('pointerdown', onEbDown);
+      ebHandle.addEventListener('pointermove', onEbMove);
+      ebHandle.addEventListener('pointerup', onEbUp);
+      ebHandle.addEventListener('pointercancel', onEbUp);
     }
 
     this.updateStageBackdrop();
@@ -1222,6 +1298,49 @@ class UIManager {
         }
       });
     }
+
+    const eventBannerClaimBtn = document.getElementById('eventBannerClaimBtn');
+    if (eventBannerClaimBtn) {
+      eventBannerClaimBtn.addEventListener('click', () => {
+        const gs = getGameState();
+        if (gs.systemState.specialEvent && !gs.systemState.specialEvent.claimed) {
+          const event = gs.systemState.specialEvent;
+          event.claimed = true;
+
+          try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) {}
+          
+          if (event.type === 'Statue') {
+            const talismans = Object.keys(gs.config.talismans);
+            const talisman = talismans[Math.floor(Math.random() * talismans.length)];
+            const oldTalismans = gs.playerState.talismans || [];
+            if (oldTalismans.length >= 3) {
+              if (typeof PopupsManager !== 'undefined' && PopupsManager.showTalismanDiscard) {
+                PopupsManager.showTalismanDiscard(talisman);
+              }
+            } else {
+              if (!gs.playerState.talismans) gs.playerState.talismans = [];
+              gs.playerState.talismans.push(talisman);
+              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch(err) {}
+            }
+          } else if (event.type === 'Sacred Tree') {
+            gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + 2;
+            gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + 2;
+            gs.addHp(2);
+            gs.addMana(2);
+            try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+2 Max HP & Mana', { color: '#84cc16' }); } catch(err) {}
+          } else if (event.type === 'Shrine') {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
+              PopupsManager.showShrineSkillChoice();
+            }
+          }
+
+          gs.save();
+          this.refreshEventBanner();
+          this.refreshGameUI();
+        }
+      });
+    }
+
     document.getElementById('diamondRewardsBtn').addEventListener('click', () => {
       try { UIManager.showDiamondRewards(); } catch (e) { console.warn('Failed to open diamond rewards popup', e); }
     });
@@ -2244,7 +2363,8 @@ class UIManager {
 
     // Alchemist requires an alive target
     let alchemistTarget = null;
-    if (className === 'Alchemist') {
+    const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
+    if (hasAlchemist) {
       alchemistTarget = this.resolveAttackTarget();
       if (!alchemistTarget) {
         try {
@@ -2284,117 +2404,124 @@ class UIManager {
       if (!state.combatState) state.combatState = {};
       if (!state.combatState.skillEffects) state.combatState.skillEffects = {};
 
-      switch (className) {
-        case 'Knight':
-          // Iron Bastion: next 4 attacks deal 0.4× damage
-          state.combatState.skillEffects.shieldCharges = (state.combatState.skillEffects.shieldCharges || 0) + 4;
-          state.combatState.skillEffects.shieldDamageMultiplier = 0.4;
-          break;
+      const classesToApply = [className];
+      if (Array.isArray(state.playerState.borrowedSkills)) {
+        classesToApply.push(...state.playerState.borrowedSkills);
+      }
 
-        case 'Rogue':
-          // Phantom Blow: next attack deals 4×, ignores resistances, steals 30 mana
-          state.combatState.skillEffects.phantomBlow = true;
-          break;
+      for (const cls of classesToApply) {
+        switch (cls) {
+          case 'Knight':
+            // Iron Bastion: next 4 attacks deal 0.4× damage
+            state.combatState.skillEffects.shieldCharges = (state.combatState.skillEffects.shieldCharges || 0) + 4;
+            state.combatState.skillEffects.shieldDamageMultiplier = 0.4;
+            break;
 
-        case 'Wizard':
-          // Chrono-Shift: next 3 attacks are echoed at 50% damage
-          state.combatState.skillEffects.chronoShiftCharges = 3;
-          break;
+          case 'Rogue':
+            // Phantom Blow: next attack deals 4×, ignores resistances, steals 30 mana
+            state.combatState.skillEffects.phantomBlow = true;
+            break;
 
-        case 'Brute':
-          // Wrath Unleashed: +200% damage today, cannot dodge
-          state.combatState.skillEffects.wrathUnleashed = true;
-          state.combatState.skillEffects.wrathDamageMultiplier = 3.0; // base 1.0 + 200% = 3.0×
-          state.combatState.skillEffects.cannotDodge = true;
-          break;
+          case 'Wizard':
+            // Chrono-Shift: next 3 attacks are echoed at 50% damage
+            state.combatState.skillEffects.chronoShiftCharges = (state.combatState.skillEffects.chronoShiftCharges || 0) + 3;
+            break;
 
-        case 'Ranger':
-          // Storm Volley: applies to the next attack
-          state.combatState.skillEffects.stormVolley = true;
-          break;
+          case 'Brute':
+            // Wrath Unleashed: +200% damage today, cannot dodge
+            state.combatState.skillEffects.wrathUnleashed = true;
+            state.combatState.skillEffects.wrathDamageMultiplier = (state.combatState.skillEffects.wrathDamageMultiplier || 1.0) + 2.0; 
+            state.combatState.skillEffects.cannotDodge = true;
+            break;
 
-        case 'Druid':
-          // Nature's Embrace: heal 40 HP, summon shadow pet for today
-          state.addHp(40);
-          state.combatState.skillEffects.shadowPet = true; // pet attacks 2× today
-          break;
+          case 'Ranger':
+            // Storm Volley: applies to the next attack
+            state.combatState.skillEffects.stormVolley = true;
+            break;
 
-        case 'Alchemist':
-          // Unstable Concoction: reverse target's weaknesses/resistances permanently, block healing/mutating next check-in.
-          // If weak to current element, deal 15% max HP splash damage to adjacent enemies.
-          try {
-            const target = alchemistTarget || this.resolveAttackTarget();
-            if (target) {
-              const tempResist = target.resist;
-              target.resist = target.weak;
-              target.weak = tempResist;
+          case 'Druid':
+            // Nature's Embrace: heal 40 HP, summon shadow pet for today
+            state.addHp(40);
+            state.combatState.skillEffects.shadowPet = true; // pet attacks 2× today
+            break;
 
-              target.statusEffects = target.statusEffects || {};
-              target.statusEffects.unstableConcoction = {
-                preventHeal: true,
-                preventMutate: true
-              };
+          case 'Alchemist':
+            // Unstable Concoction: reverse target's weaknesses/resistances permanently, block healing/mutating next check-in.
+            // If weak to current element, deal 15% max HP splash damage to adjacent enemies.
+            try {
+              const target = alchemistTarget || this.resolveAttackTarget();
+              if (target) {
+                const tempResist = target.resist;
+                target.resist = target.weak;
+                target.weak = tempResist;
 
-              try {
-                const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
-                if (targetCard) {
-                  const rect = targetCard.getBoundingClientRect();
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
-                }
-              } catch (e) {}
+                target.statusEffects = target.statusEffects || {};
+                target.statusEffects.unstableConcoction = {
+                  preventHeal: true,
+                  preventMutate: true
+                };
 
-              const weapon = PlayerManager.getCurrentWeapon();
-              if (weapon) {
-                const isWeak = resolveWeaponWeaknessMultiplier(target, weapon.element) > 1.0;
-                if (isWeak) {
-                  const all = StageManager.getAllEnemies ? StageManager.getAllEnemies() : [];
-                  const idx = all.indexOf(target);
-                  if (idx > -1) {
-                    const adjacents = EnemyManager.getAdjacentEnemies(all, idx);
-                    adjacents.forEach(adj => {
-                      if (adj && !adj.isDead && adj.maxHp > 0) {
-                        const splashDmg = Math.ceil(adj.maxHp * 0.15);
-                        adj.takeDamage(splashDmg);
-                        
+                try {
+                  const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                  if (targetCard) {
+                    const rect = targetCard.getBoundingClientRect();
+                    FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
+                  }
+                } catch (e) {}
+
+                const weapon = PlayerManager.getCurrentWeapon();
+                if (weapon) {
+                  const isWeak = resolveWeaponWeaknessMultiplier(target, weapon.element) > 1.0;
+                  if (isWeak) {
+                    const all = StageManager.getAllEnemies ? StageManager.getAllEnemies() : [];
+                    const idx = all.indexOf(target);
+                    if (idx > -1) {
+                      const adjacents = EnemyManager.getAdjacentEnemies(all, idx);
+                      adjacents.forEach(adj => {
+                        if (adj && !adj.isDead && adj.maxHp > 0) {
+                          const splashDmg = Math.ceil(adj.maxHp * 0.15);
+                          adj.takeDamage(splashDmg);
+                          
+                          try {
+                            const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
+                            if (adjCard) {
+                              const rect = adjCard.getBoundingClientRect();
+                              FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                            }
+                          } catch (e) {}
+                        }
+                      });
+
+                      if (adjacents.length > 0) {
                         try {
-                          const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
-                          if (adjCard) {
-                            const rect = adjCard.getBoundingClientRect();
-                            FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
-                          }
+                          FloatingDamageNumber.show(
+                            window.innerWidth / 2,
+                            window.innerHeight / 2 - 50,
+                            'CONCOCTION EXPLOSION! 💥',
+                            { color: '#84cc16', duration: 1500 }
+                          );
                         } catch (e) {}
                       }
-                    });
-
-                    if (adjacents.length > 0) {
-                      try {
-                        FloatingDamageNumber.show(
-                          window.innerWidth / 2,
-                          window.innerHeight / 2 - 50,
-                          'CONCOCTION EXPLOSION! 💥',
-                          { color: '#84cc16', duration: 1500 }
-                        );
-                      } catch (e) {}
                     }
                   }
                 }
               }
+            } catch (e) {
+              console.warn('Alchemist skill failed', e);
             }
-          } catch (e) {
-            console.warn('Alchemist skill failed', e);
-          }
-          break;
+            break;
 
-        case 'Juggernaut':
-          // Fortress: invincible for next 2 attacks + reflect 50% damage
-          state.combatState.skillEffects.fortressCharges = (state.combatState.skillEffects.fortressCharges || 0) + 2;
-          state.combatState.skillEffects.fortressReflect = 0.5;
-          break;
+          case 'Juggernaut':
+            // Fortress: invincible for next 2 attacks + reflect 50% damage
+            state.combatState.skillEffects.fortressCharges = (state.combatState.skillEffects.fortressCharges || 0) + 2;
+            state.combatState.skillEffects.fortressReflect = 0.5;
+            break;
 
-        case 'Madman':
-          // Scream into the Void: gain 1 diamond
-          state.addDiamonds(1);
-          break;
+          case 'Madman':
+            // Scream into the Void: gain 1 diamond
+            state.addDiamonds(1);
+            break;
+        }
       }
 
       // Persist state after skill activation
@@ -2409,12 +2536,18 @@ class UIManager {
     // Show dramatic skill activation popup
     try {
       const state = getGameState();
-      const className = state.playerState.className;
+      // Combine text for all applied skills
       const meta = (state.config.classSkillMeta && state.config.classSkillMeta[className]) || {};
       const skillName = meta.name || 'Skill';
       const skillIcon = meta.icon || '✨';
       const skillColor = meta.color || '#ffd700';
       const flavorText = meta.flavorText || '';
+      
+      let extraSkillsText = '';
+      if (Array.isArray(state.playerState.borrowedSkills) && state.playerState.borrowedSkills.length > 0) {
+        const extraNames = state.playerState.borrowedSkills.map(cls => state.config.classSkillMeta?.[cls]?.name || cls).join(' + ');
+        extraSkillsText = `<div class="skill-activation-extra">+ ${extraNames}</div>`;
+      }
 
       // Create and show the dramatic popup
       const popup = document.createElement('div');
@@ -2423,6 +2556,7 @@ class UIManager {
       popup.innerHTML = `
         <div class="skill-activation-icon">${skillIcon}</div>
         <div class="skill-activation-name" style="color: ${skillColor}">${skillName}</div>
+        ${extraSkillsText}
         ${flavorText ? `<div class="skill-activation-flavor">${flavorText}</div>` : ''}
       `;
       document.body.appendChild(popup);
@@ -2805,6 +2939,10 @@ class UIManager {
     };
 
     let html = '';
+    const gs = getGameState();
+    const event = gs.systemState.specialEvent;
+    const eventTargets = (event && !event.claimed && event.targets) ? event.targets : [];
+
     visibleDailies.forEach(daily => {
       const streak = computeDailyStreak(daily.id);
       const maxCompletions = Math.max(1, Number(daily.maxCompletionsPerDay) || 1);
@@ -2820,6 +2958,7 @@ class UIManager {
       const strokeWidth = Math.min(6, 1 + Math.abs(streak));
       const progressText = `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
+      const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
 
       // Check for surplus multiplier indicator
       let surplusIndicator = '';
@@ -2838,7 +2977,7 @@ class UIManager {
       }
 
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
@@ -4342,6 +4481,14 @@ class UIManager {
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
     }).join('');
+
+    // Render Talismans in the same strip
+    html += (state.playerState.talismans || []).map((talismanName) => {
+      const config = state.config.talismans?.[talismanName];
+      const icon = config?.icon || '🧿';
+      return `<div class="weapon-chip-wrap"><button class="weapon-chip talisman-chip" data-talisman="${talismanName}" title="${config?.description || talismanName}">${icon} ${talismanName}</button></div>`;
+    }).join('');
+
     strip.innerHTML = html;
 
     const container = strip.parentElement;
@@ -4420,6 +4567,22 @@ class UIManager {
       });
     });
 
+    // Discard Talisman button
+    strip.querySelectorAll('.talisman-chip').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const talisman = e.currentTarget.dataset.talisman;
+        const index = Array.from(strip.querySelectorAll('.talisman-chip')).indexOf(e.currentTarget);
+        if (confirm(`Discard ${talisman}? This frees up a slot for a new Talisman.`)) {
+          const state = getGameState();
+          if (state.playerState.talismans) {
+            state.playerState.talismans.splice(index, 1);
+            state.save();
+            this.refreshGameUI();
+          }
+        }
+      });
+    });
+
     this.positionWeaponStrip();
     this.updateActionCosts();
   }
@@ -4470,6 +4633,7 @@ class UIManager {
   static refreshGameUI() {
     this.updateStageBackdrop();
     this.updateWeaponIcons();
+    try { this.refreshEventBanner(); } catch (e) { }
     this.updateDateDisplay();
     this.renderEnemies();
     this.updateRunCompletionGraph();
@@ -4504,6 +4668,61 @@ class UIManager {
     this.updateDeathDefianceBadge();
     this.updatePauseBtn();
     this.updateTaskVisibilityToggleLabels();
+  }
+
+  static refreshEventBanner() {
+    const banner = document.getElementById('eventBannerPanel');
+    if (!banner) return;
+
+    const state = getGameState();
+    const event = state.systemState.specialEvent;
+
+    if (!event || event.claimed) {
+      banner.style.display = 'none';
+      return;
+    }
+
+    banner.style.display = 'block';
+    
+    const titleEl = document.getElementById('eventBannerTitle');
+    const descEl = document.getElementById('eventBannerDesc');
+    const claimBtn = document.getElementById('eventBannerClaimBtn');
+    
+    let isComplete = false;
+    
+    if (event.type === 'Shrine') {
+      titleEl.textContent = 'Shrine Event';
+      descEl.textContent = 'Complete 100% of today\'s active Dailies.';
+      isComplete = TaskManager.isAllDailiesComplete() && state.dailiesState.dailies.length > 0;
+    } else if (event.type === 'Statue') {
+      titleEl.textContent = 'Statue Event';
+      descEl.textContent = 'Complete the targeted dailies.';
+      const targets = event.targets || [];
+      const missed = TaskManager.getMissedDailies().map(d => d.id);
+      isComplete = targets.length > 0 && targets.every(t => !missed.includes(t));
+    } else if (event.type === 'Sacred Tree') {
+      titleEl.textContent = 'Sacred Tree Event';
+      descEl.textContent = 'Complete the selected daily.';
+      const target = event.targets?.[0];
+      const missed = TaskManager.getMissedDailies().map(d => d.id);
+      isComplete = target && !missed.includes(target);
+    }
+
+    if (isComplete) {
+      claimBtn.disabled = false;
+      claimBtn.classList.add('ready');
+    } else {
+      claimBtn.disabled = true;
+      claimBtn.classList.remove('ready');
+    }
+  }
+
+  static updatePauseBtn() {
+    // Implementation
+  }
+  
+  static updateTaskVisibilityToggleLabels() {
+    // Implementation
   }
 
   static getStageBackdropConfig() {

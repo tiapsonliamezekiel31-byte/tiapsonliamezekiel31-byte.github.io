@@ -159,7 +159,11 @@ class GameState {
       activeWeapon: 0,
       consumables: {}, // { consumableName: count }
       kills: 0,
-      killTagsByWeapon: {} // { weaponName: count }
+      killTagsByWeapon: {}, // { weaponName: count }
+      talismans: [],
+      borrowedSkills: [],
+      sacredTreeHpBonus: 0,
+      sacredTreeManaBonus: 0
     };
     
     this.dailiesState = {
@@ -212,6 +216,7 @@ class GameState {
         storedDamageByEnemyId: {},
         triggeredTodayByEnemyId: {}
       },
+      specialEvent: null, // { type, claimed, targets }
       deathDefiance: {
         available: true,
         active: false,
@@ -266,6 +271,11 @@ class GameState {
     this.playerState.consumables = {};
     this.playerState.kills = 0;
     this.playerState.killTagsByWeapon = {};
+    this.playerState.weaponUpgrades = {};
+    this.playerState.talismans = [];
+    this.playerState.borrowedSkills = [];
+    this.playerState.sacredTreeHpBonus = 0;
+    this.playerState.sacredTreeManaBonus = 0;
     this.playerState.weaponUpgrades = {};
 
     this.stageState.stage = 1;
@@ -354,7 +364,19 @@ class GameState {
   }
   
   drainMana(amount) {
+    const old = this.playerState.mana;
     this.setMana(this.playerState.mana - amount);
+    const drained = old - this.playerState.mana;
+    
+    if (drained > 0 && this.playerState.talismans?.includes('Mana Siphon')) {
+      this.combatState.manaSiphonSpent = (this.combatState.manaSiphonSpent || 0) + drained;
+      while (this.combatState.manaSiphonSpent >= 50 && (this.combatState.manaSiphonBonus || 0) < 100) {
+        this.combatState.manaSiphonSpent -= 50;
+        this.combatState.manaSiphonBonus = (this.combatState.manaSiphonBonus || 0) + 5;
+        this.playerState.maxMana += 5;
+        this.playerState.mana += 5;
+      }
+    }
   }
   
   // Attack Power
@@ -792,6 +814,59 @@ class GameState {
     this.systemState.isPaused = false;
     this.eventBus.emit(EVENTS.RESUME);
   }
+
+  // Special Events
+  rollSpecialEvent() {
+    const r = Math.random();
+    if (r < (this.config.specialEvents?.chanceNone || 0.3)) {
+      this.systemState.specialEvent = null;
+      return;
+    }
+
+    const types = this.config.specialEvents?.types || ['Shrine', 'Statue', 'Sacred Tree'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    
+    this.systemState.specialEvent = {
+      type: type,
+      claimed: false,
+      targets: []
+    };
+
+    if (type === 'Sacred Tree') {
+      const activeDailies = this.dailiesState.dailies || [];
+      if (activeDailies.length > 0) {
+        const randomDaily = activeDailies[Math.floor(Math.random() * activeDailies.length)];
+        this.systemState.specialEvent.targets = [randomDaily.id];
+      }
+    } else if (type === 'Statue') {
+      const activeDailies = this.dailiesState.dailies || [];
+      // Calculate completion rate during this run only
+      const history = this.dailiesState.history || [];
+      const stats = {};
+      activeDailies.forEach(d => {
+        stats[d.id] = { completed: 0, total: 0 };
+      });
+      history.forEach(entry => {
+        // Only count history since run start
+        if (this.systemState.gameStartTime && new Date(entry.date) < new Date(this.systemState.gameStartTime)) return;
+        
+        (entry.completedDailies || []).forEach(d => {
+          if (stats[d.id]) { stats[d.id].completed++; stats[d.id].total++; }
+        });
+        (entry.missedDailies || []).forEach(d => {
+          if (stats[d.id]) { stats[d.id].total++; }
+        });
+      });
+      
+      const rates = Object.keys(stats).map(id => {
+        const total = stats[id].total;
+        return { id, rate: total > 0 ? stats[id].completed / total : 0 };
+      });
+      
+      rates.sort((a, b) => a.rate - b.rate);
+      this.systemState.specialEvent.targets = rates.slice(0, 3).map(r => r.id);
+    }
+  }
 }
 
 // Global instance
@@ -1034,15 +1109,23 @@ function performCheckIn() {
 
         // Apply flat reductions (do NOT apply to late-todo damage; only enemy attacks)
         if (!swiftBypassShields) {
+          let totalReduction = 0;
           if (passive && typeof passive.damageReduction === 'number') {
-            damage = Math.max(0, damage - passive.damageReduction);
+            totalReduction += passive.damageReduction;
           }
 
           if (state.hasBuff('Iron Skin')) {
             const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
             if (typeof reduction === 'number') {
-              damage = Math.max(0, damage - reduction);
+              totalReduction += reduction;
             }
+          }
+
+          if (totalReduction > 0) {
+            if (state.playerState.talismans?.includes('Titan\'s Mantle')) {
+              totalReduction *= 2;
+            }
+            damage = Math.max(0, damage - totalReduction);
           }
         }
 

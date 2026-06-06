@@ -192,6 +192,14 @@ class TaskManager {
 
     state.systemState.runStats.tasksCompleted++;
 
+    // Update Special Event Progress
+    const event = state.systemState.specialEvent;
+    if (event && !event.claimed) {
+      if (event.type === 'Shrine' || (event.targets && event.targets.includes(dailyId))) {
+        event.progress = (event.progress || 0) + 1;
+      }
+    }
+
     const rewards = { ap: apReward, gold: goldReward, diamonds: diamondReward, attributePoints: attrReward };
 
     state.eventBus.emit(EVENTS.TASK_COMPLETED, {
@@ -611,6 +619,13 @@ class TaskManager {
     if (resolvedAllComplete) {
       state.dailiesState.streakCompletion++;
       state.dailiesState.streakNonCompletion = 0;
+
+      if (state.playerState.talismans?.includes('Verdant Heart')) {
+        state.playerState.maxHp += 3;
+        state.playerState.hp += 3;
+        state.playerState.maxMana += 5;
+        state.playerState.mana += 5;
+      }
     } else {
       state.dailiesState.streakNonCompletion++;
       state.dailiesState.streakCompletion = 0;
@@ -717,6 +732,8 @@ class TaskManager {
       daily.bloodOathActive = false;
       daily.completionsToday = 0;
     });
+    
+    state.rollSpecialEvent();
     
     state.eventBus.emit(EVENTS.DAILY_RESET, {
       dailies: state.dailiesState.dailies

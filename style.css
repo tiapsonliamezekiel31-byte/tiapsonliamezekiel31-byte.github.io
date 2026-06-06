@@ -3052,6 +3052,117 @@ body::before {
   background: var(--accent-purple);
   color: white;
 }
+.run-completion-drag-handle {
+  position: absolute;
+  top: 0; right: 0;
+  width: 20px; height: 20px;
+  cursor: grab;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px);
+  background-size: 6px 6px;
+  opacity: 0.5;
+  z-index: 10;
+}
+.run-completion-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* =========================================================================
+   SPECIAL EVENTS
+   ========================================================================= */
+
+.event-banner-panel {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 95;
+  background: linear-gradient(135deg, rgba(30,30,40,0.95), rgba(15,15,20,0.98));
+  border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 12px;
+  padding: 10px 16px;
+  color: white;
+  min-width: 240px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 10px rgba(255,215,0,0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.event-banner-drag-handle {
+  position: absolute;
+  top: 0; right: 0;
+  width: 20px; height: 20px;
+  cursor: grab;
+  background: radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px);
+  background-size: 6px 6px;
+  opacity: 0.5;
+  z-index: 10;
+}
+
+.event-banner-drag-handle:active {
+  cursor: grabbing;
+}
+
+.event-banner-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-banner-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.event-banner-desc {
+  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+  text-align: center;
+}
+
+.btn-claim-event {
+  margin-top: 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.btn-claim-event.ready {
+  background: linear-gradient(to right, #ffd700, #ffaa00);
+  color: #000;
+  border-color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(255,215,0,0.5);
+  animation: pulse-glow 2s infinite;
+}
+
+.btn-claim-event.ready:active {
+  transform: scale(0.95);
+}
+
+/* =========================================================================
+   TALISMANS
+   ========================================================================= */
+.talisman-chip {
+  background: rgba(100, 30, 150, 0.4) !important;
+  border: 1px solid rgba(180, 80, 255, 0.6) !important;
+  color: #eebbff !important;
+  box-shadow: inset 0 0 8px rgba(150, 50, 255, 0.2);
+}
+
+.task-event-target {
+  box-shadow: 0 0 12px 2px rgba(255, 215, 0, 0.7) !important;
+  border-color: #ffd700 !important;
+  animation: pulse-glow 2s infinite alternate;
+}
 
 /* ============================================================
    POPUPS & MODALS

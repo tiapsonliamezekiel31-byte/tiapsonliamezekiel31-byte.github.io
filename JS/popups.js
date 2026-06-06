@@ -543,6 +543,108 @@ class PopupsManager {
   }
 
   // ============================================================
+  // TALISMAN DISCARD POPUP
+  // ============================================================
+  static showTalismanDiscard(newTalismanName) {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup discard-popup';
+
+    let html = `<h2>Replace a Talisman to equip ${newTalismanName}</h2><button class="btn-close">✕</button>`;
+    html += '<div class="weapon-replace-list">';
+
+    const talismans = state.playerState.talismans || [];
+    talismans.forEach((tName, idx) => {
+      const config = state.config.talismans?.[tName];
+      const icon = config?.icon || '🧿';
+      html += `
+        <div class="replace-row" data-index="${idx}">
+          <div class="replace-name">Slot ${idx + 1}: ${icon} ${tName}</div>
+          <div class="replace-actions">
+            <button class="btn-replace" data-index="${idx}">Discard</button>
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    html += '<div class="replace-help">Choose a talisman to discard. This will replace it with the new talisman immediately.</div>';
+    popup.innerHTML = html;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+
+    popup.querySelectorAll('.btn-replace').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = Number(e.currentTarget.dataset.index);
+        PlayerManager.swapTalisman(index, newTalismanName);
+        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Equipped ${newTalismanName}`, { color: '#eebbff' }); } catch(err) {}
+        this.closeAllPopups();
+        try { UIManager.refreshGameUI(); } catch (err) {}
+      });
+    });
+  }
+
+  // ============================================================
+  // SHRINE SKILL CHOICE POPUP
+  // ============================================================
+  static showShrineSkillChoice() {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup buff-selection-popup';
+
+    const classes = Object.keys(state.config.classes).filter(c => c !== state.playerState.className && !(state.playerState.borrowedSkills || []).includes(c));
+    const choices = [];
+    while (choices.length < 3 && classes.length > 0) {
+      const idx = Math.floor(Math.random() * classes.length);
+      choices.push(classes.splice(idx, 1)[0]);
+    }
+
+    let html = `<h2>SHRINE REWARD: Choose a Borrowed Skill</h2>`;
+    html += '<div class="buff-selection-grid">';
+
+    choices.forEach(clsName => {
+      const meta = state.config.classSkillMeta?.[clsName] || {};
+      const skillName = meta.name || clsName;
+      const icon = meta.icon || '✨';
+      html += `
+        <div class="buff-option" data-class="${clsName}">
+          <div class="buff-icon">${icon}</div>
+          <div class="buff-title">${skillName}</div>
+          <div class="buff-effect">Gain the active skill effects of the ${clsName} class.</div>
+          <button class="btn-select">CHOOSE</button>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    popup.innerHTML = html;
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+
+    popup.querySelectorAll('.btn-select').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const clsName = e.target.closest('.buff-option').dataset.class;
+        PlayerManager.addBorrowedSkill(clsName);
+        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Borrowed ${clsName} Skill!`, { color: '#ffd700' }); } catch(err) {}
+        this.closeAllPopups();
+        try { UIManager.refreshGameUI(); } catch (err) {}
+      });
+    });
+  }
+
+  // ============================================================
   // WEAPON DISCARD / REPLACE POPUP (Shop flow when inventory full)
   // ============================================================
   static showWeaponDiscard(newWeaponName, element = null) {

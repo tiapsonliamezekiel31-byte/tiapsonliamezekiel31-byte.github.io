@@ -246,7 +246,82 @@ class PlayerManager {
     return true;
   }
   
-  static addConsumable(consumableName, count = 1) {
+  // ============================================================
+  // TALISMANS
+  // ============================================================
+  static equipTalisman(name) {
+    const state = getGameState();
+    if (!state.playerState.talismans) state.playerState.talismans = [];
+    
+    if (state.playerState.talismans.length >= 2) {
+      return false; // Full
+    }
+    
+    if (state.playerState.talismans.includes(name)) {
+      return false; // Already equipped
+    }
+    
+    state.playerState.talismans.push(name);
+    return true;
+  }
+  
+  static discardTalisman(name) {
+    const state = getGameState();
+    if (!state.playerState.talismans) return false;
+    
+    const index = state.playerState.talismans.indexOf(name);
+    if (index === -1) return false;
+    
+    state.playerState.talismans.splice(index, 1);
+    return true;
+  }
+  
+  static swapTalisman(oldName, newName) {
+    const state = getGameState();
+    if (!state.playerState.talismans) return false;
+    
+    const index = state.playerState.talismans.indexOf(oldName);
+    if (index === -1) return false;
+    
+    if (state.playerState.talismans.includes(newName)) {
+      return false; // Already equipped
+    }
+    
+    state.playerState.talismans[index] = newName;
+    return true;
+  }
+
+  // ============================================================
+  // BORROWED SKILLS (Shrine Event)
+  // ============================================================
+  static addBorrowedSkill(skillData) {
+    const state = getGameState();
+    if (!state.playerState.borrowedSkills) state.playerState.borrowedSkills = [];
+    
+    // skillData is { class: className, skill: skillName, cost: manaCost }
+    state.playerState.borrowedSkills.push(skillData);
+    return true;
+  }
+  
+  // ============================================================
+  // SACRED TREE BONUS
+  // ============================================================
+  static applySacredTreeBonus() {
+    const state = getGameState();
+    state.playerState.sacredTreeHpBonus = (state.playerState.sacredTreeHpBonus || 0) + 20;
+    state.playerState.sacredTreeManaBonus = (state.playerState.sacredTreeManaBonus || 0) + 30;
+    
+    state.playerState.maxHp += 20;
+    state.playerState.hp += 20;
+    state.playerState.maxMana += 30;
+    state.playerState.mana += 30;
+    
+    return true;
+  }
+  
+  // ============================================================
+  // CONSUMABLES
+  // ============================================================
     const state = getGameState();
     const config = state.config.consumables[consumableName];
     
