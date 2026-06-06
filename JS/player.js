@@ -322,6 +322,7 @@ class PlayerManager {
   // ============================================================
   // CONSUMABLES
   // ============================================================
+  static addConsumable(consumableName, count = 1) {
     const state = getGameState();
     const config = state.config.consumables[consumableName];
     

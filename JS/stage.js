@@ -145,6 +145,22 @@ class StageManager {
       daysSurvived: 0
     };
     
+    // Clear special event data for new run
+    state.systemState.specialEvent = null;
+    state.playerState.talismans = [];
+    state.playerState.borrowedSkills = [];
+    
+    if (state.playerState.sacredTreeHpBonus) {
+      state.playerState.maxHp = Math.max(state.config.baseMaxHp, state.playerState.maxHp - state.playerState.sacredTreeHpBonus);
+      state.playerState.hp = Math.min(state.playerState.hp, state.playerState.maxHp);
+      state.playerState.sacredTreeHpBonus = 0;
+    }
+    if (state.playerState.sacredTreeManaBonus) {
+      state.playerState.maxMana = Math.max(state.config.baseMaxMana, state.playerState.maxMana - state.playerState.sacredTreeManaBonus);
+      state.playerState.mana = Math.min(state.playerState.mana, state.playerState.maxMana);
+      state.playerState.sacredTreeManaBonus = 0;
+    }
+    
     // Choose stage variation (handles single-variant stages like Stage 7)
     state.stageState.stageVariation = this.pickStageVariation(stage);
     
