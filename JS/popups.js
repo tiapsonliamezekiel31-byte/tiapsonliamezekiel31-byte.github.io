@@ -1489,7 +1489,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -1667,6 +1667,56 @@ class PopupsManager {
         state.save();
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: `Changed class to ${matchedClassName}` };
+      }
+
+      if (lower.startsWith('event ') || lower === 'event') {
+        const eventQuery = command.replace(/^event\s*/i, '').trim().toLowerCase();
+        if (!eventQuery) {
+          const current = state.systemState.specialEvent;
+          return { ok: true, message: current ? `Current event: ${current.type} (claimed: ${current.claimed})` : 'No active event' };
+        }
+
+        if (eventQuery === 'none' || eventQuery === 'clear' || eventQuery === 'off') {
+          state.systemState.specialEvent = null;
+          state.save();
+          try { UIManager.refreshEventBanner?.(); UIManager.refreshGameUI?.(); } catch (e) {}
+          return { ok: true, message: 'Special event cleared' };
+        }
+
+        const eventMap = {
+          'shrine': 'Shrine',
+          'statue': 'Statue',
+          'sacred tree': 'Sacred Tree',
+          'sacredtree': 'Sacred Tree',
+          'tree': 'Sacred Tree'
+        };
+        const eventType = eventMap[eventQuery];
+        if (!eventType) {
+          return { ok: false, message: 'Usage: event shrine | statue | sacred tree | none' };
+        }
+
+        // Build the event object the same way rollSpecialEvent does
+        state.systemState.specialEvent = {
+          type: eventType,
+          claimed: false,
+          targets: []
+        };
+
+        const activeDailies = state.dailiesState?.dailies || [];
+        if (eventType === 'Sacred Tree') {
+          if (activeDailies.length > 0) {
+            const randomDaily = activeDailies[Math.floor(Math.random() * activeDailies.length)];
+            state.systemState.specialEvent.targets = [randomDaily.id];
+          }
+        } else if (eventType === 'Statue') {
+          // Pick up to 3 random dailies as targets
+          const shuffled = [...activeDailies].sort(() => Math.random() - 0.5);
+          state.systemState.specialEvent.targets = shuffled.slice(0, 3).map(d => d.id);
+        }
+
+        state.save();
+        try { UIManager.refreshEventBanner?.(); UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Set event to ${eventType}` };
       }
 
       if (lower === 'resume' || lower === 'close') {
