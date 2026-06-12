@@ -856,8 +856,8 @@ body::before {
 
 .enemy-circle-container {
   position: relative;
-  width: 500px;
-  height: 500px;
+  width: 550px;
+  height: 550px;
   border: 3px solid rgba(255, 215, 106, 0.65);
   border-radius: 50%;
   background:

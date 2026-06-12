@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: polish level indicator position and spacing and enlarge circle further to 500px"
+$commitMsg = "feat: enlarge combat circle further to 550px and spread enemies to 60px"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

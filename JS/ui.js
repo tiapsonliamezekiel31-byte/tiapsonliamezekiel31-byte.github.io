@@ -2832,7 +2832,7 @@ class UIManager {
         const ringLevel = Math.floor(index / capacityPerRing);
         const ringIndex = index % capacityPerRing;
         const totalInRing = Math.min(capacityPerRing, state.stageState.enemies.length - ringLevel * capacityPerRing);
-        const currentRadius = radius - (ringLevel * 55);
+        const currentRadius = radius - (ringLevel * 60);
 
         const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
         const cardX = centerX + Math.cos(angle) * currentRadius;
@@ -4639,7 +4639,7 @@ class UIManager {
       const ringLevel = Math.floor(index / capacityPerRing);
       const ringIndex = index % capacityPerRing;
       const totalInRing = Math.min(capacityPerRing, enemies.length - ringLevel * capacityPerRing);
-      const currentRadius = radius - (ringLevel * 55);
+      const currentRadius = radius - (ringLevel * 60);
 
       const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
       const x = centerX + Math.cos(angle) * currentRadius;
