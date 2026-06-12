@@ -95,7 +95,7 @@ const DEFAULT_GAME_CONFIG = {
     Rogue: {
       hp: 70, mana: 300, hpRegen: 10, manaRegen: 144,
       passive: 'Quick Hands: +25% crit chance',
-      skill: 'Phantom Blow – next attack deals 4× damage, ignores resistances, steals 30 mana on hit (cost: 30 mana)'
+      skill: 'Phantom Blow – next attack deals 4× damage, ignores resistances (cost: 30 mana)'
     },
     Wizard: {
       hp: 90, mana: 300, hpRegen: 10, manaRegen: 140,

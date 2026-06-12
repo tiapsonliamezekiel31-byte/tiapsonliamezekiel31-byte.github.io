@@ -2,8 +2,7 @@
 
 Use this file as instructions for an AI or operator to update and deploy the app from this workspace.
 
-## Parameters (edit before run)
-
+## Parameters 
 - branch: main
 - bump_sw: true|false        # set true to bump `sw.js` cache name
 - sw_tag: auto|YYYYMMDD-HHMM # use `auto` to generate timestamp tag

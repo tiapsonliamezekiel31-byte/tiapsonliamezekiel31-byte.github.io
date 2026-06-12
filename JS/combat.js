@@ -141,8 +141,6 @@ class WeaponAttack {
         if (passive.damageMultiplier) damage *= passive.damageMultiplier;
       }
       if (isCrit) damage *= 2;
-      // Steal 30 mana on hit
-      try { state.addMana(30); } catch (e) {}
       // Consume the effect (one-time use)
       skillFx.phantomBlow = false;
     }

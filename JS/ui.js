@@ -151,28 +151,7 @@ class UIManager {
   }
 
   static ensureSpinnerLoop() {
-    if (this.spinnerFrameId !== null) return;
-
-    const tick = (now) => {
-      const spinner = this.getSpinnerElement();
-      if (spinner) {
-        if (!this.spinnerLastFrameAt) this.spinnerLastFrameAt = now;
-        const delta = Math.max(0, now - this.spinnerLastFrameAt);
-        this.spinnerLastFrameAt = now;
-
-        const speedMs = this.getSpinnerSpeedMs();
-        const degreesPerMs = 360 / Math.max(120, speedMs);
-        this.spinnerAngle = (this.spinnerAngle + delta * degreesPerMs) % 360;
-        spinner.style.transform = `translate(-50%, -50%) rotate(${this.spinnerAngle}deg)`;
-      } else {
-        this.spinnerLastFrameAt = now;
-      }
-
-      this.spinnerFrameId = requestAnimationFrame(tick);
-    };
-
-    this.spinnerLastFrameAt = 0;
-    this.spinnerFrameId = requestAnimationFrame(tick);
+    return;
   }
 
   static beginAttackSpinner(targetId) {
@@ -371,6 +350,32 @@ class UIManager {
             <div id="spinner" class="spinner"></div>
           </div>
           <div class="action-ring"></div>
+          <svg id="aimingSvg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10005; display: none;">
+            <defs>
+              <filter id="attackGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="skillGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="dodgeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <line id="aimingLine" x1="0" y1="0" x2="0" y2="0" stroke-width="4" stroke-linecap="round" />
+          </svg>
         </div>
           <button id="centerAttrBtn" class="center-attr-btn" title="Attributes">📋</button>
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
@@ -516,6 +521,7 @@ class UIManager {
       try {
         const { left, top } = JSON.parse(savedEbPos);
         ebPanel.style.right = 'auto';
+        ebPanel.style.transform = 'none';
         ebPanel.style.left = left + 'px';
         ebPanel.style.top = top + 'px';
       } catch (e) { }
@@ -525,6 +531,23 @@ class UIManager {
       ebPanel.style.top = '10px';
       ebPanel.style.transform = 'translateX(-50%)';
     }
+
+    const savedEbSize = localStorage.getItem('nemesis_event_banner_size');
+    if (savedEbSize) {
+      try {
+        const { width, height } = JSON.parse(savedEbSize);
+        ebPanel.style.width = width + 'px';
+        ebPanel.style.height = height + 'px';
+      } catch (e) { }
+    }
+
+    // Save size when resizing ends
+    ebPanel.addEventListener('pointerup', () => {
+      localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
+        width: ebPanel.offsetWidth,
+        height: ebPanel.offsetHeight
+      }));
+    });
 
     const onEbDown = (e) => {
       isEbDragging = true;
@@ -537,7 +560,7 @@ class UIManager {
       ebPanel.style.transform = 'none';
       ebPanel.style.left = ebInitialLeft + 'px';
       ebPanel.style.top = ebInitialTop + 'px';
-      ebHandle.setPointerCapture(e.pointerId);
+      try { ebPanel.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const onEbMove = (e) => {
@@ -560,19 +583,31 @@ class UIManager {
     const onEbUp = (e) => {
       if (!isEbDragging) return;
       isEbDragging = false;
-      ebHandle.releasePointerCapture(e.pointerId);
+      try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
         left: parseInt(ebPanel.style.left, 10) || 0,
         top: parseInt(ebPanel.style.top, 10) || 0
       }));
+      localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
+        width: ebPanel.offsetWidth,
+        height: ebPanel.offsetHeight
+      }));
     };
 
-    if (ebHandle) {
-      ebHandle.addEventListener('pointerdown', onEbDown);
-      ebHandle.addEventListener('pointermove', onEbMove);
-      ebHandle.addEventListener('pointerup', onEbUp);
-      ebHandle.addEventListener('pointercancel', onEbUp);
-    }
+    ebPanel.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button, input, textarea, select, label')) return;
+      if (e.button !== 0) return;
+
+      const rect = ebPanel.getBoundingClientRect();
+      // Ignore dragging if click was on or near the bottom-right resizer corner (within 24px)
+      if (e.clientX > rect.right - 24 && e.clientY > rect.bottom - 24) {
+        return;
+      }
+      onEbDown(e);
+    });
+    ebPanel.addEventListener('pointermove', onEbMove);
+    ebPanel.addEventListener('pointerup', onEbUp);
+    ebPanel.addEventListener('pointercancel', onEbUp);
 
     this.updateStageBackdrop();
   }
@@ -605,18 +640,15 @@ class UIManager {
       btn.style.position = 'absolute';
       btn.style.transform = 'translate(-50%, -50%)';
       if (btn.id === 'attackBtn') {
-        const x = centerX;
-        // place below the circle so it doesn't overlap enemy cards
-        const y = centerY + circleRadius + 48; // lowered further so buttons don't crowd cards
-        btn.style.left = x + 'px';
-        btn.style.top = y + 'px';
+        btn.style.left = centerX + 'px';
+        btn.style.top = centerY + 'px';
+      } else if (btn.id === 'skillBtn') {
+        btn.style.left = (centerX - 68) + 'px';
+        btn.style.top = centerY + 'px';
       } else if (btn.id === 'dodgeBtn') {
-        const x = centerX + circleRadius * 0.90;
-        const y = centerY + circleRadius * 0.72;
-        btn.style.left = x + 'px';
-        btn.style.top = y + 'px';
+        btn.style.left = (centerX + 68) + 'px';
+        btn.style.top = centerY + 'px';
       } else {
-        // distribute other buttons around the lower half of the circle
         const angleMap = {
           'skillBtn': 210,
           'dodgeBtn': 270
@@ -1082,6 +1114,15 @@ class UIManager {
     if (this.eventListenersBound) return;
     this.eventListenersBound = true;
     const state = getGameState();
+    
+    // Global listener to clear note selections on clicking outside
+    document.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest('.daily-note-card') && !e.target.closest('.todo-note-card')) {
+        document.querySelectorAll('.daily-note-card.selected, .todo-note-card.selected').forEach(el => {
+          el.classList.remove('selected');
+        });
+      }
+    });
     // Initialize sound manager with config
     try {
       if (window.SoundManager) {
@@ -1251,31 +1292,7 @@ class UIManager {
       } catch (e) { console.warn('Failed to show victory screen', e); }
     });
 
-    // Button handlers
-    const attackBtn = document.getElementById('attackBtn');
-    if (attackBtn) {
-      console.debug('[UI] bindEventListeners: attackBtn found, attaching handlers');
-      attackBtn.addEventListener('pointerdown', () => {
-        const target = this.getSpinnerTargetEnemy();
-        if (target) this.beginAttackSpinner(target.id);
-      });
-      attackBtn.addEventListener('pointerup', () => this.releaseAttackSpinnerPress());
-      attackBtn.addEventListener('pointercancel', () => this.releaseAttackSpinnerPress());
-      attackBtn.addEventListener('mouseleave', () => this.releaseAttackSpinnerPress());
-      attackBtn.addEventListener('click', () => this.handleAttackClick());
-    }
-    const skillBtn = document.getElementById('skillBtn');
-    if (skillBtn) {
-      skillBtn.addEventListener('pointerdown', () => {
-        const target = this.getSpinnerTargetEnemy();
-        if (target) this.beginAttackSpinner(target.id);
-      });
-      skillBtn.addEventListener('pointerup', () => this.releaseAttackSpinnerPress());
-      skillBtn.addEventListener('pointercancel', () => this.releaseAttackSpinnerPress());
-      skillBtn.addEventListener('mouseleave', () => this.releaseAttackSpinnerPress());
-      skillBtn.addEventListener('click', () => this.handleSkillClick());
-    }
-    // Dodge button now uses hold/release, see setupDodgeButton()
+    // pause, planner, shop buttons
     document.getElementById('pauseBtn').addEventListener('click', () => this.handlePauseClick());
     document.getElementById('plannerBtn').addEventListener('click', () => window.location.href = 'planner.html');
     document.getElementById('shopBtn').addEventListener('click', () => this.toggleShopPanel());
@@ -1414,7 +1431,7 @@ class UIManager {
     this.bindTaskInteractions();
     this.updateActionCosts();
     this.positionActionButtons();
-    this.setupDodgeButton();
+    this.setupDragTargeting();
 
     window.addEventListener('resize', () => {
       if (this.resizeScheduled) return;
@@ -2357,7 +2374,7 @@ class UIManager {
     }
   }
 
-  static handleSkillClick() {
+  static handleSkillClick(targetEnemyId = null) {
     const state = getGameState();
     const className = state.playerState.className;
 
@@ -2365,7 +2382,10 @@ class UIManager {
     let alchemistTarget = null;
     const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
     if (hasAlchemist) {
-      alchemistTarget = this.resolveAttackTarget();
+      alchemistTarget = this.resolveAttackTarget(targetEnemyId);
+      if (!alchemistTarget) {
+        alchemistTarget = (StageManager.getAliveEnemies && StageManager.getAliveEnemies()[0]) || (StageManager.getAllEnemies && StageManager.getAllEnemies().find(enemy => enemy && !enemy.isDead)) || null;
+      }
       if (!alchemistTarget) {
         try {
           FloatingDamageNumber.show(
@@ -2717,103 +2737,335 @@ class UIManager {
     return bestDead ? [bestDead] : (bestAlive ? [bestAlive] : []);
   }
 
-  static setupDodgeButton() {
+  static setupDragTargeting() {
+    const attackBtn = document.getElementById('attackBtn');
+    const skillBtn = document.getElementById('skillBtn');
     const dodgeBtn = document.getElementById('dodgeBtn');
-    if (!dodgeBtn) return;
+    const svg = document.getElementById('aimingSvg');
+    const line = document.getElementById('aimingLine');
 
-    let isDodging = false;
+    if (!attackBtn || !skillBtn || !dodgeBtn || !svg || !line) return;
+
+    let dragType = null; // 'attack', 'skill', 'dodge'
     let activePointerId = null;
+    let startX = 0;
+    let startY = 0;
+    let buttonCenterX = 0;
+    let buttonCenterY = 0;
+    let circleCenterX = 0;
+    let circleCenterY = 0;
+    let currentTargetEnemyId = null;
+    let hasDraggedPastDeadzone = false;
 
-    const startDodge = (event) => {
-      if (isDodging) return;
-      isDodging = true;
-      activePointerId = typeof event?.pointerId === 'number' ? event.pointerId : null;
+    const clearHighlights = () => {
+      document.querySelectorAll('.enemy-card').forEach(card => {
+        card.classList.remove('targeted-attack', 'targeted-skill', 'targeted-dodge');
+      });
+    };
+
+    const getTargetEnemyByAngle = (pointerX, pointerY) => {
       const state = getGameState();
-      if (!state.combatState) state.combatState = {};
-      state.combatState.dodgeActive = true;
-      const spinner = document.getElementById('spinner');
-      if (spinner) spinner.classList.add('dodge-active');
-      this.syncSpinnerSpeed();
-      dodgeBtn.classList.add('active');
-      if (activePointerId !== null && typeof dodgeBtn.setPointerCapture === 'function') {
-        try { dodgeBtn.setPointerCapture(activePointerId); } catch (e) { }
+      const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
+      if (enemies.length === 0) return null;
+
+      // Pointer angle relative to circle center
+      const pointerAngleRad = Math.atan2(pointerY - circleCenterY, pointerX - circleCenterX);
+
+      let bestEnemy = null;
+      let minAngleDiff = Infinity;
+
+      enemies.forEach((enemy) => {
+        const index = state.stageState.enemies.indexOf(enemy);
+        if (index === -1) return;
+
+        const capacityPerRing = 8;
+        const ringLevel = Math.floor(index / capacityPerRing);
+        const ringIndex = index % capacityPerRing;
+        const totalInRing = Math.min(capacityPerRing, state.stageState.enemies.length - ringLevel * capacityPerRing);
+        const cardAngle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+
+        let diff = Math.abs(pointerAngleRad - cardAngle);
+        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+
+        if (diff < minAngleDiff) {
+          minAngleDiff = diff;
+          bestEnemy = enemy;
+        }
+      });
+
+      return bestEnemy;
+    };
+
+    const onPointerDown = (event, type) => {
+      const state = getGameState();
+      const className = state.playerState.className;
+
+      // 1. Resource Validation
+      if (type === 'attack') {
+        const weapon = PlayerManager.getCurrentWeapon();
+        if (!weapon) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No weapon equipped', { color: '#ff6666' });
+          return;
+        }
+        const attackCost = new WeaponAttack(weapon.name).getScaledApCost();
+        if (state.playerState.ap < attackCost) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          event.currentTarget.classList.add('shake');
+          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          return;
+        }
+      } else if (type === 'dodge') {
+        const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+        if (state.playerState.ap < dodgeCost) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          event.currentTarget.classList.add('shake');
+          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          return;
+        }
+      } else if (type === 'skill') {
+        const skillCost = state.config.skillManaCosts[className];
+        if (!skillCost) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Class has no mana skill', { color: '#ff6666' });
+          return;
+        }
+        if (state.playerState.mana < skillCost) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana', { color: '#ff6666' });
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          event.currentTarget.classList.add('shake');
+          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          return;
+        }
+      }
+
+      // 2. Initialize Drag/Click state
+      dragType = type;
+      activePointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      hasDraggedPastDeadzone = false;
+      currentTargetEnemyId = null;
+
+      const circle = document.querySelector('.enemy-circle-container');
+      if (!circle) return;
+      const circleRect = circle.getBoundingClientRect();
+      circleCenterX = circleRect.width / 2;
+      circleCenterY = circleRect.height / 2;
+
+      const btnRect = event.currentTarget.getBoundingClientRect();
+      buttonCenterX = btnRect.left - circleRect.left + btnRect.width / 2;
+      buttonCenterY = btnRect.top - circleRect.top + btnRect.height / 2;
+
+      const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
+      const isTargetingSkill = (type === 'skill' && hasAlchemist);
+
+      if (type === 'attack' || type === 'dodge' || isTargetingSkill) {
+        event.currentTarget.setPointerCapture(activePointerId);
       }
     };
 
-    const finishDodge = () => {
-      if (!isDodging) return;
-      isDodging = false;
-      const pointerId = activePointerId;
-      activePointerId = null;
+    const onPointerMove = (event) => {
+      if (activePointerId !== event.pointerId) return;
 
-      const spinner = document.getElementById('spinner');
-      if (spinner) spinner.classList.remove('dodge-active');
       const state = getGameState();
-      if (!state.combatState) state.combatState = {};
-      state.combatState.dodgeActive = false;
-      this.syncSpinnerSpeed();
-      dodgeBtn.classList.remove('active');
-      const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+      const className = state.playerState.className;
+      const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
+      const isTargetingSkill = (dragType === 'skill' && hasAlchemist);
 
-      if (state.playerState.ap < dodgeCost) {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-        try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+      if (dragType !== 'attack' && dragType !== 'dodge' && !isTargetingSkill) {
         return;
       }
 
-      state.spendAp(dodgeCost);
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      const dist = Math.hypot(dx, dy);
 
-      // Determine target and set dodge
-      const targets = this.getSpinnerTargetEnemies();
-      if (targets.length > 0) {
-        if (!state.combatState) state.combatState = {};
-
-        const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-          ? state.combatState.dodgeTarget
-          : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-        const newDodges = targets.map(enemy => enemy.id);
-
-        state.combatState.dodgeTarget = [...new Set([...currentDodges, ...newDodges])];
-
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
-
-        // Trigger dodge tether animation for each target
-        try {
-          const spinner = document.getElementById('spinner');
-          if (spinner) {
-            const spinRect = spinner.getBoundingClientRect();
-            const sx = spinRect.left + spinRect.width / 2;
-            const sy = spinRect.top + spinRect.height / 2;
-            
-            targets.forEach(enemy => {
-              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-              if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                DodgeTetherAnimation.play(sx, sy, card);
-              }
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to play DodgeTetherAnimation', e);
-        }
-
-        this.renderEnemies();
-      } else {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Miss!', { color: '#ff4444' });
+      if (dist > 25) {
+        hasDraggedPastDeadzone = true;
       }
-      if (pointerId !== null && typeof dodgeBtn.releasePointerCapture === 'function') {
-        try { dodgeBtn.releasePointerCapture(pointerId); } catch (e) { }
+
+      if (hasDraggedPastDeadzone) {
+        const circle = document.querySelector('.enemy-circle-container');
+        if (!circle) return;
+        const circleRect = circle.getBoundingClientRect();
+        const pointerX = event.clientX - circleRect.left;
+        const pointerY = event.clientY - circleRect.top;
+
+        svg.style.display = 'block';
+        line.setAttribute('x1', buttonCenterX);
+        line.setAttribute('y1', buttonCenterY);
+        line.setAttribute('x2', pointerX);
+        line.setAttribute('y2', pointerY);
+
+        line.className.baseVal = dragType;
+
+        const targetedEnemy = getTargetEnemyByAngle(pointerX, pointerY);
+        clearHighlights();
+
+        if (targetedEnemy) {
+          currentTargetEnemyId = targetedEnemy.id;
+          const card = document.querySelector(`.enemy-card[data-enemy-id="${targetedEnemy.id}"]`);
+          if (card) {
+            card.classList.add(`targeted-${dragType}`);
+          }
+        } else {
+          currentTargetEnemyId = null;
+        }
+      } else {
+        svg.style.display = 'none';
+        clearHighlights();
+        currentTargetEnemyId = null;
       }
     };
 
-    dodgeBtn.addEventListener('pointerdown', startDodge);
-    dodgeBtn.addEventListener('pointerup', finishDodge);
-    dodgeBtn.addEventListener('pointercancel', finishDodge);
-    dodgeBtn.addEventListener('lostpointercapture', finishDodge);
-    dodgeBtn.addEventListener('mouseleave', () => {
-      // Mouse-only fallback if pointer capture is unavailable.
-      if (isDodging && activePointerId === null) finishDodge();
-    });
+    const onPointerUp = (event) => {
+      if (activePointerId !== event.pointerId) return;
+
+      const state = getGameState();
+      const className = state.playerState.className;
+      const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
+      const isTargetingSkill = (dragType === 'skill' && hasAlchemist);
+
+      if (dragType === 'attack' || dragType === 'dodge' || isTargetingSkill) {
+        try { event.currentTarget.releasePointerCapture(activePointerId); } catch (e) {}
+      }
+
+      svg.style.display = 'none';
+      clearHighlights();
+
+      if (hasDraggedPastDeadzone) {
+        if (currentTargetEnemyId) {
+          const enemy = StageManager.getAllEnemies().find(e => String(e.id) === String(currentTargetEnemyId) && !e.isDead);
+          if (enemy) {
+            if (dragType === 'attack') {
+              UIManager.handleAttackClick(enemy.id);
+            } else if (dragType === 'skill' && isTargetingSkill) {
+              UIManager.handleSkillClick(enemy.id);
+            } else if (dragType === 'dodge') {
+              const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                ? state.combatState.dodgeTarget
+                : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+              if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+              } else {
+                const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+                state.spendAp(dodgeCost);
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+
+                state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+                try {
+                  const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                  if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                    const circle = document.querySelector('.enemy-circle-container');
+                    const circleRect = circle.getBoundingClientRect();
+                    const sx = circleRect.left + buttonCenterX;
+                    const sy = circleRect.top + buttonCenterY;
+                    DodgeTetherAnimation.play(sx, sy, card);
+                  }
+                } catch (e) {
+                  console.warn('Failed to play DodgeTetherAnimation', e);
+                }
+
+                UIManager.renderEnemies();
+              }
+            }
+          }
+        }
+      } else {
+        const aliveEnemies = (state.stageState.enemies || []).filter(e => !e.isDead);
+        if (aliveEnemies.length === 0) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
+        } else {
+          if (dragType === 'attack') {
+            let target = aliveEnemies[0];
+            let lowestHpPct = target.hp / target.maxHp;
+            aliveEnemies.forEach(e => {
+              const pct = e.hp / e.maxHp;
+              if (pct < lowestHpPct) {
+                lowestHpPct = pct;
+                target = e;
+              }
+            });
+            UIManager.handleAttackClick(target.id);
+          } else if (dragType === 'skill') {
+            if (isTargetingSkill) {
+              let target = aliveEnemies[0];
+              let lowestHpPct = target.hp / target.maxHp;
+              aliveEnemies.forEach(e => {
+                const pct = e.hp / e.maxHp;
+                if (pct < lowestHpPct) {
+                  lowestHpPct = pct;
+                  target = e;
+                }
+              });
+              UIManager.handleSkillClick(target.id);
+            } else {
+              UIManager.handleSkillClick();
+            }
+          } else if (dragType === 'dodge') {
+            let target = aliveEnemies[0];
+            let highestDmg = target.dmgMult;
+            aliveEnemies.forEach(e => {
+              if (e.dmgMult > highestDmg) {
+                highestDmg = e.dmgMult;
+                target = e;
+              }
+            });
+
+            const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+              ? state.combatState.dodgeTarget
+              : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+            if (currentDodges.map(id => String(id)).includes(String(target.id))) {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+              try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+            } else {
+              const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+              state.spendAp(dodgeCost);
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+
+              state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+              try {
+                const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                  const circle = document.querySelector('.enemy-circle-container');
+                  const circleRect = circle.getBoundingClientRect();
+                  const sx = circleRect.left + buttonCenterX;
+                  const sy = circleRect.top + buttonCenterY;
+                  DodgeTetherAnimation.play(sx, sy, card);
+                }
+              } catch (e) {
+                console.warn('Failed to play DodgeTetherAnimation', e);
+              }
+
+              UIManager.renderEnemies();
+            }
+          }
+        }
+      }
+
+      dragType = null;
+      activePointerId = null;
+      currentTargetEnemyId = null;
+    };
+
+    const setupButton = (btn, type) => {
+      btn.addEventListener('pointerdown', (e) => onPointerDown(e, type));
+      btn.addEventListener('pointermove', onPointerMove);
+      btn.addEventListener('pointerup', onPointerUp);
+      btn.addEventListener('pointercancel', onPointerUp);
+    };
+
+    setupButton(attackBtn, 'attack');
+    setupButton(skillBtn, 'skill');
+    setupButton(dodgeBtn, 'dodge');
   }
 
   static handlePauseClick() {
@@ -2977,7 +3229,8 @@ class UIManager {
       }
 
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
+      html += '<div class="hold-progress-overlay"></div>';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
@@ -3234,19 +3487,24 @@ class UIManager {
                 state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
               }
             } else {
-              // Tap - enable edit mode
-              if (textEl) {
-                textEl.contentEditable = 'true';
-                noteEl.classList.add('editing');
-                textEl.focus();
-                try {
-                  const range = document.createRange();
-                  range.selectNodeContents(textEl);
-                  range.collapse(false);
-                  const selection = window.getSelection();
-                  selection.removeAllRanges();
-                  selection.addRange(range);
-                } catch (err) {}
+              // Tap - select first, then edit on subsequent click
+              if (noteEl.classList.contains('selected')) {
+                if (textEl) {
+                  textEl.contentEditable = 'true';
+                  noteEl.classList.add('editing');
+                  textEl.focus();
+                  try {
+                    const range = document.createRange();
+                    range.selectNodeContents(textEl);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                  } catch (err) {}
+                }
+              } else {
+                document.querySelectorAll('.daily-note-card, .todo-note-card').forEach(el => el.classList.remove('selected'));
+                noteEl.classList.add('selected');
               }
             }
           };
@@ -3438,19 +3696,24 @@ class UIManager {
                 state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
               }
             } else {
-              // Tap - enable edit mode
-              if (textEl) {
-                textEl.contentEditable = 'true';
-                noteEl.classList.add('editing');
-                textEl.focus();
-                try {
-                  const range = document.createRange();
-                  range.selectNodeContents(textEl);
-                  range.collapse(false);
-                  const selection = window.getSelection();
-                  selection.removeAllRanges();
-                  selection.addRange(range);
-                } catch (err) {}
+              // Tap - select first, then edit on subsequent click
+              if (noteEl.classList.contains('selected')) {
+                if (textEl) {
+                  textEl.contentEditable = 'true';
+                  noteEl.classList.add('editing');
+                  textEl.focus();
+                  try {
+                    const range = document.createRange();
+                    range.selectNodeContents(textEl);
+                    range.collapse(false);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                  } catch (err) {}
+                }
+              } else {
+                document.querySelectorAll('.daily-note-card, .todo-note-card').forEach(el => el.classList.remove('selected'));
+                noteEl.classList.add('selected');
               }
             }
           };
@@ -3533,81 +3796,39 @@ class UIManager {
         startY: event.clientY
       };
 
-      // Set up unified long-press timer for Blood Oath toggle
-      const longPressMs = Number((getGameState()?.config?.longPressMs || getGameState()?.config?.shopLongPressMs) || 450);
-      clearTimeout(this.dailyBloodOathTimer);
-      this.dailyBloodOathTimer = setTimeout(() => {
+      // Check double tap for Blood Oath
+      const now = Date.now();
+      const lastTap = Number(card.dataset.lastTapTime || 0);
+      if (now - lastTap < 300) {
+        // Double tap: toggle Blood Oath
+        clearTimeout(this.dailyHoldTimer);
+        const overlay = card.querySelector('.hold-progress-overlay');
+        if (overlay) {
+          overlay.style.transition = 'none';
+          overlay.style.width = '0%';
+        }
+        card.dataset.doubleTapped = '1';
+        try { TaskManager.toggleBloodOath(dailyId); } catch (e) { }
+        try { getGameState().save(); } catch (e) { }
+        this.scheduleUpdateDailiesList();
+        card.dataset.lastTapTime = '0';
+        return;
+      }
+      card.dataset.lastTapTime = String(now);
+
+      // Start hold-to-complete timer (600ms hold)
+      clearTimeout(this.dailyHoldTimer);
+      const overlay = card.querySelector('.hold-progress-overlay');
+      if (overlay) {
+        overlay.style.transition = 'width 600ms linear';
+        overlay.style.width = '100%';
+      }
+      this.dailyHoldTimer = setTimeout(() => {
         const dragState = this.dailyDragState;
         if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
-          try { TaskManager.toggleBloodOath(dailyId); } catch (e) { }
-          try { getGameState().save(); } catch (e) { }
-          this.scheduleUpdateDailiesList();
-          card.dataset.longPressed = '1';
-          setTimeout(() => { delete card.dataset.longPressed; }, 700);
-        }
-      }, longPressMs);
-    });
-
-    const onMove = (event) => {
-      const dragState = this.dailyDragState;
-      if (!dragState || event.pointerId !== dragState.pointerId) return;
-      if (event.clientX === 0 && event.clientY === 0) return;
-
-      const boardRect = dragState.board.getBoundingClientRect();
-
-      if (!dragState.moved) {
-        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
-        if (distance > 6) {
-          dragState.moved = true;
-          dragState.card.classList.add('dragging');
-          clearTimeout(this.dailyBloodOathTimer);
-        }
-      }
-
-      if (dragState.moved) {
-        const tileSize = this.getDailyCardSize();
-        const maxLeft = Math.max(0, boardRect.width - tileSize.width);
-        const maxTop = Math.max(0, boardRect.height - tileSize.height);
-        const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
-        const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
-
-        dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
-        dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
-      }
-    };
-
-    const endDrag = (event) => {
-      const dragState = this.dailyDragState;
-      clearTimeout(this.dailyBloodOathTimer);
-
-      if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
-
-      const boardRect = dragState.board.getBoundingClientRect();
-      const cardRect = dragState.card.getBoundingClientRect();
-      dragState.card.classList.remove('dragging');
-      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
-
-      if (dragState.moved) {
-        const tileSize = this.getDailyCardSize();
-        const layout = this.clampDailyLayout({
-          x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
-          y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
-        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
-
-        TaskManager.updateDailyLayout(dragState.dailyId, layout);
-        try { getGameState().save(); } catch (error) { }
-        this.dailyDragSuppressUntil = Date.now() + 250;
-      } else {
-        // It was a tap/click!
-        const card = dragState.card;
-        if (card.dataset.longPressed === '1') {
-          // Ignore, Blood Oath was toggled via long press
-        } else {
           const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-          if (editModeDailies) {
-            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
-          } else {
-            const res = TaskManager.completeDaily(dragState.dailyId);
+          if (!editModeDailies) {
+            const res = TaskManager.completeDaily(dailyId);
             if (res && res.success) {
               try {
                 card.classList.add('just-completed');
@@ -3629,6 +3850,85 @@ class UIManager {
               try { getGameState().save(); } catch (saveError) { }
               this.renderEnemies();
             }
+          }
+          card.dataset.holdCompleted = '1';
+        }
+      }, 600);
+    });
+
+    const onMove = (event) => {
+      const dragState = this.dailyDragState;
+      if (!dragState || event.pointerId !== dragState.pointerId) return;
+      if (event.clientX === 0 && event.clientY === 0) return;
+
+      const boardRect = dragState.board.getBoundingClientRect();
+
+      if (!dragState.moved) {
+        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
+        if (distance > 6) {
+          dragState.moved = true;
+          dragState.card.classList.add('dragging');
+          clearTimeout(this.dailyHoldTimer);
+          const overlay = dragState.card.querySelector('.hold-progress-overlay');
+          if (overlay) {
+            overlay.style.transition = 'none';
+            overlay.style.width = '0%';
+          }
+        }
+      }
+
+      if (dragState.moved) {
+        const tileSize = this.getDailyCardSize();
+        const maxLeft = Math.max(0, boardRect.width - tileSize.width);
+        const maxTop = Math.max(0, boardRect.height - tileSize.height);
+        const nextLeftPx = Math.max(0, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
+        const nextTopPx = Math.max(0, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
+
+        dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
+        dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+      }
+    };
+
+    const endDrag = (event) => {
+      const dragState = this.dailyDragState;
+      clearTimeout(this.dailyHoldTimer);
+
+      if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
+
+      const card = dragState.card;
+      const overlay = card.querySelector('.hold-progress-overlay');
+      if (overlay) {
+        overlay.style.transition = 'none';
+        overlay.style.width = '0%';
+      }
+
+      const boardRect = dragState.board.getBoundingClientRect();
+      const cardRect = dragState.card.getBoundingClientRect();
+      dragState.card.classList.remove('dragging');
+      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
+
+      if (dragState.moved) {
+        const tileSize = this.getDailyCardSize();
+        const layout = this.clampDailyLayout({
+          x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
+          y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
+        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize);
+
+        TaskManager.updateDailyLayout(dragState.dailyId, layout);
+        try { getGameState().save(); } catch (error) { }
+        this.dailyDragSuppressUntil = Date.now() + 250;
+      } else {
+        const dailyId = dragState.dailyId;
+        const doubleTapped = card.dataset.doubleTapped === '1';
+        const holdCompleted = card.dataset.holdCompleted === '1';
+
+        delete card.dataset.doubleTapped;
+        delete card.dataset.holdCompleted;
+
+        if (!doubleTapped && !holdCompleted) {
+          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+          if (editModeDailies) {
+            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
           }
         }
       }
@@ -4691,17 +4991,17 @@ class UIManager {
     let isComplete = false;
     
     if (event.type === 'Shrine') {
-      titleEl.textContent = 'Shrine Event';
+      titleEl.textContent = '⛩️';
       descEl.textContent = 'Complete 100% of today\'s active Dailies.';
       isComplete = TaskManager.isAllDailiesComplete() && state.dailiesState.dailies.length > 0;
     } else if (event.type === 'Statue') {
-      titleEl.textContent = 'Statue Event';
+      titleEl.textContent = '🗿';
       descEl.textContent = 'Complete the targeted dailies.';
       const targets = event.targets || [];
       const missed = TaskManager.getMissedDailies().map(d => d.id);
       isComplete = targets.length > 0 && targets.every(t => !missed.includes(t));
     } else if (event.type === 'Sacred Tree') {
-      titleEl.textContent = 'Sacred Tree Event';
+      titleEl.textContent = '🌳';
       descEl.textContent = 'Complete the selected daily.';
       const target = event.targets?.[0];
       const missed = TaskManager.getMissedDailies().map(d => d.id);

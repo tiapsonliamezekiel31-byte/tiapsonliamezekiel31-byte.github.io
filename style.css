@@ -873,7 +873,7 @@ body::before {
 .level-indicator {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 18%;
   transform: translate(-50%, -50%);
   font-size: clamp(36px, 8vw, 84px);
   color: #fff0b8;
@@ -1185,7 +1185,6 @@ body::before {
   animation: none;
 }
 
-
 .action-ring {
   position: absolute;
   inset: 0;
@@ -1195,19 +1194,19 @@ body::before {
 
 .action-ring .btn-action-circle {
   pointer-events: auto;
-  touch-action: manipulation;
-  width: 60px;
-  height: 60px;
+  touch-action: none !important;
+  width: 50px;
+  height: 50px;
   border-radius: 50% !important;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(10, 8, 20, 0.45) !important;
+  background: rgba(10, 8, 20, 0.65) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: var(--text-white);
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
@@ -1233,10 +1232,10 @@ body::before {
 
 /* Larger primary attack button */
 #attackBtn {
-  touch-action: manipulation;
-  width: 110px !important;
-  height: 110px !important;
-  font-size: 34px !important;
+  touch-action: none !important;
+  width: 84px !important;
+  height: 84px !important;
+  font-size: 28px !important;
   border-width: 2px !important;
   z-index: 10011;
 }
@@ -1248,7 +1247,44 @@ body::before {
 .action-ring .cost-text {
   color: var(--accent-gold);
   font-size: 7px;
-  margin-top: 2px;
+  margin-top: 1px;
+}
+
+/* Hide Spinner elements */
+.spinner-container {
+  display: none !important;
+}
+
+/* Glowing target highlights for drag targeting */
+.enemy-card.targeted-attack {
+  box-shadow: 0 0 25px rgba(255, 50, 50, 0.95), inset 0 0 10px rgba(255, 50, 50, 0.4) !important;
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  border-color: rgba(255, 50, 50, 0.8) !important;
+}
+
+.enemy-card.targeted-skill {
+  box-shadow: 0 0 25px rgba(192, 132, 252, 0.95), inset 0 0 10px rgba(192, 132, 252, 0.4) !important;
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  border-color: rgba(192, 132, 252, 0.8) !important;
+}
+
+.enemy-card.targeted-dodge {
+  box-shadow: 0 0 25px rgba(34, 211, 238, 0.95), inset 0 0 10px rgba(34, 211, 238, 0.4) !important;
+  transform: translate(-50%, -50%) scale(1.08) !important;
+  border-color: rgba(34, 211, 238, 0.8) !important;
+}
+
+#aimingLine.attack {
+  stroke: #ff3333;
+  filter: url(#attackGlow);
+}
+#aimingLine.skill {
+  stroke: #c084fc;
+  filter: url(#skillGlow);
+}
+#aimingLine.dodge {
+  stroke: #22d3ee;
+  filter: url(#dodgeGlow);
 }
 
 .btn-action {
@@ -1807,6 +1843,42 @@ body::before {
   cursor: text;
   user-select: text;
   -webkit-user-select: text;
+}
+
+.daily-note-card.selected {
+  outline: 2px solid #ffcc00;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.6);
+}
+
+.todo-note-card.selected {
+  outline: 2px solid #8ba4ff;
+  box-shadow: 0 0 10px rgba(139, 164, 255, 0.6);
+}
+
+.task-card-daily.blood-oath-active {
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.9), 0 0 35px rgba(255, 0, 0, 0.4) !important;
+  animation: blood-glow 1.5s infinite alternate;
+}
+
+@keyframes blood-glow {
+  from {
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.65), 0 0 22px rgba(255, 0, 0, 0.3) !important;
+  }
+  to {
+    box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 45px rgba(255, 0, 0, 0.6) !important;
+  }
+}
+
+.hold-progress-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 100%;
+  background: rgba(255, 0, 0, 0.15);
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
 }
 
 .daily-note-text {
@@ -3081,10 +3153,13 @@ body::before {
   border-radius: 12px;
   padding: 10px 16px;
   color: white;
-  min-width: 240px;
+  min-width: 140px;
+  min-height: 100px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5), 0 0 10px rgba(255,215,0,0.1);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  resize: both;
+  overflow: hidden;
 }
 
 .event-banner-drag-handle {
@@ -3110,15 +3185,15 @@ body::before {
 }
 
 .event-banner-title {
-  font-size: 13px;
+  font-size: 38px;
   font-weight: 700;
   color: #ffd700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  margin-bottom: 4px;
 }
 
 .event-banner-desc {
   font-size: 11px;
+  line-height: 1.3;
   color: rgba(255,255,255,0.8);
   text-align: center;
 }
