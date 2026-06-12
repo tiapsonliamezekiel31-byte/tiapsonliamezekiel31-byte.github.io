@@ -1942,9 +1942,18 @@ class UIManager {
       const card = this.setEnemyCheckInHighlight(step.enemyId, true);
       if (card) {
         card.classList.add('checkin-hit');
-        const rect = card.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        if (card.dataset.x) {
+          const circle = document.querySelector('.enemy-circle-container');
+          const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+          x = circleRect.left + Number(card.dataset.x);
+          y = circleRect.top + Number(card.dataset.y);
+        } else {
+          const rect = card.getBoundingClientRect();
+          x = rect.left + rect.width / 2;
+          y = rect.top + rect.height / 2;
+        }
 
         if (step.isDodge) {
           FloatingDamageNumber.show(x, y - 10, 'DODGED!', {
@@ -2222,9 +2231,16 @@ class UIManager {
                 let targetY = window.innerHeight / 2;
                 const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${echoTarget.id}"]`);
                 if (targetCard) {
-                  const rect = targetCard.getBoundingClientRect();
-                  targetX = rect.left + rect.width / 2;
-                  targetY = rect.top + rect.height / 2;
+                  if (targetCard.dataset.x) {
+                    const circle = document.querySelector('.enemy-circle-container');
+                    const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                    targetX = circleRect.left + Number(targetCard.dataset.x);
+                    targetY = circleRect.top + Number(targetCard.dataset.y);
+                  } else {
+                    const rect = targetCard.getBoundingClientRect();
+                    targetX = rect.left + rect.width / 2;
+                    targetY = rect.top + rect.height / 2;
+                  }
                 }
                 
                 if (typeof RetroHitAnimation !== 'undefined') {
@@ -2268,9 +2284,16 @@ class UIManager {
           let targetY = window.innerHeight / 2;
           const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
           if (targetCard) {
-            const rect = targetCard.getBoundingClientRect();
-            targetX = rect.left + rect.width / 2;
-            targetY = rect.top + rect.height / 2;
+            if (targetCard.dataset.x) {
+              const circle = document.querySelector('.enemy-circle-container');
+              const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+              targetX = circleRect.left + Number(targetCard.dataset.x);
+              targetY = circleRect.top + Number(targetCard.dataset.y);
+            } else {
+              const rect = targetCard.getBoundingClientRect();
+              targetX = rect.left + rect.width / 2;
+              targetY = rect.top + rect.height / 2;
+            }
 
             const elementColors = {
               Earth: '#30C85A',
@@ -2484,8 +2507,14 @@ class UIManager {
                 try {
                   const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
                   if (targetCard) {
-                    const rect = targetCard.getBoundingClientRect();
-                    FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
+                    if (targetCard.dataset.x) {
+                      const circle = document.querySelector('.enemy-circle-container');
+                      const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                      FloatingDamageNumber.show(circleRect.left + Number(targetCard.dataset.x), circleRect.top + Number(targetCard.dataset.y) - 45, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
+                    } else {
+                      const rect = targetCard.getBoundingClientRect();
+                      FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
+                    }
                   }
                 } catch (e) {}
 
@@ -2505,8 +2534,14 @@ class UIManager {
                           try {
                             const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
                             if (adjCard) {
-                              const rect = adjCard.getBoundingClientRect();
-                              FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                              if (adjCard.dataset.x) {
+                                const circle = document.querySelector('.enemy-circle-container');
+                                const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                                FloatingDamageNumber.show(circleRect.left + Number(adjCard.dataset.x), circleRect.top + Number(adjCard.dataset.y) - 45, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                              } else {
+                                const rect = adjCard.getBoundingClientRect();
+                                FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                              }
                             }
                           } catch (e) {}
                         }
@@ -2801,6 +2836,7 @@ class UIManager {
     let buttonCenterY = 0;
     let circleCenterX = 0;
     let circleCenterY = 0;
+    let circleRect = null;
     let currentTargetEnemyId = null;
     let hasDraggedPastDeadzone = false;
 
@@ -2815,8 +2851,10 @@ class UIManager {
       const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
       if (enemies.length === 0) return null;
 
-      const circle = document.querySelector('.enemy-circle-container');
-      const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
+      const rect = circleRect || (() => {
+        const circle = document.querySelector('.enemy-circle-container');
+        return circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
+      })();
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const radius = Math.min(rect.width, rect.height) / 2;
@@ -2901,7 +2939,7 @@ class UIManager {
 
       const circle = document.querySelector('.enemy-circle-container');
       if (!circle) return;
-      const circleRect = circle.getBoundingClientRect();
+      circleRect = circle.getBoundingClientRect();
       circleCenterX = circleRect.width / 2;
       circleCenterY = circleRect.height / 2;
 
@@ -2938,9 +2976,11 @@ class UIManager {
       }
 
       if (hasDraggedPastDeadzone) {
-        const circle = document.querySelector('.enemy-circle-container');
-        if (!circle) return;
-        const circleRect = circle.getBoundingClientRect();
+        if (!circleRect) {
+          const circle = document.querySelector('.enemy-circle-container');
+          if (circle) circleRect = circle.getBoundingClientRect();
+        }
+        if (!circleRect) return;
         const pointerX = event.clientX - circleRect.left;
         const pointerY = event.clientY - circleRect.top;
 
@@ -3013,10 +3053,12 @@ class UIManager {
                 try {
                   const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
                   if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                    const circle = document.querySelector('.enemy-circle-container');
-                    const circleRect = circle.getBoundingClientRect();
-                    const sx = circleRect.left + buttonCenterX;
-                    const sy = circleRect.top + buttonCenterY;
+                    const rect = circleRect || (() => {
+                      const circle = document.querySelector('.enemy-circle-container');
+                      return circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                    })();
+                    const sx = rect.left + buttonCenterX;
+                    const sy = rect.top + buttonCenterY;
                     DodgeTetherAnimation.play(sx, sy, card);
                   }
                 } catch (e) {
@@ -3087,10 +3129,12 @@ class UIManager {
               try {
                 const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
                 if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                  const circle = document.querySelector('.enemy-circle-container');
-                  const circleRect = circle.getBoundingClientRect();
-                  const sx = circleRect.left + buttonCenterX;
-                  const sy = circleRect.top + buttonCenterY;
+                  const rect = circleRect || (() => {
+                    const circle = document.querySelector('.enemy-circle-container');
+                    return circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                  })();
+                  const sx = rect.left + buttonCenterX;
+                  const sy = rect.top + buttonCenterY;
                   DodgeTetherAnimation.play(sx, sy, card);
                 }
               } catch (e) {
@@ -3106,6 +3150,7 @@ class UIManager {
       dragType = null;
       activePointerId = null;
       currentTargetEnemyId = null;
+      circleRect = null;
     };
 
     const setupButton = (btn, type) => {
@@ -4734,6 +4779,8 @@ class UIManager {
 
     card.style.left = x + 'px';
     card.style.top = y + 'px';
+    card.dataset.x = x;
+    card.dataset.y = y;
     card.style.setProperty('--enemy-resist-color', resistColor);
     card.style.setProperty('--enemy-weak-color', weakColor);
 

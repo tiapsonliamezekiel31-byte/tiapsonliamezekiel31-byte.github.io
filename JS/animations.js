@@ -292,6 +292,10 @@ class FloatingDamageNumber {
     const fontSize = isCrit ? 28 : 20;
     const baseRotation = (Math.random() - 0.5) * 8;
 
+    // Estimate width to prevent synchronous layout reads (layout thrashing) on creation
+    const rectWidth = String(displayValue).length * (fontSize * scale * sizeMultiplier * 0.65);
+    const clampXVal = Math.min(Math.max(x + xOffset, rectWidth / 2 + 8), Math.max(rectWidth / 2 + 8, window.innerWidth - rectWidth / 2 - 8));
+
     div.style.cssText = `
       position: fixed;
       left: 0;
@@ -303,20 +307,13 @@ class FloatingDamageNumber {
       -webkit-text-stroke: 0.5px ${color};
       pointer-events: none;
       z-index: 13050;
-      transform: translate3d(${x + xOffset}px, ${y}px, 0) translateX(-50%) rotate(${baseRotation}deg);
+      transform: translate3d(${clampXVal}px, ${y}px, 0) translateX(-50%) rotate(${baseRotation}deg);
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.16);
       will-change: transform, opacity;
       font-size: ${fontSize * scale * sizeMultiplier}px;
     `;
     div.textContent = displayValue;
     container.appendChild(div);
-    // cache width to avoid repeated layout reads
-    const rectWidth = (div.getBoundingClientRect() || {}).width || 0;
-    const clampXVal = (() => {
-      const minX = rectWidth / 2 + 8;
-      const maxX = window.innerWidth - rectWidth / 2 - 8;
-      return Math.min(Math.max(x + xOffset, minX), Math.max(minX, maxX));
-    })();
 
     // Manage stacking by rounded coordinates unless a stackKey is provided
     const key = stackKey || `coord:${Math.round(x)}_${Math.round(y)}`;
@@ -415,24 +412,36 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
 
   const effectiveDuration = Number(opts.duration) || DEFAULT_DURATION;
 
-  let anchorRectFn = null;
   let anchorKey = opts.anchorKey || null;
+  let baseX = window.innerWidth / 2;
+  let baseY = window.innerHeight / 2;
 
   if (anchorElementOrRect instanceof Element) {
     const el = anchorElementOrRect;
-    anchorRectFn = () => el.getBoundingClientRect();
     if (!anchorKey) anchorKey = el.dataset && el.dataset.enemyId ? String(el.dataset.enemyId) : null;
+    
+    // Check if positioning dataset is available to avoid layouts
+    if (el.dataset.x) {
+      const circle = document.querySelector('.enemy-circle-container');
+      const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+      baseX = circleRect.left + Number(el.dataset.x);
+      baseY = circleRect.top + Number(el.dataset.y);
+    } else {
+      const rect = el.getBoundingClientRect();
+      baseX = rect.left + rect.width / 2;
+      baseY = rect.top;
+    }
   } else if (anchorElementOrRect && typeof anchorElementOrRect.left === 'number') {
     const rect = anchorElementOrRect;
-    anchorRectFn = () => rect;
+    baseX = rect.left + rect.width / 2;
+    baseY = rect.top;
   } else if (typeof anchorElementOrRect === 'function') {
-    anchorRectFn = anchorElementOrRect;
+    const rect = anchorElementOrRect();
+    baseX = rect.left + rect.width / 2;
+    baseY = rect.top;
   } else if (anchorElementOrRect && typeof anchorElementOrRect.x === 'number') {
-    const r = { left: anchorElementOrRect.x, top: anchorElementOrRect.y, width: anchorElementOrRect.w || 0, height: anchorElementOrRect.h || 0 };
-    anchorRectFn = () => r;
-  } else {
-    // fallback to center of viewport
-    anchorRectFn = () => ({ left: window.innerWidth/2, top: window.innerHeight/2, width: 0, height: 0 });
+    baseX = anchorElementOrRect.x;
+    baseY = anchorElementOrRect.y;
   }
 
   const div = FloatingDamageNumber._anchoredPool.length ? FloatingDamageNumber._anchoredPool.pop() : document.createElement('div');
@@ -451,12 +460,15 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
   div.style.color = opts.color;
   div.style.fontSize = `${(opts.isCrit ? 28 : 20) * opts.scale * 1.5}px`;
   opts.container.appendChild(div);
-  const measuredWidth = div.getBoundingClientRect().width || 80;
+
+  // Estimate width instead of reading clientWidth to prevent layout thrashing
+  const measuredWidth = String(value).length * ((opts.isCrit ? 28 : 20) * opts.scale * 1.5 * 0.65);
 
   const floatObj = {
     div,
     width: measuredWidth,
-    anchorRectFn,
+    baseX: baseX,
+    baseY: baseY,
     anchorKey: anchorKey ? String(anchorKey) : null,
     driftX: (Math.random() * 10) - 5,
     driftY: (Math.random() * 8) - 4,
@@ -500,9 +512,6 @@ FloatingDamageNumber._anchoredTick = function() {
     const easedFade = Math.pow(fadeRaw, 2.6);
     const opacity = 1 - easedFade;
 
-    let rect = null;
-    try { rect = f.anchorRectFn(); } catch (e) { rect = { left: 0, top: 0, width: 0, height: 0 }; }
-
     let slotIndex = 0;
     if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
       slotIndex = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey].indexOf(f);
@@ -517,8 +526,8 @@ FloatingDamageNumber._anchoredTick = function() {
       f.div.style.webkitTextStroke = `0.5px ${v}`;
     } catch (e) {}
 
-    const baseX = rect.left + (rect.width || 0)/2;
-    const baseY = rect.top || 0;
+    const baseX = f.baseX;
+    const baseY = f.baseY;
 
     const clampX = (() => {
       const w = f.width || 80;
