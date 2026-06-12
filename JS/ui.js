@@ -1323,13 +1323,51 @@ class UIManager {
         if (gs.systemState.specialEvent && !gs.systemState.specialEvent.claimed) {
           const event = gs.systemState.specialEvent;
 
+          let rewardData = {
+            name: 'Mysterious Reward',
+            icon: '❓',
+            description: 'You claim a mysterious benefit.',
+            claimButtonText: 'CLAIM REWARD'
+          };
+          let preRolledTalisman = null;
+
+          if (event.type === 'Sacred Tree') {
+            rewardData = {
+              name: '+2 Max HP & Mana',
+              icon: '🌿',
+              description: 'Permanently increases your maximum Health by +2 and maximum Mana by +2.',
+              claimButtonText: 'CLAIM STAT UPGRADE'
+            };
+          } else if (event.type === 'Shrine') {
+            rewardData = {
+              name: 'Sacred Skill Choice',
+              icon: '⛩️',
+              description: 'Allows you to choose a new powerful class skill to equip.',
+              claimButtonText: 'CLAIM SKILL CHOICE'
+            };
+          } else if (event.type === 'Statue') {
+            const talismans = Object.keys(gs.config.talismans || {});
+            if (talismans.length > 0) {
+              preRolledTalisman = talismans[Math.floor(Math.random() * talismans.length)];
+              const tConfig = gs.config.talismans[preRolledTalisman];
+              rewardData = {
+                name: `${preRolledTalisman} Talisman`,
+                icon: tConfig?.icon || '🏺',
+                description: tConfig?.description || 'A mysterious talisman.',
+                claimButtonText: `CLAIM ${preRolledTalisman.toUpperCase()}`
+              };
+            }
+          }
+
           const executeClaim = () => {
             event.claimed = true;
             try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) {}
             
             if (event.type === 'Statue') {
-              const talismans = Object.keys(gs.config.talismans);
-              const talisman = talismans[Math.floor(Math.random() * talismans.length)];
+              const talisman = preRolledTalisman || (() => {
+                const talismans = Object.keys(gs.config.talismans);
+                return talismans[Math.floor(Math.random() * talismans.length)];
+              })();
               const oldTalismans = gs.playerState.talismans || [];
               if (oldTalismans.length >= 3) {
                 if (typeof PopupsManager !== 'undefined' && PopupsManager.showTalismanDiscard) {
@@ -1358,7 +1396,7 @@ class UIManager {
           };
 
           if (typeof PopupsManager !== 'undefined' && PopupsManager.showSpecialEventClaimPopup) {
-            PopupsManager.showSpecialEventClaimPopup(event, executeClaim);
+            PopupsManager.showSpecialEventClaimPopup(event, rewardData, executeClaim);
           } else {
             executeClaim();
           }

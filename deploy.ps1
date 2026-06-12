@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add special event claim confirmation and resolve mobile cutoff"
+$commitMsg = "feat: show specific item reward details and button labels in event claim popup"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
