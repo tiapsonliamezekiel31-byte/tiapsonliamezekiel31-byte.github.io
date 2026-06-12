@@ -212,7 +212,6 @@ class UIManager {
     hud.id = 'draggableHud';
     hud.className = 'draggable-hud';
     hud.innerHTML = `
-      <div class="hud-drag-handle" id="hudDragHandle"></div>
       <div class="hud-resources">
         <div class="hud-resource">
           <label>HP</label>
@@ -237,7 +236,6 @@ class UIManager {
     `;
     document.body.appendChild(hud);
 
-    const handle = hud.querySelector('#hudDragHandle');
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
@@ -252,6 +250,8 @@ class UIManager {
     }
 
     const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -261,7 +261,7 @@ class UIManager {
       hud.style.right = 'auto';
       hud.style.left = initialLeft + 'px';
       hud.style.top = initialTop + 'px';
-      handle.setPointerCapture(e.pointerId);
+      try { hud.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const onPointerMove = (e) => {
@@ -284,17 +284,17 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      handle.releasePointerCapture(e.pointerId);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_hud_pos', JSON.stringify({
         left: parseInt(hud.style.left, 10) || 0,
         top: parseInt(hud.style.top, 10) || 0
       }));
     };
 
-    handle.addEventListener('pointerdown', onPointerDown);
-    handle.addEventListener('pointermove', onPointerMove);
-    handle.addEventListener('pointerup', onPointerUp);
-    handle.addEventListener('pointercancel', onPointerUp);
+    hud.addEventListener('pointerdown', onPointerDown);
+    hud.addEventListener('pointermove', onPointerMove);
+    hud.addEventListener('pointerup', onPointerUp);
+    hud.addEventListener('pointercancel', onPointerUp);
   }
 
   static createNavigationMenu() {
@@ -382,7 +382,6 @@ class UIManager {
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
       <div id="runCompletionPanel" class="run-completion-panel" aria-label="Run completion graph">
-        <div class="run-completion-drag-handle" id="runCompletionDragHandle"></div>
         <div class="run-completion-head">
           <span>RUN COMPLETION</span>
           <span id="runCompletionRate">0%</span>
@@ -390,7 +389,6 @@ class UIManager {
         <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
       </div>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
-        <div class="event-banner-drag-handle" id="eventBannerDragHandle"></div>
         <div class="event-banner-content">
           <div id="eventBannerTitle" class="event-banner-title">Event Name</div>
           <div id="eventBannerDesc" class="event-banner-desc">Event description</div>
@@ -449,7 +447,6 @@ class UIManager {
     }
 
     const rcPanel = gameArea.querySelector('#runCompletionPanel');
-    const rcHandle = gameArea.querySelector('#runCompletionDragHandle');
     let isRcDragging = false;
     let rcStartX = 0, rcStartY = 0, rcInitialLeft = 0, rcInitialTop = 0;
 
@@ -465,6 +462,8 @@ class UIManager {
     }
 
     const onRcDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       isRcDragging = true;
       rcStartX = e.clientX;
       rcStartY = e.clientY;
@@ -475,7 +474,7 @@ class UIManager {
       rcPanel.style.bottom = 'auto';
       rcPanel.style.left = rcInitialLeft + 'px';
       rcPanel.style.top = rcInitialTop + 'px';
-      rcHandle.setPointerCapture(e.pointerId);
+      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const onRcMove = (e) => {
@@ -498,22 +497,21 @@ class UIManager {
     const onRcUp = (e) => {
       if (!isRcDragging) return;
       isRcDragging = false;
-      rcHandle.releasePointerCapture(e.pointerId);
+      try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
         left: parseInt(rcPanel.style.left, 10) || 0,
         top: parseInt(rcPanel.style.top, 10) || 0
       }));
     };
 
-    if (rcHandle) {
-      rcHandle.addEventListener('pointerdown', onRcDown);
-      rcHandle.addEventListener('pointermove', onRcMove);
-      rcHandle.addEventListener('pointerup', onRcUp);
-      rcHandle.addEventListener('pointercancel', onRcUp);
+    if (rcPanel) {
+      rcPanel.addEventListener('pointerdown', onRcDown);
+      rcPanel.addEventListener('pointermove', onRcMove);
+      rcPanel.addEventListener('pointerup', onRcUp);
+      rcPanel.addEventListener('pointercancel', onRcUp);
     }
 
     const ebPanel = gameArea.querySelector('#eventBannerPanel');
-    const ebHandle = gameArea.querySelector('#eventBannerDragHandle');
     let isEbDragging = false;
     let ebStartX = 0, ebStartY = 0, ebInitialLeft = 0, ebInitialTop = 0;
 
@@ -4933,7 +4931,7 @@ class UIManager {
     if (!strip) return;
 
     const state = getGameState();
-    let html = `<div class="weapon-drag-handle" id="weaponDragHandle"></div>`;
+    let html = '';
     html += (state.playerState.weapons || []).map((weaponName, index) => {
       const activeClass = (index === state.playerState.activeWeapon) ? 'active' : '';
       const weaponElement = state.playerState.weaponElements?.[index] || '';
@@ -4955,11 +4953,12 @@ class UIManager {
     strip.innerHTML = html;
 
     const container = strip.parentElement;
-    const handle = strip.querySelector('#weaponDragHandle');
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
     const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a, .weapon-chip, .weapon-upgrade-btn')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -4970,7 +4969,7 @@ class UIManager {
       container.style.bottom = 'auto';
       container.style.left = initialLeft + 'px';
       container.style.top = initialTop + 'px';
-      handle.setPointerCapture(e.pointerId);
+      try { strip.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const onPointerMove = (e) => {
@@ -4993,18 +4992,18 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      handle.releasePointerCapture(e.pointerId);
+      try { strip.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_weapon_pos', JSON.stringify({
         left: parseInt(container.style.left, 10) || 0,
         top: parseInt(container.style.top, 10) || 0
       }));
     };
 
-    if (handle) {
-      handle.addEventListener('pointerdown', onPointerDown);
-      handle.addEventListener('pointermove', onPointerMove);
-      handle.addEventListener('pointerup', onPointerUp);
-      handle.addEventListener('pointercancel', onPointerUp);
+    if (strip) {
+      strip.addEventListener('pointerdown', onPointerDown);
+      strip.addEventListener('pointermove', onPointerMove);
+      strip.addEventListener('pointerup', onPointerUp);
+      strip.addEventListener('pointercancel', onPointerUp);
     }
 
     // Click to switch weapon
@@ -5580,7 +5579,6 @@ class UIManager {
     const ordered = Object.entries(active || {}).filter(([, count]) => Number(count) > 0);
 
     panel.innerHTML = `
-      <div class="satchel-drag-handle" id="satchelDragHandle"></div>
       <div class="satchel-head">
         <span class="satchel-title">SATCHEL</span>
         <span class="satchel-subtitle">Consumables</span>
@@ -5606,11 +5604,12 @@ class UIManager {
     `;
 
     // Make Satchel Draggable
-    const handle = panel.querySelector('#satchelDragHandle');
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
     const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a, .satchel-item')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -5621,7 +5620,7 @@ class UIManager {
       panel.style.bottom = 'auto';
       panel.style.left = initialLeft + 'px';
       panel.style.top = initialTop + 'px';
-      handle.setPointerCapture(e.pointerId);
+      try { panel.setPointerCapture(e.pointerId); } catch (err) {}
     };
 
     const onPointerMove = (e) => {
@@ -5644,18 +5643,18 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      handle.releasePointerCapture(e.pointerId);
+      try { panel.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_satchel_pos', JSON.stringify({
         left: parseInt(panel.style.left, 10) || 0,
         top: parseInt(panel.style.top, 10) || 0
       }));
     };
 
-    if (handle) {
-      handle.addEventListener('pointerdown', onPointerDown);
-      handle.addEventListener('pointermove', onPointerMove);
-      handle.addEventListener('pointerup', onPointerUp);
-      handle.addEventListener('pointercancel', onPointerUp);
+    if (panel) {
+      panel.addEventListener('pointerdown', onPointerDown);
+      panel.addEventListener('pointermove', onPointerMove);
+      panel.addEventListener('pointerup', onPointerUp);
+      panel.addEventListener('pointercancel', onPointerUp);
     }
 
     panel.querySelectorAll('.satchel-item').forEach((item) => {

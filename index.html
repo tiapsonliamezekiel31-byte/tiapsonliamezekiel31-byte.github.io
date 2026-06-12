@@ -175,34 +175,7 @@
       }
     }, 30000); // Every 30 seconds
     
-    // Check for missed check-in (skipped day death)
-    setInterval(() => {
-      const state = getGameState();
-      
-      if (!state.systemState.isPaused && state.playerState.className) {
-        const now = new Date();
-        const lastCheckIn = state.systemState.lastCheckInTime 
-          ? new Date(state.systemState.lastCheckInTime)
-          : new Date();
-        
-        // Check if a full calendar day has passed
-        const daysElapsed = (now - lastCheckIn) / (1000 * 60 * 60 * 24);
-        
-        if (daysElapsed > 1) {
-          // Missed check-in - instant permadeath
-          state.eventBus.emit(EVENTS.SKIPPED_DAY_DEATH);
-          
-          PopupsManager.showDeathScreen({
-            class: state.playerState.className,
-            stage: state.stageState.stage,
-            level: state.playerState.level,
-            enemiesDefeated: state.systemState.runStats.enemiesDefeated,
-            bossesSailed: state.systemState.runStats.bossesSailed,
-            goldEarned: state.systemState.runStats.totalGoldEarned
-          });
-        }
-      }
-    }, 60000); // Check every minute
+    // Missed check-in auto-kill has been removed. Check-ins are now fully handled in-game.
 
     // Register the service worker when hosted over HTTP(S)
     if ('serviceWorker' in navigator) {
