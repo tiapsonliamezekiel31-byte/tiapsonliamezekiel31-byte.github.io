@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: enlarge combat circle further to 550px and spread enemies to 60px"
+$commitMsg = "fix: make planner sticky notes immediately draggable from any part with 5px deadzone"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

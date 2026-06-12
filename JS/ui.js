@@ -3500,88 +3500,76 @@ class UIManager {
           if (event.button !== 0) return;
 
           const textEl = noteEl.querySelector('.daily-note-text');
-          // Always prevent default so the browser never starts text-selection during a long press
+          if (noteEl.classList.contains('editing') && event.target.closest('.daily-note-text')) {
+            return;
+          }
+
           event.preventDefault();
 
-          let isLongPressed = false;
+          let isDragging = false;
           const startX = event.clientX;
           const startY = event.clientY;
 
           try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
 
-          const timer = setTimeout(() => {
-            isLongPressed = true;
-            if (textEl && noteEl.classList.contains('editing')) {
-              textEl.blur(); // blur listener disables contenteditable and removes .editing
-            }
+          const noteRect = noteEl.getBoundingClientRect();
+          const boardRect = board.getBoundingClientRect();
+          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
 
-            const noteRect = noteEl.getBoundingClientRect();
-            const boardRect = board.getBoundingClientRect();
-            const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
-            const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
-            const dragState = {
-              pointerId: event.pointerId,
-              boardRect,
-              noteWidth: noteRect.width,
-              noteHeight: noteRect.height,
-              offsetX: event.clientX - (boardRect.left + startLeftPx),
-              offsetY: event.clientY - (boardRect.top + startTopPx),
-              moved: false,
-              startX: event.clientX,
-              startY: event.clientY,
-              noteId,
-              nextX: Number(noteData.x) || 0,
-              nextY: Number(noteData.y) || 0
-            };
-
-            noteEl.classList.add('dragging');
-            noteEl.dataset.dragState = JSON.stringify(dragState);
-          }, 500);
+          const dragState = {
+            pointerId: event.pointerId,
+            boardRect,
+            noteWidth: noteRect.width,
+            noteHeight: noteRect.height,
+            offsetX: event.clientX - (boardRect.left + startLeftPx),
+            offsetY: event.clientY - (boardRect.top + startTopPx),
+            moved: false,
+            startX: event.clientX,
+            startY: event.clientY,
+            noteId,
+            nextX: Number(noteData.x) || 0,
+            nextY: Number(noteData.y) || 0
+          };
 
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
             if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
-            if (!isLongPressed) {
-              const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-              if (dist > 10) {
-                clearTimeout(timer);
-                cleanup();
+
+            const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+            if (!isDragging) {
+              if (dist > 5) {
+                isDragging = true;
+                noteEl.classList.add('dragging');
+                if (textEl && noteEl.classList.contains('editing')) {
+                  textEl.blur();
+                }
+              } else {
+                return;
               }
-              return;
             }
 
-            const stateRaw = noteEl.dataset.dragState;
-            if (!stateRaw) return;
-            const current = JSON.parse(stateRaw);
             const boardNow = board.getBoundingClientRect();
-            const halfWidth = current.noteWidth / 2;
-            const halfHeight = current.noteHeight / 2;
-            const nextLeftPx = Math.max(halfWidth, Math.min(boardNow.width - halfWidth, moveEvent.clientX - boardNow.left - current.offsetX));
-            const nextTopPx = Math.max(halfHeight, Math.min(boardNow.height - halfHeight, moveEvent.clientY - boardNow.top - current.offsetY));
+            const halfWidth = dragState.noteWidth / 2;
+            const halfHeight = dragState.noteHeight / 2;
+            const nextLeftPx = Math.max(halfWidth, Math.min(boardNow.width - halfWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
+            const nextTopPx = Math.max(halfHeight, Math.min(boardNow.height - halfHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
             
-            current.moved = true;
-            current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
-            current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
-            noteEl.style.left = `${current.nextX}%`;
-            noteEl.style.top = `${current.nextY}%`;
-            noteEl.dataset.dragState = JSON.stringify(current);
+            dragState.moved = true;
+            dragState.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
+            dragState.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+            noteEl.style.left = `${dragState.nextX}%`;
+            noteEl.style.top = `${dragState.nextY}%`;
           };
 
           const onUp = (upEvent) => {
             if (upEvent.pointerId !== event.pointerId) return;
-            clearTimeout(timer);
             cleanup();
 
-            if (isLongPressed) {
-              const stateRaw = noteEl.dataset.dragState;
-              if (!stateRaw) return;
-              const current = JSON.parse(stateRaw);
-
+            if (isDragging) {
               noteEl.classList.remove('dragging');
-              noteEl.removeAttribute('data-drag-state');
-
-              if (current.moved) {
-                state.moveDailyNote?.(noteId, { x: current.nextX, y: current.nextY });
+              if (dragState.moved) {
+                state.moveDailyNote?.(noteId, { x: dragState.nextX, y: dragState.nextY });
               }
             } else {
               // Tap - select first, then edit on subsequent click
@@ -3711,86 +3699,74 @@ class UIManager {
           if (event.button !== 0) return;
 
           const textEl = noteEl.querySelector('.todo-note-text');
-          // Always prevent default so the browser never starts text-selection during a long press
+          if (noteEl.classList.contains('editing') && event.target.closest('.todo-note-text')) {
+            return;
+          }
+
           event.preventDefault();
 
-          let isLongPressed = false;
+          let isDragging = false;
           const startX = event.clientX;
           const startY = event.clientY;
 
           try { noteEl.setPointerCapture(event.pointerId); } catch (error) { }
 
-          const timer = setTimeout(() => {
-            isLongPressed = true;
-            if (textEl && noteEl.classList.contains('editing')) {
-              textEl.blur(); // blur listener disables contenteditable and removes .editing
-            }
+          const noteRect = noteEl.getBoundingClientRect();
+          const boardRect = board.getBoundingClientRect();
+          const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
+          const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
 
-            const noteRect = noteEl.getBoundingClientRect();
-            const boardRect = board.getBoundingClientRect();
-            const startLeftPx = ((Number(noteData.x) || 0) / 100) * boardRect.width;
-            const startTopPx = ((Number(noteData.y) || 0) / 100) * boardRect.height;
-            const dragState = {
-              pointerId: event.pointerId,
-              boardRect,
-              noteWidth: noteRect.width,
-              noteHeight: noteRect.height,
-              offsetX: event.clientX - (boardRect.left + startLeftPx),
-              offsetY: event.clientY - (boardRect.top + startTopPx),
-              moved: false,
-              startX: event.clientX,
-              startY: event.clientY,
-              noteId,
-              nextX: Number(noteData.x) || 0,
-              nextY: Number(noteData.y) || 0
-            };
-
-            noteEl.classList.add('dragging');
-            noteEl.dataset.dragState = JSON.stringify(dragState);
-          }, 500);
+          const dragState = {
+            pointerId: event.pointerId,
+            boardRect,
+            noteWidth: noteRect.width,
+            noteHeight: noteRect.height,
+            offsetX: event.clientX - (boardRect.left + startLeftPx),
+            offsetY: event.clientY - (boardRect.top + startTopPx),
+            moved: false,
+            startX: event.clientX,
+            startY: event.clientY,
+            noteId,
+            nextX: Number(noteData.x) || 0,
+            nextY: Number(noteData.y) || 0
+          };
 
           const onMove = (moveEvent) => {
             if (moveEvent.pointerId !== event.pointerId) return;
             if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
-            if (!isLongPressed) {
-              const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-              if (dist > 10) {
-                clearTimeout(timer);
-                cleanup();
+
+            const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+            if (!isDragging) {
+              if (dist > 5) {
+                isDragging = true;
+                noteEl.classList.add('dragging');
+                if (textEl && noteEl.classList.contains('editing')) {
+                  textEl.blur();
+                }
+              } else {
+                return;
               }
-              return;
             }
 
-            const stateRaw = noteEl.dataset.dragState;
-            if (!stateRaw) return;
-            const current = JSON.parse(stateRaw);
             const boardNow = board.getBoundingClientRect();
-            const nextLeftPx = Math.max(0, Math.min(boardNow.width - current.noteWidth, moveEvent.clientX - boardNow.left - current.offsetX));
-            const nextTopPx = Math.max(0, Math.min(boardNow.height - current.noteHeight, moveEvent.clientY - boardNow.top - current.offsetY));
+            const nextLeftPx = Math.max(0, Math.min(boardNow.width - dragState.noteWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
+            const nextTopPx = Math.max(0, Math.min(boardNow.height - dragState.noteHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
             
-            current.moved = true;
-            current.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
-            current.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
-            noteEl.style.left = `${current.nextX}%`;
-            noteEl.style.top = `${current.nextY}%`;
-            noteEl.dataset.dragState = JSON.stringify(current);
+            dragState.moved = true;
+            dragState.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
+            dragState.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+            noteEl.style.left = `${dragState.nextX}%`;
+            noteEl.style.top = `${dragState.nextY}%`;
           };
 
           const onUp = (upEvent) => {
             if (upEvent.pointerId !== event.pointerId) return;
-            clearTimeout(timer);
             cleanup();
 
-            if (isLongPressed) {
-              const stateRaw = noteEl.dataset.dragState;
-              if (!stateRaw) return;
-              const current = JSON.parse(stateRaw);
-
+            if (isDragging) {
               noteEl.classList.remove('dragging');
-              noteEl.removeAttribute('data-drag-state');
-
-              if (current.moved) {
-                state.moveTodoNote?.(noteId, { x: current.nextX, y: current.nextY });
+              if (dragState.moved) {
+                state.moveTodoNote?.(noteId, { x: dragState.nextX, y: dragState.nextY });
               }
             } else {
               // Tap - select first, then edit on subsequent click
