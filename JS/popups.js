@@ -104,6 +104,9 @@ class PopupsManager {
           <div class="attr-bar-container">
             <div class="attr-bar-player" style="width: ${playerPercent}%"></div>
           </div>
+          <div class="attr-sabotage-wrap" style="display: flex; justify-content: center; margin-top: 4px;">
+            <button class="btn-sabotage" data-attr="${attr}">Sabotage (30 Mana)</button>
+          </div>
         </div>
       `;
     });
@@ -122,6 +125,51 @@ class PopupsManager {
     popup.innerHTML = html;
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
     
+    // Bind Sabotage button listeners
+    popup.querySelectorAll('.btn-sabotage').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const attr = e.currentTarget.dataset.attr;
+        const pState = state.playerState;
+        if ((pState.mana || 0) < 30) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana', { color: '#ff6666' });
+          return;
+        }
+
+        // Deduct 30 mana
+        state.setMana(pState.mana - 30);
+
+        // Get points
+        const myPoints = pState.attributes[attr]?.points || 0;
+        const reduction = myPoints * 0.3;
+
+        // Reduce nemesis attribute points
+        if (!state.nemesisState.attributes[attr]) {
+          state.nemesisState.attributes[attr] = { points: 0, level: 1 };
+        }
+        const nemAttr = state.nemesisState.attributes[attr];
+        const oldPoints = nemAttr.points;
+        nemAttr.points = Math.max(0, nemAttr.points - reduction);
+        const actualReduced = oldPoints - nemAttr.points;
+
+        // Recalculate level
+        while (nemAttr.level > 1 && nemAttr.points < thresholds[nemAttr.level - 1]) {
+          nemAttr.level--;
+        }
+
+        // Save state
+        try { state.save(); } catch (err) {}
+
+        // Show floating message
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Sabotaged ${attr}: -${actualReduced.toFixed(1)} pts`, { color: '#ff6666' });
+
+        // Update main game UI HUD mana bar instantly if available
+        try { if (window.UIManager && UIManager.refreshGameUI) UIManager.refreshGameUI(); } catch (err) {}
+
+        // Re-open/refresh attributes popup
+        PopupsManager.showAttributes();
+      });
+    });
+
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
