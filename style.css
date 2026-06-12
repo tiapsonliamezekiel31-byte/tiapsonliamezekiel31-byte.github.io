@@ -856,8 +856,8 @@ body::before {
 
 .enemy-circle-container {
   position: relative;
-  width: 460px;
-  height: 460px;
+  width: 500px;
+  height: 500px;
   border: 3px solid rgba(255, 215, 106, 0.65);
   border-radius: 50%;
   background:
@@ -872,16 +872,17 @@ body::before {
 /* Centered level indicator inside the enemy circle */
 .level-indicator {
   position: absolute;
-  left: 50%;
-  top: 18%;
-  transform: translate(-50%, -50%);
-  font-size: clamp(36px, 8vw, 84px);
-  color: #fff0b8;
-  text-shadow: 0 0 18px rgba(255, 215, 0, 0.55), 2px 2px 0 rgba(0, 0, 0, 0.7);
+  right: 8%;
+  top: 50%;
+  left: auto;
+  transform: translate(0, -50%);
+  font-size: clamp(18px, 4vw, 24px);
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
   z-index: 9;
   pointer-events: none;
   font-weight: 700;
-  opacity: 0.95;
+  opacity: 0.45;
   line-height: 1;
   display: flex;
   align-items: center;

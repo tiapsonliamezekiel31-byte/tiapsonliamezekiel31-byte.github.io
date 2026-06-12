@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: enlarge combat circle and implement proximity targeting"
+$commitMsg = "feat: polish level indicator position and spacing and enlarge circle further to 500px"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
