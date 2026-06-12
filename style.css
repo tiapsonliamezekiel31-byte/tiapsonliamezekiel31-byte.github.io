@@ -3263,11 +3263,13 @@ body::before {
   border: 2px solid var(--accent-copper);
   padding: 16px;
   max-width: 600px;
-  max-height: 80vh;
+  max-height: min(85vh, 85dvh);
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   box-shadow: none;
   border-radius: 3px;
+  box-sizing: border-box;
 }
 
 .edit-daily-popup,
@@ -4582,7 +4584,7 @@ body::before {
 
   .popup {
     max-width: 90vw;
-    max-height: 90vh;
+    max-height: min(88vh, 88dvh);
     font-size: 11px;
   }
 
@@ -4595,7 +4597,6 @@ body::before {
 /* Minimal/flat theme override: remove heavy shadows and blurs */
 .headbar,
 .shop-panel,
-.popup,
 .popup-overlay,
 .task-card,
 .task-card-daily,

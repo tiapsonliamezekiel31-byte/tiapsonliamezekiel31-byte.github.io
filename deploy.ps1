@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: show specific item reward details and button labels in event claim popup"
+$commitMsg = "fix: resolve popup cutoff by using dvh units and removing erroneous width override on .popup"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
