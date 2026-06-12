@@ -2556,40 +2556,87 @@ class UIManager {
     // Show dramatic skill activation popup
     try {
       const state = getGameState();
-      // Combine text for all applied skills
-      const meta = (state.config.classSkillMeta && state.config.classSkillMeta[className]) || {};
-      const skillName = meta.name || 'Skill';
-      const skillIcon = meta.icon || '✨';
-      const skillColor = meta.color || '#ffd700';
-      const flavorText = meta.flavorText || '';
-      
-      let extraSkillsText = '';
-      if (Array.isArray(state.playerState.borrowedSkills) && state.playerState.borrowedSkills.length > 0) {
-        const extraNames = state.playerState.borrowedSkills.map(cls => state.config.classSkillMeta?.[cls]?.name || cls).join(' + ');
-        extraSkillsText = `<div class="skill-activation-extra">+ ${extraNames}</div>`;
-      }
+      const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255, 215, 0';
+      };
 
-      // Create and show the dramatic popup
-      const popup = document.createElement('div');
-      popup.className = 'skill-activation-popup';
-      popup.style.setProperty('--skill-color', skillColor);
-      popup.innerHTML = `
-        <div class="skill-activation-icon">${skillIcon}</div>
-        <div class="skill-activation-name" style="color: ${skillColor}">${skillName}</div>
-        ${extraSkillsText}
-        ${flavorText ? `<div class="skill-activation-flavor">${flavorText}</div>` : ''}
+      const container = document.createElement('div');
+      container.className = 'skill-activation-container';
+      document.body.appendChild(container);
+
+      // 1. Primary Skill Card
+      const primaryMeta = (state.config.classSkillMeta && state.config.classSkillMeta[className]) || {};
+      const primaryName = primaryMeta.name || 'Skill';
+      const primaryIcon = primaryMeta.icon || '✨';
+      const primaryColor = primaryMeta.color || '#ffd700';
+      const primaryFlavor = primaryMeta.flavorText || '';
+
+      const primaryCard = document.createElement('div');
+      primaryCard.className = 'skill-card-popup primary';
+      primaryCard.style.setProperty('--skill-color', primaryColor);
+      primaryCard.style.setProperty('--skill-color-rgb', hexToRgb(primaryColor));
+      primaryCard.innerHTML = `
+        <div class="skill-badge">PRIMARY SKILL</div>
+        <div class="skill-main-row">
+          <div class="skill-activation-icon">${primaryIcon}</div>
+          <div class="skill-text-group">
+            <div class="skill-activation-name" style="color: ${primaryColor}">${primaryName}</div>
+            ${primaryFlavor ? `<div class="skill-activation-flavor">${primaryFlavor}</div>` : ''}
+          </div>
+        </div>
       `;
-      document.body.appendChild(popup);
+      container.appendChild(primaryCard);
 
-      // Screen flash with class color
+      // Screen flash with primary class color
       try {
-        ScreenEffects.flash(skillColor + '18', 300);
+        ScreenEffects.flash(primaryColor + '18', 300);
       } catch (e) {}
 
-      // Auto-remove after animation completes
+      // 2. Borrowed Skill Cards (if any)
+      if (Array.isArray(state.playerState.borrowedSkills)) {
+        state.playerState.borrowedSkills.forEach((borrowedClass, index) => {
+          const borrowedMeta = (state.config.classSkillMeta && state.config.classSkillMeta[borrowedClass]) || {};
+          const borrowedName = borrowedMeta.name || borrowedClass;
+          const borrowedIcon = borrowedMeta.icon || '✨';
+          const borrowedColor = borrowedMeta.color || '#ffd700';
+          const borrowedFlavor = borrowedMeta.flavorText || '';
+
+          const borrowedCard = document.createElement('div');
+          borrowedCard.className = 'skill-card-popup borrowed';
+          borrowedCard.style.setProperty('--skill-color', borrowedColor);
+          borrowedCard.style.setProperty('--skill-color-rgb', hexToRgb(borrowedColor));
+          borrowedCard.style.animationDelay = `${0.25 * (index + 1)}s`;
+          borrowedCard.innerHTML = `
+            <div class="skill-badge">BORROWED SKILL</div>
+            <div class="skill-main-row">
+              <div class="skill-activation-icon">${borrowedIcon}</div>
+              <div class="skill-text-group">
+                <div class="skill-activation-name" style="color: ${borrowedColor}">${borrowedName}</div>
+                ${borrowedFlavor ? `<div class="skill-activation-flavor">${borrowedFlavor}</div>` : ''}
+              </div>
+            </div>
+          `;
+          container.appendChild(borrowedCard);
+
+          // Screen flash with borrowed class color (delayed to match animation)
+          setTimeout(() => {
+            try {
+              ScreenEffects.flash(borrowedColor + '14', 250);
+            } catch (e) {}
+          }, 250 * (index + 1));
+        });
+      }
+
+      // Smooth drift-up and fade-out transition for the entire container
       setTimeout(() => {
-        try { popup.remove(); } catch (e) {}
-      }, 3200);
+        try {
+          container.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+          container.style.opacity = '0';
+          container.style.transform = 'translate(-50%, -60%)';
+          setTimeout(() => container.remove(), 600);
+        } catch (e) {}
+      }, 3000);
     } catch (e) {
       console.warn('Failed to show skill activation popup', e);
     }

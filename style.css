@@ -3947,83 +3947,172 @@ body::before {
 }
 
 /* Skill Activation Popup */
-.skill-activation-popup {
+/* Container for all skill cards */
+.skill-activation-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
+  gap: 20px;
   align-items: center;
   justify-content: center;
   z-index: 99999;
   pointer-events: none;
-  animation: skillActivationAnim 3.2s ease-out forwards;
-  background: transparent;
+}
+
+/* Individual Glassmorphic Skill Card */
+.skill-card-popup {
+  background: rgba(10, 8, 25, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 2px solid var(--skill-color, #ffd700) !important;
+  border-radius: 16px !important;
+  padding: 16px 28px !important;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.7),
+    inset 0 0 15px rgba(255, 255, 255, 0.05),
+    0 0 25px rgba(var(--skill-color-rgb), 0.25) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 90vw;
+  max-width: 420px;
+  position: relative;
+  overflow: hidden;
+  animation: skillCardEntrance 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Stagger delay for multiple cards */
+.skill-card-popup.borrowed {
+  animation-delay: 0.25s;
+}
+
+/* Sparkly background glow effect */
+.skill-card-popup::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+  animation: skillBgRotate 12s linear infinite;
+}
+
+/* Badge for skill source */
+.skill-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 4px 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-white);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.skill-card-popup.primary .skill-badge {
+  border-color: rgba(74, 158, 255, 0.4);
+  background: rgba(74, 158, 255, 0.12);
+  color: #a5f3fc;
+}
+
+.skill-card-popup.borrowed .skill-badge {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.12);
+  color: #f5d0fe;
+}
+
+/* Horizontal alignment of icon and text */
+.skill-main-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
 }
 
 .skill-activation-icon {
-  font-size: 64px;
-  margin-bottom: 8px;
-  filter: drop-shadow(0 0 20px var(--skill-color, #ffd700));
-  animation: skillIconPulse 0.6s ease-out;
+  font-size: 40px !important;
+  margin-bottom: 0 !important;
+  filter: drop-shadow(0 0 15px var(--skill-color, #ffd700));
+  animation: skillIconPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+.skill-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .skill-activation-name {
   font-family: 'Press Start 2P', monospace;
-  font-size: 18px;
-  letter-spacing: 2px;
+  font-size: 14px !important;
+  letter-spacing: 1px !important;
   text-transform: uppercase;
-  text-shadow:
-    0 0 10px var(--skill-color, #ffd700),
-    0 0 30px var(--skill-color, #ffd700),
-    0 0 60px var(--skill-color, #ffd700);
-  margin-bottom: 10px;
+  text-shadow: 0 0 10px var(--skill-color, #ffd700) !important;
+  margin-bottom: 0 !important;
 }
 
 .skill-activation-flavor {
   font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 8px !important;
+  color: rgba(255, 255, 255, 0.65) !important;
   font-style: italic;
-  letter-spacing: 0.5px;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.3px !important;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.1) !important;
 }
 
-@keyframes skillActivationAnim {
+/* Animations */
+@keyframes skillCardEntrance {
   0% {
     opacity: 0;
-    transform: scale(0.7);
-  }
-  12% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  20% {
-    transform: scale(1);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1);
+    transform: translateY(30px) scale(0.85);
   }
   100% {
-    opacity: 0;
-    transform: scale(1.15);
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-@keyframes skillIconPulse {
+@keyframes skillIconPop {
   0% {
-    transform: scale(0.3);
+    transform: scale(0.4) rotate(-15deg);
     opacity: 0;
   }
   50% {
-    transform: scale(1.3);
-    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes skillBgRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Mobile responsiveness adjustments */
+@media (max-width: 480px) {
+  .skill-card-popup {
+    padding: 12px 20px !important;
+    max-width: 320px;
+  }
+  .skill-activation-icon {
+    font-size: 32px !important;
+  }
+  .skill-activation-name {
+    font-size: 11px !important;
+  }
+  .skill-activation-flavor {
+    font-size: 7px !important;
   }
 }
 
