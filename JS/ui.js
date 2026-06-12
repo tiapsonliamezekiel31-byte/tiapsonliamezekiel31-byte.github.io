@@ -2124,21 +2124,21 @@ class UIManager {
 
     if (dailiesBtn) {
       const show = !!state.systemState?.taskListFilters?.showCompletedDailies;
-      dailiesBtn.textContent = '✓';
+      dailiesBtn.textContent = show ? 'Completed: ON' : 'Completed: off';
       dailiesBtn.setAttribute('aria-pressed', String(show));
       dailiesBtn.classList.toggle('active', show);
     }
 
     if (todosBtn) {
       const show = !!state.systemState?.taskListFilters?.showCompletedTodos;
-      todosBtn.textContent = '✓';
+      todosBtn.textContent = show ? 'Completed: ON' : 'Completed: off';
       todosBtn.setAttribute('aria-pressed', String(show));
       todosBtn.classList.toggle('active', show);
     }
 
     if (dailiesEditBtn) {
       const editMode = !!state.systemState?.taskListFilters?.editModeDailies;
-      dailiesEditBtn.textContent = 'Edit';
+      dailiesEditBtn.textContent = editMode ? 'Edit: ON' : 'Edit: off';
       dailiesEditBtn.setAttribute('aria-pressed', String(editMode));
       dailiesEditBtn.classList.toggle('active', editMode);
     }

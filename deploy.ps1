@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: remove popup-overlay from erroneous width override that prevented full-screen coverage"
+$commitMsg = "fix: show correct on/off state labels on dailies and todos toggle buttons"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
