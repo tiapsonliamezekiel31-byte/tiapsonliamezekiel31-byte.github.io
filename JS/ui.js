@@ -2819,7 +2819,7 @@ class UIManager {
       const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const radius = Math.min(rect.width, rect.height) / 2 - 4;
+      const radius = Math.min(rect.width, rect.height) / 2;
 
       let bestEnemy = null;
       let minDistanceSq = Infinity;
@@ -2829,7 +2829,7 @@ class UIManager {
         if (index === -1) return;
 
         const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(index, state.stageState.enemies.length);
-        const currentRadius = radius - (ringLevel * 100);
+        const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
 
         const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
         const cardX = centerX + Math.cos(angle) * currentRadius;
@@ -4591,25 +4591,10 @@ class UIManager {
   }
 
   static getRingInfo(index, totalCount) {
-    const capacities = [8, 6, 4, 2];
-    let remaining = index;
-    let ringLevel = 0;
-    while (remaining >= (capacities[ringLevel] || 2)) {
-      remaining -= (capacities[ringLevel] || 2);
-      ringLevel++;
-    }
-    const ringIndex = remaining;
-
-    let totalInRing = 0;
-    let tempRemaining = totalCount;
-    for (let r = 0; r <= ringLevel; r++) {
-      const capacity = capacities[r] || 2;
-      if (r === ringLevel) {
-        totalInRing = Math.min(capacity, tempRemaining);
-      }
-      tempRemaining -= capacity;
-      if (tempRemaining <= 0) break;
-    }
+    const capacityPerRing = 8;
+    const ringLevel = Math.floor(index / capacityPerRing);
+    const ringIndex = index % capacityPerRing;
+    const totalInRing = Math.min(capacityPerRing, totalCount - ringLevel * capacityPerRing);
     return { ringLevel, ringIndex, totalInRing: totalInRing || 1 };
   }
 
@@ -4623,9 +4608,8 @@ class UIManager {
     const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    // Position enemies ON the circle border (outer edge)
-    // Tweak radius to keep cards inside the circle and avoid clipping
-    const radius = Math.min(rect.width, rect.height) / 2 - 4;
+    // Position enemies relative to circle border
+    const radius = Math.min(rect.width, rect.height) / 2;
 
     if (!enemies.length) {
       layer.innerHTML = '<div class="enemy-empty">No enemies yet</div>';
@@ -4656,7 +4640,7 @@ class UIManager {
       activeEnemyIds.add(enemyId);
 
       const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
-      const currentRadius = radius - (ringLevel * 100);
+      const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
 
       const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
       const x = centerX + Math.cos(angle) * currentRadius;
