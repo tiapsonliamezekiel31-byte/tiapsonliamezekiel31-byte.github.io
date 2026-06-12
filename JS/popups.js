@@ -3044,4 +3044,54 @@ class PopupsManager {
       requestAnimationFrame(animate);
     }
   }
+
+  static showSpecialEventClaimPopup(event, onConfirm) {
+    this.closeAllPopups();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup special-event-popup';
+
+    let icon = '❓';
+    let title = 'Mysterious Event';
+    let flavor = 'You encounter a rare and mysterious phenomenon.';
+
+    if (event.type === 'Shrine') {
+      icon = '⛩️';
+      title = 'Shrine of the Ancients';
+      flavor = 'The air hums with forgotten incantations. As you bow your head, the ancient shrine glows with ethereal light, offering you the choice of a sacred skill to aid your journey.';
+    } else if (event.type === 'Statue') {
+      icon = '🗿';
+      title = 'Statue of the Paragon';
+      flavor = 'A monumental stone figure stares silently into the abyss, carved in the likeness of a legend. In recognition of your unwavering devotion, it grants you a mystical talisman of power.';
+    } else if (event.type === 'Sacred Tree') {
+      icon = '🌳';
+      title = 'The Sacred Tree';
+      flavor = 'Ancient roots dig deep into the earth, drawing life from the elements. The tree whispers secrets of vitality and longevity, permanently strengthening your life force and mana pool.';
+    }
+
+    popup.innerHTML = `
+      <div class="special-event-icon-container">${icon}</div>
+      <h2 class="special-event-title">${title}</h2>
+      <p class="special-event-flavor">"${flavor}"</p>
+      <div class="special-event-actions">
+        <button class="btn-special-cancel">CANCEL</button>
+        <button class="btn-special-claim">CLAIM REWARD</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-special-cancel').addEventListener('click', () => this.closeAllPopups());
+    popup.querySelector('.btn-special-claim').addEventListener('click', () => {
+      this.closeAllPopups();
+      if (typeof onConfirm === 'function') {
+        onConfirm();
+      }
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
 }

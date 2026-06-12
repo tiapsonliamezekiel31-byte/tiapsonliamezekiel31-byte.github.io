@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: make planner sticky notes immediately draggable from any part with 5px deadzone"
+$commitMsg = "feat: add full screen popup with icon and flavor text before claiming special events"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

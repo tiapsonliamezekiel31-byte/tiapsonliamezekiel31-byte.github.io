@@ -1322,38 +1322,46 @@ class UIManager {
         const gs = getGameState();
         if (gs.systemState.specialEvent && !gs.systemState.specialEvent.claimed) {
           const event = gs.systemState.specialEvent;
-          event.claimed = true;
 
-          try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) {}
-          
-          if (event.type === 'Statue') {
-            const talismans = Object.keys(gs.config.talismans);
-            const talisman = talismans[Math.floor(Math.random() * talismans.length)];
-            const oldTalismans = gs.playerState.talismans || [];
-            if (oldTalismans.length >= 3) {
-              if (typeof PopupsManager !== 'undefined' && PopupsManager.showTalismanDiscard) {
-                PopupsManager.showTalismanDiscard(talisman);
+          const executeClaim = () => {
+            event.claimed = true;
+            try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) {}
+            
+            if (event.type === 'Statue') {
+              const talismans = Object.keys(gs.config.talismans);
+              const talisman = talismans[Math.floor(Math.random() * talismans.length)];
+              const oldTalismans = gs.playerState.talismans || [];
+              if (oldTalismans.length >= 3) {
+                if (typeof PopupsManager !== 'undefined' && PopupsManager.showTalismanDiscard) {
+                  PopupsManager.showTalismanDiscard(talisman);
+                }
+              } else {
+                if (!gs.playerState.talismans) gs.playerState.talismans = [];
+                gs.playerState.talismans.push(talisman);
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch(err) {}
               }
-            } else {
-              if (!gs.playerState.talismans) gs.playerState.talismans = [];
-              gs.playerState.talismans.push(talisman);
-              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch(err) {}
+            } else if (event.type === 'Sacred Tree') {
+              gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + 2;
+              gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + 2;
+              gs.addHp(2);
+              gs.addMana(2);
+              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+2 Max HP & Mana', { color: '#84cc16' }); } catch(err) {}
+            } else if (event.type === 'Shrine') {
+              if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
+                PopupsManager.showShrineSkillChoice();
+              }
             }
-          } else if (event.type === 'Sacred Tree') {
-            gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + 2;
-            gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + 2;
-            gs.addHp(2);
-            gs.addMana(2);
-            try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+2 Max HP & Mana', { color: '#84cc16' }); } catch(err) {}
-          } else if (event.type === 'Shrine') {
-            if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
-              PopupsManager.showShrineSkillChoice();
-            }
-          }
 
-          gs.save();
-          this.refreshEventBanner();
-          this.refreshGameUI();
+            gs.save();
+            this.refreshEventBanner();
+            this.refreshGameUI();
+          };
+
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showSpecialEventClaimPopup) {
+            PopupsManager.showSpecialEventClaimPopup(event, executeClaim);
+          } else {
+            executeClaim();
+          }
         }
       });
     }
