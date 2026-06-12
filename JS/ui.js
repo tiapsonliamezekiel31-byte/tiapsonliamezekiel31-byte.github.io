@@ -2810,16 +2810,19 @@ class UIManager {
       });
     };
 
-    const getTargetEnemyByAngle = (pointerX, pointerY) => {
+    const getTargetEnemyByProximity = (pointerX, pointerY) => {
       const state = getGameState();
       const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
       if (enemies.length === 0) return null;
 
-      // Pointer angle relative to circle center
-      const pointerAngleRad = Math.atan2(pointerY - circleCenterY, pointerX - circleCenterX);
+      const circle = document.querySelector('.enemy-circle-container');
+      const rect = circle ? circle.getBoundingClientRect() : { width: 500, height: 500 };
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const radius = Math.min(rect.width, rect.height) / 2 - 16;
 
       let bestEnemy = null;
-      let minAngleDiff = Infinity;
+      let minDistanceSq = Infinity;
 
       enemies.forEach((enemy) => {
         const index = state.stageState.enemies.indexOf(enemy);
@@ -2829,13 +2832,18 @@ class UIManager {
         const ringLevel = Math.floor(index / capacityPerRing);
         const ringIndex = index % capacityPerRing;
         const totalInRing = Math.min(capacityPerRing, state.stageState.enemies.length - ringLevel * capacityPerRing);
-        const cardAngle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+        const currentRadius = radius - (ringLevel * 70);
 
-        let diff = Math.abs(pointerAngleRad - cardAngle);
-        if (diff > Math.PI) diff = 2 * Math.PI - diff;
+        const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+        const cardX = centerX + Math.cos(angle) * currentRadius;
+        const cardY = centerY + Math.sin(angle) * currentRadius;
 
-        if (diff < minAngleDiff) {
-          minAngleDiff = diff;
+        const dx = pointerX - cardX;
+        const dy = pointerY - cardY;
+        const distSq = dx * dx + dy * dy;
+
+        if (distSq < minDistanceSq) {
+          minDistanceSq = distSq;
           bestEnemy = enemy;
         }
       });
@@ -2947,7 +2955,7 @@ class UIManager {
 
         line.className.baseVal = dragType;
 
-        const targetedEnemy = getTargetEnemyByAngle(pointerX, pointerY);
+         const targetedEnemy = getTargetEnemyByProximity(pointerX, pointerY);
         clearHighlights();
 
         if (targetedEnemy) {
@@ -4631,7 +4639,7 @@ class UIManager {
       const ringLevel = Math.floor(index / capacityPerRing);
       const ringIndex = index % capacityPerRing;
       const totalInRing = Math.min(capacityPerRing, enemies.length - ringLevel * capacityPerRing);
-      const currentRadius = radius - (ringLevel * 60);
+      const currentRadius = radius - (ringLevel * 70);
 
       const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
       const x = centerX + Math.cos(angle) * currentRadius;
