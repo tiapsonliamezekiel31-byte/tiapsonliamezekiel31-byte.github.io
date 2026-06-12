@@ -4597,7 +4597,6 @@ body::before {
 /* Minimal/flat theme override: remove heavy shadows and blurs */
 .headbar,
 .shop-panel,
-.popup-overlay,
 .task-card,
 .task-card-daily,
 .task-card-todo,

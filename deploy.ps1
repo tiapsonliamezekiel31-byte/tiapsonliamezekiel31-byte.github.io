@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: resolve popup cutoff by using dvh units and removing erroneous width override on .popup"
+$commitMsg = "fix: remove popup-overlay from erroneous width override that prevented full-screen coverage"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
