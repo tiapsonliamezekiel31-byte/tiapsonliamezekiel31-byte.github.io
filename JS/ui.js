@@ -5146,9 +5146,7 @@ class UIManager {
     // Implementation
   }
   
-  static updateTaskVisibilityToggleLabels() {
-    // Implementation
-  }
+
 
   static getStageBackdropConfig() {
     const state = getGameState();

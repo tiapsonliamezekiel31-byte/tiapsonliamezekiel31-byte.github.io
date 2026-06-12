@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: show correct on/off state labels on dailies and todos toggle buttons"
+$commitMsg = "fix: remove empty stub of updateTaskVisibilityToggleLabels that was shadowing real implementation"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
