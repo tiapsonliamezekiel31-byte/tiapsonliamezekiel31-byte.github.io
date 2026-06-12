@@ -396,6 +396,7 @@ class UIManager {
           <div id="eventBannerDesc" class="event-banner-desc">Event description</div>
           <button id="eventBannerClaimBtn" class="btn-action-circle btn-claim-event" disabled>CLAIM</button>
         </div>
+        <div class="event-banner-resize-handle" id="eventBannerResizeHandle">⤡</div>
       </div>
       <div class="combo-indicator" id="comboIndicator"></div>
     `;
@@ -596,11 +597,11 @@ class UIManager {
 
     ebPanel.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button, input, textarea, select, label')) return;
-      if (e.button !== 0) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
 
       const rect = ebPanel.getBoundingClientRect();
-      // Ignore dragging if click was on or near the bottom-right resizer corner (within 24px)
-      if (e.clientX > rect.right - 24 && e.clientY > rect.bottom - 24) {
+      // Ignore dragging if click was on or near the bottom-right resizer corner (within 48px)
+      if (e.clientX > rect.right - 48 && e.clientY > rect.bottom - 48) {
         return;
       }
       onEbDown(e);
@@ -608,6 +609,43 @@ class UIManager {
     ebPanel.addEventListener('pointermove', onEbMove);
     ebPanel.addEventListener('pointerup', onEbUp);
     ebPanel.addEventListener('pointercancel', onEbUp);
+
+    // Custom touch-friendly resize handle
+    const resizeHandle = gameArea.querySelector('#eventBannerResizeHandle');
+    if (resizeHandle) {
+      let isResizing = false;
+      let resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
+
+      resizeHandle.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        resizeStartW = ebPanel.offsetWidth;
+        resizeStartH = ebPanel.offsetHeight;
+        try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) {}
+      });
+
+      resizeHandle.addEventListener('pointermove', (e) => {
+        if (!isResizing) return;
+        e.preventDefault();
+        const newW = Math.max(120, resizeStartW + (e.clientX - resizeStartX));
+        const newH = Math.max(80, resizeStartH + (e.clientY - resizeStartY));
+        ebPanel.style.width = newW + 'px';
+        ebPanel.style.height = newH + 'px';
+      });
+
+      const onResizeEnd = () => {
+        if (!isResizing) return;
+        isResizing = false;
+        localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
+          width: ebPanel.offsetWidth,
+          height: ebPanel.offsetHeight
+        }));
+      };
+      resizeHandle.addEventListener('pointerup', onResizeEnd);
+      resizeHandle.addEventListener('pointercancel', onResizeEnd);
+    }
 
     this.updateStageBackdrop();
   }
