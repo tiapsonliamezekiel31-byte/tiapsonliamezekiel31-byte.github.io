@@ -844,6 +844,12 @@ class UIManager {
           <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">FEED PET</h4>
           <div id="petFoodGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
         </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">PET ANIMATIONS</h4>
+          <div style="font-size: 7px; color: var(--text-muted); margin-bottom: 2px;">Cost: 50% maxpp (<span id="petAnimCostVal">?</span> Pts)</div>
+          <div id="petAnimGrid" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
       </div>
     `;
     document.body.appendChild(petTab);
@@ -1933,6 +1939,91 @@ class UIManager {
             try {
               SoundManager.play('heal');
             } catch (e) {}
+          }
+        });
+      });
+    }
+
+    // ----------------------------------------------------
+    // Render animations grid
+    // ----------------------------------------------------
+    const maxDailyPP = (state.dailiesState.dailies || []).reduce((sum, d) => {
+      const map = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
+      return sum + (map[d.difficulty] || 1);
+    }, 0) + 5;
+    const animCost = Math.ceil(maxDailyPP * 0.5);
+
+    const animCostEl = document.getElementById('petAnimCostVal');
+    if (animCostEl) {
+      animCostEl.textContent = animCost;
+    }
+
+    if (!Array.isArray(state.playerState.unlockedPetAnimations)) {
+      state.playerState.unlockedPetAnimations = ['Default'];
+    }
+    if (!state.playerState.equippedPetAnimation) {
+      state.playerState.equippedPetAnimation = 'Default';
+    }
+
+    const animGrid = document.getElementById('petAnimGrid');
+    if (animGrid) {
+      const animations = [
+        { id: 'Default', name: 'Default', desc: 'Standard hop above target' },
+        { id: 'Fierce Charge', name: 'Fierce Charge', desc: 'Lunge directly at target' },
+        { id: 'Double Flip', name: 'Double Flip', desc: 'Twin 360-degree spins' },
+        { id: 'Meteor Drop', name: 'Meteor Drop', desc: 'Slam from above with power' },
+        { id: 'Spectral Pulse', name: 'Spectral Pulse', desc: 'Grow large with magic glow' },
+        { id: 'Vortex Spin', name: 'Vortex Spin', desc: 'Circular spiral movement' },
+        { id: 'Earthquake Shake', name: 'Earthquake Shake', desc: 'Vibrate violently on spot' }
+      ];
+
+      let animHtml = '';
+      animations.forEach(a => {
+        const isUnlocked = state.playerState.unlockedPetAnimations.includes(a.id);
+        const isEquipped = state.playerState.equippedPetAnimation === a.id;
+
+        let btnHtml = '';
+        if (isEquipped) {
+          btnHtml = `<button class="btn-anim-action btn-equipped-anim" disabled>EQUIPPED</button>`;
+        } else if (isUnlocked) {
+          btnHtml = `<button class="btn-anim-action btn-equip-anim" data-id="${a.id}">EQUIP</button>`;
+        } else {
+          const canAfford = petPoints >= animCost;
+          btnHtml = `<button class="btn-anim-action btn-buy-anim" data-id="${a.id}" ${canAfford ? '' : 'disabled'}>BUY</button>`;
+        }
+
+        animHtml += `
+          <div class="pet-anim-card">
+            <div class="pet-anim-card-info">
+              <span class="pet-anim-name">${a.name}</span>
+              <span class="pet-anim-desc">${a.desc}</span>
+            </div>
+            <div class="pet-anim-card-action">
+              ${btnHtml}
+            </div>
+          </div>
+        `;
+      });
+      animGrid.innerHTML = animHtml;
+
+      animGrid.querySelectorAll('.btn-anim-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (btn.classList.contains('btn-buy-anim')) {
+            if (state.playerState.petPoints >= animCost) {
+              state.playerState.petPoints -= animCost;
+              if (!state.playerState.unlockedPetAnimations.includes(id)) {
+                state.playerState.unlockedPetAnimations.push(id);
+              }
+              state.save();
+              UIManager.updatePetUI();
+              try { SoundManager.play('coin'); } catch (err) {}
+            }
+          } else if (btn.classList.contains('btn-equip-anim')) {
+            state.playerState.equippedPetAnimation = id;
+            state.save();
+            UIManager.updatePetUI();
+            try { SoundManager.play('lootbox_open'); } catch (err) {}
           }
         });
       });
@@ -6214,11 +6305,16 @@ class UIManager {
     const card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
     if (!card) return;
 
-    // Create floating icon attached to body so it survives enemy re-renders
     const icon = document.createElement('div');
     icon.className = 'pet-icon';
     const state = getGameState();
     const petEmoji = (state.playerState && state.playerState.petEmoji) ? state.playerState.petEmoji : '🐶';
+    
+    const equippedAnim = state.playerState?.equippedPetAnimation || 'Default';
+    if (equippedAnim !== 'Default') {
+      icon.classList.add(`pet-anim-${equippedAnim.toLowerCase().replace(/\s+/g, '-')}`);
+    }
+    
     icon.textContent = petEmoji;
     icon.style.pointerEvents = 'none';
     icon.style.position = 'fixed';

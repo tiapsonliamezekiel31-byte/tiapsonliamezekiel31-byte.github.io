@@ -171,7 +171,9 @@ class GameState {
       petEmoji: '🐾',
       petLevel: 1,
       petUpgradeLevel: 0,
-      petHunger: 100
+      petHunger: 100,
+      unlockedPetAnimations: ['Default'],
+      equippedPetAnimation: 'Default'
     };
     
     this.dailiesState = {
@@ -740,6 +742,8 @@ class GameState {
       if (this.playerState.petLevel === undefined) this.playerState.petLevel = 1;
       if (this.playerState.petUpgradeLevel === undefined) this.playerState.petUpgradeLevel = 0;
       if (this.playerState.petHunger === undefined) this.playerState.petHunger = 100;
+      if (this.playerState.unlockedPetAnimations === undefined) this.playerState.unlockedPetAnimations = ['Default'];
+      if (this.playerState.equippedPetAnimation === undefined) this.playerState.equippedPetAnimation = 'Default';
       const weaponSlots = Array.isArray(this.playerState.weapons) ? this.playerState.weapons.length : 0;
       if (!Array.isArray(this.playerState.weaponElements)) {
         this.playerState.weaponElements = Array(weaponSlots).fill(null);
