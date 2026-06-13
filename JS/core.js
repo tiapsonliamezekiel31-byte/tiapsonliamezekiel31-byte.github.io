@@ -178,7 +178,9 @@ class GameState {
       petUpgradeLevel: 0,
       petHunger: 100,
       unlockedPetAnimations: ['Default'],
-      equippedPetAnimation: 'Default'
+      equippedPetAnimation: 'Default',
+      unlockedDeathEffects: ['Default'],
+      equippedDeathEffect: 'Default'
     };
     
     this.dailiesState = {
@@ -472,6 +474,19 @@ class GameState {
     this.setDiamonds(this.playerState.diamonds - amount);
   }
 
+  unlockDeathEffect(effectId) {
+    if (!this.playerState.unlockedDeathEffects) {
+      this.playerState.unlockedDeathEffects = ['Default'];
+    }
+    if (!this.playerState.unlockedDeathEffects.includes(effectId)) {
+      this.playerState.unlockedDeathEffects.push(effectId);
+    }
+  }
+
+  equipDeathEffect(effectId) {
+    this.playerState.equippedDeathEffect = effectId;
+  }
+
   setLootboxKeys(newVal) {
     const old = this.playerState.lootboxKeys || 0;
     this.playerState.lootboxKeys = Math.max(0, Math.round(Number(newVal) || 0));
@@ -750,6 +765,8 @@ class GameState {
       if (this.playerState.petHunger === undefined) this.playerState.petHunger = 100;
       if (this.playerState.unlockedPetAnimations === undefined) this.playerState.unlockedPetAnimations = ['Default'];
       if (this.playerState.equippedPetAnimation === undefined) this.playerState.equippedPetAnimation = 'Default';
+      if (this.playerState.unlockedDeathEffects === undefined) this.playerState.unlockedDeathEffects = ['Default'];
+      if (this.playerState.equippedDeathEffect === undefined) this.playerState.equippedDeathEffect = 'Default';
       const weaponSlots = Array.isArray(this.playerState.weapons) ? this.playerState.weapons.length : 0;
       if (!Array.isArray(this.playerState.weaponElements)) {
         this.playerState.weaponElements = Array(weaponSlots).fill(null);

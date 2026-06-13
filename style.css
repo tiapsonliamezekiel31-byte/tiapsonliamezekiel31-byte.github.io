@@ -6429,3 +6429,142 @@ button:hover,
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* ============================================================
+   COSMETICS SYSTEM STYLING
+   ============================================================ */
+
+.tab-handle-left-cosmetics {
+  bottom: 168px !important;
+}
+
+.cosmetics-board {
+  padding: 10px;
+}
+
+.cosmetic-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+}
+
+.cosmetic-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.cosmetic-card.premium {
+  border: 1.5px solid rgba(232, 184, 74, 0.45);
+  box-shadow: 0 0 8px rgba(232, 184, 74, 0.15);
+  background: linear-gradient(180deg, rgba(30, 24, 15, 0.6), rgba(12, 10, 8, 0.6));
+}
+
+.cosmetic-card.premium:hover {
+  box-shadow: 0 0 12px rgba(232, 184, 74, 0.3);
+}
+
+.cosmetic-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.cosmetic-name {
+  font-size: 9px;
+  font-weight: bold;
+  color: var(--text-white, #fff);
+}
+
+.cosmetic-card.premium .cosmetic-name {
+  color: var(--accent-gold, #e8b84a);
+}
+
+.cosmetic-desc {
+  font-size: 7px;
+  color: var(--text-muted, #aaa);
+  line-height: 1.3;
+}
+
+.cosmetic-tier {
+  font-size: 5px;
+  font-weight: bold;
+  padding: 2px 5px;
+  border-radius: 3px;
+  width: max-content;
+}
+
+.cosmetic-card.regular .cosmetic-tier {
+  background: rgba(161, 92, 255, 0.15);
+  color: var(--accent-purple, #a15cff);
+}
+
+.cosmetic-card.premium .cosmetic-tier {
+  background: rgba(232, 184, 74, 0.15);
+  color: var(--accent-gold, #e8b84a);
+}
+
+.btn-cosmetic-action {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.btn-cosmetic-action.btn-buy-cosmetic {
+  background: linear-gradient(180deg, rgba(217, 114, 74, 0.85), rgba(201, 145, 91, 0.85));
+  border: 1px solid var(--accent-copper);
+}
+
+.btn-cosmetic-action.btn-equip-cosmetic {
+  background: linear-gradient(180deg, rgba(161, 92, 255, 0.85), rgba(111, 53, 193, 0.85));
+  border: 1px solid rgba(161, 92, 255, 0.72);
+}
+
+.btn-cosmetic-action.btn-equipped-cosmetic {
+  background: linear-gradient(180deg, rgba(48, 200, 90, 0.85), rgba(37, 150, 72, 0.85)) !important;
+  border: 1px solid #30C85A !important;
+  cursor: default;
+}
+
+.btn-cosmetic-action.btn-preview-cosmetic {
+  background: linear-gradient(180deg, rgba(30, 30, 45, 0.85), rgba(15, 15, 25, 0.85));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-cosmetic-action:hover:not(.btn-equipped-cosmetic):not([disabled]) {
+  transform: scale(1.03);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.2);
+}
+
+.btn-cosmetic-action[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Holy Light Beam Emitter Style */
+.holy-light-beam {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 230, 100, 0.4) 30%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 230, 100, 0.4) 70%, transparent);
+  animation: holyBeamAnim 800ms ease-out forwards;
+}
+
+@keyframes holyBeamAnim {
+  0% { opacity: 0; transform: scaleX(0.1); }
+  15% { opacity: 1; transform: scaleX(1.1); }
+  30% { transform: scaleX(1.0); }
+  100% { opacity: 0; transform: scaleX(0.4); }
+}

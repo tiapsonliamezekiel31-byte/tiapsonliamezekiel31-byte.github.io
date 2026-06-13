@@ -757,6 +757,15 @@ const DEFAULT_GAME_CONFIG = {
     Medium: { diamonds: 2, gold: 5 },
     Hard: { diamonds: 3, gold: 10 },
     Ultra: { diamonds: 4, gold: 20 }
+  },
+  deathEffects: {
+    'Default': { name: 'Default', desc: 'Standard rainbow particle burst', tier: 'regular', previewIcon: '🌈' },
+    'Confetti': { name: 'Confetti Popper', desc: 'Festive colored paper explosion with gravity fall', tier: 'regular', previewIcon: '🎉' },
+    'Fire Blast': { name: 'Fire Blast', desc: 'Burst of rising flame particles fading into ash', tier: 'regular', previewIcon: '🔥' },
+    'Void Slime': { name: 'Void Slime Splash', desc: 'Dark purple goo blobs splattering and dissolving', tier: 'regular', previewIcon: '😈' },
+    'Glitch Matrix': { name: 'Glitch Matrix', desc: 'Matrix digital falling code grid dissolving', tier: 'premium', previewIcon: '📟' },
+    'Holy Beam': { name: 'Holy Beam', desc: 'Pillar of divine golden light striking from above', tier: 'premium', previewIcon: '✨' },
+    'Rainbow Pixel': { name: 'Rainbow Pixel', desc: 'Enhanced rapid pixel burst shifting neon hues', tier: 'premium', previewIcon: '👾' }
   }
 };
 

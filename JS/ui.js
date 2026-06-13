@@ -712,6 +712,12 @@ class UIManager {
     achievementsHandle.textContent = '🏆 ACHIEVEMENTS';
     document.body.appendChild(achievementsHandle);
 
+    const cosmeticsHandle = document.createElement('button');
+    cosmeticsHandle.id = 'cosmeticsTabHandle';
+    cosmeticsHandle.className = 'tab-handle tab-handle-left tab-handle-left-cosmetics';
+    cosmeticsHandle.textContent = '✨ VISUALS';
+    document.body.appendChild(cosmeticsHandle);
+
     const rightHandle = document.createElement('button');
     rightHandle.id = 'todosTabHandle';
     rightHandle.className = 'tab-handle tab-handle-right';
@@ -764,6 +770,21 @@ class UIManager {
       <div class="tab-content achievement-board" id="achievementsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
     `;
     document.body.appendChild(achievementsTab);
+
+    // Cosmetics Panel
+    const cosmeticsTab = document.createElement('div');
+    cosmeticsTab.id = 'cosmeticsPanel';
+    cosmeticsTab.className = 'pull-tab left-tab';
+    cosmeticsTab.innerHTML = `
+      <div class="tab-header">
+        <h3>✨ COSMETICS</h3>
+        <div>
+          <button class="tab-close">✕</button>
+        </div>
+      </div>
+      <div class="tab-content cosmetics-board" id="cosmeticsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
+    `;
+    document.body.appendChild(cosmeticsTab);
 
     // Right tab - To-Dos
     const rightTab = document.createElement('div');
@@ -1560,11 +1581,13 @@ class UIManager {
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
     document.getElementById('addTodoNoteBtn')?.addEventListener('click', () => this.addTodoNote());
 
-    // Achievements & Pet Tab Handles & Close Listeners
+    // Achievements & Pet & Cosmetics Tab Handles & Close Listeners
     document.getElementById('achievementsTabHandle').addEventListener('click', () => this.toggleTaskPanel('achievements'));
     document.getElementById('petTabHandle').addEventListener('click', () => this.toggleTaskPanel('pet'));
+    document.getElementById('cosmeticsTabHandle').addEventListener('click', () => this.toggleTaskPanel('cosmetics'));
     document.getElementById('achievementsPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('achievements'));
     document.getElementById('petPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('pet'));
+    document.getElementById('cosmeticsPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('cosmetics'));
 
     // Achievements controls
     document.getElementById('achievementsSortSelect')?.addEventListener('change', (e) => {
@@ -1717,7 +1740,7 @@ class UIManager {
   }
 
   static toggleTaskPanel(which) {
-    const panels = ['dailies', 'todos', 'achievements', 'pet'];
+    const panels = ['dailies', 'todos', 'achievements', 'pet', 'cosmetics'];
     panels.forEach(p => {
       if (p !== which) {
         this.closeTaskPanel(p);
@@ -1726,7 +1749,8 @@ class UIManager {
 
     const panelId = which === 'dailies' ? 'dailiesPanel' :
                     which === 'todos' ? 'todosPanel' :
-                    which === 'achievements' ? 'achievementsPanel' : 'petPanel';
+                    which === 'achievements' ? 'achievementsPanel' :
+                    which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     if (!panel) return;
     const open = panel.classList.contains('open');
@@ -1746,6 +1770,8 @@ class UIManager {
             this.updateAchievementsList();
           } else if (which === 'pet') {
             this.updatePetUI();
+          } else if (which === 'cosmetics') {
+            this.updateCosmeticsList();
           }
         } catch (e) { /* ignore */ }
       }, 260);
@@ -1755,7 +1781,8 @@ class UIManager {
   static closeTaskPanel(which) {
     const panelId = which === 'dailies' ? 'dailiesPanel' :
                     which === 'todos' ? 'todosPanel' :
-                    which === 'achievements' ? 'achievementsPanel' : 'petPanel';
+                    which === 'achievements' ? 'achievementsPanel' :
+                    which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
   }
@@ -1809,6 +1836,98 @@ class UIManager {
       `;
     });
     container.innerHTML = html;
+  }
+
+  static updateCosmeticsList() {
+    const state = getGameState();
+    const container = document.getElementById('cosmeticsList');
+    if (!container) return;
+
+    if (!Array.isArray(state.playerState.unlockedDeathEffects)) {
+      state.playerState.unlockedDeathEffects = ['Default'];
+    }
+    if (!state.playerState.equippedDeathEffect) {
+      state.playerState.equippedDeathEffect = 'Default';
+    }
+
+    const effects = state.config.deathEffects || {};
+    const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
+      ? TaskManager.getMaxPotentialDiamonds()
+      : 0;
+
+    let html = '';
+    Object.entries(effects).forEach(([id, info]) => {
+      const isUnlocked = state.playerState.unlockedDeathEffects.includes(id);
+      const isEquipped = state.playerState.equippedDeathEffect === id;
+      
+      const priceMultiplier = info.tier === 'premium' ? 3.0 : 2.0;
+      const minPrice = info.tier === 'premium' ? 15 : 10;
+      const cost = Math.max(minPrice, Math.ceil(maxDiamonds * priceMultiplier));
+
+      let btnHtml = '';
+      if (isEquipped) {
+        btnHtml = `<button class="btn-cosmetic-action btn-equipped-cosmetic" disabled>EQUIPPED</button>`;
+      } else if (isUnlocked) {
+        btnHtml = `<button class="btn-cosmetic-action btn-equip-cosmetic" data-id="${id}">EQUIP</button>`;
+      } else {
+        const canAfford = (state.playerState.diamonds || 0) >= cost;
+        btnHtml = `<button class="btn-cosmetic-action btn-buy-cosmetic" data-id="${id}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>BUY (${cost} 💎)</button>`;
+      }
+
+      html += `
+        <div class="cosmetic-card ${info.tier}">
+          <div class="cosmetic-card-info">
+            <span class="cosmetic-name">${info.previewIcon} ${info.name}</span>
+            <span class="cosmetic-desc">${info.desc}</span>
+            <span class="cosmetic-tier">${info.tier.toUpperCase()}</span>
+          </div>
+          <div class="cosmetic-card-actions" style="display: flex; flex-direction: column; gap: 4px;">
+            ${btnHtml}
+            <button class="btn-cosmetic-action btn-preview-cosmetic" data-id="${id}">PREVIEW</button>
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.btn-cosmetic-action').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        if (btn.classList.contains('btn-buy-cosmetic')) {
+          const cost = Number(e.currentTarget.dataset.cost);
+          if ((state.playerState.diamonds || 0) >= cost) {
+            state.spendDiamonds(cost);
+            state.unlockDeathEffect(id);
+            state.save();
+            this.updateCosmeticsList();
+            try { SoundManager.play('coin'); } catch (err) {}
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Unlocked ${id}!`, {
+              color: UIManager.themeColor('--accent-gold', '#FFB33F')
+            });
+          }
+        } else if (btn.classList.contains('btn-equip-cosmetic')) {
+          state.equipDeathEffect(id);
+          state.save();
+          this.updateCosmeticsList();
+          try { SoundManager.play('lootbox_open'); } catch (err) {}
+        } else if (btn.classList.contains('btn-preview-cosmetic')) {
+          const prevEquipped = state.playerState.equippedDeathEffect;
+          state.playerState.equippedDeathEffect = id;
+          try {
+            EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2 - 100, false);
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Previewing ${id}`, {
+              color: '#ffd700',
+              duration: 1000
+            });
+          } catch (err) {
+            console.warn(err);
+          } finally {
+            state.playerState.equippedDeathEffect = prevEquipped;
+          }
+        }
+      });
+    });
   }
 
   static updatePetUI() {
