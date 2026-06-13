@@ -3059,37 +3059,72 @@ class WeaponHitAnimation {
   }
 
   static _shakeCard(card, intensity, duration) {
+    // Animate an overlay div instead of touching card.style.transform,
+    // so the game's layout transform is never disturbed.
     if (!card) return;
-    const orig = card.style.transform || '';
+    const c = this._cardCenter(card);
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:transparent;will-change:transform;`;
+    document.body.appendChild(el);
     const start = performance.now();
     const tick = () => {
       const p = Math.min(1, (performance.now()-start)/duration);
-      if (p >= 1) { card.style.transform = orig; return; }
-      card.style.transform = orig + ` translate(${(Math.random()-0.5)*intensity*2*(1-p)}px,0)`;
+      if (p >= 1) { try { el.remove(); } catch(e){} return; }
+      el.style.transform = `translateX(${(Math.random()-0.5)*intensity*2*(1-p)}px)`;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
+    // Safety cleanup
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 120);
   }
 
   static _squishCard(card, scaleY, duration) {
+    // Animate an overlay div that covers the card instead of touching
+    // card.style.transform — prevents permanent size mutation on the card.
     if (!card) return;
-    const orig = card.style.transform || '';
-    const inDur = Math.round(duration*0.28);
-    card.style.transition = `transform ${inDur}ms cubic-bezier(0.25,0,0,1)`;
-    card.style.transform = orig+` scaleY(${scaleY})`;
-    setTimeout(() => {
-      card.style.transition = `transform ${duration-inDur}ms cubic-bezier(0.2,1.6,0.4,1)`;
-      card.style.transform = orig;
-      setTimeout(() => { card.style.transition=''; }, duration-inDur+20);
-    }, inDur+10);
+    const c = this._cardCenter(card);
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:rgba(0,0,0,0.08);transform-origin:center center;will-change:transform;`;
+    document.body.appendChild(el);
+    const inDur = Math.round(duration * 0.28);
+    const outDur = duration - inDur;
+    // Phase 1: squish
+    el.style.transition = `transform ${inDur}ms cubic-bezier(0.25,0,0,1)`;
+    requestAnimationFrame(() => { el.style.transform = `scaleY(${scaleY})`; });
+    const t1 = setTimeout(() => {
+      // Phase 2: spring back
+      el.style.transition = `transform ${outDur}ms cubic-bezier(0.2,1.6,0.4,1)`;
+      el.style.transform = 'scaleY(1)';
+      const t2 = setTimeout(() => { try { el.remove(); } catch(e){} }, outDur + 60);
+      el._t2 = t2;
+    }, inDur + 12);
+    el._t1 = t1;
+    // Safety: always remove after full duration
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 300);
   }
 
   static _tintCard(card, color, duration) {
+    // Use a fixed overlay instead of touching card.style.background.
     if (!card) return;
-    const prev = card.style.background || '';
-    card.style.background = color;
-    setTimeout(() => { card.style.background = prev; }, duration);
+    const c = this._cardCenter(card);
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13098;border-radius:6px;background:${color};will-change:opacity;`;
+    document.body.appendChild(el);
+    // Fade in quickly, then fade out
+    el.style.opacity = '0';
+    requestAnimationFrame(() => {
+      el.style.transition = `opacity ${Math.round(duration*0.15)}ms ease-out`;
+      el.style.opacity = '1';
+      setTimeout(() => {
+        el.style.transition = `opacity ${Math.round(duration*0.6)}ms ease-in`;
+        el.style.opacity = '0';
+        setTimeout(() => { try { el.remove(); } catch(e){} }, Math.round(duration*0.6) + 50);
+      }, Math.round(duration*0.35));
+    });
+    // Safety cleanup
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 200);
   }
+
 
   static _cardParticles(card, count, color, speed, size, lifetime) {
     if (!card) return;
