@@ -3452,8 +3452,62 @@ class UIManager {
           RetroComboFinisherAnimation.play(targetCard);
         }
       }
+
+      // ── Weapon-specific hit animations ────────────────────────────────────
+      if (typeof WeaponHitAnimation !== 'undefined' && detail.weaponName && targetCard) {
+        try {
+          const gs = getGameState();
+          const combatState = gs.combatState || {};
+          const opts = { isCrit: !!detail.isCrit };
+
+          // Collect all hit enemy cards for AoE weapons
+          const weaponData = gs.config.weapons[detail.weaponName] || {};
+
+          if (detail.weaponName === 'Bomb' ||
+              (weaponData.special && weaponData.special.includes('Hits ALL'))) {
+            // Bomb — hit every alive enemy card
+            const allCards = Array.from(document.querySelectorAll('.enemy-card'));
+            opts.allCards = allCards;
+
+          } else if (detail.weaponName === 'Bazooka' ||
+                     (weaponData.special && weaponData.special.includes('adjacent'))) {
+            // Bazooka — primary + up to 2 adjacent
+            const allEnemyCards = Array.from(document.querySelectorAll('.enemy-card'));
+            const idx = allEnemyCards.indexOf(targetCard);
+            const adjCards = [];
+            if (idx > 0 && allEnemyCards[idx - 1]) adjCards.push(allEnemyCards[idx - 1]);
+            if (idx < allEnemyCards.length - 1 && allEnemyCards[idx + 1]) adjCards.push(allEnemyCards[idx + 1]);
+            opts.allCards = [targetCard, ...adjCards.slice(0, 2)];
+
+          } else if (detail.weaponName === 'Lazer' || weaponData.specialId === 'lazer') {
+            // Lazer — find the random secondary target card (not the primary)
+            const allCards = Array.from(document.querySelectorAll('.enemy-card'));
+            const others = allCards.filter(c => c !== targetCard);
+            if (others.length > 0) {
+              opts.secondaryCard = others[Math.floor(Math.random() * others.length)];
+            }
+
+          } else if (detail.weaponName === 'Echo Bow') {
+            // Echo Bow — track hit index to know when 3rd-hit double triggers
+            if (!UIManager._echoBowHitIndex) UIManager._echoBowHitIndex = 0;
+            UIManager._echoBowHitIndex++;
+            opts.echoBowHitIndex = UIManager._echoBowHitIndex;
+
+          } else if (detail.weaponName === 'Death Spell') {
+            // Death Spell — check if the target is still alive (resisted = alive)
+            const tgtCard = targetCard;
+            opts.isResisted = !tgtCard.classList.contains('enemy-dead') &&
+                              !tgtCard.dataset.isDead;
+          }
+
+          WeaponHitAnimation.play(detail.weaponName, targetCard, opts);
+        } catch (e) {
+          console.warn('[handleAttackEvent] WeaponHitAnimation failed:', e);
+        }
+      }
     }
   }
+
 
   static updateDailiesList() {
     const dailies = TaskManager.getAllDailies();

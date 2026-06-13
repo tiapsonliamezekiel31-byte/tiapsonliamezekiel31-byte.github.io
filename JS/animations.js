@@ -3026,4 +3026,331 @@ class RetroVoidBlackHoleAnimation {
   }
 }
 
+// ============================================================
+// WEAPON HIT ANIMATIONS
+// One dispatcher class — all animations scoped to enemy card elements only.
+// No full-screen overlays. play() is the single entry point.
+// ============================================================
+class WeaponHitAnimation {
+
+  static _cardCenter(card) {
+    if (!card) return { x: window.innerWidth/2, y: window.innerHeight/2, w:80, h:100, r:{left:window.innerWidth/2-40,top:window.innerHeight/2-50} };
+    const r = card.getBoundingClientRect();
+    return { x: r.left+r.width/2, y: r.top+r.height/2, w:r.width, h:r.height, r };
+  }
+
+  static _overlay(card) {
+    const c = this._cardCenter(card);
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;left:0;top:0;pointer-events:none;z-index:13100;will-change:transform,opacity;';
+    document.body.appendChild(el);
+    return { el, c };
+  }
+
+  static _raf(duration, onFrame, onDone) {
+    const start = performance.now();
+    const tick = () => {
+      const p = Math.min(1, (performance.now()-start)/duration);
+      onFrame(p);
+      if (p < 1) requestAnimationFrame(tick);
+      else if (onDone) onDone();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  static _shakeCard(card, intensity, duration) {
+    if (!card) return;
+    const orig = card.style.transform || '';
+    const start = performance.now();
+    const tick = () => {
+      const p = Math.min(1, (performance.now()-start)/duration);
+      if (p >= 1) { card.style.transform = orig; return; }
+      card.style.transform = orig + ` translate(${(Math.random()-0.5)*intensity*2*(1-p)}px,0)`;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  static _squishCard(card, scaleY, duration) {
+    if (!card) return;
+    const orig = card.style.transform || '';
+    const inDur = Math.round(duration*0.28);
+    card.style.transition = `transform ${inDur}ms cubic-bezier(0.25,0,0,1)`;
+    card.style.transform = orig+` scaleY(${scaleY})`;
+    setTimeout(() => {
+      card.style.transition = `transform ${duration-inDur}ms cubic-bezier(0.2,1.6,0.4,1)`;
+      card.style.transform = orig;
+      setTimeout(() => { card.style.transition=''; }, duration-inDur+20);
+    }, inDur+10);
+  }
+
+  static _tintCard(card, color, duration) {
+    if (!card) return;
+    const prev = card.style.background || '';
+    card.style.background = color;
+    setTimeout(() => { card.style.background = prev; }, duration);
+  }
+
+  static _cardParticles(card, count, color, speed, size, lifetime) {
+    if (!card) return;
+    const c = this._cardCenter(card);
+    const sys = new ParticleSystem({ container: document.body });
+    const n = Math.max(2, Math.round(count*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
+    for (let i=0;i<n;i++) {
+      sys.emit(c.x+(Math.random()-0.5)*c.w*0.8, c.y+(Math.random()-0.5)*c.h*0.8, 1,
+        { color, lifetime, velocity:speed, spread:Math.PI*2, size });
+    }
+  }
+
+  static play(weaponName, card, opts = {}) {
+    try {
+      switch (weaponName) {
+        case 'Rusty Sword':    this._rustBurst(card,opts);       break;
+        case 'Great Hammer':   this._gravityCrush(card,opts);    break;
+        case 'Dagger':         this._rapidJabFlash(card,opts);   break;
+        case 'Bomb':           this._smokeCloud(card,opts);      break;
+        case 'Buckler':        this._shieldRing(card,opts);      break;
+        case 'Grimoire':       this._arcaneRuneBurst(card,opts); break;
+        case 'Vampire Dagger': this._bloodVeinCrack(card,opts);  break;
+        case 'Bazooka':        this._explosionBloom(card,opts);  break;
+        case 'Uzi':            this._bulletHail(card,opts);      break;
+        case 'Thunder Hammer': this._lightningStrike(card,opts); break;
+        case 'Lazer':          this._beamPierce(card,opts);      break;
+        case 'Vine Spell':     this._vineWrap(card,opts);        break;
+        case 'Death Spell':    this._reaperArc(card,opts);       break;
+        case 'Heavy Hammer':   this._anvilDrop(card,opts);       break;
+        case 'Echo Bow':       this._arrowTrail(card,opts);      break;
+        case 'Aegis':          this._aegisWard(card,opts);       break;
+        default: break;
+      }
+    } catch(e) { console.warn('[WeaponHitAnimation]',e); }
+  }
+
+  static _rustBurst(card) {
+    if (!card) return;
+    this._tintCard(card,'rgba(180,110,50,0.35)',160);
+    this._shakeCard(card,5,260);
+    const c = this._cardCenter(card);
+    const sys = new ParticleSystem({container:document.body});
+    const cols=['#b8860b','#8b6914','#c8a04a','#e0c060'];
+    const n=Math.max(4,Math.round(10*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
+    for(let i=0;i<n;i++) sys.emit(c.x+(Math.random()-0.5)*c.w*0.7,c.y+(Math.random()-0.5)*c.h*0.6,1,{color:cols[i%4],lifetime:420,velocity:2.5,spread:Math.PI*2,size:3});
+    const {el}=this._overlay(card);
+    el.style.cssText+=`width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;border:2px solid rgba(180,110,50,0.6);background:transparent;`;
+    this._raf(280,p=>{el.style.opacity=1-p;},()=>el.remove());
+  }
+
+  static _gravityCrush(card) {
+    if (!card) return;
+    this._squishCard(card,0.65,320);
+    this._tintCard(card,'rgba(120,120,120,0.3)',180);
+    this._shakeCard(card,4,240);
+  }
+
+  static _rapidJabFlash(card) {
+    if (!card) return;
+    [0,70,140].forEach(d=>setTimeout(()=>this._tintCard(card,'rgba(255,255,255,0.55)',55),d));
+    this._shakeCard(card,3,220);
+  }
+
+  static _smokeCloud(card,{allCards=[]}={}) {
+    const targets = allCards.length?allCards:(card?[card]:[]);
+    targets.forEach(tgt=>{
+      if(!tgt) return;
+      const c=this._cardCenter(tgt);
+      const {el}=this._overlay(tgt);
+      const size=Math.max(c.w,c.h)*1.1;
+      el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;background:radial-gradient(circle,rgba(80,80,80,0.82) 0%,rgba(40,40,40,0.5) 60%,transparent 100%);`;
+      this._raf(500,p=>{el.style.transform=`scale(${0.3+p*0.9})`;el.style.opacity=p<0.35?p/0.35:1-(p-0.35)/0.65;},()=>el.remove());
+      this._shakeCard(tgt,3,200);
+    });
+  }
+
+  static _shieldRing(card) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const {el}=this._overlay(card);
+    const size=Math.max(c.w,c.h)*1.3;
+    el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;border:3px solid rgba(255,215,0,0.9);background:transparent;`;
+    this._raf(500,p=>{el.style.transform=`scale(${0.5+p*0.8})`;el.style.opacity=1-p;},()=>el.remove());
+    this._tintCard(card,'rgba(255,215,0,0.18)',300);
+  }
+
+  static _arcaneRuneBurst(card) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    ['✦','✧','⊕','⊗'].forEach((r,i)=>{
+      const el=document.createElement('div');
+      const angle=(i/4)*Math.PI*2;
+      el.textContent=r;
+      el.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:18px;color:#c084fc;text-shadow:0 0 8px rgba(192,132,252,0.9);will-change:transform,opacity;transform:translate(-50%,-50%);`;
+      document.body.appendChild(el);
+      this._raf(420,p=>{
+        const d=p*44;
+        el.style.transform=`translate(calc(-50% + ${Math.cos(angle)*d}px),calc(-50% + ${Math.sin(angle)*d}px)) scale(${1-p*0.5}) rotate(${p*180}deg)`;
+        el.style.opacity=1-Math.pow(p,1.8);
+      },()=>el.remove());
+    });
+    this._tintCard(card,'rgba(192,132,252,0.28)',200);
+  }
+
+  static _bloodVeinCrack(card) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const {el}=this._overlay(card);
+    el.style.cssText+=`width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 2px rgba(200,0,40,0.7);border:1px solid rgba(200,0,40,0.5);`;
+    this._raf(500,p=>{el.style.opacity=p<0.2?p/0.2:1-(p-0.2)/0.8;},()=>el.remove());
+    const sys=new ParticleSystem({container:document.body});
+    const n=Math.max(4,Math.round(8*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
+    for(let i=0;i<n;i++) setTimeout(()=>sys.emit(c.x+(Math.random()-0.5)*c.w*0.6,c.y+(Math.random()-0.5)*c.h*0.4,1,{color:'#c00028',lifetime:500,velocity:2.2,spread:Math.PI,size:3}),i*30);
+    this._tintCard(card,'rgba(200,0,40,0.2)',250);
+    this._shakeCard(card,3,200);
+  }
+
+  static _explosionBloom(card,{allCards=[]}={}) {
+    const targets=allCards.length?allCards:(card?[card]:[]);
+    targets.forEach((tgt,idx)=>{
+      if(!tgt) return;
+      const isPrimary=idx===0;
+      const c=this._cardCenter(tgt);
+      const {el}=this._overlay(tgt);
+      const size=(isPrimary?1.6:1.0)*Math.max(c.w,c.h);
+      el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,60,0.95) 0%,rgba(255,100,0,0.8) 40%,rgba(180,60,0,0.4) 70%,transparent 100%);`;
+      this._raf(isPrimary?480:320,p=>{el.style.transform=`scale(${0.1+p})`;el.style.opacity=p<0.25?p/0.25:1-(p-0.25)/0.75;},()=>el.remove());
+      this._shakeCard(tgt,isPrimary?7:4,260);
+      this._cardParticles(tgt,isPrimary?10:5,'#ff8800',4,3,350);
+    });
+  }
+
+  static _bulletHail(card,{fireRate=6}={}) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const count=Math.min(fireRate,8);
+    for(let i=0;i<count;i++){
+      setTimeout(()=>{
+        const el=document.createElement('div');
+        const sz=6+Math.random()*6;
+        el.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x+(Math.random()-0.5)*c.w*0.7-sz/2}px;top:${c.y+(Math.random()-0.5)*c.h*0.7-sz/2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255,245,180,0.95);box-shadow:0 0 6px rgba(255,230,100,0.8);will-change:opacity;`;
+        document.body.appendChild(el);
+        this._raf(110,p=>{el.style.opacity=1-p;},()=>el.remove());
+      },i*38);
+    }
+    this._shakeCard(card,2,320);
+  }
+
+  static _lightningStrike(card,{isCrit=false}={}) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const NS='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(NS,'svg');
+    const bH=c.h*1.4,bW=40;
+    svg.setAttribute('width',String(bW));svg.setAttribute('height',String(bH));
+    svg.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x-bW/2}px;top:${c.y-bH}px;overflow:visible;`;
+    let d=`M${bW/2},0`;
+    for(let s=1;s<=6;s++) d+=` L${bW/2+(s%2===0?-14:14)*(isCrit?1.3:1)},${(s/6)*bH}`;
+    const path=document.createElementNS(NS,'path');
+    path.setAttribute('d',d);path.setAttribute('stroke',isCrit?'#ffe040':'#facc15');
+    path.setAttribute('stroke-width',isCrit?'4':'2.5');path.setAttribute('fill','none');
+    const defs=document.createElementNS(NS,'defs');
+    defs.innerHTML='<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+    path.setAttribute('filter','url(#boltGlowWHA)');
+    svg.appendChild(defs);svg.appendChild(path);document.body.appendChild(svg);
+    this._raf(320,p=>{svg.style.opacity=1-Math.pow(p,1.5);},()=>svg.remove());
+    this._tintCard(card,'rgba(250,204,21,0.45)',150);
+    this._shakeCard(card,isCrit?8:5,260);
+    if(isCrit) this._cardParticles(card,8,'#facc15',4,3,350);
+  }
+
+  static _beamPierce(card,{secondaryCard=null}={}) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const {el}=this._overlay(card);
+    el.style.cssText+=`left:${c.r.left}px;top:${c.y-2}px;width:${c.w}px;height:4px;background:linear-gradient(90deg,transparent,#4ea3ff,#a0d0ff,#4ea3ff,transparent);border-radius:2px;`;
+    this._raf(300,p=>{el.style.opacity=p<0.15?p/0.15:1-(p-0.15)/0.85;},()=>el.remove());
+    this._tintCard(card,'rgba(78,163,255,0.35)',200);
+    if(secondaryCard && secondaryCard!==card){
+      const cs=this._cardCenter(secondaryCard);
+      const NS='http://www.w3.org/2000/svg';
+      const svg=document.createElementNS(NS,'svg');
+      const minX=Math.min(c.x,cs.x)-20,minY=Math.min(c.y,cs.y)-50;
+      const maxX=Math.max(c.x,cs.x)+20,maxY=Math.max(c.y,cs.y)+20;
+      svg.style.cssText=`position:fixed;pointer-events:none;z-index:13105;left:${minX}px;top:${minY}px;width:${maxX-minX}px;height:${maxY-minY}px;overflow:visible;`;
+      const mx=(c.x+cs.x)/2-minX,my=Math.min(c.y,cs.y)-40-minY;
+      const mkL=(xa,ya,xb,yb,col)=>{const l=document.createElementNS(NS,'line');l.setAttribute('x1',String(xa));l.setAttribute('y1',String(ya));l.setAttribute('x2',String(xb));l.setAttribute('y2',String(yb));l.setAttribute('stroke',col);l.setAttribute('stroke-width','2');l.setAttribute('stroke-dasharray','6 4');return l;};
+      svg.appendChild(mkL(c.x-minX,c.y-minY,mx,my,'#7dd3fc'));
+      svg.appendChild(mkL(mx,my,cs.x-minX,cs.y-minY,'#4ea3ff'));
+      document.body.appendChild(svg);
+      this._raf(500,p=>{svg.style.opacity=1-p;},()=>svg.remove());
+      setTimeout(()=>{this._tintCard(secondaryCard,'rgba(78,163,255,0.5)',180);this._shakeCard(secondaryCard,4,180);},100);
+    }
+  }
+
+  static _vineWrap(card) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const {el}=this._overlay(card);
+    el.style.cssText+=`width:${c.w+6}px;height:${c.h+6}px;left:${c.r.left-3}px;top:${c.r.top-3}px;border-radius:8px;border:3px solid rgba(48,200,90,0.85);background:transparent;box-shadow:0 0 10px rgba(48,200,90,0.5),inset 0 0 8px rgba(48,200,90,0.2);`;
+    this._raf(600,p=>{
+      el.style.transform=`scale(${p<0.15?0.8+p/0.15*0.2:p<0.7?1:1-(p-0.7)/0.3*0.1})`;
+      el.style.opacity=p<0.15?p/0.15:p<0.7?1:1-(p-0.7)/0.3;
+    },()=>el.remove());
+    this._cardParticles(card,6,'#30c85a',2,3,400);
+  }
+
+  static _reaperArc(card,{isResisted=false}={}) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const el=document.createElement('div');
+    const sz=Math.max(c.w,c.h)*0.8;
+    el.textContent='☽';
+    el.style.cssText=`position:fixed;pointer-events:none;z-index:13120;left:${c.x}px;top:${c.y}px;font-size:${sz}px;line-height:1;color:${isResisted?'#ef4444':'#1a0a2e'};text-shadow:0 0 18px ${isResisted?'rgba(239,68,68,0.8)':'rgba(120,0,200,0.7)'};will-change:transform,opacity;transform:translate(-50%,-50%) rotate(-80deg) scale(0.3);`;
+    document.body.appendChild(el);
+    this._raf(500,p=>{
+      el.style.transform=`translate(-50%,-50%) rotate(${-80+p*200}deg) scale(${p<0.35?0.3+p/0.35*0.7:1-(p-0.35)/0.65*0.8})`;
+      el.style.opacity=p<0.2?p/0.2:1-(p-0.2)/0.8;
+    },()=>el.remove());
+    this._tintCard(card,isResisted?'rgba(239,68,68,0.25)':'rgba(30,0,60,0.5)',300);
+    if(isResisted) this._shakeCard(card,6,260);
+  }
+
+  static _anvilDrop(card,{isCrit=false}={}) {
+    if (!card) return;
+    this._squishCard(card,0.58,350);
+    this._tintCard(card,isCrit?'rgba(255,160,40,0.4)':'rgba(130,130,130,0.35)',180);
+    this._shakeCard(card,isCrit?9:6,300);
+    if(isCrit) this._cardParticles(card,10,'#ff9900',5,3,400);
+  }
+
+  static _arrowTrail(card,{echoBowHitIndex=0}={}) {
+    if (!card) return;
+    const isDouble=echoBowHitIndex>0&&(echoBowHitIndex%3===0);
+    const c=this._cardCenter(card);
+    const tw=c.w*(isDouble?0.85:0.55);
+    const col=isDouble?'#ff55ff':'#c4b5fd';
+    const {el}=this._overlay(card);
+    el.style.cssText+=`left:${c.x-tw/2}px;top:${c.y-2}px;width:${tw}px;height:${isDouble?6:3}px;border-radius:3px;background:linear-gradient(90deg,transparent,${col},white,${col},transparent);${isDouble?`box-shadow:0 0 12px 4px ${col};`:''}`;
+    this._raf(isDouble?450:280,p=>{el.style.opacity=p<0.1?p/0.1:1-(p-0.1)/0.9;},()=>el.remove());
+    if(isDouble){this._tintCard(card,'rgba(200,100,255,0.3)',220);this._cardParticles(card,6,'#dd88ff',3,3,320);}
+    this._shakeCard(card,isDouble?5:2,180);
+  }
+
+  static _aegisWard(card) {
+    if (!card) return;
+    const c=this._cardCenter(card);
+    const stamp=document.createElement('div');
+    stamp.textContent='🛡';
+    stamp.style.cssText=`position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w,c.h)*0.65}px;line-height:1;filter:drop-shadow(0 0 8px rgba(96,165,250,0.9)) drop-shadow(0 0 4px #fff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
+    document.body.appendChild(stamp);
+    this._raf(550,p=>{
+      stamp.style.transform=`translate(-50%,-50%) scale(${p<0.3?0.1+p/0.3*0.9:1})`;
+      stamp.style.opacity=p<0.25?p/0.25:p<0.65?1:1-(p-0.65)/0.35;
+    },()=>stamp.remove());
+    const {el:outline}=this._overlay(card);
+    outline.style.cssText+=`width:${c.w+4}px;height:${c.h+4}px;left:${c.r.left-2}px;top:${c.r.top-2}px;border-radius:8px;border:2px solid rgba(96,165,250,0.8);background:transparent;box-shadow:0 0 10px rgba(96,165,250,0.45);`;
+    this._raf(700,p=>{outline.style.opacity=p<0.15?p/0.15:1-(p-0.15)/0.85;},()=>outline.remove());
+    this._tintCard(card,'rgba(96,165,250,0.22)',250);
+  }
+}
+
+
 
