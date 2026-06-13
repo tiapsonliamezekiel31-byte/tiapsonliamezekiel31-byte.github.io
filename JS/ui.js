@@ -1204,6 +1204,7 @@ class UIManager {
       } catch (e) { }
     });
     state.eventBus.on(EVENTS.ENEMY_HEALED, (detail) => {
+      if (detail && detail.source === 'boss') return; // Handled sequentially during check-in animation
       try { this.showFloatingText(detail.enemyId, `+${Math.ceil(detail.amount)} healed`, { color: UIManager.themeColor('--success-green', '#44ff44') }); } catch (e) { }
     });
     state.eventBus.on(EVENTS.ENEMY_REVIVED, (detail) => {

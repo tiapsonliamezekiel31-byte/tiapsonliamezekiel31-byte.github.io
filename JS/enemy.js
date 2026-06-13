@@ -355,11 +355,13 @@ class EnemyManager {
       multiplier = DEFAULT_GAME_CONFIG.eliteEnemyGoldMultiplier;
     }
     
+    let drop = baseGold * multiplier;
     if (state.hasBuff('Scavenger')) {
-      multiplier += 5;
+      const scavengerGold = state.config.buffs?.Scavenger?.effect?.goldOnKill ?? 15;
+      drop += scavengerGold;
     }
     
-    return baseGold * multiplier;
+    return drop;
   }
 
   // Developer utility: halve every enemy's health (both max and current)

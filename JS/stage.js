@@ -224,7 +224,7 @@ class StageManager {
     const stage = state.stageState.stage;
     const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
     const hpMultiplier = bossCfg.hpMult || this.getBossHpMultiplier(bossName);
-    const calculatedHp = Math.round(state.playerState.maxAp * (2.5 + stage * 0.8) * hpMultiplier);
+    const calculatedHp = Math.round(state.playerState.maxAp * (2.0 + stage * 0.6) * hpMultiplier);
     
     state.stageState.enemies = [];
     state.stageState.bossData = {
@@ -423,6 +423,35 @@ class StageManager {
         };
 
         return bossObj;
+      }
+
+      // Rebuild bomb objects
+      if (enemy.isBomb) {
+        const bombObj = {
+          id: enemy.id || ('bomb_' + Math.random().toString(36).substr(2, 9)),
+          name: 'Bomb',
+          isBoss: false,
+          isBomb: true,
+          hp: enemy.hp ?? 0,
+          maxHp: enemy.maxHp ?? 0,
+          isDead: !!enemy.isDead,
+          dmgMult: 0.0,
+          consecutiveAttackDays: 0,
+          statusEffects: enemy.statusEffects || {},
+          takeDamage(amount) {
+            this.hp -= amount;
+            if (this.hp <= 0) {
+              this.hp = 0;
+              this.isDead = true;
+            }
+          },
+          heal(amount) {
+            this.hp = Math.min(this.maxHp, this.hp + amount);
+          },
+          getResistanceMultiplier() { return 1.0; },
+          getWeaknessMultiplier() { return 1.0; }
+        };
+        return bombObj;
       }
 
       // Rebuild regular enemies

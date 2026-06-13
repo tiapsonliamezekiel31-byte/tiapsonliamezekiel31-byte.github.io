@@ -89,11 +89,12 @@ class WeaponAttack {
     
     // Apply buffs
     if (state.hasBuff('Sharp Edge')) {
-      damage *= 1.1;
+      const edgeBonus = state.config.buffs?.['Sharp Edge']?.effect?.apDamageBonus ?? 0.15;
+      damage *= (1 + edgeBonus);
     }
     
     if (state.hasBuff('Fury')) {
-      // +5% max potential AP (handled elsewhere, this is just display bonus)
+      // +8% max potential AP (handled in core.js player takeDamage, this is just a comment)
     }
 
     // --- TALISMANS (Damage calculation) ---

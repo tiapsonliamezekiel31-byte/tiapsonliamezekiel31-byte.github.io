@@ -178,6 +178,12 @@ class TaskManager {
       goldReward *= surplusMultiplier;
       diamondReward *= surplusMultiplier;
     }
+    
+    // Apply greed buff multiplier
+    if (state.hasBuff('Greed')) {
+      const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
+      goldReward *= (1 + greedBonus);
+    }
 
     // Round values to prevent floating point issues
     apReward = this.roundValue(apReward, 1);
@@ -374,6 +380,21 @@ class TaskManager {
       goldReward *= state.config.bloodOathRewardMultiplier;
       diamondReward *= state.config.bloodOathRewardMultiplier;
       attrReward *= state.config.bloodOathRewardMultiplier;
+    }
+    
+    // Apply Tasker's Boon todo reward multiplier
+    if (state.hasBuff("Tasker's Boon")) {
+      const boonMult = state.config.buffs?.["Tasker's Boon"]?.effect?.todoRewardMultiplier || 1.8;
+      apReward *= boonMult;
+      goldReward *= boonMult;
+      diamondReward *= boonMult;
+      attrReward *= boonMult;
+    }
+
+    // Apply greed buff multiplier
+    if (state.hasBuff('Greed')) {
+      const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
+      goldReward *= (1 + greedBonus);
     }
 
     apReward = this.roundValue(apReward, 1);

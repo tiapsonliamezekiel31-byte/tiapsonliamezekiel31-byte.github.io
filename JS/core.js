@@ -350,6 +350,22 @@ class GameState {
   
   takeDamage(amount) {
     this.setHp(this.playerState.hp - amount);
+    if (amount > 0 && this.hasBuff('Fury')) {
+      const furyPct = this.config.buffs?.['Fury']?.effect?.furyApBonus ?? 0.08;
+      const bonusAp = Math.round(this.playerState.maxAp * furyPct);
+      if (bonusAp > 0) {
+        this.addAp(bonusAp);
+        try {
+          if (typeof FloatingDamageNumber !== 'undefined' && typeof FloatingDamageNumber.show === 'function') {
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 40, `+${bonusAp} AP (Fury) ⚡`, {
+              color: '#ffd700',
+              scale: 1.2,
+              duration: 1500
+            });
+          }
+        } catch (e) {}
+      }
+    }
   }
   
   // Mana

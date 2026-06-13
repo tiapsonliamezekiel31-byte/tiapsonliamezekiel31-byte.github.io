@@ -329,8 +329,8 @@ const DEFAULT_GAME_CONFIG = {
   buffs: {
     'Sharp Edge': {
       icon: '⚔️',
-      description: '+10% AP-to-damage',
-      effect: { apDamageBonus: 0.1 }
+      description: '+15% AP-to-damage',
+      effect: { apDamageBonus: 0.15 }
     },
     'Critical Precision': {
       icon: '💀',
@@ -349,8 +349,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Fury': {
       icon: '🔥',
-      description: 'after taking dmg, +5% max potential AP',
-      effect: { furyApBonus: 0.05 }
+      description: 'after taking dmg, +8% max potential AP',
+      effect: { furyApBonus: 0.08 }
     },
     'Iron Skin': {
       icon: '🛡️',
@@ -382,18 +382,18 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Efficiency': {
       icon: '⚙️',
-      description: 'mana cost -15%',
-      effect: { manaCostReduction: 0.15 }
+      description: 'mana cost -20%',
+      effect: { manaCostReduction: 0.2 }
     },
     'Greed': {
       icon: '💰',
-      description: '+20% gold',
-      effect: { goldBonus: 0.2 }
+      description: '+30% gold',
+      effect: { goldBonus: 0.3 }
     },
     "Tasker's Boon": {
       icon: '📋',
-      description: 'multiply all todo rewards by 1.5×',
-      effect: { todoRewardMultiplier: 1.5 }
+      description: 'multiply all todo rewards by 1.8×',
+      effect: { todoRewardMultiplier: 1.8 }
     },
     'Quick Learner': {
       icon: '📚',
@@ -402,8 +402,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Pacifist': {
       icon: '☮️',
-      description: 'missed dailies 50% less dmg',
-      effect: { missedDailyDamageReduction: 0.5 }
+      description: 'missed dailies 60% less dmg',
+      effect: { missedDailyDamageReduction: 0.4 }
     },
     'Echo Strike': {
       icon: '🔔',
@@ -412,8 +412,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Scavenger': {
       icon: '🦅',
-      description: 'enemies drop 5 gold',
-      effect: { goldOnKill: 5 }
+      description: 'enemies drop 15 gold',
+      effect: { goldOnKill: 15 }
     },
     'Vampiric Touch': {
       icon: '🧛',
