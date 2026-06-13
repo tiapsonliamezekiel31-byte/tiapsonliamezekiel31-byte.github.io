@@ -219,6 +219,7 @@ class GameState {
     this.systemState = {
       isPaused: false,
       isDeathDefiance: false,
+      dialoguePopupsEnabled: true,
       dialogueSeen: {},
       runSeenEnemies: {},
       diamondRewards: [],
@@ -759,6 +760,12 @@ class GameState {
       this.buffs = data.buffs;
       this.nemesisState = data.nemesisState;
       this.systemState = data.systemState;
+      if (this.systemState) {
+        this.systemState.isCheckInRunning = false;
+        if (this.systemState.dialoguePopupsEnabled === undefined) {
+          this.systemState.dialoguePopupsEnabled = true;
+        }
+      }
       if (!this.combatState || typeof this.combatState !== 'object') {
         this.combatState = {};
       }
@@ -1928,9 +1935,9 @@ function performCheckIn() {
         }
 
         // Persist and refresh UI after regen and attacks
+        clearCheckInRunning();
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
-        clearCheckInRunning();
 
         // Show pet hunger warning if pet is under 30% hunger and player is alive
         if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
@@ -1949,9 +1956,9 @@ function performCheckIn() {
         }
       } catch (e) {
         console.warn('Daily regeneration failed during check-in', e);
+        clearCheckInRunning();
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
-        clearCheckInRunning();
 
         // Show pet hunger warning if pet is under 30% hunger and player is alive (fallback on regen failure)
         if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
@@ -2002,11 +2009,11 @@ function performCheckIn() {
   }
 
   // 10) Persist and refresh UI
+  clearCheckInRunning();
   state.save();
   if (typeof UIManager !== 'undefined') {
     UIManager.refreshGameUI();
   }
-  clearCheckInRunning();
 
   return true;
 }

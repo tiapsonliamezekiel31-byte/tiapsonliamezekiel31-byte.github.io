@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: classList null error, check-in always fires (outside SoundManager), first-attack enemy dialogue"
+$commitMsg = "fix: AP attack TypeError, check-in lockout, dialogue settings toggle, and stage/level indicator layout coverage"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

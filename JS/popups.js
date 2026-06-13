@@ -1329,6 +1329,7 @@ class PopupsManager {
   static showPauseMenu() {
     const state = getGameState();
     const isPaused = !!state.systemState.isPaused;
+    const dialogueEnabled = state.systemState.dialoguePopupsEnabled !== false;
 
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -1349,6 +1350,9 @@ class PopupsManager {
       <div class="pause-menu">
         <button class="btn-pause-action ${isPaused ? 'active' : ''}" id="togglePauseBtn" style="${isPaused ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
           ${isPaused ? '▶️ RESUME GAMEPLAY' : '⏸️ PAUSE GAMEPLAY'}
+        </button>
+        <button class="btn-pause-action ${dialogueEnabled ? 'active' : ''}" id="toggleDialogueBtn" style="${dialogueEnabled ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
+          💬 Dialogue Popups: ${dialogueEnabled ? 'ON' : 'OFF'}
         </button>
         <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
@@ -1386,6 +1390,24 @@ class PopupsManager {
       }
       try { state.save(); } catch (e) {}
       try { UIManager.refreshGameUI(); } catch (e) {}
+    });
+
+    const toggleDialogueBtn = popup.querySelector('#toggleDialogueBtn');
+    toggleDialogueBtn.addEventListener('click', () => {
+      const current = state.systemState.dialoguePopupsEnabled !== false;
+      state.systemState.dialoguePopupsEnabled = !current;
+      const newVal = !current;
+      toggleDialogueBtn.textContent = `💬 Dialogue Popups: ${newVal ? 'ON' : 'OFF'}`;
+      if (newVal) {
+        toggleDialogueBtn.classList.add('active');
+        toggleDialogueBtn.style.borderColor = 'var(--accent-gold)';
+        toggleDialogueBtn.style.color = 'var(--accent-gold)';
+      } else {
+        toggleDialogueBtn.classList.remove('active');
+        toggleDialogueBtn.style.borderColor = '';
+        toggleDialogueBtn.style.color = '';
+      }
+      try { state.save(); } catch (e) {}
     });
 
     popup.querySelector('#closeMenuBtn').addEventListener('click', () => {

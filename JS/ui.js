@@ -1396,6 +1396,14 @@ class UIManager {
         state.eventBus.on(EVENTS.ENEMY_REVIVED, (d) => { try { SoundManager.play('revive'); } catch (e) { } });
         state.eventBus.on(EVENTS.GOLD_CHANGED, (d) => { try { SoundManager.play('coin'); } catch (e) { } });
         state.eventBus.on(EVENTS.CHECK_IN, (d) => { try { SoundManager.play('checkin'); } catch (e) { } });
+        state.eventBus.on(EVENTS.CHECK_IN_COMPLETE, (detail) => {
+          try {
+            const D = detail?.missedDailyDamage ?? 0;
+            const N = detail?.scaledN ?? 0;
+            const late = detail?.lateTodoDamage ?? 0;
+            this.playCheckInSequence(detail || {});
+          } catch (e) { }
+        });
         state.eventBus.on(EVENTS.DEATH_DEFIANCE, (detail) => {
           try {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Death Defied!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 2000, fadeDelay: 1200 });
@@ -1405,12 +1413,6 @@ class UIManager {
         state.eventBus.on(EVENTS.DEATH, (d) => { try { SoundManager.play('death'); } catch (e) { } });
       }
     } catch (e) { }
-    // CHECK_IN_COMPLETE handler is registered OUTSIDE SoundManager so it always fires
-    state.eventBus.on(EVENTS.CHECK_IN_COMPLETE, (detail) => {
-      try {
-        this.playCheckInSequence(detail || {});
-      } catch (e) { console.warn('playCheckInSequence failed', e); }
-    });
     state.eventBus.on(EVENTS.TASK_COMPLETED, (detail) => {
       if (detail?.type === 'daily') this.scheduleUpdateDailiesList();
       if (detail?.type === 'todo') this.updateTodosList();
@@ -2862,6 +2864,21 @@ class UIManager {
         return;
       }
 
+      if (target && !target.isBoss && target.name) {
+        if (!state.systemState.runSeenEnemies) state.systemState.runSeenEnemies = {};
+        if (!state.systemState.runSeenEnemies[target.name]) {
+          const dialogueEnabled = state.systemState.dialoguePopupsEnabled !== false;
+          if (dialogueEnabled) {
+            PopupsManager.showConfiguredDialogue('enemyFirstSeen', {
+              title: 'First Encounter',
+              text: `text\n${target.name}`
+            }, `enemyFirstSeen:${target.name}`);
+          }
+          state.systemState.runSeenEnemies[target.name] = true;
+          state.save();
+        }
+      }
+
       const weapon = PlayerManager.getCurrentWeapon();
       if (!weapon) {
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No weapon equipped', { color: '#ff6666' });
@@ -3071,7 +3088,7 @@ class UIManager {
           }
 
           if (hit.isDead) {
-            const isElite = (targetCard && targetCard.classList) ? (targetCard.classList.contains('elite') || targetCard.classList.contains('boss')) : false;
+            const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
             EnemyDeathAnimation.burst(targetX, targetY, isElite);
           }
         });
@@ -3087,26 +3104,6 @@ class UIManager {
             );
           });
         }
-
-        // First enemy encounter dialogue
-        try {
-          const gs2 = getGameState();
-          if (!Array.isArray(gs2.systemState.seenEnemies)) gs2.systemState.seenEnemies = [];
-          hits.forEach(hit => {
-            const hitEnemy = StageManager.getEnemyById(hit.enemyId);
-            const enemyName = hitEnemy?.name;
-            if (enemyName && !gs2.systemState.seenEnemies.includes(enemyName)) {
-              gs2.systemState.seenEnemies.push(enemyName);
-              // Show first encounter popup
-              FloatingDamageNumber.show(
-                window.innerWidth / 2,
-                window.innerHeight / 2 - 100,
-                `⚔️ First encounter: ${enemyName}!`,
-                { color: '#ffd76a', duration: 2400, scale: 1.1, fadeDelay: 1600 }
-              );
-            }
-          });
-        } catch (e) { }
 
         this.renderEnemies();
         getGameState().save();
@@ -3616,6 +3613,7 @@ class UIManager {
     const onPointerDown = (event, type) => {
       const state = getGameState();
       const className = state.playerState.className;
+      const targetElement = event.currentTarget;
 
       // 1. Resource Validation
       if (type === 'attack') {
@@ -3628,8 +3626,10 @@ class UIManager {
         if (state.playerState.ap < attackCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          event.currentTarget.classList.add('shake');
-          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          if (targetElement) {
+            targetElement.classList.add('shake');
+            setTimeout(() => targetElement.classList.remove('shake'), 300);
+          }
           return;
         }
       } else if (type === 'dodge') {
@@ -3637,8 +3637,10 @@ class UIManager {
         if (state.playerState.ap < dodgeCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          event.currentTarget.classList.add('shake');
-          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          if (targetElement) {
+            targetElement.classList.add('shake');
+            setTimeout(() => targetElement.classList.remove('shake'), 300);
+          }
           return;
         }
       } else if (type === 'skill') {
@@ -3650,8 +3652,10 @@ class UIManager {
         if (state.playerState.mana < skillCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana', { color: '#ff6666' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          event.currentTarget.classList.add('shake');
-          setTimeout(() => event.currentTarget.classList.remove('shake'), 300);
+          if (targetElement) {
+            targetElement.classList.add('shake');
+            setTimeout(() => targetElement.classList.remove('shake'), 300);
+          }
           return;
         }
       }
@@ -3670,15 +3674,15 @@ class UIManager {
       circleCenterX = circleRect.width / 2;
       circleCenterY = circleRect.height / 2;
 
-      const btnRect = event.currentTarget.getBoundingClientRect();
+      const btnRect = targetElement ? targetElement.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
       buttonCenterX = btnRect.left - circleRect.left + btnRect.width / 2;
       buttonCenterY = btnRect.top - circleRect.top + btnRect.height / 2;
 
       const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
       const isTargetingSkill = (type === 'skill' && hasAlchemist);
 
-      if (type === 'attack' || type === 'dodge' || isTargetingSkill) {
-        event.currentTarget.setPointerCapture(activePointerId);
+      if ((type === 'attack' || type === 'dodge' || isTargetingSkill) && targetElement) {
+        targetElement.setPointerCapture(activePointerId);
       }
     };
 
@@ -3746,8 +3750,8 @@ class UIManager {
       const hasAlchemist = className === 'Alchemist' || (state.playerState.borrowedSkills && state.playerState.borrowedSkills.includes('Alchemist'));
       const isTargetingSkill = (dragType === 'skill' && hasAlchemist);
 
-      if (dragType === 'attack' || dragType === 'dodge' || isTargetingSkill) {
-        try { event.currentTarget.releasePointerCapture(activePointerId); } catch (e) {}
+      if ((dragType === 'attack' || dragType === 'dodge' || isTargetingSkill) && targetElement) {
+        try { targetElement.releasePointerCapture(activePointerId); } catch (e) {}
       }
 
       svg.style.display = 'none';
@@ -3988,7 +3992,8 @@ class UIManager {
           } else if (detail.weaponName === 'Death Spell') {
             // Death Spell — check if the target is still alive (resisted = alive)
             const tgtCard = targetCard;
-            opts.isResisted = (tgtCard && tgtCard.classList) ? (!tgtCard.classList.contains('enemy-dead') && !tgtCard.dataset.isDead) : false;
+            opts.isResisted = !tgtCard.classList.contains('enemy-dead') &&
+                              !tgtCard.dataset.isDead;
           }
 
           WeaponHitAnimation.play(detail.weaponName, targetCard, opts);
@@ -5434,7 +5439,6 @@ class UIManager {
       Array.from(layer.querySelectorAll('.enemy-card')).map(card => [String(card.dataset.enemyId), card])
     );
     const activeEnemyIds = new Set();
-    let firstUnseenEnemyName = null;
 
     enemies.forEach((enemy, index) => {
       const enemyId = String(enemy.id);
@@ -5480,27 +5484,7 @@ class UIManager {
         showPetBadge: !!(petTarget && String(petTarget.enemyId) === enemyId && petTarget.date === todayStr),
         petEmoji
       });
-
-      if (!enemy?.isBoss && enemy?.name) {
-        if (!state.systemState.runSeenEnemies) state.systemState.runSeenEnemies = {};
-        if (!state.systemState.runSeenEnemies[enemy.name] && !firstUnseenEnemyName) {
-          firstUnseenEnemyName = enemy.name;
-        }
-      }
     });
-
-    if (firstUnseenEnemyName && !document.querySelector('.dialogue-card')) {
-      try {
-        const shown = PopupsManager.showConfiguredDialogue('enemyFirstSeen', {
-          title: 'First Encounter',
-          text: `text\n${firstUnseenEnemyName}`
-        }, `enemyFirstSeen:${firstUnseenEnemyName}`);
-        if (shown) {
-          state.systemState.runSeenEnemies[firstUnseenEnemyName] = true;
-          try { state.save(); } catch (e) { }
-        }
-      } catch (e) { }
-    }
 
     existingCards.forEach((card, enemyId) => {
       if (!activeEnemyIds.has(enemyId)) {
@@ -5894,8 +5878,9 @@ class UIManager {
       const state = getGameState();
       if (el && state && state.stageState) {
         const level = String(state.stageState.level || 1);
+        const levelText = `LVL ${level}`;
         // Avoid redundant DOM writes by checking current content first.
-        if (el.textContent !== level) el.textContent = level;
+        if (el.textContent !== levelText) el.textContent = levelText;
       }
     } catch (e) { }
     // Ensure resource HUD shows current values immediately
