@@ -733,18 +733,18 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   bosses: {
     'Demon': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 1.0, color: '#ff2222', p1Anim: 'Slam Wave', p2Anim: 'Glitch Invert', attackWeights: { regular: 0.6, crit: 0.3, null: 0.1 } },
-    'Mummified Marcher': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 1.2, color: '#d4af37', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heal: 0.4, minion: 0.5, null: 0.1 } },
-    'Crimson Wizard': { element: 'Aether', resist: 'Aether B', weak: 'Fire D', hpMult: 0.8, color: '#8a2be2', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { corrosive: 0.5, crit: 0.4, null: 0.1 } },
-    'Worm Eater': { element: 'Water', resist: 'Water B', weak: 'Earth D', hpMult: 1.0, color: '#32cd32', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { corrosive: 0.5, regular: 0.4, null: 0.1 } },
+    'Mummified Marcher': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 1.2, color: '#d4af37', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { regular: 0.5, minion: 0.3, heal: 0.1, null: 0.1 } },
+    'Crimson Wizard': { element: 'Aether', resist: 'Aether B', weak: 'Fire D', hpMult: 0.8, color: '#8a2be2', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { crit: 0.6, corrosive: 0.3, null: 0.1 } },
+    'Worm Eater': { element: 'Water', resist: 'Water B', weak: 'Earth D', hpMult: 1.0, color: '#32cd32', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { regular: 0.6, corrosive: 0.3, null: 0.1 } },
     'Jade Giant': { element: 'Earth', resist: 'Earth B', weak: 'Fire D', hpMult: 1.3, color: '#00a86b', p1Anim: 'Slam Wave', p2Anim: 'Slam Wave', attackWeights: { heavy: 0.6, regular: 0.3, null: 0.1 } },
-    'Star Computer': { element: 'Air', resist: 'Air B', weak: 'Water D', hpMult: 0.9, color: '#00ffff', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { heavy: 0.5, bomb: 0.4, null: 0.1 } },
-    'Angel': { element: 'Aether', resist: 'Aether B', weak: 'Earth D', hpMult: 1.0, color: '#fdfd96', p1Anim: 'Orb Burst', p2Anim: 'Orb Burst', attackWeights: { heal: 0.5, crit: 0.4, null: 0.1 } },
-    'Killer Queen': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.9, color: '#ff00ff', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { bomb: 0.6, crit: 0.3, null: 0.1 } },
+    'Star Computer': { element: 'Air', resist: 'Air B', weak: 'Water D', hpMult: 0.9, color: '#00ffff', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { heavy: 0.7, bomb: 0.2, null: 0.1 } },
+    'Angel': { element: 'Aether', resist: 'Aether B', weak: 'Earth D', hpMult: 1.0, color: '#fdfd96', p1Anim: 'Orb Burst', p2Anim: 'Orb Burst', attackWeights: { crit: 0.6, heal: 0.3, null: 0.1 } },
+    'Killer Queen': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.9, color: '#ff00ff', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { crit: 0.6, bomb: 0.3, null: 0.1 } },
     'Satan\'s Shark': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 1.5, color: '#dc143c', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { regular: 0.6, crit: 0.3, null: 0.1 } },
-    'Fire Turtle': { element: 'Fire', resist: 'Fire B', weak: 'Air D', hpMult: 1.4, color: '#ff4500', p1Anim: 'Slam Wave', p2Anim: 'Slam Wave', attackWeights: { heal: 0.5, heavy: 0.4, null: 0.1 } },
-    'Banished King': { element: 'Earth', resist: 'Earth B', weak: 'Aether D', hpMult: 1.2, color: '#4b0082', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { minion: 0.6, regular: 0.3, null: 0.1 } },
-    'The Sun': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 1.1, color: '#ffd700', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { crit: 0.5, bomb: 0.4, null: 0.1 } },
-    'Nemesis': { element: 'Void', resist: 'Void B', weak: 'Aether D', hpMult: 2.0, color: '#4a0e4e', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { heavy: 0.3, bomb: 0.2, minion: 0.2, crit: 0.2, null: 0.1 } }
+    'Fire Turtle': { element: 'Fire', resist: 'Fire B', weak: 'Air D', hpMult: 1.4, color: '#ff4500', p1Anim: 'Slam Wave', p2Anim: 'Slam Wave', attackWeights: { heavy: 0.5, heal: 0.4, null: 0.1 } },
+    'Banished King': { element: 'Earth', resist: 'Earth B', weak: 'Aether D', hpMult: 1.2, color: '#4b0082', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { regular: 0.6, minion: 0.3, null: 0.1 } },
+    'The Sun': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 1.1, color: '#ffd700', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { crit: 0.7, bomb: 0.2, null: 0.1 } },
+    'Nemesis': { element: 'Void', resist: 'Void B', weak: 'Aether D', hpMult: 2.0, color: '#4a0e4e', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { heavy: 0.4, crit: 0.3, bomb: 0.1, minion: 0.1, null: 0.1 } }
   },
   // PLANNER
   // ============================================================

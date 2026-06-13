@@ -919,9 +919,24 @@ function rollBossAttack(bossName, config) {
   return 'regular';
 }
 
-function getRandomMinionNameForStage(stage) {
+function getRandomMinionNameForStage(stage, variation) {
   const pool = [];
-  if (typeof ENEMY_DATABASE !== 'undefined') {
+  if (variation && typeof FORMATIONS !== 'undefined') {
+    const variationFormations = FORMATIONS[stage]?.[variation];
+    if (variationFormations) {
+      Object.values(variationFormations).forEach(levelData => {
+        if (levelData.enemies) {
+          levelData.enemies.forEach(enemyDef => {
+            if (enemyDef.name && !pool.includes(enemyDef.name)) {
+              pool.push(enemyDef.name);
+            }
+          });
+        }
+      });
+    }
+  }
+  
+  if (pool.length === 0 && typeof ENEMY_DATABASE !== 'undefined') {
     Object.entries(ENEMY_DATABASE).forEach(([name, data]) => {
       if (data.stage === stage) {
         pool.push(name);
@@ -1177,6 +1192,14 @@ function performCheckIn() {
       const skillFx = state.combatState?.skillEffects || {};
       
       rolledAttacks.forEach((attackType) => {
+        // Prevent summon overflow: convert bomb/minion to regular if already at 5+ active normal enemies
+        if (attackType === 'bomb' || attackType === 'minion') {
+          const activeNormalCount = state.stageState.enemies.filter(e => !e.isBoss && !e.isDead).length;
+          if (activeNormalCount >= 5) {
+            attackType = 'regular';
+          }
+        }
+
         if (attackType === 'null') {
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -1350,7 +1373,7 @@ function performCheckIn() {
         }
         else if (attackType === 'minion') {
           // minion summon: summons 1 minion
-          const minionName = getRandomMinionNameForStage(stage);
+          const minionName = getRandomMinionNameForStage(stage, state.stageState.stageVariation);
           const minionObj = EnemyManager.createEnemy(minionName, state.playerState.maxAp, stage);
           state.stageState.enemies.push(minionObj);
           retaliationSteps.push({
