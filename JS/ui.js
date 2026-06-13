@@ -1986,13 +1986,35 @@ class UIManager {
     return card;
   }
 
-  static playBossAttackAnimation(bossName, isPhase2) {
+  static playBossAttackAnimation(bossName, isPhase2, attackType) {
     const state = getGameState();
     const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
-    const animName = isPhase2 ? (bossCfg.p2Anim || 'Glitch Invert') : (bossCfg.p1Anim || 'Slam Wave');
-    const color = bossCfg.color || '#ff0000';
+    let animName = isPhase2 ? (bossCfg.p2Anim || 'Glitch Invert') : (bossCfg.p1Anim || 'Slam Wave');
+    let color = bossCfg.color || '#ff0000';
+
+    // Map specific attack types to their themed retro animations
+    if (attackType === 'crit') {
+      animName = 'Glitch Invert';
+      color = '#ff3b30'; // Bright red for critical
+    } else if (attackType === 'corrosive') {
+      animName = 'Pixel Rain';
+      color = '#34c759'; // Green for corrosive spit
+    } else if (attackType === 'heavy') {
+      animName = 'Slam Wave';
+      color = '#ffcc00'; // Amber/Yellow for heavy slam
+    } else if (attackType === 'heal') {
+      animName = 'Orb Burst';
+      color = '#ff2d55'; // Pink/Rose for healing
+    } else if (attackType === 'bomb') {
+      animName = 'Rage Pulse';
+      color = '#af52de'; // Purple for bomb summon
+    } else if (attackType === 'minion') {
+      animName = 'Energy Beam';
+      color = '#5856d6'; // Indigo for minion warp
+    }
     
     const card = document.querySelector(`.enemy-card[data-enemy-id="boss"]`) || document.querySelector(`.enemy-card`);
+    if (!card) return;
     
     if (animName === 'Slam Wave' && typeof RetroSlamWaveAnimation !== 'undefined') {
       RetroSlamWaveAnimation.play(card, color);
@@ -2069,7 +2091,7 @@ class UIManager {
           const state = getGameState();
           const bossName = (state.stageState.bossData && state.stageState.bossData.name) || step.name;
           const bossData = state.stageState.bossData || {};
-          this.playBossAttackAnimation(bossName, bossData.phase === 2);
+          this.playBossAttackAnimation(bossName, bossData.phase === 2, step.attackType);
 
           let actionDesc = 'ATTACK';
           if (step.isNull) actionDesc = 'IDLE';
