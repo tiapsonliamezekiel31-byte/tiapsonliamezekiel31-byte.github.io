@@ -6305,29 +6305,252 @@ class UIManager {
     const card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
     if (!card) return;
 
-    const icon = document.createElement('div');
-    icon.className = 'pet-icon';
     const state = getGameState();
     const petEmoji = (state.playerState && state.playerState.petEmoji) ? state.playerState.petEmoji : '🐶';
-    
     const equippedAnim = state.playerState?.equippedPetAnimation || 'Default';
+
+    // Compute positioning
+    const rect = card.getBoundingClientRect();
+    const enemyCenterX = rect.left + rect.width / 2;
+    const enemyCenterY = rect.top + rect.height / 2;
+    const enemyTopY = rect.top - 14;
+
+    // A helper to create particles
+    const createParticle = (x, y, content, duration, animStyles) => {
+      const p = document.createElement('div');
+      p.textContent = content;
+      p.style.position = 'fixed';
+      p.style.left = `${x}px`;
+      p.style.top = `${y}px`;
+      p.style.pointerEvents = 'none';
+      p.style.zIndex = '11000';
+      p.style.fontFamily = "'Press Start 2P', monospace";
+      p.style.fontSize = '10px';
+      p.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+      document.body.appendChild(p);
+      requestAnimationFrame(() => {
+        Object.assign(p.style, animStyles);
+      });
+      setTimeout(() => {
+        try { p.remove(); } catch (e) {}
+      }, duration);
+    };
+
+    // Helper for screenshake on the card
+    const shakeCard = (intensity = 8, count = 6) => {
+      let currentShift = 0;
+      const originalTransform = card.style.transform || '';
+      const interval = setInterval(() => {
+        if (currentShift >= count) {
+          card.style.transform = originalTransform;
+          clearInterval(interval);
+        } else {
+          const dx = (Math.random() - 0.5) * intensity;
+          const dy = (Math.random() - 0.5) * intensity;
+          card.style.transform = `${originalTransform} translate(${dx}px, ${dy}px)`;
+          currentShift++;
+        }
+      }, 50);
+    };
+
+    // 1) Spawn the main pet icon
+    const icon = document.createElement('div');
+    icon.className = 'pet-icon';
     if (equippedAnim !== 'Default') {
       icon.classList.add(`pet-anim-${equippedAnim.toLowerCase().replace(/\s+/g, '-')}`);
     }
-    
     icon.textContent = petEmoji;
     icon.style.pointerEvents = 'none';
     icon.style.position = 'fixed';
-
-    // Compute position based on enemy card rect
-    const rect = card.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top - 14; // slightly above card
-    icon.style.left = `${x}px`;
-    icon.style.top = `${y}px`;
+    icon.style.left = `${enemyCenterX}px`;
+    icon.style.top = `${enemyTopY}px`;
     icon.style.transform = 'translateX(-50%)';
-
+    icon.style.zIndex = '10999';
     document.body.appendChild(icon);
+
+    // 2) EXTRA EXTRAVAGANT EFFECTS
+    if (equippedAnim === 'Fierce Charge') {
+      // Spawn trail clones
+      for (let i = 1; i <= 3; i++) {
+        setTimeout(() => {
+          createParticle(enemyCenterX, enemyTopY, petEmoji, 300, {
+            transform: 'translateX(-50%) translateY(40px) scale(1.1)',
+            opacity: '0'
+          });
+        }, i * 80);
+      }
+      // Slam impact particles
+      setTimeout(() => {
+        shakeCard(6, 4);
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          const px = enemyCenterX + Math.cos(angle) * 10;
+          const py = enemyCenterY + Math.sin(angle) * 10;
+          createParticle(px, py, '✨', 400, {
+            left: `${px + Math.cos(angle) * 40}px`,
+            top: `${py + Math.sin(angle) * 40}px`,
+            opacity: '0',
+            transform: 'scale(0.5)'
+          });
+        }
+      }, 210);
+
+    } else if (equippedAnim === 'Double Flip') {
+      // Spawn sparkle rings
+      let sparkleCount = 0;
+      const interval = setInterval(() => {
+        if (sparkleCount >= 4) {
+          clearInterval(interval);
+          return;
+        }
+        for (let i = 0; i < 4; i++) {
+          const angle = (i / 4) * Math.PI * 2 + (sparkleCount * 0.5);
+          createParticle(enemyCenterX, enemyTopY + 10, '⭐', 500, {
+            left: `${enemyCenterX + Math.cos(angle) * 35}px`,
+            top: `${enemyCenterY + Math.sin(angle) * 35}px`,
+            opacity: '0',
+            transform: 'rotate(180deg) scale(0.6)'
+          });
+        }
+        sparkleCount++;
+      }, 120);
+
+    } else if (equippedAnim === 'Meteor Drop') {
+      // Spawn huge burning meteor ☄️
+      const meteor = document.createElement('div');
+      meteor.textContent = '☄️';
+      meteor.style.position = 'fixed';
+      meteor.style.fontSize = '64px';
+      meteor.style.left = `${enemyCenterX}px`;
+      meteor.style.top = `${window.scrollY - 100}px`;
+      meteor.style.transform = 'translateX(-50%)';
+      meteor.style.zIndex = '11005';
+      meteor.style.transition = 'all 500ms cubic-bezier(0.6, -0.28, 0.735, 0.045)';
+      meteor.style.filter = 'drop-shadow(0 0 20px #ff3300) brightness(1.5)';
+      document.body.appendChild(meteor);
+
+      // Make meteor drop and shrink
+      setTimeout(() => {
+        meteor.style.top = `${enemyCenterY}px`;
+        meteor.style.fontSize = '24px';
+      }, 50);
+
+      // Trail of burning smoke
+      for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+          createParticle(enemyCenterX + (Math.random() - 0.5) * 30, enemyCenterY - 120 + i * 25, '🔥', 400, {
+            transform: 'scale(1.8) translateY(-20px)',
+            opacity: '0'
+          });
+        }, i * 70);
+      }
+
+      // Hit Impact
+      setTimeout(() => {
+        try { meteor.remove(); } catch (e) {}
+        shakeCard(12, 10);
+        
+        // Explosion flash overlay
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.left = `${rect.left}px`;
+        flash.style.top = `${rect.top}px`;
+        flash.style.width = `${rect.width}px`;
+        flash.style.height = `${rect.height}px`;
+        flash.style.background = 'radial-gradient(circle, rgba(255,100,0,0.85) 0%, rgba(255,0,0,0) 70%)';
+        flash.style.zIndex = '11000';
+        flash.style.pointerEvents = 'none';
+        flash.style.transition = 'opacity 400ms ease-out';
+        document.body.appendChild(flash);
+        setTimeout(() => { flash.style.opacity = '0'; }, 50);
+        setTimeout(() => { try { flash.remove(); } catch(e){} }, 450);
+
+        // Exploding debris
+        for (let i = 0; i < 12; i++) {
+          const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.5;
+          const px = enemyCenterX;
+          const py = enemyCenterY;
+          createParticle(px, py, Math.random() > 0.5 ? '💥' : '🔥', 600, {
+            left: `${px + Math.cos(angle) * 80}px`,
+            top: `${py + Math.sin(angle) * 80}px`,
+            opacity: '0',
+            transform: 'scale(0.5)'
+          });
+        }
+      }, 500);
+
+    } else if (equippedAnim === 'Spectral Pulse') {
+      // Glow and expand rings
+      const pulseRing = document.createElement('div');
+      pulseRing.style.position = 'fixed';
+      pulseRing.style.left = `${enemyCenterX}px`;
+      pulseRing.style.top = `${enemyCenterY}px`;
+      pulseRing.style.width = '10px';
+      pulseRing.style.height = '10px';
+      pulseRing.style.border = '3px solid var(--accent-purple, #a855f7)';
+      pulseRing.style.borderRadius = '50%';
+      pulseRing.style.transform = 'translate(-50%, -50%)';
+      pulseRing.style.boxShadow = '0 0 15px var(--accent-purple, #a855f7)';
+      pulseRing.style.zIndex = '11000';
+      pulseRing.style.pointerEvents = 'none';
+      pulseRing.style.transition = 'all 700ms ease-out';
+      document.body.appendChild(pulseRing);
+
+      setTimeout(() => {
+        pulseRing.style.width = `${rect.width * 1.5}px`;
+        pulseRing.style.height = `${rect.height * 1.2}px`;
+        pulseRing.style.opacity = '0';
+        pulseRing.style.borderColor = '#00ffff';
+        pulseRing.style.boxShadow = '0 0 35px #00ffff';
+      }, 50);
+      setTimeout(() => { try { pulseRing.remove(); } catch(e){} }, 750);
+
+      // Dark floating runic sparkles
+      for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+          const rx = enemyCenterX + (Math.random() - 0.5) * 60;
+          const ry = enemyCenterY + (Math.random() - 0.5) * 60;
+          createParticle(rx, ry, '🔮', 600, {
+            top: `${ry - 30}px`,
+            opacity: '0',
+            transform: 'scale(1.5)'
+          });
+        }, i * 60);
+      }
+
+    } else if (equippedAnim === 'Vortex Spin') {
+      // Spiraling air trails
+      for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+          const angle = (i / 5) * Math.PI * 2;
+          const rad = 40 - (i * 1.5);
+          const px = enemyCenterX + Math.cos(angle) * rad;
+          const py = enemyCenterY + Math.sin(angle) * rad;
+          createParticle(px, py, '🌀', 500, {
+            left: `${enemyCenterX}px`,
+            top: `${enemyCenterY}px`,
+            opacity: '0',
+            transform: 'scale(0.4) rotate(360deg)'
+          });
+        }, i * 40);
+      }
+      setTimeout(() => shakeCard(5, 5), 400);
+
+    } else if (equippedAnim === 'Earthquake Shake') {
+      // Shake violently and raise dust/rocks
+      shakeCard(12, 12);
+      for (let i = 0; i < 12; i++) {
+        setTimeout(() => {
+          const rx = rect.left + Math.random() * rect.width;
+          const ry = rect.bottom - 10;
+          createParticle(rx, ry, Math.random() > 0.5 ? '🪨' : '💨', 500, {
+            top: `${ry - 40 - Math.random() * 30}px`,
+            opacity: '0',
+            transform: 'scale(1.2)'
+          });
+        }, i * 40);
+      }
+    }
 
     const duration = options.duration || 900;
     setTimeout(() => {

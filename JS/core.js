@@ -1109,36 +1109,7 @@ function performCheckIn() {
     console.warn('Poison DoT application failed during check-in', e);
   }
 
-  // 2b) Pet attacks random enemy
-  try {
-    if (state.playerState.petHunger !== undefined) {
-      state.playerState.petHunger = Math.max(0, state.playerState.petHunger - 20);
-    }
-    const isStarving = (state.playerState.petHunger === 0);
-    const basePct = 0.02 + (state.playerState.level - 1) * 0.01;
-    const upgradePct = (state.playerState.petUpgradeLevel || 0) * 0.015;
-    const petBase = isStarving ? 0 : (state.playerState.maxAp * (basePct + upgradePct));
-
-    const petMultiplier = (state.playerState.className === 'Druid')
-      ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
-
-    const petDamage = petBase * petMultiplier;
-    
-    // Druid shadowPet skill allows pet to attack twice today
-    const skillFx = state.combatState?.skillEffects || {};
-    const petAttacksCount = skillFx.shadowPet ? 2 : 1;
-
-    for (let i = 0; i < petAttacksCount; i++) {
-      const alive = StageManager.getAliveEnemies();
-      if (alive.length > 0) {
-        const target = alive[Math.floor(Math.random() * alive.length)];
-        target.takeDamage(petDamage);
-        state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
-      }
-    }
-  } catch (e) {
-    console.warn('Pet attack failed during check-in', e);
-  }
+  // 2b) Pet attacks random enemy (moved to the end of doDailyRegenAndSave)
 
   // 3) Resolve enemy attacks (each alive enemy deals split of N)
   let lateTodoDamage = 0;
@@ -1919,6 +1890,39 @@ function performCheckIn() {
           console.warn('Nemesis attribute gain failed during check-in', e);
         }
 
+        // Pet attacks random enemy at the end of check-in sequence if player is alive
+        if (state.playerState.hp > 0) {
+          try {
+            if (state.playerState.petHunger !== undefined) {
+              state.playerState.petHunger = Math.max(0, state.playerState.petHunger - 20);
+            }
+            const isStarving = (state.playerState.petHunger === 0);
+            const basePct = 0.02 + (state.playerState.level - 1) * 0.01;
+            const upgradePct = (state.playerState.petUpgradeLevel || 0) * 0.015;
+            const petBase = isStarving ? 0 : (state.playerState.maxAp * (basePct + upgradePct));
+
+            const petMultiplier = (state.playerState.className === 'Druid')
+              ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
+
+            const petDamage = petBase * petMultiplier;
+            
+            // Druid shadowPet skill allows pet to attack twice today
+            const skillFx = state.combatState?.skillEffects || {};
+            const petAttacksCount = skillFx.shadowPet ? 2 : 1;
+
+            for (let i = 0; i < petAttacksCount; i++) {
+              const alive = StageManager.getAliveEnemies();
+              if (alive.length > 0) {
+                const target = alive[Math.floor(Math.random() * alive.length)];
+                target.takeDamage(petDamage);
+                state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
+              }
+            }
+          } catch (petErr) {
+            console.warn('Pet attack failed during check-in', petErr);
+          }
+        }
+
         // Persist and refresh UI after regen
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
@@ -1936,7 +1940,7 @@ function performCheckIn() {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
               PopupsManager.showAlert('PET HUNGER WARNING', msg);
             }
-          }, 300);
+          }, 1500);
         }
       } catch (e) {
         console.warn('Daily regeneration failed during check-in', e);
@@ -1957,7 +1961,7 @@ function performCheckIn() {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
               PopupsManager.showAlert('PET HUNGER WARNING', msg);
             }
-          }, 300);
+          }, 1500);
         }
       }
     };

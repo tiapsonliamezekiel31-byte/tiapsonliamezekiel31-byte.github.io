@@ -211,6 +211,13 @@ class TaskManager {
     const petPointsAwarded = petPointsMap[daily.difficulty] || 1;
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
+    const rewards = {
+      ap: apReward,
+      gold: goldReward,
+      diamonds: diamondReward,
+      attributePoints: attrReward
+    };
+
     return { success: true, rewards, completed: daily.completed };
   }
   
