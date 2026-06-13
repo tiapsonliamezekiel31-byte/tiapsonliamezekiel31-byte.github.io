@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: calculate pet attacks in check-in transaction and animate sequentially in playCheckInSequence"
+$commitMsg = "feat: add diamond cheat command, auto-hide visuals panel on preview, make death animations bolder and bigger"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

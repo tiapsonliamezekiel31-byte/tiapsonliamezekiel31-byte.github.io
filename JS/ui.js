@@ -1914,6 +1914,12 @@ class UIManager {
         } else if (btn.classList.contains('btn-preview-cosmetic')) {
           const prevEquipped = state.playerState.equippedDeathEffect;
           state.playerState.equippedDeathEffect = id;
+          
+          const panel = document.getElementById('cosmeticsPanel');
+          if (panel) {
+            panel.classList.add('preview-hiding');
+          }
+          
           try {
             EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2 - 100, false);
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Previewing ${id}`, {
@@ -1924,6 +1930,11 @@ class UIManager {
             console.warn(err);
           } finally {
             state.playerState.equippedDeathEffect = prevEquipped;
+            setTimeout(() => {
+              if (panel) {
+                panel.classList.remove('preview-hiding');
+              }
+            }, 1200);
           }
         }
       });

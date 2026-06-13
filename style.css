@@ -1355,10 +1355,15 @@ body::before {
   max-height: 840px;
   min-width: 200px;
   z-index: 40;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
   pointer-events: none;
   top: auto;
   border-radius: 3px;
+}
+
+.pull-tab.preview-hiding {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .left-tab {
@@ -6559,6 +6564,7 @@ button:hover,
   z-index: 9999;
   pointer-events: none;
   background: linear-gradient(90deg, transparent, rgba(255, 230, 100, 0.4) 30%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 230, 100, 0.4) 70%, transparent);
+  box-shadow: 0 0 50px rgba(255, 215, 106, 0.6), 0 0 100px rgba(255, 215, 106, 0.4);
   animation: holyBeamAnim 800ms ease-out forwards;
 }
 

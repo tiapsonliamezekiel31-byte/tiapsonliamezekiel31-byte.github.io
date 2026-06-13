@@ -197,6 +197,7 @@ class ParticleSystem {
       const particle = ParticleSystem._pool.length ? ParticleSystem._pool.pop() : document.createElement('div');
       
       const borderRadius = options.shape === 'square' ? '0px' : '50%';
+      const glowStyle = options.glow ? `box-shadow: 0 0 10px ${color}, 0 0 20px ${color};` : '';
       
       particle.style.cssText = `
         position: fixed;
@@ -207,9 +208,10 @@ class ParticleSystem {
         background: ${color};
         border-radius: ${borderRadius};
         pointer-events: none;
-        z-index: 10000;
+        z-index: 100000;
         transform: translate3d(${x}px, ${y}px, 0);
         will-change: transform, opacity;
+        ${glowStyle}
       `;
       this.config.container.appendChild(particle);
 
@@ -847,139 +849,146 @@ class EnemyDeathAnimation {
     const particles = new ParticleSystem();
     
     if (isElite) {
-      ScreenEffects.shake(15, 300);
+      ScreenEffects.shake(20, 350);
     }
 
     if (effect === 'Confetti') {
-      const count = Math.max(12, Math.round((isElite ? 50 : 30) * AnimationRuntime.particleScale));
+      const count = Math.max(24, Math.round((isElite ? 100 : 60) * AnimationRuntime.particleScale));
       const colors = ['#ff66b2', '#3399ff', '#ffff66', '#33cc33', '#ff9933', '#cc33ff'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
         const angle = -Math.PI + Math.PI * Math.random(); // upwards spread
-        const speed = (isElite ? 8 : 5) * (0.7 + Math.random() * 0.6);
+        const speed = (isElite ? 12 : 8) * (0.7 + Math.random() * 0.6);
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
         
         particles.emit(x, y, 1, {
           color: color,
-          lifetime: isElite ? 1200 : 800,
+          lifetime: isElite ? 1400 : 1000,
           vx: vx,
           vy: vy,
           gravity: 0.18,
           rotateSpeed: (Math.random() - 0.5) * 12,
           shape: 'square',
-          size: Math.random() * 3 + (isElite ? 5 : 3)
+          size: Math.random() * 6 + (isElite ? 18 : 12),
+          glow: true
         });
       }
     } else if (effect === 'Fire Blast') {
-      const count = Math.max(12, Math.round((isElite ? 40 : 25) * AnimationRuntime.particleScale));
+      const count = Math.max(24, Math.round((isElite ? 80 : 50) * AnimationRuntime.particleScale));
       const colors = ['#ff3300', '#ff6600', '#ff9900', '#ffcc00', '#7a7a7a', '#555555'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
-        const vx = (Math.random() - 0.5) * 3;
-        const vy = -3 - Math.random() * 4;
-        
-        particles.emit(x, y, 1, {
-          color: color,
-          lifetime: 800,
-          vx: vx,
-          vy: vy,
-          accelY: -0.05,
-          shape: 'circle',
-          size: Math.random() * 2 + (isElite ? 4 : 2)
-        });
-      }
-    } else if (effect === 'Void Slime') {
-      const count = Math.max(8, Math.round((isElite ? 30 : 16) * AnimationRuntime.particleScale));
-      const colors = ['#4a0e4e', '#8a2be2', '#a855f7', '#d500f9', '#2d142c'];
-      for (let i = 0; i < count; i++) {
-        const color = colors[i % colors.length];
-        const angle = Math.random() * Math.PI * 2;
-        const speed = (1.5 + Math.random() * 2);
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
+        const vx = (Math.random() - 0.5) * 6;
+        const vy = -6 - Math.random() * 8;
         
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 1000,
           vx: vx,
           vy: vy,
-          gravity: 0.08,
+          accelY: -0.05,
           shape: 'circle',
-          size: Math.random() * 4 + (isElite ? 6 : 4)
+          size: Math.random() * 10 + (isElite ? 22 : 14),
+          glow: true
         });
       }
-    } else if (effect === 'Glitch Matrix') {
-      const count = Math.max(15, Math.round((isElite ? 45 : 25) * AnimationRuntime.particleScale));
-      const colors = ['#39ff14', '#00ff00', '#0f0', '#1f8b4c', '#003300'];
+    } else if (effect === 'Void Slime') {
+      const count = Math.max(16, Math.round((isElite ? 60 : 32) * AnimationRuntime.particleScale));
+      const colors = ['#4a0e4e', '#8a2be2', '#a855f7', '#d500f9', '#2d142c'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
-        const vx = 0; // vertical drop
-        const vy = 1 + Math.random() * 2;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (2.5 + Math.random() * 4);
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
         
-        // Spawn slightly offset horizontally to look like a grid channel
-        const spawnX = x + (Math.floor(Math.random() * 9) - 4) * 8; 
-        const spawnY = y + (Math.random() - 0.5) * 20;
-
-        particles.emit(spawnX, spawnY, 1, {
+        particles.emit(x, y, 1, {
           color: color,
           lifetime: 1200,
           vx: vx,
           vy: vy,
+          gravity: 0.08,
+          shape: 'circle',
+          size: Math.random() * 14 + (isElite ? 26 : 18),
+          glow: true
+        });
+      }
+    } else if (effect === 'Glitch Matrix') {
+      const count = Math.max(30, Math.round((isElite ? 90 : 50) * AnimationRuntime.particleScale));
+      const colors = ['#39ff14', '#00ff00', '#0f0', '#1f8b4c', '#003300'];
+      for (let i = 0; i < count; i++) {
+        const color = colors[i % colors.length];
+        const vx = 0; // vertical drop
+        const vy = 2 + Math.random() * 3;
+        
+        // Spawn slightly offset horizontally to look like a grid channel
+        const spawnX = x + (Math.floor(Math.random() * 9) - 4) * 16; 
+        const spawnY = y + (Math.random() - 0.5) * 40;
+
+        particles.emit(spawnX, spawnY, 1, {
+          color: color,
+          lifetime: 1400,
+          vx: vx,
+          vy: vy,
           accelY: 0.08,
           shape: 'square',
-          size: Math.random() * 2 + 2
+          size: Math.random() * 8 + 12,
+          glow: true
         });
       }
     } else if (effect === 'Holy Beam') {
       // Create vertical golden light beam overlay
       const beam = document.createElement('div');
       beam.className = 'holy-light-beam';
-      beam.style.left = `${x - 25}px`;
+      beam.style.left = `${x - 70}px`;
       beam.style.top = `0px`;
       beam.style.height = `100vh`;
-      beam.style.width = `50px`;
+      beam.style.width = `140px`;
+      beam.style.boxShadow = `0 0 40px #ffd700, 0 0 80px #ffd700`;
       document.body.appendChild(beam);
       setTimeout(() => beam.remove(), 800);
       
-      const count = Math.max(10, Math.round((isElite ? 35 : 20) * AnimationRuntime.particleScale));
+      const count = Math.max(20, Math.round((isElite ? 70 : 40) * AnimationRuntime.particleScale));
       const colors = ['#ffffff', '#ffd700', '#fff0a6', '#fff9d6'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
-        const vx = (Math.random() - 0.5) * 1.5;
-        const vy = -4 - Math.random() * 5;
-        
-        particles.emit(x, y, 1, {
-          color: color,
-          lifetime: 700,
-          vx: vx,
-          vy: vy,
-          shape: 'circle',
-          size: Math.random() * 2 + 2
-        });
-      }
-    } else if (effect === 'Rainbow Pixel') {
-      const count = Math.max(12, Math.round((isElite ? 60 : 35) * AnimationRuntime.particleScale));
-      const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc66', '#3399ff', '#9933ff'];
-      for (let i = 0; i < count; i++) {
-        const color = colors[i % colors.length];
-        const angle = Math.random() * Math.PI * 2;
-        const speed = (isElite ? 12 : 7) * (0.8 + Math.random() * 0.4);
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
+        const vx = (Math.random() - 0.5) * 3;
+        const vy = -6 - Math.random() * 8;
         
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 900,
           vx: vx,
           vy: vy,
+          shape: 'circle',
+          size: Math.random() * 8 + (isElite ? 16 : 10),
+          glow: true
+        });
+      }
+    } else if (effect === 'Rainbow Pixel') {
+      const count = Math.max(24, Math.round((isElite ? 120 : 70) * AnimationRuntime.particleScale));
+      const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc66', '#3399ff', '#9933ff'];
+      for (let i = 0; i < count; i++) {
+        const color = colors[i % colors.length];
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (isElite ? 18 : 10) * (0.8 + Math.random() * 0.4);
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        
+        particles.emit(x, y, 1, {
+          color: color,
+          lifetime: 1100,
+          vx: vx,
+          vy: vy,
           shape: 'square',
-          size: Math.random() * 2 + (isElite ? 5 : 3)
+          size: Math.random() * 10 + (isElite ? 22 : 14),
+          glow: true
         });
       }
     } else {
       // Default rainbow circle burst
-      const count = Math.max(6, Math.round((isElite ? 40 : 20) * AnimationRuntime.particleScale));
+      const count = Math.max(12, Math.round((isElite ? 80 : 40) * AnimationRuntime.particleScale));
       const colors = (typeof UIManager !== 'undefined') ? [
         UIManager.themeColor('--accent-red', '#C00707'),
         UIManager.themeColor('--palette-orange', '#FF4400'),
@@ -993,10 +1002,11 @@ class EnemyDeathAnimation {
         const color = colors[i % colors.length];
         particles.emit(x, y, 1, {
           color: color,
-          lifetime: isElite ? 1000 : 600,
-          velocity: isElite ? 10 : 6,
+          lifetime: isElite ? 1200 : 800,
+          velocity: isElite ? 15 : 9,
           spread: Math.PI * 2,
-          size: isElite ? 4 : 2
+          size: isElite ? 18 : 12,
+          glow: true
         });
       }
     }

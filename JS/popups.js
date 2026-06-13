@@ -1364,10 +1364,10 @@ class PopupsManager {
       <div class="pause-cheat-box">
         <label for="cheatCommandInput">CHEAT COMMAND</label>
         <div class="pause-cheat-row">
-          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | class Knight | gold 999 | help" />
+          <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | class Knight | gold 999 | diamonds 100 | help" />
           <button class="btn-pause-action" id="runCheatBtn">RUN</button>
         </div>
-        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>class Knight</span> · <span>weapon Uzi</span> · <span>gold 999</span></div>
+        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>class Knight</span> · <span>weapon Uzi</span> · <span>gold 999</span> · <span>diamonds 100</span></div>
       </div>
     `;
     
@@ -1647,7 +1647,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, diamonds N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -1723,6 +1723,13 @@ class PopupsManager {
         setResource('gold', command.slice(5));
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'Gold set' };
+      }
+
+      if (lower.startsWith('diamonds ') || lower.startsWith('diamond ')) {
+        const val = command.replace(/^diamonds\s+/i, '').replace(/^diamond\s+/i, '').trim();
+        setResource('diamonds', val);
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Diamonds set to ${state.playerState.diamonds}` };
       }
 
       if (lower.startsWith('keys ') || lower.startsWith('key ')) {
