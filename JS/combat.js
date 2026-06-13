@@ -490,17 +490,21 @@ class CombatManager {
           pushSpecialPopup('STUNNED', '#facc15');
         }
 
-        // Boss phase-2 trigger at <= 30% HP (dialogue + phase flag only)
+        // Boss phase-2 trigger at <= 40% HP (dialogue + phase flag only)
         if (tgt.isBoss) {
           const bossData = state.stageState.bossData || {};
           bossData.hp = tgt.hp;
           bossData.maxHp = tgt.maxHp;
           bossData.isDead = !!tgt.isDead;
           state.stageState.bossData = bossData;
-          if ((bossData.phase || 1) === 1 && tgt.maxHp > 0 && (tgt.hp / tgt.maxHp) <= 0.3) {
+          if ((bossData.phase || 1) === 1 && tgt.maxHp > 0 && (tgt.hp / tgt.maxHp) <= 0.4) {
             bossData.phase = 2;
             state.stageState.bossData = bossData;
             try {
+              const bossCfg = (state.config.bosses && state.config.bosses[tgt.name]) || {};
+              if (typeof RetroGlitchInvertAnimation !== 'undefined') {
+                RetroGlitchInvertAnimation.play(bossCfg.color || '#ff2222');
+              }
               PopupsManager.showConfiguredDialogue('bossPhase2', {
                 title: `${tgt.name} - Phase 2`,
                 text: `text\n${tgt.name} is enraged.`
@@ -736,6 +740,12 @@ class CombatManager {
     };
   }
   
+  static getDodgeCost() {
+    const state = getGameState();
+    const multiplier = state.playerState.dodgeCostMultiplier || 1.0;
+    return Math.ceil(state.playerState.maxAp * state.config.dodgeCost * multiplier);
+  }
+
   static attemptDodge() {
     const state = getGameState();
 
@@ -745,7 +755,7 @@ class CombatManager {
       return { success: false, reason: 'Wrath forbids dodging' };
     }
     
-    const dodgeCost = state.playerState.maxAp * state.config.dodgeCost;
+    const dodgeCost = CombatManager.getDodgeCost();
     
     if (state.playerState.ap < dodgeCost) {
       return { success: false, reason: 'Not enough AP to dodge' };

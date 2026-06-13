@@ -163,7 +163,9 @@ class GameState {
       talismans: [],
       borrowedSkills: [],
       sacredTreeHpBonus: 0,
-      sacredTreeManaBonus: 0
+      sacredTreeManaBonus: 0,
+      dodgeCostMultiplier: 1.0,
+      corrosiveStacks: 0
     };
     
     this.dailiesState = {
@@ -339,6 +341,10 @@ class GameState {
   }
   
   addHp(amount) {
+    if (amount > 0 && this.playerState.corrosiveStacks) {
+      const reduction = Math.min(1.0, this.playerState.corrosiveStacks * 0.10);
+      amount = Math.round(amount * (1.0 - reduction));
+    }
     this.setHp(this.playerState.hp + amount);
   }
   
@@ -887,6 +893,73 @@ function getGameState() {
 // ============================================================
 // CHECK-IN / DAILY CYCLE
 // ============================================================
+function rollBossAttack(bossName, config) {
+  const bossCfg = (config.bosses && config.bosses[bossName]) || {};
+  const weights = bossCfg.attackWeights || { regular: 0.9 };
+  
+  if (Math.random() < 0.1) {
+    return 'null';
+  }
+  
+  const entries = Object.entries(weights).filter(([k]) => k !== 'null');
+  let total = 0;
+  entries.forEach(([_, w]) => total += w);
+  
+  if (total <= 0) return 'regular';
+  
+  const r = Math.random() * total;
+  let running = 0;
+  for (let i = 0; i < entries.length; i++) {
+    const [type, w] = entries[i];
+    running += w;
+    if (r <= running) {
+      return type;
+    }
+  }
+  return 'regular';
+}
+
+function getRandomMinionNameForStage(stage) {
+  const pool = [];
+  if (typeof ENEMY_DATABASE !== 'undefined') {
+    Object.entries(ENEMY_DATABASE).forEach(([name, data]) => {
+      if (data.stage === stage) {
+        pool.push(name);
+      }
+    });
+  }
+  if (pool.length === 0) return 'Goblin';
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function createBombEnemy(playerMaxAp) {
+  const bombHp = Math.round(playerMaxAp * 0.30);
+  return {
+    id: 'bomb_' + Math.random().toString(36).substr(2, 9),
+    name: 'Bomb',
+    isBoss: false,
+    isBomb: true,
+    hp: bombHp,
+    maxHp: bombHp,
+    isDead: false,
+    dmgMult: 0.0,
+    consecutiveAttackDays: 0,
+    statusEffects: {},
+    takeDamage(amount) {
+      this.hp -= amount;
+      if (this.hp <= 0) {
+        this.hp = 0;
+        this.isDead = true;
+      }
+    },
+    heal(amount) {
+      this.hp = Math.min(this.maxHp, this.hp + amount);
+    },
+    getResistanceMultiplier() { return 1.0; },
+    getWeaknessMultiplier() { return 1.0; }
+  };
+}
+
 function performCheckIn() {
   const state = getGameState();
   const clearCheckInRunning = () => {
@@ -903,6 +976,29 @@ function performCheckIn() {
     return;
   }
   state.systemState.isCheckInRunning = true;
+
+  // start-of-checkin Bomb check
+  const aliveBomb = (state.stageState.enemies || []).find(e => e && e.isBomb && !e.isDead);
+  if (aliveBomb) {
+    state.playerState.hp = 0;
+    state.eventBus.emit(EVENTS.DEATH, {
+      type: 'bomb:explosion',
+      stage: state.stageState.stage,
+      level: state.stageState.level
+    });
+    PopupsManager.showDeathScreen({
+      class: state.playerState.className,
+      stage: state.stageState.stage,
+      level: state.stageState.level,
+      enemiesDefeated: state.systemState.runStats.enemiesDefeated,
+      bossesSailed: state.systemState.runStats.bossesSailed,
+      goldEarned: state.systemState.runStats.totalGoldEarned,
+      deathReason: 'Killed by Bomb Explosion 💣'
+    });
+    clearCheckInRunning();
+    state.save();
+    return;
+  }
 
   const nowMs = Date.now();
   const getLocalDateKey = () => {
@@ -934,7 +1030,7 @@ function performCheckIn() {
     PopupsManager.showDeathScreen({
       class: state.playerState.className,
       stage: state.stageState.stage,
-      level: state.playerState.level,
+      level: state.stageState.level,
       enemiesDefeated: state.systemState.runStats.enemiesDefeated,
       bossesSailed: state.systemState.runStats.bossesSailed,
       goldEarned: state.systemState.runStats.totalGoldEarned
@@ -998,7 +1094,7 @@ function performCheckIn() {
   const retaliationSteps = [];
   try {
     const aliveEnemies = StageManager.getAliveEnemies();
-    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss);
+    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb);
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
     const totalNormal = aliveNormalEnemies.length || 1;
     const passive = PlayerManager.getClassPassive();
@@ -1026,6 +1122,266 @@ function performCheckIn() {
           isImmune: true
         });
       }
+    } else if (bossEnemy && !bossEnemy.isDead) {
+      // BOSS FIGHT TURN RESOLUTION
+      const stage = state.stageState.stage;
+      const bossData = state.stageState.bossData || {};
+      const isPhase2 = (bossData.phase === 2) || (bossEnemy.hp / bossEnemy.maxHp <= 0.4);
+      
+      if (!isPhase2 && bossEnemy.hp / bossEnemy.maxHp <= 0.4) {
+        bossData.phase = 2;
+        state.stageState.bossData = bossData;
+      }
+
+      // Calculate total weight W from missed dailies
+      let W = 0;
+      missedDailies.forEach(daily => {
+        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 }[daily.difficulty] || 1;
+        W += baseWeight + (isPhase2 ? 1 : 0);
+      });
+
+      // Roll W times from attack pool
+      let rolledAttacks = [];
+      for (let i = 0; i < W; i++) {
+        rolledAttacks.push(rollBossAttack(bossEnemy.name, state.config));
+      }
+      // Shuffle the rolled attacks
+      rolledAttacks.sort(() => Math.random() - 0.5);
+
+      // Determine dodge charges for the boss
+      const dodgeTarget = state.combatState?.dodgeTarget;
+      const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
+      let dodgeCharges = dodgeTargets.filter(id => id === bossEnemy.id).length;
+
+      // Apply defense reduction calculations (Knight, Juggernaut, Iron Skin, etc.)
+      let reductionFactor = 1.0;
+      if (state.playerState.className === 'Knight') {
+        reductionFactor -= 0.10; // Knight passive is 10% reduction against bosses
+      }
+      if (state.hasBuff('Iron Skin')) {
+        reductionFactor -= 0.10; // 10% reduction for Iron Skin against bosses
+      }
+      if (state.playerState.talismans?.includes('Titan\'s Mantle')) {
+        // Double the base reduction
+        const baseReduction = 1.0 - reductionFactor;
+        reductionFactor = Math.max(0, 1.0 - baseReduction * 2);
+      }
+      if (state.playerState.className === 'Juggernaut') {
+        reductionFactor *= 0.85; // Juggernaut 15% reduction
+      }
+      if (state.playerState.className === 'Brute' && state.combatState?.skillEffects?.wrathUnleashed) {
+        reductionFactor *= 1.4; // Brute Berserk +40% damage taken
+      }
+
+      // Process each rolled attack
+      const skillFx = state.combatState?.skillEffects || {};
+      
+      rolledAttacks.forEach((attackType) => {
+        if (attackType === 'null') {
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: bossEnemy.name,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isNull: true
+          });
+          return;
+        }
+
+        // If player has dodge charges, dodge the first non-null attacks
+        if (dodgeCharges > 0) {
+          dodgeCharges--;
+          // Remove one occurrence from dodgeTarget
+          const idx = state.combatState.dodgeTarget.indexOf(bossEnemy.id);
+          if (idx > -1) {
+            state.combatState.dodgeTarget.splice(idx, 1);
+          }
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: bossEnemy.name,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isDodge: true,
+            attackType
+          });
+          return;
+        }
+
+        // Apply attack effects
+        if (attackType === 'regular') {
+          // Regular attack: does 10 damage
+          let damage = 10;
+          damage = Math.max(1, Math.round(damage * reductionFactor));
+          
+          let shieldMultiplier = 1.0;
+          if (skillFx.shieldCharges && skillFx.shieldCharges > 0) {
+            shieldMultiplier *= 0.4;
+            skillFx.shieldCharges--;
+          }
+          if (skillFx.fortressCharges && skillFx.fortressCharges > 0) {
+            shieldMultiplier = 0.0;
+            const reflect = Math.round(damage * 0.5);
+            if (reflect > 0 && typeof bossEnemy.takeDamage === 'function') {
+              bossEnemy.takeDamage(reflect);
+            }
+            skillFx.fortressCharges--;
+          }
+          
+          let shieldAbsorption = 1.0 - shieldMultiplier;
+          shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
+          shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
+          
+          damage = Math.max(1, Math.round(damage * shieldMultiplier));
+
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Regular Strike)`,
+            isBoss: true,
+            damage,
+            hpBefore: state.playerState.hp,
+            attackType
+          });
+          state.takeDamage(damage);
+          state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: bossEnemy.name, isBoss: true });
+        }
+        else if (attackType === 'crit') {
+          // Critical attack: does 15 damage (ignores all shields, etc.)
+          const damage = 15;
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Critical Strike ⚡)`,
+            isBoss: true,
+            damage,
+            hpBefore: state.playerState.hp,
+            isCrit: true,
+            attackType
+          });
+          state.takeDamage(damage);
+          state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: bossEnemy.name, isBoss: true });
+        }
+        else if (attackType === 'corrosive') {
+          // Corrosive: reduce healing and shielding by 10% for that day
+          state.playerState.corrosiveStacks = (state.playerState.corrosiveStacks || 0) + 1;
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Corrosive Spit 🧪)`,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isCorrosive: true,
+            attackType
+          });
+        }
+        else if (attackType === 'heavy') {
+          // Heavy strike: does 12 damage, forces dodge to cost double ap
+          let damage = 12;
+          damage = Math.max(1, Math.round(damage * reductionFactor));
+          
+          let shieldMultiplier = 1.0;
+          if (skillFx.shieldCharges && skillFx.shieldCharges > 0) {
+            shieldMultiplier *= 0.4;
+            skillFx.shieldCharges--;
+          }
+          if (skillFx.fortressCharges && skillFx.fortressCharges > 0) {
+            shieldMultiplier = 0.0;
+            const reflect = Math.round(damage * 0.5);
+            if (reflect > 0 && typeof bossEnemy.takeDamage === 'function') {
+              bossEnemy.takeDamage(reflect);
+            }
+            skillFx.fortressCharges--;
+          }
+          
+          let shieldAbsorption = 1.0 - shieldMultiplier;
+          shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
+          shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
+          
+          damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          
+          state.playerState.dodgeCostMultiplier = (state.playerState.dodgeCostMultiplier || 1.0) * 2.0;
+
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Heavy Slam 💥)`,
+            isBoss: true,
+            damage,
+            hpBefore: state.playerState.hp,
+            isHeavy: true,
+            attackType
+          });
+          state.takeDamage(damage);
+          state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: bossEnemy.name, isBoss: true });
+        }
+        else if (attackType === 'bomb') {
+          // Bomb: summons a 30% max ap health bomb
+          const bombEnemy = createBombEnemy(state.playerState.maxAp);
+          state.stageState.enemies.push(bombEnemy);
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Summon Bomb 💣)`,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isBombSummon: true,
+            attackType
+          });
+        }
+        else if (attackType === 'heal') {
+          // Heal: heals for 10% max health
+          const healAmount = Math.round(bossEnemy.maxHp * 0.10);
+          bossEnemy.heal(healAmount);
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Self-Heal 💚)`,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isHeal: true,
+            healAmount,
+            attackType
+          });
+          state.eventBus.emit(EVENTS.ENEMY_HEALED, { enemyId: bossEnemy.id, amount: healAmount, source: 'boss' });
+        }
+        else if (attackType === 'minion') {
+          // minion summon: summons 1 minion
+          const minionName = getRandomMinionNameForStage(stage);
+          const minionObj = EnemyManager.createEnemy(minionName, state.playerState.maxAp, stage);
+          state.stageState.enemies.push(minionObj);
+          retaliationSteps.push({
+            enemyId: bossEnemy.id,
+            name: `${bossEnemy.name} (Summon ${minionName} 👿)`,
+            isBoss: true,
+            damage: 0,
+            hpBefore: state.playerState.hp,
+            hpAfter: state.playerState.hp,
+            isMinionSummon: true,
+            minionName,
+            attackType
+          });
+        }
+
+        const step = retaliationSteps[retaliationSteps.length - 1];
+        if (step) {
+          step.hpAfter = state.playerState.hp;
+        }
+
+        // Apply thorns if player hit
+        if (attackType === 'regular' || attackType === 'crit' || attackType === 'heavy') {
+          if (state.hasBuff('Thorns')) {
+            const thorn = state.config.buffs?.Thorns?.effect?.thornsDamage;
+            const thornDamage = typeof thorn === 'number' ? thorn : 2;
+            if (typeof bossEnemy.takeDamage === 'function') {
+              bossEnemy.takeDamage(thornDamage);
+            }
+          }
+        }
+      });
     } else {
       const resolveOneAttack = (enemy, damage, { isBoss = false } = {}) => {
         console.debug(`[resolveOneAttack] target=${enemy?.name || 'unknown'} id=${enemy?.id || 'n/a'} damage=${damage} isBoss=${isBoss}`);
@@ -1193,14 +1549,6 @@ function performCheckIn() {
         EnemyManager.applyHealerPassive(enemy);
         EnemyManager.applyManaDrainPassive(enemy, state.stageState.stage);
       });
-
-      // Boss retaliation: proportional to N (no random flat variance)
-      if (bossEnemy && !bossEnemy.isDead) {
-        const bossMult = typeof bossEnemy.dmgMult === 'number' ? bossEnemy.dmgMult : 1.0;
-        // Boss damage should also be doubled to match global enemy damage scaling
-        const bossDamage = Math.max(0, N * bossMult) * 2;
-        resolveOneAttack(bossEnemy, bossDamage, { isBoss: true });
-      }
     }
   } catch (e) {
     console.warn('Enemy retaliation failed during check-in', e);
@@ -1370,7 +1718,7 @@ function performCheckIn() {
       PopupsManager.showDeathScreen({
         class: state.playerState.className,
         stage: state.stageState.stage,
-        level: state.playerState.level,
+        level: state.stageState.level,
         enemiesDefeated: state.systemState.runStats.enemiesDefeated,
         bossesSailed: state.systemState.runStats.bossesSailed,
         goldEarned: state.systemState.runStats.totalGoldEarned
@@ -1413,6 +1761,8 @@ function performCheckIn() {
     });
 
     TaskManager.resetDailies();
+    state.playerState.corrosiveStacks = 0;
+    state.playerState.dodgeCostMultiplier = 1.0;
     state.systemState.lastCheckInTime = nowMs;
     state.systemState.runStats.daysSurvived = (state.systemState.runStats.daysSurvived || 0) + 1;
     state.stageState.stageClearedToday = false;

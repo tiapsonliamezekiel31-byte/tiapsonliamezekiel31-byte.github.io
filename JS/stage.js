@@ -222,12 +222,15 @@ class StageManager {
   static generateBossLevel(bossName, special = null) {
     const state = getGameState();
     const stage = state.stageState.stage;
+    const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
+    const hpMultiplier = bossCfg.hpMult || this.getBossHpMultiplier(bossName);
+    const calculatedHp = Math.round(state.playerState.maxAp * (2.5 + stage * 0.8) * hpMultiplier);
     
     state.stageState.enemies = [];
     state.stageState.bossData = {
       name: bossName,
-      hp: state.playerState.maxAp * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName),
-      maxHp: state.playerState.maxAp * (DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100) * this.getBossHpMultiplier(bossName),
+      hp: calculatedHp,
+      maxHp: calculatedHp,
       phase: 1,
       special: special,
       daysSurvived: 0
@@ -238,12 +241,14 @@ class StageManager {
       id: 'boss',
       name: bossName,
       isBoss: true,
-      hp: state.stageState.bossData.hp,
-      maxHp: state.stageState.bossData.maxHp,
+      hp: calculatedHp,
+      maxHp: calculatedHp,
       isDead: false,
       dmgMult: 1.0,
       consecutiveAttackDays: 0,
       statusEffects: {},
+      resist: bossCfg.resist || '-',
+      weak: bossCfg.weak || '-',
       takeDamage(amount) {
         this.hp -= amount;
         if (this.hp <= 0) {
@@ -263,8 +268,15 @@ class StageManager {
         }
         this.hp = Math.min(this.maxHp, this.hp + amount);
       },
-      getResistanceMultiplier(/* elementGrade */) { return 1.0; },
-      getWeaknessMultiplier(/* elementGrade */) { return 1.0; }
+      getResistanceMultiplier(elementGrade) {
+        const state = getGameState();
+        if (!elementGrade || elementGrade === '-') return 1.0;
+        const grade = elementGrade.trim().split(' ').pop();
+        return state.config.elementGradeMultipliers[grade] || 1.0;
+      },
+      getWeaknessMultiplier(elementGrade) {
+        return this.getResistanceMultiplier(elementGrade);
+      }
     };
 
     state.stageState.enemies.push(bossObj);
@@ -369,9 +381,11 @@ class StageManager {
 
       // Rebuild boss objects (saved as plain data) with expected methods
       if (enemy.isBoss) {
+        const bossName = enemy.name || (state.stageState.bossData && state.stageState.bossData.name) || 'Boss';
+        const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
         const bossObj = {
           id: enemy.id || 'boss',
-          name: enemy.name || (state.stageState.bossData && state.stageState.bossData.name) || 'Boss',
+          name: bossName,
           isBoss: true,
           hp: enemy.hp ?? (state.stageState.bossData && state.stageState.bossData.hp) ?? 0,
           maxHp: enemy.maxHp ?? (state.stageState.bossData && state.stageState.bossData.maxHp) ?? 0,
@@ -379,6 +393,8 @@ class StageManager {
           dmgMult: enemy.dmgMult || 1.0,
           consecutiveAttackDays: enemy.consecutiveAttackDays || 0,
           statusEffects: enemy.statusEffects || {},
+          resist: enemy.resist || bossCfg.resist || '-',
+          weak: enemy.weak || bossCfg.weak || '-',
           takeDamage(amount) {
             this.hp -= amount;
             if (this.hp <= 0) { this.hp = 0; this.isDead = true; }
@@ -395,8 +411,15 @@ class StageManager {
             }
             this.hp = Math.min(this.maxHp, this.hp + amount);
           },
-          getResistanceMultiplier() { return 1.0; },
-          getWeaknessMultiplier() { return 1.0; }
+          getResistanceMultiplier(elementGrade) {
+            const state = getGameState();
+            if (!elementGrade || elementGrade === '-') return 1.0;
+            const grade = elementGrade.trim().split(' ').pop();
+            return state.config.elementGradeMultipliers[grade] || 1.0;
+          },
+          getWeaknessMultiplier(elementGrade) {
+            return this.getResistanceMultiplier(elementGrade);
+          }
         };
 
         return bossObj;

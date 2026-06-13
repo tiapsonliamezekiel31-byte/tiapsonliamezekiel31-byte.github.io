@@ -1918,3 +1918,354 @@ class DodgeTetherAnimation {
     requestAnimationFrame(animate);
   }
 }
+
+class RetroSlamWaveAnimation {
+  static play(cardElement, color = '#ff2222') {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    // Shake screen
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(12, 300);
+    }
+
+    // Snappy Card Impact Bounce
+    const origTransform = cardElement.style.transform || 'translate(-50%, -50%)';
+    cardElement.style.transition = 'none';
+    cardElement.style.willChange = 'transform';
+    cardElement.style.transform = `${origTransform} scale(1.15) translateY(15px)`;
+
+    setTimeout(() => {
+      cardElement.style.transition = 'transform 150ms cubic-bezier(0.25, 0.8, 0.25, 1)';
+      cardElement.style.transform = `${origTransform} scale(1.0)`;
+      setTimeout(() => {
+        cardElement.style.transition = '';
+        cardElement.style.transform = '';
+        cardElement.style.willChange = '';
+      }, 150);
+    }, 80);
+
+    // Conical/concentric retro shockwave rings
+    const ringCount = 3;
+    for (let i = 0; i < ringCount; i++) {
+      setTimeout(() => {
+        const ring = document.createElement('div');
+        const startSize = Math.min(rect.width, rect.height) * 0.4;
+        ring.style.cssText = `
+          position: fixed;
+          left: ${cx - startSize/2}px;
+          top: ${cy - startSize/2}px;
+          width: ${startSize}px;
+          height: ${startSize}px;
+          border: 4px double ${color};
+          background: transparent;
+          pointer-events: none;
+          z-index: 13400;
+          will-change: transform, opacity;
+          transform: translate3d(0, 0, 0) scale(1);
+          opacity: 0.85;
+        `;
+        container.appendChild(ring);
+
+        const start = performance.now();
+        const duration = 500;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const scale = 1.0 + progress * 2.2;
+          const opacity = 0.85 * (1 - Math.pow(progress, 2));
+
+          ring.style.transform = `scale(${scale})`;
+          ring.style.opacity = opacity;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            ring.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, i * 150);
+    }
+  }
+}
+
+class RetroGlitchInvertAnimation {
+  static play(color = '#ff2222', intensity = 1) {
+    const container = document.body;
+
+    // Glitchy flash overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      background: ${color};
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 14998;
+      will-change: opacity;
+    `;
+    container.appendChild(overlay);
+
+    // Apply color inversion to body
+    const originalFilter = document.body.style.filter || '';
+    document.body.style.filter = `invert(0.8) hue-rotate(90deg) contrast(1.2)`;
+    
+    // Intense camera shake
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(20 * intensity, 400);
+    }
+
+    // Glitch scanlines
+    const lineCount = 6;
+    for (let i = 0; i < lineCount; i++) {
+      const line = document.createElement('div');
+      const top = Math.random() * 100;
+      const height = 4 + Math.random() * 10;
+      line.style.cssText = `
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: ${top}vh;
+        height: ${height}px;
+        background: #ffffff;
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: 14999;
+        will-change: transform, opacity;
+        transform: scaleX(0);
+        transform-origin: left;
+      `;
+      container.appendChild(line);
+
+      setTimeout(() => {
+        line.style.transition = 'transform 100ms ease-out, opacity 100ms';
+        line.style.transform = 'scaleX(1)';
+        setTimeout(() => {
+          line.style.opacity = '0';
+          setTimeout(() => line.remove(), 100);
+        }, 50 + Math.random() * 100);
+      }, Math.random() * 200);
+    }
+
+    setTimeout(() => {
+      document.body.style.filter = originalFilter;
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 200);
+    }, 250);
+  }
+}
+
+class RetroEnergyBeamAnimation {
+  static play(cardElement, color = '#00ffff') {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const container = document.body;
+
+    const beam = document.createElement('div');
+    beam.style.cssText = `
+      position: fixed;
+      left: ${cx - 20}px;
+      top: -100px;
+      width: 40px;
+      height: ${window.innerHeight + 200}px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, ${color} 40%, #ffffff 50%, ${color} 60%, rgba(255,255,255,0.2) 100%);
+      box-shadow: 0 0 20px ${color}, 0 0 40px ${color};
+      pointer-events: none;
+      z-index: 13500;
+      opacity: 0;
+      will-change: transform, opacity;
+      transform: scaleX(0.2);
+    `;
+    container.appendChild(beam);
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(8, 200);
+    }
+
+    const start = performance.now();
+    const duration = 400;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      
+      let scaleX = 0.2;
+      let opacity = 0;
+      if (progress < 0.2) {
+        // Fast fade-in and grow
+        scaleX = 0.2 + (progress / 0.2) * 0.8;
+        opacity = (progress / 0.2);
+      } else if (progress < 0.7) {
+        // Hold beam
+        scaleX = 1.0;
+        opacity = 1.0;
+      } else {
+        // Shrink and fade-out
+        scaleX = 1.0 - ((progress - 0.7) / 0.3);
+        opacity = 1.0 - ((progress - 0.7) / 0.3);
+      }
+
+      beam.style.transform = `scaleX(${scaleX})`;
+      beam.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        beam.remove();
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+class RetroOrbBurstAnimation {
+  static play(cardElement, color = '#00ff66') {
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      cx = rect.left + rect.width / 2;
+      cy = rect.top + rect.height / 2;
+    }
+
+    const container = document.body;
+    const particleCount = 20;
+
+    for (let i = 0; i < particleCount; i++) {
+      const sq = document.createElement('div');
+      const size = 10 + Math.random() * 12;
+      sq.style.cssText = `
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        box-shadow: 0 0 6px ${color};
+        pointer-events: none;
+        z-index: 13600;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(sq);
+
+      const angle = (i / particleCount) * Math.PI * 2 + (Math.random() * 0.4);
+      const distance = 50 + Math.random() * 70;
+      const tx = Math.cos(angle) * distance;
+      const ty = Math.sin(angle) * distance;
+
+      const start = performance.now();
+      const duration = 400 + Math.random() * 200;
+
+      const animate = () => {
+        const progress = Math.min(1, (performance.now() - start) / duration);
+        const easeOut = 1 - Math.pow(1 - progress, 2);
+        
+        // Add a slight retro wiggle using sin
+        const wiggle = Math.sin(progress * Math.PI * 4) * 8;
+        const curX = cx + tx * easeOut + (Math.cos(angle + Math.PI/2) * wiggle);
+        const curY = cy + ty * easeOut + (Math.sin(angle + Math.PI/2) * wiggle);
+        const scale = 1 - progress;
+
+        sq.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${scale})`;
+        sq.style.opacity = 1 - progress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          sq.remove();
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }
+}
+
+class RetroPixelRainAnimation {
+  static play(color = '#00ffff') {
+    const container = document.body;
+    const columns = Math.floor(window.innerWidth / 30);
+    
+    for (let i = 0; i < columns; i += 2) {
+      setTimeout(() => {
+        const drop = document.createElement('div');
+        const size = 8 + Math.random() * 8;
+        const startX = i * 30 + Math.random() * 15;
+        
+        drop.style.cssText = `
+          position: fixed;
+          left: ${startX}px;
+          top: -20px;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          box-shadow: 0 0 8px ${color};
+          pointer-events: none;
+          z-index: 13200;
+          will-change: transform, opacity;
+        `;
+        container.appendChild(drop);
+
+        const start = performance.now();
+        const duration = 600 + Math.random() * 400;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const y = progress * window.innerHeight;
+          
+          drop.style.transform = `translate3d(0, ${y}px, 0) scale(${1 - progress * 0.3})`;
+          drop.style.opacity = 1 - progress;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            drop.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, Math.random() * 400);
+    }
+  }
+}
+
+class RetroRagePulseAnimation {
+  static play(cardElement, color = '#ff00ff') {
+    if (!cardElement) return;
+
+    // Save active shadow/transition state
+    const origBoxShadow = cardElement.style.boxShadow || '';
+    const origTransition = cardElement.style.transition || '';
+    const origTransform = cardElement.style.transform || 'translate(-50%, -50%)';
+
+    cardElement.style.transition = 'none';
+    cardElement.style.willChange = 'transform, box-shadow';
+
+    const start = performance.now();
+    const duration = 500;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      
+      // Pulse size up/down rapid sine
+      const pulse = 1.0 + Math.sin(progress * Math.PI * 4) * 0.12;
+      const glowSize = 10 + Math.sin(progress * Math.PI * 4) * 15;
+
+      cardElement.style.transform = `${origTransform} scale(${pulse})`;
+      cardElement.style.boxShadow = `0 0 ${glowSize}px ${color}, inset 0 0 10px ${color}`;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        cardElement.style.transform = '';
+        cardElement.style.boxShadow = origBoxShadow;
+        cardElement.style.transition = origTransition;
+        cardElement.style.willChange = '';
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+

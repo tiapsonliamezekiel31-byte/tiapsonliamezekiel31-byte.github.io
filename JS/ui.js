@@ -1981,6 +1981,29 @@ class UIManager {
     return card;
   }
 
+  static playBossAttackAnimation(bossName, isPhase2) {
+    const state = getGameState();
+    const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
+    const animName = isPhase2 ? (bossCfg.p2Anim || 'Glitch Invert') : (bossCfg.p1Anim || 'Slam Wave');
+    const color = bossCfg.color || '#ff0000';
+    
+    const card = document.querySelector(`.enemy-card[data-enemy-id="boss"]`) || document.querySelector(`.enemy-card`);
+    
+    if (animName === 'Slam Wave' && typeof RetroSlamWaveAnimation !== 'undefined') {
+      RetroSlamWaveAnimation.play(card, color);
+    } else if (animName === 'Glitch Invert' && typeof RetroGlitchInvertAnimation !== 'undefined') {
+      RetroGlitchInvertAnimation.play(color);
+    } else if (animName === 'Energy Beam' && typeof RetroEnergyBeamAnimation !== 'undefined') {
+      RetroEnergyBeamAnimation.play(card, color);
+    } else if (animName === 'Orb Burst' && typeof RetroOrbBurstAnimation !== 'undefined') {
+      RetroOrbBurstAnimation.play(card, color);
+    } else if (animName === 'Pixel Rain' && typeof RetroPixelRainAnimation !== 'undefined') {
+      RetroPixelRainAnimation.play(color);
+    } else if (animName === 'Rage Pulse' && typeof RetroRagePulseAnimation !== 'undefined') {
+      RetroRagePulseAnimation.play(card, color);
+    }
+  }
+
   static async playCheckInSequence(detail) {
     const steps = Array.isArray(detail?.retaliationSteps) ? detail.retaliationSteps : [];
     const token = ++this.checkInSequenceToken;
@@ -2037,6 +2060,28 @@ class UIManager {
           y = rect.top + rect.height / 2;
         }
 
+        if (step.isBoss) {
+          const state = getGameState();
+          const bossName = (state.stageState.bossData && state.stageState.bossData.name) || step.name;
+          const bossData = state.stageState.bossData || {};
+          this.playBossAttackAnimation(bossName, bossData.phase === 2);
+
+          let actionDesc = 'ATTACK';
+          if (step.isNull) actionDesc = 'IDLE';
+          else if (step.isCorrosive) actionDesc = 'CORROSIVE SPIT';
+          else if (step.isBombSummon) actionDesc = 'SUMMON BOMB';
+          else if (step.isHeal) actionDesc = 'SELF-HEAL';
+          else if (step.isMinionSummon) actionDesc = `SUMMON ${step.minionName}`;
+          else if (step.isHeavy) actionDesc = 'HEAVY SLAM';
+          else if (step.isCrit) actionDesc = 'CRITICAL STRIKE';
+          
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 150, `BOSS: ${actionDesc}`, {
+            color: '#ffd76a',
+            duration: 2200,
+            fadeDelay: 1000
+          });
+        }
+
         if (step.isDodge) {
           FloatingDamageNumber.show(x, y - 10, 'DODGED!', {
             color: '#00e5ff',
@@ -2052,12 +2097,42 @@ class UIManager {
             duration: 1600,
             scale: 1.2
           });
+        } else if (step.isNull) {
+          FloatingDamageNumber.show(x, y - 10, 'NULL!', {
+            color: '#aaaaaa',
+            duration: 1600,
+            scale: 1.0
+          });
+        } else if (step.isCorrosive) {
+          FloatingDamageNumber.show(x, y - 10, 'CORROSIVE! 🧪', {
+            color: '#32cd32',
+            duration: 1800,
+            scale: 1.2
+          });
+        } else if (step.isBombSummon) {
+          FloatingDamageNumber.show(x, y - 10, 'BOMB DEPLOYED! 💣', {
+            color: '#ff4500',
+            duration: 1800,
+            scale: 1.3
+          });
+        } else if (step.isHeal) {
+          FloatingDamageNumber.show(x, y - 10, `HEALED! 💚 (+${step.healAmount})`, {
+            color: '#00ff66',
+            duration: 1800,
+            scale: 1.2
+          });
+        } else if (step.isMinionSummon) {
+          FloatingDamageNumber.show(x, y - 10, `SUMMON: ${step.minionName}! 👿`, {
+            color: '#8a2be2',
+            duration: 1800,
+            scale: 1.2
+          });
         } else {
           FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
-            color: step.isBoss ? UIManager.themeColor('--accent-gold', '#FFB33F') : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
+            color: step.isBoss ? (step.isCrit ? '#ff3366' : (step.isHeavy ? '#ffaa00' : UIManager.themeColor('--accent-gold', '#FFB33F'))) : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
             duration: 1600,
             scale: step.isBoss ? 1.3 : 1.1,
-            isCrit: step.damage > 0 && step.damage >= 25
+            isCrit: step.isCrit || (step.damage > 0 && step.damage >= 25)
           });
         }
         // Also show any mutator gains that apply to this enemy at the same time
@@ -2074,14 +2149,6 @@ class UIManager {
             mutatorGains = (mutatorGains || []).filter(m => String(m.enemyId) !== String(step.enemyId));
           }
         } catch (e) { }
-      }
-
-      if (step.isBoss) {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 150, `BOSS RETALIATION: ${step.name}`, {
-          color: '#ffd76a',
-          duration: 2200,
-          fadeDelay: 1000
-        });
       }
 
       // Increase pacing so each retaliation feels heavier
@@ -2988,7 +3055,7 @@ class UIManager {
           return;
         }
       } else if (type === 'dodge') {
-        const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+        const dodgeCost = CombatManager.getDodgeCost();
         if (state.playerState.ap < dodgeCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
@@ -3125,7 +3192,7 @@ class UIManager {
                 FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
               } else {
-                const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+                const dodgeCost = CombatManager.getDodgeCost();
                 state.spendAp(dodgeCost);
                 FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
 
@@ -3201,7 +3268,7 @@ class UIManager {
               FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
               try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
             } else {
-              const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+              const dodgeCost = CombatManager.getDodgeCost();
               state.spendAp(dodgeCost);
               FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
 
@@ -4830,6 +4897,7 @@ class UIManager {
   }
 
   static patchEnemyCardElement(card, data) {
+    const state = getGameState();
     const { enemy, x, y, isTargeted, isDodgeReady, showDodgeMarker, showPetBadge, petEmoji } = data;
     const hpPercent = enemy.maxHp ? Math.max(0, (enemy.hp / enemy.maxHp) * 100) : 0;
     const resistColor = this.getEnemyElementColor(enemy?.resist);
@@ -4846,6 +4914,16 @@ class UIManager {
     card.classList.toggle('elite', !!enemy.isElite);
     card.classList.toggle('targeted', !!isTargeted);
     card.classList.toggle('dodge-ready', !!isDodgeReady);
+
+    const isPhase2 = !!(enemy.isBoss && (
+      (state.stageState.bossData && state.stageState.bossData.phase === 2) ||
+      (enemy.maxHp > 0 && enemy.hp / enemy.maxHp <= 0.4)
+    ));
+    card.classList.toggle('boss-phase-2', !!isPhase2);
+    if (enemy.isBoss) {
+      const bossColor = (state.config.bosses && state.config.bosses[enemy.name]?.color) || '#ff2222';
+      card.style.setProperty('--boss-color', bossColor);
+    }
 
     const emojiEl = card.querySelector('.enemy-emoji');
     if (emojiEl) emojiEl.textContent = this.getEnemyEmoji(enemy);
@@ -5075,7 +5153,7 @@ class UIManager {
     const state = getGameState();
     const weapon = PlayerManager.getCurrentWeapon();
     const attackCost = weapon ? new WeaponAttack(weapon.name).getScaledApCost() : 0;
-    const dodgeCost = Math.ceil(state.playerState.maxAp * state.config.dodgeCost);
+    const dodgeCost = CombatManager.getDodgeCost();
     const attackText = document.getElementById('attackCostText');
     const dodgeText = document.getElementById('dodgeCostText');
     if (attackText) attackText.textContent = attackCost ? `(${attackCost} AP)` : '';
