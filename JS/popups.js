@@ -608,9 +608,11 @@ class PopupsManager {
     talismans.forEach((tName, idx) => {
       const config = state.config.talismans?.[tName];
       const icon = config?.icon || '🧿';
+      const desc = config?.description || 'A mysterious talisman.';
       html += `
-        <div class="replace-row" data-index="${idx}">
-          <div class="replace-name">Slot ${idx + 1}: ${icon} ${tName}</div>
+        <div class="replace-row" data-index="${idx}" style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+          <div class="replace-name" style="font-weight: bold;">Slot ${idx + 1}: ${icon} ${tName}</div>
+          <div class="replace-desc" style="font-size: 10px; color: var(--text-muted, #888); margin-top: 4px; margin-bottom: 8px;">${desc}</div>
           <div class="replace-actions">
             <button class="btn-replace" data-index="${idx}">Discard</button>
           </div>
@@ -640,6 +642,63 @@ class PopupsManager {
   }
 
   // ============================================================
+  // TALISMAN DETAIL POPUP
+  // ============================================================
+  static showTalismanDetail(talismanName, index) {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const config = state.config.talismans?.[talismanName];
+    const icon = config?.icon || '🧿';
+    const description = config?.description || 'A mysterious talisman.';
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup talisman-detail-popup';
+    popup.style.width = 'min(420px, 90vw)';
+    popup.style.textAlign = 'center';
+
+    let html = `
+      <h2>${icon} ${talismanName}</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body" style="align-items: center; justify-content: center; min-height: 80px; padding: 8px 0;">
+        <p class="talisman-detail-desc" style="font-size: 11px; color: #fff; line-height: 1.5; margin: 0 8px;">
+          ${description}
+        </p>
+      </div>
+      <div class="talisman-detail-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+        <button class="btn-large btn-ok">OK</button>
+        <button class="btn-large btn-danger btn-discard">DISCARD TALISMAN</button>
+      </div>
+    `;
+
+    popup.innerHTML = html;
+    
+    // Event listeners
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+    popup.querySelector('.btn-ok').addEventListener('click', () => this.closeAllPopups());
+
+    popup.querySelector('.btn-discard').addEventListener('click', () => {
+      if (confirm(`Are you sure you want to discard the ${talismanName} Talisman? This frees up a slot for a new Talisman.`)) {
+        if (state.playerState.talismans) {
+          state.playerState.talismans.splice(index, 1);
+          state.save();
+          this.closeAllPopups();
+          if (window.UIManager && UIManager.refreshGameUI) {
+            UIManager.refreshGameUI();
+          }
+        }
+      }
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
+
+  // ============================================================
   // SHRINE SKILL CHOICE POPUP
   // ============================================================
   static showShrineSkillChoice() {
@@ -664,11 +723,13 @@ class PopupsManager {
       const meta = state.config.classSkillMeta?.[clsName] || {};
       const skillName = meta.name || clsName;
       const icon = meta.icon || '✨';
+      const classConfig = state.config.classes?.[clsName];
+      const skillDesc = classConfig?.skill || `Gain the active skill of the ${clsName} class.`;
       html += `
         <div class="buff-option" data-class="${clsName}">
           <div class="buff-icon">${icon}</div>
           <div class="buff-title">${skillName}</div>
-          <div class="buff-effect">Gain the active skill effects of the ${clsName} class.</div>
+          <div class="buff-effect">${skillDesc}</div>
           <button class="btn-select">CHOOSE</button>
         </div>
       `;
@@ -1160,6 +1221,33 @@ class PopupsManager {
     return true;
   }
 
+  static showAlert(title, message, onOk) {
+    this.closeAllPopups();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup alert-popup';
+    popup.style.width = 'min(400px, 90vw)';
+    popup.style.textAlign = 'center';
+
+    popup.innerHTML = `
+      <h2>${title || 'Warning'}</h2>
+      <div class="alert-message" style="font-size: 10px; color: #fff; margin: 12px 0; line-height: 1.4; font-family: 'Press Start 2P', monospace;">${message || ''}</div>
+      <div class="alert-actions" style="margin-top: 16px;">
+        <button class="btn-large btn-ok">OK</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-ok').addEventListener('click', () => {
+      try { if (typeof onOk === 'function') onOk(); } catch (e) { console.error('Alert error:', e); }
+      this.closeAllPopups();
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+    return true;
+  }
+
   static showShopItemDetails(item) {
     if (!item) return false;
     const overlay = this.createPopupOverlay();
@@ -1537,7 +1625,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -1638,6 +1726,14 @@ class PopupsManager {
         setResource('ap', command.slice(3));
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'AP set' };
+      }
+
+      if (lower.startsWith('pp ') || lower.startsWith('petpoint ') || lower.startsWith('petpoints ')) {
+        const val = command.replace(/^petpoints\s+/i, '').replace(/^petpoint\s+/i, '').replace(/^pp\s+/i, '').trim();
+        const value = Math.max(0, Math.floor(Number(val) || 0));
+        state.playerState.petPoints = value;
+        try { UIManager.updatePetUI(); } catch (e) {}
+        return { ok: true, message: `Pet points set to ${value}` };
       }
 
       if (lower === 'heal full' || lower === 'full heal' || lower === 'heal') {

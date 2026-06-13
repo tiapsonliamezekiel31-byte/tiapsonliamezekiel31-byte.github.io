@@ -206,13 +206,10 @@ class TaskManager {
       }
     }
 
-    const rewards = { ap: apReward, gold: goldReward, diamonds: diamondReward, attributePoints: attrReward };
-
-    state.eventBus.emit(EVENTS.TASK_COMPLETED, {
-      taskId: dailyId,
-      type: 'daily',
-      rewards
-    });
+    // Award pet points silently
+    const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
+    const petPointsAwarded = petPointsMap[daily.difficulty] || 1;
+    state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
     return { success: true, rewards, completed: daily.completed };
   }
@@ -426,6 +423,11 @@ class TaskManager {
       rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward }
     });
     
+    // Award pet points silently
+    const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
+    const petPointsAwarded = petPointsMap[todo.difficulty] || 1;
+    state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
+
     return true;
   }
 
@@ -512,18 +514,8 @@ class TaskManager {
       });
     }
 
-    state.systemState.runStats.tasksCompleted += 1;
-    state.eventBus.emit(EVENTS.TASK_COMPLETED, {
-      taskId: `complete-day:${dateKey}`,
-      type: 'daily',
-      special: true,
-      rewards: {
-        ap: apReward,
-        gold: plannerGold,
-        diamonds: plannerDiamonds,
-        attributePoints: attributeRewardTotal
-      }
-    });
+    // Award +5 Pet Points bonus
+    state.playerState.petPoints = (state.playerState.petPoints || 0) + 5;
 
     return {
       success: true,
@@ -834,5 +826,54 @@ class TaskManager {
     }
     
     return true;
+  }
+
+  static recalculateAchievements() {
+    const state = getGameState();
+    const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
+    const runStartTime = Number(state.systemState?.gameStartTime) || 0;
+    
+    // Reset stats for all current dailies
+    state.dailiesState.dailies.forEach(daily => {
+      daily.longestStreak = 0;
+      daily.currentStreak = 0;
+      daily.totalCompletions = 0;
+      daily.totalCount = 0;
+      daily.completionRate = 0;
+    });
+
+    // Process history chronologically, filtering for the current run
+    const currentRunHistory = history.filter(entry => (entry.timestamp || 0) >= runStartTime);
+
+    currentRunHistory.forEach(entry => {
+      const completedIds = (entry.completedDailies || []).map(d => String(d.id));
+      const missedIds = (entry.missedDailies || []).map(d => String(d.id));
+
+      state.dailiesState.dailies.forEach(daily => {
+        const idStr = String(daily.id);
+        const wasCompleted = completedIds.includes(idStr);
+        const wasMissed = missedIds.includes(idStr);
+
+        if (wasCompleted || wasMissed) {
+          daily.totalCount++;
+          if (wasCompleted) {
+            daily.currentStreak = (daily.currentStreak || 0) + 1;
+            daily.totalCompletions++;
+            if (daily.currentStreak > daily.longestStreak) {
+              daily.longestStreak = daily.currentStreak;
+            }
+          } else {
+            daily.currentStreak = 0;
+          }
+        }
+      });
+    });
+
+    // Finalize completion rate
+    state.dailiesState.dailies.forEach(daily => {
+      daily.completionRate = daily.totalCount > 0 ? (daily.totalCompletions / daily.totalCount) : 0;
+    });
+
+    state.save();
   }
 }

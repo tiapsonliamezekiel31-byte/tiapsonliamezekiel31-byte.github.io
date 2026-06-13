@@ -165,7 +165,13 @@ class GameState {
       sacredTreeHpBonus: 0,
       sacredTreeManaBonus: 0,
       dodgeCostMultiplier: 1.0,
-      corrosiveStacks: 0
+      corrosiveStacks: 0,
+      petPoints: 0,
+      petImage: null,
+      petEmoji: '🐾',
+      petLevel: 1,
+      petUpgradeLevel: 0,
+      petHunger: 100
     };
     
     this.dailiesState = {
@@ -728,6 +734,12 @@ class GameState {
       const data = JSON.parse(saved);
       this.playerState = data.playerState;
       this.playerState.diamonds = Math.max(0, Math.round(Number(this.playerState.diamonds) || 0));
+      if (this.playerState.petPoints === undefined) this.playerState.petPoints = 0;
+      if (this.playerState.petImage === undefined) this.playerState.petImage = null;
+      if (this.playerState.petEmoji === undefined) this.playerState.petEmoji = '🐾';
+      if (this.playerState.petLevel === undefined) this.playerState.petLevel = 1;
+      if (this.playerState.petUpgradeLevel === undefined) this.playerState.petUpgradeLevel = 0;
+      if (this.playerState.petHunger === undefined) this.playerState.petHunger = 100;
       const weaponSlots = Array.isArray(this.playerState.weapons) ? this.playerState.weapons.length : 0;
       if (!Array.isArray(this.playerState.weaponElements)) {
         this.playerState.weaponElements = Array(weaponSlots).fill(null);
@@ -1095,9 +1107,13 @@ function performCheckIn() {
 
   // 2b) Pet attacks random enemy
   try {
-    const petBase = typeof state.config.petBaseDamageFormula === 'function'
-      ? state.config.petBaseDamageFormula(state.playerState.maxAp, state.playerState.level)
-      : (state.playerState.maxAp * 0.02);
+    if (state.playerState.petHunger !== undefined) {
+      state.playerState.petHunger = Math.max(0, state.playerState.petHunger - 20);
+    }
+    const isStarving = (state.playerState.petHunger === 0);
+    const basePct = 0.02 + (state.playerState.level - 1) * 0.01;
+    const upgradePct = (state.playerState.petUpgradeLevel || 0) * 0.015;
+    const petBase = isStarving ? 0 : (state.playerState.maxAp * (basePct + upgradePct));
 
     const petMultiplier = (state.playerState.className === 'Druid')
       ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
@@ -1799,6 +1815,26 @@ function performCheckIn() {
       playerLevel: state.playerState.level
     });
 
+    // Update achievements stats incrementally before reset
+    state.dailiesState.dailies.forEach(daily => {
+      if (daily.longestStreak === undefined) daily.longestStreak = 0;
+      if (daily.currentStreak === undefined) daily.currentStreak = 0;
+      if (daily.totalCompletions === undefined) daily.totalCompletions = 0;
+      if (daily.totalCount === undefined) daily.totalCount = 0;
+
+      daily.totalCount++;
+      if (daily.completed) {
+        daily.currentStreak = (daily.currentStreak || 0) + 1;
+        daily.totalCompletions++;
+        if (daily.currentStreak > daily.longestStreak) {
+          daily.longestStreak = daily.currentStreak;
+        }
+      } else {
+        daily.currentStreak = 0;
+      }
+      daily.completionRate = daily.totalCount > 0 ? (daily.totalCompletions / daily.totalCount) : 0;
+    });
+
     TaskManager.resetDailies();
     state.playerState.corrosiveStacks = 0;
     state.playerState.dodgeCostMultiplier = 1.0;
@@ -1882,11 +1918,43 @@ function performCheckIn() {
         // Persist and refresh UI after regen
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+
+        // Show pet hunger warning if pet is under 30% hunger and player is alive
+        if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
+          const petHunger = state.playerState.petHunger;
+          let msg = '';
+          if (petHunger === 0) {
+            msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
+          } else {
+            msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
+          }
+          setTimeout(() => {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+              PopupsManager.showAlert('PET HUNGER WARNING', msg);
+            }
+          }, 300);
+        }
       } catch (e) {
         console.warn('Daily regeneration failed during check-in', e);
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
         clearCheckInRunning();
+
+        // Show pet hunger warning if pet is under 30% hunger and player is alive (fallback on regen failure)
+        if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
+          const petHunger = state.playerState.petHunger;
+          let msg = '';
+          if (petHunger === 0) {
+            msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
+          } else {
+            msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
+          }
+          setTimeout(() => {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+              PopupsManager.showAlert('PET HUNGER WARNING', msg);
+            }
+          }, 300);
+        }
       }
     };
 

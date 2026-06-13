@@ -706,11 +706,23 @@ class UIManager {
     leftHandle.textContent = 'DAILIES';
     document.body.appendChild(leftHandle);
 
+    const achievementsHandle = document.createElement('button');
+    achievementsHandle.id = 'achievementsTabHandle';
+    achievementsHandle.className = 'tab-handle tab-handle-left tab-handle-left-achievements';
+    achievementsHandle.textContent = '🏆 ACHIEVEMENTS';
+    document.body.appendChild(achievementsHandle);
+
     const rightHandle = document.createElement('button');
     rightHandle.id = 'todosTabHandle';
     rightHandle.className = 'tab-handle tab-handle-right';
     rightHandle.textContent = 'TO-DOS';
     document.body.appendChild(rightHandle);
+
+    const petHandle = document.createElement('button');
+    petHandle.id = 'petTabHandle';
+    petHandle.className = 'tab-handle tab-handle-right tab-handle-right-pet';
+    petHandle.textContent = '🐾 PET EVOLUTION';
+    document.body.appendChild(petHandle);
 
     // Left tab - Dailies
     const leftTab = document.createElement('div');
@@ -732,6 +744,26 @@ class UIManager {
       <div class="tab-content daily-board" id="dailiesList"></div>
     `;
     document.body.appendChild(leftTab);
+
+    // Achievements Panel
+    const achievementsTab = document.createElement('div');
+    achievementsTab.id = 'achievementsPanel';
+    achievementsTab.className = 'pull-tab left-tab';
+    achievementsTab.innerHTML = `
+      <div class="tab-header">
+        <h3>🏆 ACHIEVEMENTS</h3>
+        <div>
+          <select id="achievementsSortSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; padding-right: 28px; line-height: 1.5;">
+            <option value="rate">Sort: Rate</option>
+            <option value="streak">Sort: Streak</option>
+          </select>
+          <button id="achievementsRecalculateBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="width: auto; padding: 4px 10px; line-height: 1.5;">Recalculate</button>
+          <button class="tab-close">✕</button>
+        </div>
+      </div>
+      <div class="tab-content achievement-board" id="achievementsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
+    `;
+    document.body.appendChild(achievementsTab);
 
     // Right tab - To-Dos
     const rightTab = document.createElement('div');
@@ -755,6 +787,66 @@ class UIManager {
       <div class="tab-content todo-board" id="todosList"></div>
     `;
     document.body.appendChild(rightTab);
+
+    // Pet Evolution Panel
+    const petTab = document.createElement('div');
+    petTab.id = 'petPanel';
+    petTab.className = 'pull-tab right-tab';
+    petTab.innerHTML = `
+      <div class="tab-header">
+        <h3>🐾 PET EVOLUTION</h3>
+        <button class="tab-close">✕</button>
+      </div>
+      <div class="tab-content pet-board" style="flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 12px;">
+        <div class="pet-info-card" style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--accent-purple); border-radius: 12px; background: rgba(26, 18, 48, 0.45);">
+          <div id="petImageContainer" style="width: 140px; height: 140px; border: 3px dashed var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); position: relative; cursor: pointer;">
+            <input type="file" id="petImageFileInput" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 5;">
+            <div id="petImageDisplay" style="font-size: 72px; pointer-events: none; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+          </div>
+          
+          <div style="display: flex; gap: 8px;">
+            <button id="petUploadBtn" class="btn-action" style="font-size: 8px; padding: 6px 12px; min-width: 0;">Upload Pic</button>
+            <button id="petClearImageBtn" class="btn-action" style="font-size: 8px; padding: 6px 12px; min-width: 0; display: none;">Reset Pic</button>
+          </div>
+
+          <div style="text-align: center;">
+            <h4 style="color: var(--accent-gold); margin: 0; font-size: 11px;">Pet Level: <span id="petLevelVal">1</span></h4>
+            <div style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">Dmg: +<span id="petDmgBonusVal">0</span></div>
+          </div>
+
+          <div style="font-size: 9px; color: var(--accent-gold); font-weight: bold; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(232, 184, 74, 0.25);">
+            Pet Points: <span id="petPointsVal">0</span> 🐾
+          </div>
+
+          <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-muted);">
+              <span>HUNGER</span>
+              <span id="petHungerTextVal">100/100</span>
+            </div>
+            <div class="hud-bar" style="height: 12px; border-radius: 6px;">
+              <div id="petHungerFill" class="fill" style="width: 100%;"></div>
+            </div>
+          </div>
+          
+          <div style="width: 100%; margin-top: 8px;">
+            <button id="petUpgradeBtn" class="btn-action" style="width: 100%; text-align: center; justify-content: center; font-size: 8px; padding: 10px;">
+              Upgrade Pet (+<span id="petUpgradeCostVal">5</span> Pts)
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">SELECT EMOJI</h4>
+          <div id="petEmojiGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">FEED PET</h4>
+          <div id="petFoodGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(petTab);
   }
 
   static createShopPanel() {
@@ -1461,6 +1553,88 @@ class UIManager {
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
     document.getElementById('addTodoNoteBtn')?.addEventListener('click', () => this.addTodoNote());
+
+    // Achievements & Pet Tab Handles & Close Listeners
+    document.getElementById('achievementsTabHandle').addEventListener('click', () => this.toggleTaskPanel('achievements'));
+    document.getElementById('petTabHandle').addEventListener('click', () => this.toggleTaskPanel('pet'));
+    document.getElementById('achievementsPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('achievements'));
+    document.getElementById('petPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('pet'));
+
+    // Achievements controls
+    document.getElementById('achievementsSortSelect')?.addEventListener('change', (e) => {
+      UIManager.achievementsSortBy = e.target.value;
+      UIManager.updateAchievementsList();
+    });
+    document.getElementById('achievementsRecalculateBtn')?.addEventListener('click', () => {
+      TaskManager.recalculateAchievements();
+      UIManager.updateAchievementsList();
+    });
+
+    // Pet controls
+    const petInput = document.getElementById('petImageFileInput');
+    petInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 160;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) {
+              h = Math.round(h * (maxDim / w));
+              w = maxDim;
+            }
+          } else {
+            if (h > maxDim) {
+              w = Math.round(w * (maxDim / h));
+              h = maxDim;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          const state = getGameState();
+          state.playerState.petImage = compressedBase64;
+          state.save();
+          UIManager.updatePetUI();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('petUploadBtn')?.addEventListener('click', () => {
+      document.getElementById('petImageFileInput')?.click();
+    });
+
+    document.getElementById('petClearImageBtn')?.addEventListener('click', () => {
+      const state = getGameState();
+      state.playerState.petImage = null;
+      state.save();
+      UIManager.updatePetUI();
+    });
+
+    document.getElementById('petUpgradeBtn')?.addEventListener('click', () => {
+      const state = getGameState();
+      const petUpgradeLevel = state.playerState.petUpgradeLevel || 0;
+      const cost = 5 + petUpgradeLevel * 2;
+      if (state.playerState.petPoints >= cost) {
+        state.playerState.petPoints -= cost;
+        state.playerState.petUpgradeLevel = petUpgradeLevel + 1;
+        state.playerState.petLevel = (state.playerState.petLevel || 1) + 1;
+        state.save();
+        UIManager.updatePetUI();
+        try { SoundManager.play('levelUp'); } catch (err) {}
+      }
+    });
     // add buttons
     const dailiesAdd = document.getElementById('dailiesAddBtn');
     if (dailiesAdd) dailiesAdd.addEventListener('click', () => {
@@ -1537,7 +1711,17 @@ class UIManager {
   }
 
   static toggleTaskPanel(which) {
-    const panel = document.getElementById(which === 'dailies' ? 'dailiesPanel' : 'todosPanel');
+    const panels = ['dailies', 'todos', 'achievements', 'pet'];
+    panels.forEach(p => {
+      if (p !== which) {
+        this.closeTaskPanel(p);
+      }
+    });
+
+    const panelId = which === 'dailies' ? 'dailiesPanel' :
+                    which === 'todos' ? 'todosPanel' :
+                    which === 'achievements' ? 'achievementsPanel' : 'petPanel';
+    const panel = document.getElementById(panelId);
     if (!panel) return;
     const open = panel.classList.contains('open');
     this.closeTaskPanel(which);
@@ -1548,20 +1732,211 @@ class UIManager {
         try {
           if (which === 'todos') {
             this.updateTodosList();
-          } else {
+            this.positionTodoCards();
+          } else if (which === 'dailies') {
             this.scheduleUpdateDailiesList();
+            this.positionDailyCards();
+          } else if (which === 'achievements') {
+            this.updateAchievementsList();
+          } else if (which === 'pet') {
+            this.updatePetUI();
           }
-          // Force re-position in case sizes changed during the transition
-          if (which === 'todos') this.positionTodoCards();
-          else this.positionDailyCards();
         } catch (e) { /* ignore */ }
       }, 260);
     }
   }
 
   static closeTaskPanel(which) {
-    const panel = document.getElementById(which === 'dailies' ? 'dailiesPanel' : 'todosPanel');
+    const panelId = which === 'dailies' ? 'dailiesPanel' :
+                    which === 'todos' ? 'todosPanel' :
+                    which === 'achievements' ? 'achievementsPanel' : 'petPanel';
+    const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
+  }
+
+  static achievementsSortBy = 'rate';
+
+  static updateAchievementsList() {
+    const state = getGameState();
+    const container = document.getElementById('achievementsList');
+    if (!container) return;
+
+    let dailies = [...state.dailiesState.dailies];
+
+    // Sort dailies
+    if (this.achievementsSortBy === 'rate') {
+      dailies.sort((a, b) => (b.completionRate || 0) - (a.completionRate || 0));
+    } else {
+      dailies.sort((a, b) => (b.longestStreak || 0) - (a.longestStreak || 0));
+    }
+
+    if (dailies.length === 0) {
+      container.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 8px; padding: 20px; line-height: 1.6;">No dailies found.<br>Create dailies first!</div>`;
+      return;
+    }
+
+    let html = '';
+    const escapeHTML = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    dailies.forEach(d => {
+      const ratePct = Math.round((d.completionRate || 0) * 100);
+      const streak = d.longestStreak || 0;
+      const totalComp = d.totalCompletions || 0;
+      const totalDays = d.totalCount || 0;
+
+      let rateColor = 'var(--text-muted)';
+      if (ratePct >= 80) rateColor = '#44ff44';
+      else if (ratePct >= 50) rateColor = '#ffaa00';
+      else if (ratePct > 0) rateColor = '#ff4444';
+
+      let streakColor = 'var(--text-muted)';
+      if (streak >= 7) streakColor = 'var(--accent-gold)';
+      else if (streak >= 3) streakColor = 'var(--accent-copper)';
+
+      html += `
+        <div class="achievement-card" style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid var(--accent-copper); background: linear-gradient(180deg, rgba(10, 8, 5, 0.96), rgba(8, 6, 4, 0.98)); border-radius: 6px; margin-bottom: 8px;">
+          <div class="achievement-card-title" style="font-size: 10px; font-weight: bold; color: var(--accent-gold);">${escapeHTML(d.name)}</div>
+          <div class="achievement-card-stats" style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-muted);">
+            <span>Streak: <strong style="color: ${streakColor}">${streak} days</strong></span>
+            <span>Rate: <strong style="color: ${rateColor}">${ratePct}%</strong> (${totalComp}/${totalDays})</span>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  static updatePetUI() {
+    const state = getGameState();
+    
+    const imgDisplay = document.getElementById('petImageDisplay');
+    const levelVal = document.getElementById('petLevelVal');
+    const dmgBonusVal = document.getElementById('petDmgBonusVal');
+    const pointsVal = document.getElementById('petPointsVal');
+    const hungerText = document.getElementById('petHungerTextVal');
+    const hungerFill = document.getElementById('petHungerFill');
+    const upgradeBtn = document.getElementById('petUpgradeBtn');
+    const upgradeCostVal = document.getElementById('petUpgradeCostVal');
+    const clearPicBtn = document.getElementById('petClearImageBtn');
+    
+    if (!levelVal) return;
+    
+    const petPoints = state.playerState.petPoints || 0;
+    const petLevel = state.playerState.petLevel || 1;
+    const petUpgradeLevel = state.playerState.petUpgradeLevel || 0;
+    const petHunger = state.playerState.petHunger !== undefined ? state.playerState.petHunger : 100;
+    const petEmoji = state.playerState.petEmoji || '🐾';
+    const petImage = state.playerState.petImage;
+    
+    if (petImage) {
+      imgDisplay.innerHTML = `<img src="${petImage}" style="width: 100%; height: 100%; object-fit: cover;">`;
+      if (clearPicBtn) clearPicBtn.style.display = 'inline-block';
+    } else {
+      imgDisplay.innerHTML = petEmoji;
+      if (clearPicBtn) clearPicBtn.style.display = 'none';
+    }
+    
+    levelVal.textContent = petLevel;
+    const dmgBonusPct = petUpgradeLevel * 1.5;
+    const dmgBonusFlat = Math.round(state.playerState.maxAp * (petUpgradeLevel * 0.015));
+    dmgBonusVal.textContent = `${dmgBonusFlat} (+${dmgBonusPct}% AP)`;
+    pointsVal.textContent = petPoints;
+    
+    hungerText.textContent = `${petHunger}/100`;
+    if (hungerFill) {
+      hungerFill.style.width = `${petHunger}%`;
+      if (petHunger === 0) {
+        hungerFill.style.background = '#ff2222';
+        hungerText.innerHTML = `<span style="color:#ff2222; animation: blink 1s infinite;">STARVING! (0% Dmg)</span>`;
+      } else if (petHunger <= 30) {
+        hungerFill.style.background = 'linear-gradient(90deg, #ffaa00, #ffcc00)';
+      } else {
+        hungerFill.style.background = 'linear-gradient(90deg, #30C85A, #7AE88E)';
+      }
+    }
+    
+    const cost = 5 + petUpgradeLevel * 2;
+    if (upgradeCostVal) upgradeCostVal.textContent = cost;
+    if (upgradeBtn) {
+      upgradeBtn.disabled = petPoints < cost;
+    }
+    
+    const emojiGrid = document.getElementById('petEmojiGrid');
+    if (emojiGrid) {
+      const emojis = ['🐾', '🐶', '🐱', '🦊', '🦁', '🦉', '🐉', '🐼', '🐸', '🦄', '🦅', '🦖'];
+      let emojiHtml = '';
+      emojis.forEach(em => {
+        const activeClass = em === petEmoji ? 'active' : '';
+        emojiHtml += `
+          <button class="pet-emoji-btn ${activeClass}" data-emoji="${em}" style="font-size: 16px; padding: 6px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(0,0,0,0.2); cursor: pointer; transition: all 0.15s;">
+            ${em}
+          </button>
+        `;
+      });
+      emojiGrid.innerHTML = emojiHtml;
+      
+      emojiGrid.querySelectorAll('.pet-emoji-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.playerState.petEmoji = btn.dataset.emoji;
+          state.save();
+          UIManager.updatePetUI();
+        });
+      });
+    }
+    
+    const foodGrid = document.getElementById('petFoodGrid');
+    if (foodGrid) {
+      const foods = [
+        { name: 'Berry', emoji: '🍓', cost: 1, hunger: 10 },
+        { name: 'Donut', emoji: '🍩', cost: 1, hunger: 15 },
+        { name: 'Apple', emoji: '🍎', cost: 1, hunger: 15 },
+        { name: 'Banana', emoji: '🍌', cost: 1, hunger: 25 },
+        { name: 'Carrot', emoji: '🥕', cost: 1, hunger: 20 },
+        { name: 'Cookie', emoji: '🍪', cost: 1, hunger: 10 },
+        { name: 'Cheese', emoji: '🧀', cost: 2, hunger: 30 },
+        { name: 'Melon', emoji: '🍉', cost: 2, hunger: 40 },
+        { name: 'Ice Cream', emoji: '🍦', cost: 2, hunger: 30 },
+        { name: 'Fish', emoji: '🐟', cost: 2, hunger: 35 },
+        { name: 'Burger', emoji: '🍔', cost: 3, hunger: 50 },
+        { name: 'Chicken', emoji: '🍗', cost: 3, hunger: 70 },
+        { name: 'Meat', emoji: '🍖', cost: 3, hunger: 60 },
+        { name: 'Pizza', emoji: '🍕', cost: 4, hunger: 80 },
+        { name: 'Sushi', emoji: '🍣', cost: 4, hunger: 75 },
+        { name: 'Steak', emoji: '🥩', cost: 5, hunger: 100 },
+        { name: 'Cake', emoji: '🍰', cost: 5, hunger: 100 },
+        { name: 'Honey', emoji: '🍯', cost: 8, hunger: 100 }
+      ];
+      
+      let foodHtml = '';
+      foods.forEach(f => {
+        const canAfford = petPoints >= f.cost;
+        foodHtml += `
+          <button class="pet-food-card" data-cost="${f.cost}" data-hunger="${f.hunger}" ${canAfford ? '' : 'disabled'} style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); cursor: pointer; transition: all 0.15s;">
+            <div style="font-size: 18px;">${f.emoji}</div>
+            <div style="font-size: 6px; color: var(--text-white); font-weight: bold;">${f.name}</div>
+            <div style="font-size: 5px; color: var(--text-muted);">+${f.hunger}H</div>
+            <div style="font-size: 6px; color: var(--accent-gold); font-weight: bold; margin-top: 2px;">${f.cost} Pts</div>
+          </button>
+        `;
+      });
+      foodGrid.innerHTML = foodHtml;
+      
+      foodGrid.querySelectorAll('.pet-food-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const cost = parseInt(card.dataset.cost, 10);
+          const hunger = parseInt(card.dataset.hunger, 10);
+          
+          if (state.playerState.petPoints >= cost) {
+            state.playerState.petPoints -= cost;
+            state.playerState.petHunger = Math.min(100, (state.playerState.petHunger || 0) + hunger);
+            state.save();
+            UIManager.updatePetUI();
+            try {
+              SoundManager.play('heal');
+            } catch (e) {}
+          }
+        });
+      });
+    }
   }
 
   static bindTaskInteractions() {
@@ -5306,19 +5681,26 @@ class UIManager {
       });
     });
 
-    // Discard Talisman button
+    // Click Talisman -> show details popup
     strip.querySelectorAll('.talisman-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const talisman = e.currentTarget.dataset.talisman;
         const index = Array.from(strip.querySelectorAll('.talisman-chip')).indexOf(e.currentTarget);
-        if (confirm(`Discard ${talisman}? This frees up a slot for a new Talisman.`)) {
-          const state = getGameState();
-          if (state.playerState.talismans) {
-            state.playerState.talismans.splice(index, 1);
-            state.save();
-            this.refreshGameUI();
+        try {
+          if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showTalismanDetail === 'function') {
+            PopupsManager.showTalismanDetail(talisman, index);
+          } else {
+            // Fallback discard confirmation if PopupsManager is unavailable
+            if (confirm(`Discard ${talisman}? This frees up a slot for a new Talisman.`)) {
+              const state = getGameState();
+              if (state.playerState.talismans) {
+                state.playerState.talismans.splice(index, 1);
+                state.save();
+                this.refreshGameUI();
+              }
+            }
           }
-        }
+        } catch (err) { console.warn('Failed to open talisman detail popup', err); }
       });
     });
 
