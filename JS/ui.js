@@ -5038,7 +5038,7 @@ class UIManager {
     if (name.includes('zombie')) return '🧟';
     if (name.includes('croc')) return '🐊';
     if (name.includes('yeti smasher') || name.includes('yeti')) return '❄️';
-    if (name.includes('spirit') || name.includes('ghost') || name.includes('specter') || name.includes('wraith') || archetype === 'mana drain') return '👻';
+    if (name.includes('spirit') || name.includes('ghost') || name.includes('specter') || name.includes('wraith')) return '👻';
     if (name.includes('lizard') || name.includes('snake') || name.includes('serpent')) return '🐍';
     if (name.includes('golem')) return '🗿';
     if (name.includes('turret')) return '🗼';
@@ -5062,6 +5062,7 @@ class UIManager {
 
     // Fallbacks
     if (enemy?.isBoss) return '👑';
+    if (archetype === 'mana drain') return '👻';
     if (archetype === 'protector') return '🛡️';
     if (archetype === 'healer') return '💚';
     return '☠️';
