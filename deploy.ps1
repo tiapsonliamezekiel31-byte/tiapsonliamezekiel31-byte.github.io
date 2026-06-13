@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: make all movable tabs smaller and draggable by any part, remove skipped check-in auto-kill"
+$commitMsg = "fix: classList null error, check-in always fires (outside SoundManager), first-attack enemy dialogue"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

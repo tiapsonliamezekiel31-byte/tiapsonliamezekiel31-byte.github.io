@@ -1396,14 +1396,6 @@ class UIManager {
         state.eventBus.on(EVENTS.ENEMY_REVIVED, (d) => { try { SoundManager.play('revive'); } catch (e) { } });
         state.eventBus.on(EVENTS.GOLD_CHANGED, (d) => { try { SoundManager.play('coin'); } catch (e) { } });
         state.eventBus.on(EVENTS.CHECK_IN, (d) => { try { SoundManager.play('checkin'); } catch (e) { } });
-        state.eventBus.on(EVENTS.CHECK_IN_COMPLETE, (detail) => {
-          try {
-            const D = detail?.missedDailyDamage ?? 0;
-            const N = detail?.scaledN ?? 0;
-            const late = detail?.lateTodoDamage ?? 0;
-            this.playCheckInSequence(detail || {});
-          } catch (e) { }
-        });
         state.eventBus.on(EVENTS.DEATH_DEFIANCE, (detail) => {
           try {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Death Defied!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 2000, fadeDelay: 1200 });
@@ -1413,6 +1405,12 @@ class UIManager {
         state.eventBus.on(EVENTS.DEATH, (d) => { try { SoundManager.play('death'); } catch (e) { } });
       }
     } catch (e) { }
+    // CHECK_IN_COMPLETE handler is registered OUTSIDE SoundManager so it always fires
+    state.eventBus.on(EVENTS.CHECK_IN_COMPLETE, (detail) => {
+      try {
+        this.playCheckInSequence(detail || {});
+      } catch (e) { console.warn('playCheckInSequence failed', e); }
+    });
     state.eventBus.on(EVENTS.TASK_COMPLETED, (detail) => {
       if (detail?.type === 'daily') this.scheduleUpdateDailiesList();
       if (detail?.type === 'todo') this.updateTodosList();
@@ -3073,7 +3071,7 @@ class UIManager {
           }
 
           if (hit.isDead) {
-            const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
+            const isElite = (targetCard && targetCard.classList) ? (targetCard.classList.contains('elite') || targetCard.classList.contains('boss')) : false;
             EnemyDeathAnimation.burst(targetX, targetY, isElite);
           }
         });
@@ -3089,6 +3087,26 @@ class UIManager {
             );
           });
         }
+
+        // First enemy encounter dialogue
+        try {
+          const gs2 = getGameState();
+          if (!Array.isArray(gs2.systemState.seenEnemies)) gs2.systemState.seenEnemies = [];
+          hits.forEach(hit => {
+            const hitEnemy = StageManager.getEnemyById(hit.enemyId);
+            const enemyName = hitEnemy?.name;
+            if (enemyName && !gs2.systemState.seenEnemies.includes(enemyName)) {
+              gs2.systemState.seenEnemies.push(enemyName);
+              // Show first encounter popup
+              FloatingDamageNumber.show(
+                window.innerWidth / 2,
+                window.innerHeight / 2 - 100,
+                `⚔️ First encounter: ${enemyName}!`,
+                { color: '#ffd76a', duration: 2400, scale: 1.1, fadeDelay: 1600 }
+              );
+            }
+          });
+        } catch (e) { }
 
         this.renderEnemies();
         getGameState().save();
@@ -3970,8 +3988,7 @@ class UIManager {
           } else if (detail.weaponName === 'Death Spell') {
             // Death Spell — check if the target is still alive (resisted = alive)
             const tgtCard = targetCard;
-            opts.isResisted = !tgtCard.classList.contains('enemy-dead') &&
-                              !tgtCard.dataset.isDead;
+            opts.isResisted = (tgtCard && tgtCard.classList) ? (!tgtCard.classList.contains('enemy-dead') && !tgtCard.dataset.isDead) : false;
           }
 
           WeaponHitAnimation.play(detail.weaponName, targetCard, opts);
