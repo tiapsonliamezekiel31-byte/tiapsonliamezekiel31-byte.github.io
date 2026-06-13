@@ -735,7 +735,8 @@ body::before {
   justify-content: center;
   pointer-events: none;
   z-index: 35;
-  margin-bottom: 55px; /* Pushes the enemy circle container down so the top card does not clip the date/day display */
+  margin-top: -25px; /* Moves the date/day display higher up on the screen */
+  margin-bottom: 65px; /* Pushes the enemy circle container down so the top card does not clip the date/day display */
 }
 
 /* Mutator badge UI */

@@ -5001,35 +5001,67 @@ class UIManager {
     const name = (enemy?.name || '').toLowerCase();
     const archetype = (enemy?.archetype || '').toLowerCase();
     
-    // Check specific names (bosses or regular enemies)
+    // Bosses
     if (name.includes('demon')) return '😈';
-    if (name.includes('marcher') || name.includes('mummified')) return '🧟';
-    if (name.includes('wizard') || name.includes('crimson wizard') || name.includes('mage') || name.includes('witch') || name.includes('cultist')) return '🧙';
-    if (name.includes('worm') || name.includes('caterpillar') || name.includes('serpent')) return '🪱';
-    if (name.includes('giant') || name.includes('golem') || name.includes('jade giant')) return '🗿';
-    if (name.includes('computer') || name.includes('star computer') || name.includes('machine') || name.includes('robot')) return '💻';
+    if (name.includes('mummified marcher')) return '🧟';
+    if (name.includes('crimson wizard')) return '🧙';
+    if (name.includes('worm eater')) return '🪱';
+    if (name.includes('jade giant')) return '🗿';
+    if (name.includes('star computer')) return '💻';
     if (name.includes('angel')) return '😇';
-    if (name.includes('queen') || name.includes('killer queen')) return '👸';
-    if (name.includes('shark')) return '🦈';
-    if (name.includes('turtle') || name.includes('tortoise') || name.includes('fire turtle')) return '🐢';
-    if (name.includes('king') || name.includes('emperor') || name.includes('banished king')) return '🤴';
-    if (name.includes('sun') || name.includes('solar')) return '☀️';
+    if (name.includes('killer queen')) return '👸';
+    if (name.includes('satan\'s shark')) return '🦈';
+    if (name.includes('fire turtle')) return '🐢';
+    if (name.includes('banished king')) return '🤴';
+    if (name.includes('the sun')) return '☀️';
     if (name.includes('nemesis')) return '👾';
-    
-    // Fallback default boss emoji
-    if (enemy?.isBoss) return '👑';
 
-    // Regular enemies
-    if (name.includes('wolf') || name.includes('hound') || name.includes('canine')) return '🐺';
-    if (name.includes('goblin') || name.includes('orc') || name.includes('troll')) return '👺';
-    if (name.includes('scorpion') || name.includes('spider') || name.includes('leech') || name.includes('termite') || name.includes('beetle') || name.includes('insect')) return '🪲';
+    // Mobs
+    if (name.includes('gorilla')) return '🦍';
+    if (name.includes('wolf') || name.includes('hound')) return '🐺';
+    if (name.includes('goblin wizard')) return '🧙';
+    if (name.includes('goblin')) return '👺';
+    if (name.includes('bear')) return '🐻';
+    if (name.includes('lion')) return '🦁';
+    if (name.includes('marcher')) return '🧟';
+    if (name.includes('beetle') || name.includes('termite') || name.includes('insect')) return '🪲';
+    if (name.includes('guardian') || name.includes('knight') || name.includes('paladin') || name.includes('sentry')) return '🛡️';
+    if (name.includes('drone')) return '🛸';
+    if (name.includes('raptor')) return '🦖';
+    if (name.includes('tarantulator') || name.includes('spider') || name.includes('scorpion')) return '🕷️';
+    if (name.includes('brain')) return '🧠';
+    if (name.includes('sorcerer') || name.includes('mage') || name.includes('wizard') || name.includes('priest')) return '🧙';
+    if (name.includes('death bringer') || name.includes('death')) return '☠️';
+    if (name.includes('leech') || name.includes('slug') || name.includes('worm')) return '🪱';
+    if (name.includes('plagued')) return '🤢';
+    if (name.includes('frog')) return '🐸';
+    if (name.includes('zombie')) return '🧟';
+    if (name.includes('croc')) return '🐊';
+    if (name.includes('yeti smasher') || name.includes('yeti')) return '❄️';
+    if (name.includes('spirit') || name.includes('ghost') || name.includes('specter') || name.includes('wraith') || archetype === 'mana drain') return '👻';
+    if (name.includes('lizard') || name.includes('snake') || name.includes('serpent')) return '🐍';
+    if (name.includes('golem')) return '🗿';
+    if (name.includes('turret')) return '🗼';
+    if (name.includes('skeleton') || name.includes('flying skull') || name.includes('bone') || name.includes('skull')) return '💀';
+    if (name.includes('coffin')) return '⚰️';
+    if (name.includes('ferryman')) return '🚣';
     if (name.includes('dragon') || name.includes('wyvern') || name.includes('drake') || name.includes('wyrm') || name.includes('hydra')) return '🐉';
-    if (name.includes('ghost') || name.includes('soul') || name.includes('specter') || name.includes('wraith') || archetype === 'mana drain') return '👻';
-    if (name.includes('knight') || name.includes('paladin') || name.includes('guardian') || name.includes('sentry')) return '🛡️';
-    if (name.includes('watcher') || name.includes('eye')) return '👁️';
-    if (name.includes('slime') || name.includes('jelly') || name.includes('ooze')) return '🧪';
-    if (name.includes('skeleton') || name.includes('bone')) return '💀';
-    
+    if (name.includes('magma') || name.includes('blob') || name.includes('slime') || name.includes('jelly')) return '🧪';
+    if (name.includes('ninja')) return '🥷';
+    if (name.includes('master')) return '🥋';
+    if (name.includes('dwarf')) return '🧔';
+    if (name.includes('driller')) return '⚙️';
+    if (name.includes('atom')) return '⚛️';
+    if (name.includes('kraken')) return '🦑';
+    if (name.includes('crusher')) return '🌌';
+    if (name.includes('shark') || name.includes('megalodon')) return '🦈';
+    if (name.includes('bat')) return '🦇';
+    if (name.includes('porcupine')) return '🦔';
+    if (name.includes('phoenix')) return '🔥';
+    if (name.includes('bomb')) return '💣';
+
+    // Fallbacks
+    if (enemy?.isBoss) return '👑';
     if (archetype === 'protector') return '🛡️';
     if (archetype === 'healer') return '💚';
     return '☠️';
