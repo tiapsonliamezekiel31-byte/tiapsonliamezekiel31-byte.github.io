@@ -34,6 +34,7 @@ const EVENTS = {
   // Check-in & daily cycle
   CHECK_IN: 'checkin:start',
   CHECK_IN_COMPLETE: 'checkin:complete',
+  CHECK_IN_ANIMATION_COMPLETE: 'checkin:animComplete',
   DAILY_RESET: 'daily:reset',
   SKIPPED_DAY_DEATH: 'death:skippedDay',
   
@@ -1843,7 +1844,7 @@ function performCheckIn() {
 
     // 9) Delayed: Regenerate mana/hp per-class daily effects
     // Delay regen slightly so retaliation damage is visible in the UI first
-    const doDailyRegenAndSave = () => {
+    const doDailyRegenAndSave = async () => {
       try {
         PlayerManager.applyDailyRegeneration();
 
@@ -1916,6 +1917,9 @@ function performCheckIn() {
                 const target = alive[Math.floor(Math.random() * alive.length)];
                 target.takeDamage(petDamage);
                 state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
+                if (i < petAttacksCount - 1) {
+                  await new Promise(r => setTimeout(r, 2000));
+                }
               }
             }
           } catch (petErr) {
@@ -1923,9 +1927,10 @@ function performCheckIn() {
           }
         }
 
-        // Persist and refresh UI after regen
+        // Persist and refresh UI after regen and attacks
         state.save();
         if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+        clearCheckInRunning();
 
         // Show pet hunger warning if pet is under 30% hunger and player is alive
         if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
@@ -1940,7 +1945,7 @@ function performCheckIn() {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
               PopupsManager.showAlert('PET HUNGER WARNING', msg);
             }
-          }, 1500);
+          }, 2000);
         }
       } catch (e) {
         console.warn('Daily regeneration failed during check-in', e);
@@ -1961,13 +1966,15 @@ function performCheckIn() {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
               PopupsManager.showAlert('PET HUNGER WARNING', msg);
             }
-          }, 1500);
+          }, 2000);
         }
       }
     };
 
-    // Schedule regen shortly after check-in so damage numbers are visible
-    setTimeout(doDailyRegenAndSave, 700);
+    // Run daily regeneration and pet attacks sequentially after check-in animation completes
+    state.eventBus.once(EVENTS.CHECK_IN_ANIMATION_COMPLETE, () => {
+      setTimeout(doDailyRegenAndSave, 300);
+    });
 
     // 10) Nemesis gains attribute points (moved into delayed block)
   try {

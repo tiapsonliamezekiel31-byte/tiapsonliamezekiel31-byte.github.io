@@ -1287,7 +1287,7 @@ class UIManager {
       try {
         if (detail && detail.type === 'pet' && detail.targetId) {
           // immediate floating feedback
-          this.showPetIcon(detail.targetId, { duration: 900 });
+          this.showPetIcon(detail.targetId, { duration: 1800 });
 
           // persist today's pet target so a badge is shown for the rest of the day
           const now = new Date();
@@ -2565,6 +2565,7 @@ class UIManager {
       if (detail?.lateTodoDamage > 0) {
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: UIManager.themeColor('--palette-orange', '#FF4400'), duration: 2200 });
       }
+      state.eventBus.emit(EVENTS.CHECK_IN_ANIMATION_COMPLETE, detail);
       return;
     }
 
@@ -2722,16 +2723,23 @@ class UIManager {
       }
     } catch (e) { }
 
+    let finalWaitTime = 0;
     if (detail?.lateTodoDamage > 0) {
       FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: '#ff9a2e', duration: 2200 });
       ScreenEffects.shake(8, 180);
+      finalWaitTime = Math.max(finalWaitTime, 2200);
     }
 
     if (Array.isArray(detail?.incantations) && detail.incantations.length > 0) {
       FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 180, `Nemesis pressure: ${detail.incantations.length}`, { color: '#a15cff', duration: 1800 });
+      finalWaitTime = Math.max(finalWaitTime, 1800);
     }
 
     circle?.classList.remove('checkin-alert');
+    if (finalWaitTime > 0) {
+      await wait(finalWaitTime + 200);
+    }
+    state.eventBus.emit(EVENTS.CHECK_IN_ANIMATION_COMPLETE, detail);
   }
 
   static toggleShowCompleted(kind) {
@@ -6316,7 +6324,7 @@ class UIManager {
     const enemyTopY = rect.top - 14;
 
     // A helper to create particles
-    const createParticle = (x, y, content, duration, animStyles) => {
+    const createParticle = (x, y, content, duration, animStyles, customSize = '12px') => {
       const p = document.createElement('div');
       p.textContent = content;
       p.style.position = 'fixed';
@@ -6325,8 +6333,9 @@ class UIManager {
       p.style.pointerEvents = 'none';
       p.style.zIndex = '11000';
       p.style.fontFamily = "'Press Start 2P', monospace";
-      p.style.fontSize = '10px';
+      p.style.fontSize = customSize;
       p.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+      p.style.textShadow = '0 0 8px rgba(255,255,255,0.8)';
       document.body.appendChild(p);
       requestAnimationFrame(() => {
         Object.assign(p.style, animStyles);
@@ -6337,7 +6346,7 @@ class UIManager {
     };
 
     // Helper for screenshake on the card
-    const shakeCard = (intensity = 8, count = 6) => {
+    const shakeCard = (intensity = 12, count = 10) => {
       let currentShift = 0;
       const originalTransform = card.style.transform || '';
       const interval = setInterval(() => {
@@ -6350,7 +6359,7 @@ class UIManager {
           card.style.transform = `${originalTransform} translate(${dx}px, ${dy}px)`;
           currentShift++;
         }
-      }, 50);
+      }, 40);
     };
 
     // 1) Spawn the main pet icon
@@ -6366,193 +6375,346 @@ class UIManager {
     icon.style.top = `${enemyTopY}px`;
     icon.style.transform = 'translateX(-50%)';
     icon.style.zIndex = '10999';
+    icon.style.fontSize = '24px';
     document.body.appendChild(icon);
 
     // 2) EXTRA EXTRAVAGANT EFFECTS
     if (equippedAnim === 'Fierce Charge') {
-      // Spawn trail clones
-      for (let i = 1; i <= 3; i++) {
+      // Spawn 8 trail clones
+      for (let i = 1; i <= 8; i++) {
         setTimeout(() => {
-          createParticle(enemyCenterX, enemyTopY, petEmoji, 300, {
-            transform: 'translateX(-50%) translateY(40px) scale(1.1)',
-            opacity: '0'
-          });
-        }, i * 80);
-      }
-      // Slam impact particles
-      setTimeout(() => {
-        shakeCard(6, 4);
-        for (let i = 0; i < 8; i++) {
-          const angle = (i / 8) * Math.PI * 2;
-          const px = enemyCenterX + Math.cos(angle) * 10;
-          const py = enemyCenterY + Math.sin(angle) * 10;
-          createParticle(px, py, '✨', 400, {
-            left: `${px + Math.cos(angle) * 40}px`,
-            top: `${py + Math.sin(angle) * 40}px`,
+          createParticle(enemyCenterX, enemyTopY, petEmoji, 500, {
+            transform: 'translateX(-50%) translateY(60px) scale(1.6)',
             opacity: '0',
-            transform: 'scale(0.5)'
-          });
+            filter: 'blur(2px)'
+          }, '20px');
+        }, i * 60);
+      }
+      // Slam impact particles at 550ms
+      setTimeout(() => {
+        shakeCard(20, 12);
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+          ScreenEffects.shake(16, 300);
         }
-      }, 210);
+        
+        // Full screen screen-flash overlay
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.inset = '0';
+        flash.style.background = 'rgba(255, 255, 255, 0.4)';
+        flash.style.zIndex = '11100';
+        flash.style.pointerEvents = 'none';
+        flash.style.transition = 'opacity 300ms ease-out';
+        document.body.appendChild(flash);
+        setTimeout(() => { flash.style.opacity = '0'; }, 50);
+        setTimeout(() => { try { flash.remove(); } catch(e){} }, 350);
+
+        createParticle(enemyCenterX, enemyCenterY - 30, '💥', 600, {
+          transform: 'scale(4)',
+          opacity: '0'
+        }, '50px');
+
+        for (let i = 0; i < 24; i++) {
+          const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
+          const px = enemyCenterX;
+          const py = enemyCenterY;
+          const speed = 60 + Math.random() * 80;
+          createParticle(px, py, '✨', 800, {
+            left: `${px + Math.cos(angle) * speed}px`,
+            top: `${py + Math.sin(angle) * speed}px`,
+            opacity: '0',
+            transform: 'scale(0.5) rotate(180deg)'
+          }, '16px');
+        }
+      }, 550);
 
     } else if (equippedAnim === 'Double Flip') {
       // Spawn sparkle rings
-      let sparkleCount = 0;
+      let ringCount = 0;
       const interval = setInterval(() => {
-        if (sparkleCount >= 4) {
+        if (ringCount >= 10) {
           clearInterval(interval);
           return;
         }
-        for (let i = 0; i < 4; i++) {
-          const angle = (i / 4) * Math.PI * 2 + (sparkleCount * 0.5);
-          createParticle(enemyCenterX, enemyTopY + 10, '⭐', 500, {
-            left: `${enemyCenterX + Math.cos(angle) * 35}px`,
-            top: `${enemyCenterY + Math.sin(angle) * 35}px`,
+        const emojis = ['⭐', '✨', '💫'];
+        const currentEmoji = emojis[ringCount % emojis.length];
+        const radius = 35 + ringCount * 4;
+        for (let i = 0; i < 6; i++) {
+          const angle = (i / 6) * Math.PI * 2 + (ringCount * 0.3);
+          const startX = enemyCenterX + Math.cos(angle) * radius;
+          const startY = enemyCenterY + Math.sin(angle) * radius;
+          const endAngle = angle + Math.PI / 2;
+          createParticle(startX, startY, currentEmoji, 700, {
+            left: `${enemyCenterX + Math.cos(endAngle) * (radius + 15)}px`,
+            top: `${enemyCenterY + Math.sin(endAngle) * (radius + 15)}px`,
             opacity: '0',
-            transform: 'rotate(180deg) scale(0.6)'
-          });
+            transform: 'scale(0.8) rotate(180deg)',
+            filter: 'drop-shadow(0 0 8px gold)'
+          }, '16px');
         }
-        sparkleCount++;
-      }, 120);
+        ringCount++;
+      }, 90);
+
+      // landing explosion at 1300ms
+      setTimeout(() => {
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+          ScreenEffects.shake(10, 250);
+        }
+        for (let i = 0; i < 25; i++) {
+          const angle = (i / 25) * Math.PI * 2 + Math.random() * 0.1;
+          const px = enemyCenterX;
+          const py = enemyCenterY;
+          const speed = 70 + Math.random() * 100;
+          createParticle(px, py, '⭐', 800, {
+            left: `${px + Math.cos(angle) * speed}px`,
+            top: `${py + Math.sin(angle) * speed}px`,
+            opacity: '0',
+            transform: 'scale(0.6) rotate(360deg)'
+          }, '20px');
+        }
+      }, 1300);
 
     } else if (equippedAnim === 'Meteor Drop') {
-      // Spawn huge burning meteor ☄️
+      // Spawn massive burning meteor ☄️
       const meteor = document.createElement('div');
       meteor.textContent = '☄️';
       meteor.style.position = 'fixed';
-      meteor.style.fontSize = '64px';
+      meteor.style.fontSize = '160px';
       meteor.style.left = `${enemyCenterX}px`;
-      meteor.style.top = `${window.scrollY - 100}px`;
-      meteor.style.transform = 'translateX(-50%)';
+      meteor.style.top = `${window.scrollY - 200}px`;
+      meteor.style.transform = 'translateX(-50%) rotate(45deg)';
       meteor.style.zIndex = '11005';
-      meteor.style.transition = 'all 500ms cubic-bezier(0.6, -0.28, 0.735, 0.045)';
-      meteor.style.filter = 'drop-shadow(0 0 20px #ff3300) brightness(1.5)';
+      meteor.style.transition = 'all 1100ms cubic-bezier(0.55, 0.055, 0.675, 0.19)';
+      meteor.style.filter = 'drop-shadow(0 0 50px #ff3700) brightness(2.5)';
       document.body.appendChild(meteor);
 
       // Make meteor drop and shrink
       setTimeout(() => {
         meteor.style.top = `${enemyCenterY}px`;
-        meteor.style.fontSize = '24px';
+        meteor.style.fontSize = '40px';
       }, 50);
 
-      // Trail of burning smoke
-      for (let i = 0; i < 5; i++) {
+      // Trail of burning smoke (12 particles)
+      for (let i = 0; i < 12; i++) {
         setTimeout(() => {
-          createParticle(enemyCenterX + (Math.random() - 0.5) * 30, enemyCenterY - 120 + i * 25, '🔥', 400, {
-            transform: 'scale(1.8) translateY(-20px)',
+          const tx = enemyCenterX + (Math.random() - 0.5) * 60;
+          const ty = (window.scrollY - 100) + ((enemyCenterY - (window.scrollY - 100)) * (i / 12));
+          createParticle(tx, ty, Math.random() > 0.5 ? '🔥' : '💨', 600, {
+            transform: 'scale(2.5) translateY(-40px)',
             opacity: '0'
-          });
-        }, i * 70);
+          }, '24px');
+        }, i * 85);
       }
 
-      // Hit Impact
+      // Hit Impact at 1100ms
       setTimeout(() => {
         try { meteor.remove(); } catch (e) {}
-        shakeCard(12, 10);
+        shakeCard(30, 24);
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+          ScreenEffects.shake(25, 450);
+        }
         
-        // Explosion flash overlay
+        // Full screen screen-flash overlay
         const flash = document.createElement('div');
         flash.style.position = 'fixed';
-        flash.style.left = `${rect.left}px`;
-        flash.style.top = `${rect.top}px`;
-        flash.style.width = `${rect.width}px`;
-        flash.style.height = `${rect.height}px`;
-        flash.style.background = 'radial-gradient(circle, rgba(255,100,0,0.85) 0%, rgba(255,0,0,0) 70%)';
-        flash.style.zIndex = '11000';
+        flash.style.inset = '0';
+        flash.style.background = 'rgba(255, 55, 0, 0.55)';
+        flash.style.zIndex = '11100';
         flash.style.pointerEvents = 'none';
-        flash.style.transition = 'opacity 400ms ease-out';
+        flash.style.transition = 'opacity 600ms ease-out';
         document.body.appendChild(flash);
         setTimeout(() => { flash.style.opacity = '0'; }, 50);
-        setTimeout(() => { try { flash.remove(); } catch(e){} }, 450);
+        setTimeout(() => { try { flash.remove(); } catch(e){} }, 650);
 
-        // Exploding debris
-        for (let i = 0; i < 12; i++) {
-          const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.5;
+        // Expanding blast wave ring
+        const ring = document.createElement('div');
+        ring.style.position = 'fixed';
+        ring.style.left = `${enemyCenterX}px`;
+        ring.style.top = `${enemyCenterY}px`;
+        ring.style.width = '10px';
+        ring.style.height = '10px';
+        ring.style.border = '8px double #ff5500';
+        ring.style.borderRadius = '50%';
+        ring.style.transform = 'translate(-50%, -50%)';
+        ring.style.boxShadow = '0 0 50px #ff3300, inset 0 0 50px #ff3300';
+        ring.style.zIndex = '11000';
+        ring.style.pointerEvents = 'none';
+        ring.style.transition = 'all 700ms cubic-bezier(0.1, 0.8, 0.3, 1)';
+        document.body.appendChild(ring);
+        setTimeout(() => {
+          ring.style.width = '500px';
+          ring.style.height = '500px';
+          ring.style.opacity = '0';
+        }, 50);
+        setTimeout(() => { try { ring.remove(); } catch(e){} }, 750);
+
+        // Exploding debris with gravity
+        for (let i = 0; i < 36; i++) {
+          const angle = (i / 36) * Math.PI * 2 + Math.random() * 0.3;
           const px = enemyCenterX;
           const py = enemyCenterY;
-          createParticle(px, py, Math.random() > 0.5 ? '💥' : '🔥', 600, {
-            left: `${px + Math.cos(angle) * 80}px`,
-            top: `${py + Math.sin(angle) * 80}px`,
+          const speed = 80 + Math.random() * 120;
+          createParticle(px, py, Math.random() > 0.4 ? (Math.random() > 0.5 ? '💥' : '🔥') : '💨', 900, {
+            left: `${px + Math.cos(angle) * speed}px`,
+            top: `${py + Math.sin(angle) * speed + 80}px`,
             opacity: '0',
-            transform: 'scale(0.5)'
-          });
+            transform: 'scale(1.8) rotate(360deg)'
+          }, '24px');
         }
-      }, 500);
+      }, 1100);
 
     } else if (equippedAnim === 'Spectral Pulse') {
-      // Glow and expand rings
-      const pulseRing = document.createElement('div');
-      pulseRing.style.position = 'fixed';
-      pulseRing.style.left = `${enemyCenterX}px`;
-      pulseRing.style.top = `${enemyCenterY}px`;
-      pulseRing.style.width = '10px';
-      pulseRing.style.height = '10px';
-      pulseRing.style.border = '3px solid var(--accent-purple, #a855f7)';
-      pulseRing.style.borderRadius = '50%';
-      pulseRing.style.transform = 'translate(-50%, -50%)';
-      pulseRing.style.boxShadow = '0 0 15px var(--accent-purple, #a855f7)';
-      pulseRing.style.zIndex = '11000';
-      pulseRing.style.pointerEvents = 'none';
-      pulseRing.style.transition = 'all 700ms ease-out';
-      document.body.appendChild(pulseRing);
-
-      setTimeout(() => {
-        pulseRing.style.width = `${rect.width * 1.5}px`;
-        pulseRing.style.height = `${rect.height * 1.2}px`;
-        pulseRing.style.opacity = '0';
-        pulseRing.style.borderColor = '#00ffff';
-        pulseRing.style.boxShadow = '0 0 35px #00ffff';
-      }, 50);
-      setTimeout(() => { try { pulseRing.remove(); } catch(e){} }, 750);
-
-      // Dark floating runic sparkles
-      for (let i = 0; i < 10; i++) {
+      // Glow and expand 4 rings
+      const colors = ['#00ffff', '#a855f7', '#ec4899', '#f59e0b'];
+      for (let r = 0; r < 4; r++) {
         setTimeout(() => {
-          const rx = enemyCenterX + (Math.random() - 0.5) * 60;
-          const ry = enemyCenterY + (Math.random() - 0.5) * 60;
-          createParticle(rx, ry, '🔮', 600, {
-            top: `${ry - 30}px`,
+          const pulseRing = document.createElement('div');
+          pulseRing.style.position = 'fixed';
+          pulseRing.style.left = `${enemyCenterX}px`;
+          pulseRing.style.top = `${enemyCenterY}px`;
+          pulseRing.style.width = '15px';
+          pulseRing.style.height = '15px';
+          pulseRing.style.border = `5px solid ${colors[r]}`;
+          pulseRing.style.borderRadius = '50%';
+          pulseRing.style.transform = 'translate(-50%, -50%)';
+          pulseRing.style.boxShadow = `0 0 30px ${colors[r]}, inset 0 0 20px ${colors[r]}`;
+          pulseRing.style.zIndex = '11000';
+          pulseRing.style.pointerEvents = 'none';
+          pulseRing.style.transition = 'all 1100ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+          document.body.appendChild(pulseRing);
+
+          setTimeout(() => {
+            pulseRing.style.width = `${rect.width * 5}px`;
+            pulseRing.style.height = `${rect.height * 4}px`;
+            pulseRing.style.opacity = '0';
+          }, 50);
+          setTimeout(() => { try { pulseRing.remove(); } catch(e){} }, 1150);
+        }, r * 200);
+      }
+
+      // Dark floating runic sparkles (30 particles)
+      for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+          const rx = rect.left - 20 + Math.random() * (rect.width + 40);
+          const ry = rect.bottom;
+          createParticle(rx, ry, Math.random() > 0.5 ? '🔮' : '✨', 900, {
+            top: `${ry - 120}px`,
             opacity: '0',
-            transform: 'scale(1.5)'
-          });
-        }, i * 60);
+            transform: 'scale(2.2) rotate(180deg)'
+          }, '18px');
+        }, i * 45);
+      }
+
+      // Screen ripple overlay
+      const flash = document.createElement('div');
+      flash.style.position = 'fixed';
+      flash.style.inset = '0';
+      flash.style.background = 'rgba(168, 85, 247, 0.25)';
+      flash.style.zIndex = '11100';
+      flash.style.pointerEvents = 'none';
+      flash.style.transition = 'opacity 800ms ease-out';
+      document.body.appendChild(flash);
+      setTimeout(() => { flash.style.opacity = '0'; }, 50);
+      setTimeout(() => { try { flash.remove(); } catch(e){} }, 850);
+
+      if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+        ScreenEffects.shake(8, 600);
       }
 
     } else if (equippedAnim === 'Vortex Spin') {
-      // Spiraling air trails
-      for (let i = 0; i < 15; i++) {
+      // Spiraling air trails (45 particles)
+      for (let i = 0; i < 45; i++) {
         setTimeout(() => {
           const angle = (i / 5) * Math.PI * 2;
-          const rad = 40 - (i * 1.5);
+          const rad = 100 - (i * 1.8);
           const px = enemyCenterX + Math.cos(angle) * rad;
           const py = enemyCenterY + Math.sin(angle) * rad;
-          createParticle(px, py, '🌀', 500, {
+          createParticle(px, py, Math.random() > 0.4 ? '🌀' : '💨', 700, {
             left: `${enemyCenterX}px`,
             top: `${enemyCenterY}px`,
             opacity: '0',
-            transform: 'scale(0.4) rotate(360deg)'
-          });
-        }, i * 40);
+            transform: 'scale(0.8) rotate(720deg)'
+          }, '20px');
+        }, i * 25);
       }
-      setTimeout(() => shakeCard(5, 5), 400);
+      
+      // giant tornado at 900ms
+      setTimeout(() => {
+        const tornado = document.createElement('div');
+        tornado.textContent = '🌪️';
+        tornado.style.position = 'fixed';
+        tornado.style.fontSize = '140px';
+        tornado.style.left = `${enemyCenterX}px`;
+        tornado.style.top = `${enemyCenterY}px`;
+        tornado.style.transform = 'translate(-50%, -50%) rotate(0deg)';
+        tornado.style.zIndex = '11005';
+        tornado.style.pointerEvents = 'none';
+        tornado.style.transition = 'all 700ms ease-out';
+        document.body.appendChild(tornado);
+        
+        requestAnimationFrame(() => {
+          tornado.style.transform = 'translate(-50%, -50%) rotate(1080deg) scale(0.2)';
+          tornado.style.opacity = '0';
+        });
+        
+        shakeCard(22, 16);
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+          ScreenEffects.shake(12, 500);
+        }
+        
+        setTimeout(() => { try { tornado.remove(); } catch(e){} }, 700);
+      }, 900);
 
     } else if (equippedAnim === 'Earthquake Shake') {
-      // Shake violently and raise dust/rocks
-      shakeCard(12, 12);
-      for (let i = 0; i < 12; i++) {
+      // Shake violently
+      shakeCard(26, 32);
+      if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+        ScreenEffects.shake(24, 1600);
+      }
+
+      // Magma Fissure
+      const fissure = document.createElement('div');
+      fissure.style.position = 'fixed';
+      fissure.style.left = `${enemyCenterX}px`;
+      fissure.style.top = `${enemyCenterY + 20}px`;
+      fissure.style.width = '0px';
+      fissure.style.height = '10px';
+      fissure.style.background = 'radial-gradient(ellipse, #ff3700 0%, #000 70%)';
+      fissure.style.border = '2px solid #ffaa00';
+      fissure.style.borderRadius = '50%';
+      fissure.style.transform = 'translate(-50%, -50%)';
+      fissure.style.boxShadow = '0 0 25px #ff3700';
+      fissure.style.zIndex = '10998';
+      fissure.style.pointerEvents = 'none';
+      fissure.style.transition = 'all 1400ms cubic-bezier(0.1, 0.8, 0.3, 1)';
+      document.body.appendChild(fissure);
+      setTimeout(() => {
+        fissure.style.width = '350px';
+        fissure.style.height = '40px';
+        fissure.style.boxShadow = '0 0 45px #ff5500';
+      }, 50);
+      setTimeout(() => {
+        fissure.style.opacity = '0';
+        setTimeout(() => { try { fissure.remove(); } catch(e){} }, 400);
+      }, 1200);
+
+      // Raise rock and dust debris (35 particles)
+      for (let i = 0; i < 35; i++) {
         setTimeout(() => {
-          const rx = rect.left + Math.random() * rect.width;
-          const ry = rect.bottom - 10;
-          createParticle(rx, ry, Math.random() > 0.5 ? '🪨' : '💨', 500, {
-            top: `${ry - 40 - Math.random() * 30}px`,
+          const rx = rect.left - 10 + Math.random() * (rect.width + 20);
+          const ry = rect.bottom;
+          const riseHeight = 60 + Math.random() * 60;
+          createParticle(rx, ry, Math.random() > 0.4 ? '🪨' : '💨', 750, {
+            left: `${rx + (Math.random() - 0.5) * 40}px`,
+            top: `${ry - riseHeight}px`,
             opacity: '0',
-            transform: 'scale(1.2)'
-          });
-        }, i * 40);
+            transform: 'scale(2.2) rotate(360deg)'
+          }, '20px');
+        }, i * 35);
       }
     }
 
-    const duration = options.duration || 900;
+    const duration = options.duration || 1800;
     setTimeout(() => {
       try { icon.remove(); } catch (e) { }
     }, duration);
