@@ -54,6 +54,25 @@
   transform: translateX(-50%) !important;
 }
 
+/* FLOATING STAGE INDICATOR */
+.floating-stage-indicator {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  background: linear-gradient(180deg, rgba(20, 15, 38, 0.98), rgba(8, 6, 18, 0.98));
+  border: 2px solid rgba(161, 92, 255, 0.5);
+  color: #f6df95;
+  padding: 12px 16px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  pointer-events: none; /* read-only */
+  text-align: center;
+}
+
 /* SHOP PANEL */
 .shop-overlay {
   position: fixed;
@@ -716,7 +735,7 @@ body::before {
   justify-content: center;
   pointer-events: none;
   z-index: 35;
-  margin-bottom: 24px;
+  margin-bottom: 55px; /* Pushes the enemy circle container down so the top card does not clip the date/day display */
 }
 
 /* Mutator badge UI */
@@ -978,6 +997,18 @@ body::before {
 
 .enemy-card.elite {
   box-shadow: 0 0 14px rgba(200, 107, 255, 0.7);
+}
+
+.enemy-card.boss {
+  width: 105px;
+  min-height: 115px;
+  font-size: 10.5px;
+  padding: 24px 8px 20px 8px;
+}
+
+.enemy-card.boss .enemy-emoji {
+  font-size: 38px;
+  top: -24px;
 }
 
 .enemy-card.boss-phase-2 {
