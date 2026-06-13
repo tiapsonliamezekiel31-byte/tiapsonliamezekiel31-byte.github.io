@@ -2735,10 +2735,65 @@ class UIManager {
       finalWaitTime = Math.max(finalWaitTime, 1800);
     }
 
-    circle?.classList.remove('checkin-alert');
     if (finalWaitTime > 0) {
       await wait(finalWaitTime + 200);
     }
+
+    // Play pet animations sequentially after Nemesis pressure
+    if (Array.isArray(detail?.petAttacks) && detail.petAttacks.length > 0) {
+      for (const pAttack of detail.petAttacks) {
+        if (token !== this.checkInSequenceToken) return;
+
+        // Show the bold scaled pet animation on the card
+        this.showPetIcon(pAttack.targetId, { duration: 1800 });
+
+        // Get coordinates of the target enemy card
+        const card = document.querySelector(`.enemy-card[data-enemy-id="${pAttack.targetId}"]`);
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        if (card) {
+          if (card.dataset.x) {
+            const circleContainer = document.querySelector('.enemy-circle-container');
+            const circleRect = circleContainer ? circleContainer.getBoundingClientRect() : { left: 0, top: 0 };
+            x = circleRect.left + Number(card.dataset.x);
+            y = circleRect.top + Number(card.dataset.y);
+          } else {
+            const rect = card.getBoundingClientRect();
+            x = rect.left + rect.width / 2;
+            y = rect.top + rect.height / 2;
+          }
+        }
+
+        // Wait 600ms to play impact sound, shake card, and show damage number matching impact visual
+        await new Promise(resolve => {
+          setTimeout(() => {
+            if (token !== this.checkInSequenceToken) {
+              resolve();
+              return;
+            }
+            try { SoundManager.play('pet'); } catch (e) {}
+
+            FloatingDamageNumber.show(x, y - 20, `-${Math.ceil(pAttack.damage)} 🐾`, {
+              color: '#ffaa00',
+              duration: 1800,
+              scale: 1.3,
+              isCrit: true
+            });
+
+            if (card) {
+              card.classList.add('checkin-hit');
+              setTimeout(() => { if (card) card.classList.remove('checkin-hit'); }, 400);
+            }
+            resolve();
+          }, 600);
+        });
+
+        // Wait for pet animation to finish before proceeding (1800ms total duration)
+        await wait(1200);
+      }
+    }
+
+    circle?.classList.remove('checkin-alert');
     state.eventBus.emit(EVENTS.CHECK_IN_ANIMATION_COMPLETE, detail);
   }
 
@@ -3563,6 +3618,7 @@ class UIManager {
     let circleRect = null;
     let currentTargetEnemyId = null;
     let hasDraggedPastDeadzone = false;
+    let targetElement = null;
 
     const clearHighlights = () => {
       document.querySelectorAll('.enemy-card').forEach(card => {
@@ -3613,7 +3669,7 @@ class UIManager {
     const onPointerDown = (event, type) => {
       const state = getGameState();
       const className = state.playerState.className;
-      const targetElement = event.currentTarget;
+      targetElement = event.currentTarget;
 
       // 1. Resource Validation
       if (type === 'attack') {
@@ -3882,6 +3938,7 @@ class UIManager {
       activePointerId = null;
       currentTargetEnemyId = null;
       circleRect = null;
+      targetElement = null;
     };
 
     const setupButton = (btn, type) => {
@@ -6310,14 +6367,31 @@ class UIManager {
   }
 
   static showPetIcon(enemyId, options = {}) {
+    console.log('[showPetIcon] Triggered. enemyId:', enemyId);
     const layer = document.getElementById('enemyLayer');
-    if (!layer) return;
-    const card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
-    if (!card) return;
+    if (!layer) {
+      console.warn('[showPetIcon] #enemyLayer not found');
+      return;
+    }
+    let card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
+    if (!card) {
+      console.log('[showPetIcon] Card not found for enemyId, rendering enemies...');
+      try { this.renderEnemies(); } catch (e) {}
+      card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
+    }
+    if (!card) {
+      console.log('[showPetIcon] Card still not found, trying fallback to first card...');
+      card = layer.querySelector('.enemy-card');
+    }
+    if (!card) {
+      console.warn('[showPetIcon] No enemy card found, aborting animation');
+      return;
+    }
 
     const state = getGameState();
     const petEmoji = (state.playerState && state.playerState.petEmoji) ? state.playerState.petEmoji : '🐶';
     const equippedAnim = state.playerState?.equippedPetAnimation || 'Default';
+    console.log('[showPetIcon] Card found:', card.dataset.enemyId, 'petEmoji:', petEmoji, 'equippedAnim:', equippedAnim);
 
     // Compute positioning
     const rect = card.getBoundingClientRect();
@@ -6375,9 +6449,9 @@ class UIManager {
     icon.style.position = 'fixed';
     icon.style.left = `${enemyCenterX}px`;
     icon.style.top = `${enemyTopY}px`;
-    icon.style.transform = 'translateX(-50%)';
     icon.style.zIndex = '10999';
-    icon.style.fontSize = '24px';
+    icon.style.fontSize = '48px';
+    console.log('[showPetIcon] Appending icon to body. Coordinates:', enemyCenterX, enemyTopY);
     document.body.appendChild(icon);
 
     // 2) EXTRA EXTRAVAGANT EFFECTS
@@ -6386,10 +6460,10 @@ class UIManager {
       for (let i = 1; i <= 8; i++) {
         setTimeout(() => {
           createParticle(enemyCenterX, enemyTopY, petEmoji, 500, {
-            transform: 'translateX(-50%) translateY(60px) scale(1.6)',
+            transform: 'translateX(-50%) translateY(60px) scale(2.8)',
             opacity: '0',
             filter: 'blur(2px)'
-          }, '20px');
+          }, '36px');
         }, i * 60);
       }
       // Slam impact particles at 550ms
@@ -6412,9 +6486,9 @@ class UIManager {
         setTimeout(() => { try { flash.remove(); } catch(e){} }, 350);
 
         createParticle(enemyCenterX, enemyCenterY - 30, '💥', 600, {
-          transform: 'scale(4)',
+          transform: 'scale(6)',
           opacity: '0'
-        }, '50px');
+        }, '80px');
 
         for (let i = 0; i < 24; i++) {
           const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
@@ -6425,8 +6499,8 @@ class UIManager {
             left: `${px + Math.cos(angle) * speed}px`,
             top: `${py + Math.sin(angle) * speed}px`,
             opacity: '0',
-            transform: 'scale(0.5) rotate(180deg)'
-          }, '16px');
+            transform: 'scale(1.0) rotate(180deg)'
+          }, '28px');
         }
       }, 550);
 
@@ -6450,9 +6524,9 @@ class UIManager {
             left: `${enemyCenterX + Math.cos(endAngle) * (radius + 15)}px`,
             top: `${enemyCenterY + Math.sin(endAngle) * (radius + 15)}px`,
             opacity: '0',
-            transform: 'scale(0.8) rotate(180deg)',
+            transform: 'scale(1.5) rotate(180deg)',
             filter: 'drop-shadow(0 0 8px gold)'
-          }, '16px');
+          }, '28px');
         }
         ringCount++;
       }, 90);
@@ -6471,8 +6545,8 @@ class UIManager {
             left: `${px + Math.cos(angle) * speed}px`,
             top: `${py + Math.sin(angle) * speed}px`,
             opacity: '0',
-            transform: 'scale(0.6) rotate(360deg)'
-          }, '20px');
+            transform: 'scale(1.2) rotate(360deg)'
+          }, '32px');
         }
       }, 1300);
 
@@ -6481,19 +6555,19 @@ class UIManager {
       const meteor = document.createElement('div');
       meteor.textContent = '☄️';
       meteor.style.position = 'fixed';
-      meteor.style.fontSize = '160px';
+      meteor.style.fontSize = '280px';
       meteor.style.left = `${enemyCenterX}px`;
       meteor.style.top = `${window.scrollY - 200}px`;
       meteor.style.transform = 'translateX(-50%) rotate(45deg)';
       meteor.style.zIndex = '11005';
       meteor.style.transition = 'all 1100ms cubic-bezier(0.55, 0.055, 0.675, 0.19)';
-      meteor.style.filter = 'drop-shadow(0 0 50px #ff3700) brightness(2.5)';
+      meteor.style.filter = 'drop-shadow(0 0 80px #ff3700) brightness(2.5)';
       document.body.appendChild(meteor);
 
       // Make meteor drop and shrink
       setTimeout(() => {
         meteor.style.top = `${enemyCenterY}px`;
-        meteor.style.fontSize = '40px';
+        meteor.style.fontSize = '80px';
       }, 50);
 
       // Trail of burning smoke (12 particles)
@@ -6502,9 +6576,9 @@ class UIManager {
           const tx = enemyCenterX + (Math.random() - 0.5) * 60;
           const ty = (window.scrollY - 100) + ((enemyCenterY - (window.scrollY - 100)) * (i / 12));
           createParticle(tx, ty, Math.random() > 0.5 ? '🔥' : '💨', 600, {
-            transform: 'scale(2.5) translateY(-40px)',
+            transform: 'scale(4.0) translateY(-40px)',
             opacity: '0'
-          }, '24px');
+          }, '40px');
         }, i * 85);
       }
 
@@ -6560,8 +6634,8 @@ class UIManager {
             left: `${px + Math.cos(angle) * speed}px`,
             top: `${py + Math.sin(angle) * speed + 80}px`,
             opacity: '0',
-            transform: 'scale(1.8) rotate(360deg)'
-          }, '24px');
+            transform: 'scale(3.0) rotate(360deg)'
+          }, '40px');
         }
       }, 1100);
 
@@ -6586,8 +6660,8 @@ class UIManager {
           document.body.appendChild(pulseRing);
 
           setTimeout(() => {
-            pulseRing.style.width = `${rect.width * 5}px`;
-            pulseRing.style.height = `${rect.height * 4}px`;
+            pulseRing.style.width = `${rect.width * 8}px`;
+            pulseRing.style.height = `${rect.height * 7}px`;
             pulseRing.style.opacity = '0';
           }, 50);
           setTimeout(() => { try { pulseRing.remove(); } catch(e){} }, 1150);
@@ -6602,8 +6676,8 @@ class UIManager {
           createParticle(rx, ry, Math.random() > 0.5 ? '🔮' : '✨', 900, {
             top: `${ry - 120}px`,
             opacity: '0',
-            transform: 'scale(2.2) rotate(180deg)'
-          }, '18px');
+            transform: 'scale(3.8) rotate(180deg)'
+          }, '30px');
         }, i * 45);
       }
 
@@ -6635,8 +6709,8 @@ class UIManager {
             left: `${enemyCenterX}px`,
             top: `${enemyCenterY}px`,
             opacity: '0',
-            transform: 'scale(0.8) rotate(720deg)'
-          }, '20px');
+            transform: 'scale(1.6) rotate(720deg)'
+          }, '32px');
         }, i * 25);
       }
       
@@ -6645,7 +6719,7 @@ class UIManager {
         const tornado = document.createElement('div');
         tornado.textContent = '🌪️';
         tornado.style.position = 'fixed';
-        tornado.style.fontSize = '140px';
+        tornado.style.fontSize = '240px';
         tornado.style.left = `${enemyCenterX}px`;
         tornado.style.top = `${enemyCenterY}px`;
         tornado.style.transform = 'translate(-50%, -50%) rotate(0deg)';
@@ -6655,7 +6729,7 @@ class UIManager {
         document.body.appendChild(tornado);
         
         requestAnimationFrame(() => {
-          tornado.style.transform = 'translate(-50%, -50%) rotate(1080deg) scale(0.2)';
+          tornado.style.transform = 'translate(-50%, -50%) rotate(1080deg) scale(0.4)';
           tornado.style.opacity = '0';
         });
         
@@ -6691,9 +6765,9 @@ class UIManager {
       fissure.style.transition = 'all 1400ms cubic-bezier(0.1, 0.8, 0.3, 1)';
       document.body.appendChild(fissure);
       setTimeout(() => {
-        fissure.style.width = '350px';
-        fissure.style.height = '40px';
-        fissure.style.boxShadow = '0 0 45px #ff5500';
+        fissure.style.width = '500px';
+        fissure.style.height = '60px';
+        fissure.style.boxShadow = '0 0 65px #ff5500';
       }, 50);
       setTimeout(() => {
         fissure.style.opacity = '0';
@@ -6710,8 +6784,8 @@ class UIManager {
             left: `${rx + (Math.random() - 0.5) * 40}px`,
             top: `${ry - riseHeight}px`,
             opacity: '0',
-            transform: 'scale(2.2) rotate(360deg)'
-          }, '20px');
+            transform: 'scale(3.8) rotate(360deg)'
+          }, '32px');
         }, i * 35);
       }
     }

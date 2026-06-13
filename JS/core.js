@@ -18,6 +18,10 @@ class EventBus extends EventTarget {
     this.addEventListener(eventName, (e) => handler(e.detail));
   }
   
+  once(eventName, handler) {
+    this.addEventListener(eventName, (e) => handler(e.detail), { once: true });
+  }
+  
   off(eventName, handler) {
     this.removeEventListener(eventName, handler);
   }
@@ -1733,16 +1737,6 @@ function performCheckIn() {
     console.warn('Planner reward claim failed during check-in', e);
   }
 
-  state.eventBus.emit(EVENTS.CHECK_IN_COMPLETE, {
-    missedDailyDamage: D,
-    scaledN: N,
-    lateTodoDamage,
-    plannerClaim,
-    incantations,
-    retaliationSteps,
-    mutatorGains: state._lastCheckinMutatorGains || []
-  });
-
   // 6) Death / Death Defiance handling
   if (state.playerState.hp <= 0) {
     const survived = PlayerManager.checkDeathDefiance();
@@ -1764,6 +1758,45 @@ function performCheckIn() {
       // Do not auto-reset; waiting for player action on death screen
       state.save();
       return;
+    }
+  }
+
+  // 6b) Pet attacks random enemy (before checking if all enemies are dead)
+  const petAttacks = [];
+  if (state.playerState.hp > 0) {
+    try {
+      if (state.playerState.petHunger !== undefined) {
+        state.playerState.petHunger = Math.max(0, state.playerState.petHunger - 20);
+      }
+      const isStarving = (state.playerState.petHunger === 0);
+      const basePct = 0.02 + (state.playerState.level - 1) * 0.01;
+      const upgradePct = (state.playerState.petUpgradeLevel || 0) * 0.015;
+      const petBase = isStarving ? 0 : (state.playerState.maxAp * (basePct + upgradePct));
+
+      const petMultiplier = (state.playerState.className === 'Druid')
+        ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
+
+      const petDamage = petBase * petMultiplier;
+      
+      const skillFx = state.combatState?.skillEffects || {};
+      const petAttacksCount = skillFx.shadowPet ? 2 : 1;
+
+      for (let i = 0; i < petAttacksCount; i++) {
+        const alive = StageManager.getAliveEnemies();
+        if (alive.length > 0) {
+          const target = alive[Math.floor(Math.random() * alive.length)];
+          target.takeDamage(petDamage);
+
+          // Persist today's pet target so a badge is shown for the rest of the day
+          const now = new Date();
+          const today = now.toISOString().slice(0, 10); // YYYY-MM-DD
+          state.playerState.petTarget = { enemyId: target.id, date: today };
+
+          petAttacks.push({ targetId: target.id, damage: petDamage });
+        }
+      }
+    } catch (petErr) {
+      console.warn('Pet attack failed during check-in', petErr);
     }
   }
 
@@ -1849,171 +1882,115 @@ function performCheckIn() {
     console.warn('Failed to reset dailies during check-in', e);
   }
 
-    // 9) Delayed: Regenerate mana/hp per-class daily effects
-    // Delay regen slightly so retaliation damage is visible in the UI first
-    const doDailyRegenAndSave = async () => {
+  // 9) Emit CHECK_IN_COMPLETE with the calculated pet attacks
+  state.eventBus.emit(EVENTS.CHECK_IN_COMPLETE, {
+    missedDailyDamage: D,
+    scaledN: N,
+    lateTodoDamage,
+    plannerClaim,
+    incantations,
+    retaliationSteps,
+    petAttacks,
+    mutatorGains: state._lastCheckinMutatorGains || []
+  });
+
+  // 10) Delayed regeneration & final UI updates (registered to run after animation)
+  const doDailyRegenAndSave = async () => {
+    try {
+      PlayerManager.applyDailyRegeneration();
+
+      // Mutator: Regenerator - heal enemies with regenerator mutator at check-in
       try {
-        PlayerManager.applyDailyRegeneration();
-
-        // Mutator: Regenerator - heal enemies with regenerator mutator at check-in
-        try {
-          const enemies = state.stageState.enemies || [];
-          const regenPct = state.config.mutators?.regenerator?.regenPct ?? 0.1;
-          enemies.forEach(e => {
-            if (!e || e.isDead || !Array.isArray(e.mutators)) return;
-            if (e.mutators.includes('regenerator')) {
-              const healAmt = Math.ceil((e.maxHp || 0) * regenPct);
-              if (healAmt > 0 && typeof e.heal === 'function') {
-                e.heal(healAmt);
-                try { state.eventBus.emit(EVENTS.ENEMY_HEALED, { enemyId: e.id, amount: healAmt, source: 'mutator:regenerator' }); } catch (e) {}
-              }
+        const enemies = state.stageState.enemies || [];
+        const regenPct = state.config.mutators?.regenerator?.regenPct ?? 0.1;
+        enemies.forEach(e => {
+          if (!e || e.isDead || !Array.isArray(e.mutators)) return;
+          if (e.mutators.includes('regenerator')) {
+            const healAmt = Math.ceil((e.maxHp || 0) * regenPct);
+            if (healAmt > 0 && typeof e.heal === 'function') {
+              e.heal(healAmt);
+              try { state.eventBus.emit(EVENTS.ENEMY_HEALED, { enemyId: e.id, amount: healAmt, source: 'mutator:regenerator' }); } catch (e) {}
             }
-          });
-        } catch (e) {
-          console.warn('Regenerator mutator heal failed', e);
-        }
-
-        // 10) Nemesis gains attribute points (70% of total possible daily attr + pending todo gains)
-        try {
-          const baneFactor = state.hasBuff('Nemesis Bane')
-            ? (state.config.buffs?.['Nemesis Bane']?.effect?.nemesisAttrReduction ?? 0.5)
-            : 1;
-          const gainFactor = 0.7 * (typeof baneFactor === 'number' ? baneFactor : 1);
-
-          (state.dailiesState.dailies || []).forEach(daily => {
-            const reward = state.config.taskRewards?.[daily.difficulty];
-            const pts = (reward?.attributePoints ?? 0) * gainFactor;
-            if (pts > 0) state.addNemesisAttributePoints(daily.attribute, pts);
-          });
-
-          const nearTodos = TaskManager.getUncompletedTodosNearDeadline(state.config.nemesisTodoGainHours || 24);
-          (nearTodos || []).forEach(todo => {
-            if (todo.nemesisGained) return;
-            const reward = state.config.taskRewards?.[todo.difficulty];
-            const pts = (reward?.attributePoints ?? 0) * gainFactor;
-            if (pts > 0) state.addNemesisAttributePoints(todo.attribute, pts);
-            todo.nemesisGained = true;
-          });
-        } catch (e) {
-          console.warn('Nemesis attribute gain failed during check-in', e);
-        }
-
-        // Pet attacks random enemy at the end of check-in sequence if player is alive
-        if (state.playerState.hp > 0) {
-          try {
-            if (state.playerState.petHunger !== undefined) {
-              state.playerState.petHunger = Math.max(0, state.playerState.petHunger - 20);
-            }
-            const isStarving = (state.playerState.petHunger === 0);
-            const basePct = 0.02 + (state.playerState.level - 1) * 0.01;
-            const upgradePct = (state.playerState.petUpgradeLevel || 0) * 0.015;
-            const petBase = isStarving ? 0 : (state.playerState.maxAp * (basePct + upgradePct));
-
-            const petMultiplier = (state.playerState.className === 'Druid')
-              ? (state.config.classPassives.Druid?.petDamageMultiplier || 1) : 1;
-
-            const petDamage = petBase * petMultiplier;
-            
-            // Druid shadowPet skill allows pet to attack twice today
-            const skillFx = state.combatState?.skillEffects || {};
-            const petAttacksCount = skillFx.shadowPet ? 2 : 1;
-
-            for (let i = 0; i < petAttacksCount; i++) {
-              const alive = StageManager.getAliveEnemies();
-              if (alive.length > 0) {
-                const target = alive[Math.floor(Math.random() * alive.length)];
-                target.takeDamage(petDamage);
-                state.eventBus.emit(EVENTS.ATTACK, { type: 'pet', damage: petDamage, targetId: target.id });
-                if (i < petAttacksCount - 1) {
-                  await new Promise(r => setTimeout(r, 2000));
-                }
-              }
-            }
-          } catch (petErr) {
-            console.warn('Pet attack failed during check-in', petErr);
           }
-        }
-
-        // Persist and refresh UI after regen and attacks
-        clearCheckInRunning();
-        state.save();
-        if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
-
-        // Show pet hunger warning if pet is under 30% hunger and player is alive
-        if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
-          const petHunger = state.playerState.petHunger;
-          let msg = '';
-          if (petHunger === 0) {
-            msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
-          } else {
-            msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
-          }
-          setTimeout(() => {
-            if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
-              PopupsManager.showAlert('PET HUNGER WARNING', msg);
-            }
-          }, 2000);
-        }
+        });
       } catch (e) {
-        console.warn('Daily regeneration failed during check-in', e);
-        clearCheckInRunning();
-        state.save();
-        if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
-
-        // Show pet hunger warning if pet is under 30% hunger and player is alive (fallback on regen failure)
-        if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
-          const petHunger = state.playerState.petHunger;
-          let msg = '';
-          if (petHunger === 0) {
-            msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
-          } else {
-            msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
-          }
-          setTimeout(() => {
-            if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
-              PopupsManager.showAlert('PET HUNGER WARNING', msg);
-            }
-          }, 2000);
-        }
+        console.warn('Regenerator mutator heal failed', e);
       }
-    };
 
-    // Run daily regeneration and pet attacks sequentially after check-in animation completes
-    state.eventBus.once(EVENTS.CHECK_IN_ANIMATION_COMPLETE, () => {
-      setTimeout(doDailyRegenAndSave, 300);
-    });
+      // Nemesis gains attribute points (70% of total possible daily attr + pending todo gains)
+      try {
+        const baneFactor = state.hasBuff('Nemesis Bane')
+          ? (state.config.buffs?.['Nemesis Bane']?.effect?.nemesisAttrReduction ?? 0.5)
+          : 1;
+        const gainFactor = 0.7 * (typeof baneFactor === 'number' ? baneFactor : 1);
 
-    // 10) Nemesis gains attribute points (moved into delayed block)
-  try {
-    const baneFactor = state.hasBuff('Nemesis Bane')
-      ? (state.config.buffs?.['Nemesis Bane']?.effect?.nemesisAttrReduction ?? 0.5)
-      : 1;
-    const gainFactor = 0.7 * (typeof baneFactor === 'number' ? baneFactor : 1);
+        (state.dailiesState.dailies || []).forEach(daily => {
+          const reward = state.config.taskRewards?.[daily.difficulty];
+          const pts = (reward?.attributePoints ?? 0) * gainFactor;
+          if (pts > 0) state.addNemesisAttributePoints(daily.attribute, pts);
+        });
 
-    (state.dailiesState.dailies || []).forEach(daily => {
-      const reward = state.config.taskRewards?.[daily.difficulty];
-      const pts = (reward?.attributePoints ?? 0) * gainFactor;
-      if (pts > 0) state.addNemesisAttributePoints(daily.attribute, pts);
-    });
+        const nearTodos = TaskManager.getUncompletedTodosNearDeadline(state.config.nemesisTodoGainHours || 24);
+        (nearTodos || []).forEach(todo => {
+          if (todo.nemesisGained) return;
+          const reward = state.config.taskRewards?.[todo.difficulty];
+          const pts = (reward?.attributePoints ?? 0) * gainFactor;
+          if (pts > 0) state.addNemesisAttributePoints(todo.attribute, pts);
+          todo.nemesisGained = true;
+        });
+      } catch (e) {
+        console.warn('Nemesis attribute gain failed during check-in', e);
+      }
 
-    const nearTodos = TaskManager.getUncompletedTodosNearDeadline(state.config.nemesisTodoGainHours || 24);
-    (nearTodos || []).forEach(todo => {
-      if (todo.nemesisGained) return;
-      const reward = state.config.taskRewards?.[todo.difficulty];
-      const pts = (reward?.attributePoints ?? 0) * gainFactor;
-      if (pts > 0) state.addNemesisAttributePoints(todo.attribute, pts);
-      todo.nemesisGained = true;
-    });
-  } catch (e) {
-    console.warn('Nemesis attribute gain failed during check-in', e);
-  }
+      // Clear check-in running state, persist and reload UI
+      clearCheckInRunning();
+      state.save();
+      if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
 
-  // 10) Persist and refresh UI
-  clearCheckInRunning();
-  state.save();
-  if (typeof UIManager !== 'undefined') {
-    UIManager.refreshGameUI();
-  }
+      // Show pet hunger warning if pet is under 30% hunger and player is alive
+      if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
+        const petHunger = state.playerState.petHunger;
+        let msg = '';
+        if (petHunger === 0) {
+          msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
+        } else {
+          msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
+        }
+        setTimeout(() => {
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+            PopupsManager.showAlert('PET HUNGER WARNING', msg);
+          }
+        }, 2000);
+      }
+    } catch (e) {
+      console.warn('Daily regeneration failed during check-in', e);
+      clearCheckInRunning();
+      state.save();
+      if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+
+      // Show pet hunger warning if pet is under 30% hunger and player is alive (fallback on regen failure)
+      if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {
+        const petHunger = state.playerState.petHunger;
+        let msg = '';
+        if (petHunger === 0) {
+          msg = 'Your pet is starving (0% hunger) and deals 0 damage! Feed it in the Pet Evolution tab to restore its strength.';
+        } else {
+          msg = `Your pet is hungry (${petHunger}% hunger)! Feed it in the Pet Evolution tab to prevent starvation and loss of damage.`;
+        }
+        setTimeout(() => {
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+            PopupsManager.showAlert('PET HUNGER WARNING', msg);
+          }
+        }, 2000);
+      }
+    }
+  };
+
+  // Run daily regeneration sequentially after check-in animation completes
+  state.eventBus.once(EVENTS.CHECK_IN_ANIMATION_COMPLETE, () => {
+    setTimeout(doDailyRegenAndSave, 300);
+  });
 
   return true;
 }
+
