@@ -1987,47 +1987,105 @@ class UIManager {
   }
 
   static playBossAttackAnimation(bossName, isPhase2, attackType) {
-    const state = getGameState();
-    const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
-    let animName = isPhase2 ? (bossCfg.p2Anim || 'Glitch Invert') : (bossCfg.p1Anim || 'Slam Wave');
-    let color = bossCfg.color || '#ff0000';
-
-    // Map specific attack types to their themed retro animations
-    if (attackType === 'crit') {
-      animName = 'Glitch Invert';
-      color = '#ff3b30'; // Bright red for critical
-    } else if (attackType === 'corrosive') {
-      animName = 'Pixel Rain';
-      color = '#34c759'; // Green for corrosive spit
-    } else if (attackType === 'heavy') {
-      animName = 'Slam Wave';
-      color = '#ffcc00'; // Amber/Yellow for heavy slam
-    } else if (attackType === 'heal') {
-      animName = 'Orb Burst';
-      color = '#ff2d55'; // Pink/Rose for healing
-    } else if (attackType === 'bomb') {
-      animName = 'Rage Pulse';
-      color = '#af52de'; // Purple for bomb summon
-    } else if (attackType === 'minion') {
-      animName = 'Energy Beam';
-      color = '#5856d6'; // Indigo for minion warp
-    }
-    
     const card = document.querySelector(`.enemy-card[data-enemy-id="boss"]`) || document.querySelector(`.enemy-card`);
     if (!card) return;
-    
-    if (animName === 'Slam Wave' && typeof RetroSlamWaveAnimation !== 'undefined') {
-      RetroSlamWaveAnimation.play(card, color);
-    } else if (animName === 'Glitch Invert' && typeof RetroGlitchInvertAnimation !== 'undefined') {
-      RetroGlitchInvertAnimation.play(color);
-    } else if (animName === 'Energy Beam' && typeof RetroEnergyBeamAnimation !== 'undefined') {
-      RetroEnergyBeamAnimation.play(card, color);
-    } else if (animName === 'Orb Burst' && typeof RetroOrbBurstAnimation !== 'undefined') {
-      RetroOrbBurstAnimation.play(card, color);
-    } else if (animName === 'Pixel Rain' && typeof RetroPixelRainAnimation !== 'undefined') {
-      RetroPixelRainAnimation.play(color);
-    } else if (animName === 'Rage Pulse' && typeof RetroRagePulseAnimation !== 'undefined') {
-      RetroRagePulseAnimation.play(card, color);
+
+    const nameLower = (bossName || '').toLowerCase();
+    let intensity = 1.0;
+    if (attackType === 'crit' || attackType === 'heavy' || attackType === 'bomb') {
+      intensity = 1.5;
+    }
+
+    if (nameLower.includes('demon')) {
+      const color = attackType === 'crit' ? '#ff2222' : '#ff4400';
+      if (typeof RetroHellfireAnimation !== 'undefined') {
+        RetroHellfireAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('marcher')) {
+      const color = attackType === 'heal' ? '#d4af37' : '#ffb33f';
+      if (typeof RetroSandstormAnimation !== 'undefined') {
+        RetroSandstormAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('wizard')) {
+      const color = attackType === 'crit' ? '#bf5af2' : '#8a2be2';
+      if (typeof RetroMagicCircleAnimation !== 'undefined') {
+        RetroMagicCircleAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('worm')) {
+      const color = attackType === 'corrosive' ? '#32cd32' : '#22c55e';
+      if (typeof RetroAcidSplashAnimation !== 'undefined') {
+        RetroAcidSplashAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('giant')) {
+      const color = attackType === 'heavy' ? '#00a86b' : '#34c759';
+      if (typeof RetroEarthShatterAnimation !== 'undefined') {
+        RetroEarthShatterAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('computer')) {
+      const color = attackType === 'bomb' ? '#64ffda' : '#00ffff';
+      if (typeof RetroMatrixRainAnimation !== 'undefined') {
+        RetroMatrixRainAnimation.play(color, intensity);
+      }
+    } else if (nameLower.includes('angel')) {
+      const color = attackType === 'crit' ? '#ffffff' : '#fdfd96';
+      if (typeof RetroHolyBeamAnimation !== 'undefined') {
+        RetroHolyBeamAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('queen')) {
+      const color = attackType === 'crit' ? '#ff3366' : '#ff00ff';
+      if (typeof RetroRoyalCrownBurstAnimation !== 'undefined') {
+        RetroRoyalCrownBurstAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('shark')) {
+      const color = attackType === 'crit' ? '#dc143c' : '#ff3b30';
+      if (typeof RetroBloodTideAnimation !== 'undefined') {
+        RetroBloodTideAnimation.play(color, intensity);
+      }
+    } else if (nameLower.includes('turtle')) {
+      const color = attackType === 'heavy' ? '#ff9a2e' : '#ff4500';
+      if (typeof RetroLavaSpitAnimation !== 'undefined') {
+        RetroLavaSpitAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('king')) {
+      const color = attackType === 'minion' ? '#4b0082' : '#8a2be2';
+      if (typeof RetroSpectralSwordsAnimation !== 'undefined') {
+        RetroSpectralSwordsAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('sun')) {
+      const color = attackType === 'crit' ? '#ffd700' : '#ffcc00';
+      if (typeof RetroSolarFlareAnimation !== 'undefined') {
+        RetroSolarFlareAnimation.play(card, color, intensity);
+      }
+    } else if (nameLower.includes('nemesis')) {
+      const color = attackType === 'crit' ? '#d500f9' : (attackType === 'heavy' ? '#4a0e4e' : '#a855f7');
+      if (typeof RetroVoidBlackHoleAnimation !== 'undefined') {
+        RetroVoidBlackHoleAnimation.play(card, color, intensity);
+      }
+    } else {
+      // Fallback animations
+      let animName = isPhase2 ? 'Glitch Invert' : 'Slam Wave';
+      let color = '#ff3b30';
+
+      if (attackType === 'crit') { animName = 'Glitch Invert'; color = '#ff3b30'; }
+      else if (attackType === 'corrosive') { animName = 'Pixel Rain'; color = '#34c759'; }
+      else if (attackType === 'heavy') { animName = 'Slam Wave'; color = '#ffcc00'; }
+      else if (attackType === 'heal') { animName = 'Orb Burst'; color = '#ff2d55'; }
+      else if (attackType === 'bomb') { animName = 'Rage Pulse'; color = '#af52de'; }
+      else if (attackType === 'minion') { animName = 'Energy Beam'; color = '#5856d6'; }
+
+      if (animName === 'Slam Wave' && typeof RetroSlamWaveAnimation !== 'undefined') {
+        RetroSlamWaveAnimation.play(card, color);
+      } else if (animName === 'Glitch Invert' && typeof RetroGlitchInvertAnimation !== 'undefined') {
+        RetroGlitchInvertAnimation.play(color);
+      } else if (animName === 'Energy Beam' && typeof RetroEnergyBeamAnimation !== 'undefined') {
+        RetroEnergyBeamAnimation.play(card, color);
+      } else if (animName === 'Orb Burst' && typeof RetroOrbBurstAnimation !== 'undefined') {
+        RetroOrbBurstAnimation.play(card, color);
+      } else if (animName === 'Pixel Rain' && typeof RetroPixelRainAnimation !== 'undefined') {
+        RetroPixelRainAnimation.play(color);
+      } else if (animName === 'Rage Pulse' && typeof RetroRagePulseAnimation !== 'undefined') {
+        RetroRagePulseAnimation.play(card, color);
+      }
     }
   }
 

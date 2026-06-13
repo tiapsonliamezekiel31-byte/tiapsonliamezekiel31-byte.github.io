@@ -2269,3 +2269,761 @@ class RetroRagePulseAnimation {
   }
 }
 
+class RetroHellfireAnimation {
+  static play(cardElement, color = '#ff4400', intensity = 1) {
+    const container = document.body;
+    const count = Math.round(30 * intensity);
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(12 * intensity, 400);
+    }
+    
+    // Spawn rising fire pixel columns
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const fire = document.createElement('div');
+        const size = 12 + Math.random() * 20;
+        const left = Math.random() * 100;
+        fire.style.cssText = `
+          position: fixed;
+          left: ${left}vw;
+          bottom: -50px;
+          width: ${size}px;
+          height: ${size * 2}px;
+          background: linear-gradient(to top, ${color}, #ffcc00, transparent);
+          box-shadow: 0 0 15px ${color};
+          border-radius: 4px;
+          pointer-events: none;
+          z-index: 13200;
+          will-change: transform, opacity;
+          opacity: 0.9;
+        `;
+        container.appendChild(fire);
+
+        const start = performance.now();
+        const duration = 600 + Math.random() * 500;
+        const driftX = (Math.random() - 0.5) * 100;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const y = progress * -(window.innerHeight + 100);
+          const x = Math.sin(progress * Math.PI * 2) * driftX;
+          fire.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${1 - progress * 0.5})`;
+          fire.style.opacity = 0.9 * (1 - progress);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            fire.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, Math.random() * 300);
+    }
+  }
+}
+
+class RetroSandstormAnimation {
+  static play(cardElement, color = '#d4af37', intensity = 1) {
+    const container = document.body;
+    const count = Math.round(25 * intensity);
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(6 * intensity, 600);
+    }
+
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const sand = document.createElement('div');
+        const size = 6 + Math.random() * 10;
+        const top = Math.random() * 100;
+        sand.style.cssText = `
+          position: fixed;
+          left: -50px;
+          top: ${top}vh;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          box-shadow: 0 0 5px ${color};
+          pointer-events: none;
+          z-index: 13200;
+          will-change: transform, opacity;
+          opacity: 0.8;
+          border-radius: 20%;
+        `;
+        container.appendChild(sand);
+
+        const start = performance.now();
+        const duration = 800 + Math.random() * 600;
+        const startY = top;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const x = progress * (window.innerWidth + 100);
+          const y = Math.sin(progress * Math.PI * 4) * 40;
+          sand.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${progress * 360}deg)`;
+          sand.style.opacity = 0.8 * (1 - progress);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            sand.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, Math.random() * 400);
+    }
+  }
+}
+
+class RetroMagicCircleAnimation {
+  static play(cardElement, color = '#8a2be2', intensity = 1) {
+    if (!cardElement) return;
+    const rect = cardElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const container = document.body;
+
+    const div = document.createElement('div');
+    const size = Math.max(rect.width, rect.height) * 1.6;
+    div.style.cssText = `
+      position: fixed;
+      left: ${cx - size/2}px;
+      top: ${cy - size/2}px;
+      width: ${size}px;
+      height: ${size}px;
+      pointer-events: none;
+      z-index: 13100;
+      will-change: transform, opacity;
+      transform: scale(0.1) rotate(0deg);
+      opacity: 0;
+      transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms;
+    `;
+
+    // Neon glowing SVG magic circle design
+    div.innerHTML = `
+      <svg viewBox="0 0 100 100" style="width: 100%; height: 100%;">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="${color}" stroke-width="2.5" stroke-dasharray="6,4" />
+        <circle cx="50" cy="50" r="38" fill="none" stroke="${color}" stroke-width="1" />
+        <polygon points="50,15 80,70 20,70" fill="none" stroke="${color}" stroke-width="1.5" />
+        <polygon points="50,85 80,30 20,30" fill="none" stroke="${color}" stroke-width="1.5" />
+        <circle cx="50" cy="50" r="15" fill="none" stroke="${color}" stroke-width="1" stroke-dasharray="2,2" />
+      </svg>
+    `;
+    container.appendChild(div);
+
+    requestAnimationFrame(() => {
+      div.style.transform = 'scale(1) rotate(45deg)';
+      div.style.opacity = '0.9';
+    });
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(8 * intensity, 300);
+    }
+
+    setTimeout(() => {
+      // Spinning expand & burst
+      div.style.transition = 'transform 400ms ease-in, opacity 400ms';
+      div.style.transform = 'scale(1.8) rotate(360deg)';
+      div.style.opacity = '0';
+      if (typeof RetroOrbBurstAnimation !== 'undefined') {
+        RetroOrbBurstAnimation.play(cardElement, color);
+      }
+      setTimeout(() => div.remove(), 400);
+    }, 800);
+  }
+}
+
+class RetroAcidSplashAnimation {
+  static play(cardElement, color = '#32cd32', intensity = 1) {
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      cx = rect.left + rect.width / 2;
+      cy = rect.top + rect.height / 2;
+    }
+    const container = document.body;
+    const count = Math.round(20 * intensity);
+
+    for (let i = 0; i < count; i++) {
+      const drop = document.createElement('div');
+      const size = 6 + Math.random() * 8;
+      drop.style.cssText = `
+        position: fixed;
+        left: ${cx}px;
+        top: ${cy}px;
+        width: ${size}px;
+        height: ${size * 1.5}px;
+        background: ${color};
+        box-shadow: 0 0 8px ${color};
+        border-radius: 50% 50% 40% 40%;
+        pointer-events: none;
+        z-index: 13300;
+        will-change: transform, opacity;
+      `;
+      container.appendChild(drop);
+
+      const angle = (Math.random() * Math.PI) - Math.PI; // Upwards spread
+      const speed = 4 + Math.random() * 8;
+      const vx = Math.cos(angle) * speed;
+      let vy = Math.sin(angle) * speed - 2;
+
+      const start = performance.now();
+      const duration = 600 + Math.random() * 300;
+
+      const animate = () => {
+        const progress = Math.min(1, (performance.now() - start) / duration);
+        // Gravity effect
+        vy += 0.35;
+        const curX = cx + vx * (progress * 25);
+        const curY = cy + vy * (progress * 25) + (0.5 * 0.35 * Math.pow(progress * 25, 2));
+
+        drop.style.transform = `translate3d(${curX}px, ${curY}px, 0) scale(${1 - progress * 0.4})`;
+        drop.style.opacity = 1 - progress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          drop.remove();
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }
+}
+
+class RetroEarthShatterAnimation {
+  static play(cardElement, color = '#00a86b', intensity = 1) {
+    const container = document.body;
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(22 * intensity, 500);
+    }
+    
+    // Create rising ground rocks
+    const shardCount = Math.round(15 * intensity);
+    for (let i = 0; i < shardCount; i++) {
+      const shard = document.createElement('div');
+      const size = 15 + Math.random() * 25;
+      const left = Math.random() * 100;
+      shard.style.cssText = `
+        position: fixed;
+        left: ${left}vw;
+        bottom: -40px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        border: 2px solid #332211;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        pointer-events: none;
+        z-index: 13250;
+        will-change: transform, opacity;
+        transform: rotate(${Math.random() * 360}deg);
+      `;
+      container.appendChild(shard);
+
+      const start = performance.now();
+      const duration = 500 + Math.random() * 400;
+      const jumpHeight = 100 + Math.random() * 250;
+
+      const animate = () => {
+        const progress = Math.min(1, (performance.now() - start) / duration);
+        // Parabolic arc for rock throw
+        const y = -Math.sin(progress * Math.PI) * jumpHeight;
+        shard.style.transform = `translate3d(0, ${y}px, 0) rotate(${progress * 720}deg)`;
+        shard.style.opacity = 1 - Math.pow(progress, 3);
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          shard.remove();
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }
+}
+
+class RetroMatrixRainAnimation {
+  static play(color = '#00ffff', intensity = 1) {
+    const container = document.body;
+    const columns = Math.floor(window.innerWidth / 25);
+    const speedScale = intensity;
+
+    for (let i = 0; i < columns; i += 2) {
+      if (Math.random() > 0.6) continue;
+      setTimeout(() => {
+        const stream = document.createElement('div');
+        stream.style.cssText = `
+          position: fixed;
+          left: ${i * 25}px;
+          top: -150px;
+          font-family: monospace;
+          font-size: 14px;
+          color: ${color};
+          text-shadow: 0 0 8px ${color};
+          white-space: nowrap;
+          pointer-events: none;
+          z-index: 13150;
+          will-change: transform, opacity;
+          writing-mode: vertical-rl;
+        `;
+        // Generate random binary sequence
+        let str = '';
+        const len = 5 + Math.floor(Math.random() * 10);
+        for (let j = 0; j < len; j++) str += Math.random() > 0.5 ? '1' : '0';
+        stream.textContent = str;
+        container.appendChild(stream);
+
+        const start = performance.now();
+        const duration = (800 + Math.random() * 800) / speedScale;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const y = progress * (window.innerHeight + 200);
+          stream.style.transform = `translate3d(0, ${y}px, 0)`;
+          stream.style.opacity = 1 - progress;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            stream.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, Math.random() * 500);
+    }
+  }
+}
+
+class RetroHolyBeamAnimation {
+  static play(cardElement, color = '#ffffff', intensity = 1) {
+    const container = document.body;
+    const beamCount = Math.round(5 * intensity);
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(8 * intensity, 400);
+    }
+
+    for (let i = 0; i < beamCount; i++) {
+      setTimeout(() => {
+        const beam = document.createElement('div');
+        const startX = Math.random() * window.innerWidth;
+        const angle = -45 + Math.random() * 90;
+        beam.style.cssText = `
+          position: fixed;
+          left: ${startX}px;
+          top: -100px;
+          width: 60px;
+          height: ${window.innerHeight + 300}px;
+          background: linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent);
+          box-shadow: 0 0 25px ${color};
+          pointer-events: none;
+          z-index: 13450;
+          opacity: 0;
+          will-change: transform, opacity;
+          transform: rotate(${angle}deg) scaleX(0.1);
+          transform-origin: top center;
+        `;
+        container.appendChild(beam);
+
+        const start = performance.now();
+        const duration = 500;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          let scaleX = 0.1;
+          let opacity = 0;
+          if (progress < 0.25) {
+            scaleX = 0.1 + (progress / 0.25) * 0.9;
+            opacity = progress / 0.25;
+          } else if (progress < 0.75) {
+            scaleX = 1.0;
+            opacity = 1.0;
+          } else {
+            scaleX = 1.0 - (progress - 0.75) / 0.25;
+            opacity = 1.0 - (progress - 0.75) / 0.25;
+          }
+
+          beam.style.transform = `rotate(${angle}deg) scaleX(${scaleX})`;
+          beam.style.opacity = opacity;
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            beam.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, i * 120);
+    }
+  }
+}
+
+class RetroRoyalCrownBurstAnimation {
+  static play(cardElement, color = '#ff00ff', intensity = 1) {
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      cx = rect.left + rect.width / 2;
+      cy = rect.top + rect.height / 2;
+    }
+    const container = document.body;
+    const count = Math.round(16 * intensity);
+
+    for (let i = 0; i < count; i++) {
+      const crown = document.createElement('div');
+      const size = 18 + Math.random() * 10;
+      crown.style.cssText = `
+        position: fixed;
+        left: ${cx - size/2}px;
+        top: ${cy - size/2}px;
+        width: ${size}px;
+        height: ${size}px;
+        pointer-events: none;
+        z-index: 13350;
+        will-change: transform, opacity;
+      `;
+      // Crown retro blocky SVG shape
+      crown.innerHTML = `
+        <svg viewBox="0 0 24 24" style="width: 100%; height: 100%;">
+          <path d="M2 4l3 5 7-6 7 6 3-5v14H2V4z" fill="${color}" stroke="#ffffff" stroke-width="1.5" />
+        </svg>
+      `;
+      container.appendChild(crown);
+
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 3 + Math.random() * 5;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+
+      const start = performance.now();
+      const duration = 600 + Math.random() * 300;
+
+      const animate = () => {
+        const progress = Math.min(1, (performance.now() - start) / duration);
+        const curX = cx + vx * (progress * 35);
+        const curY = cy + vy * (progress * 35);
+        const rot = progress * 360;
+
+        crown.style.transform = `translate3d(${curX - cx}px, ${curY - cy}px, 0) rotate(${rot}deg) scale(${1 - progress})`;
+        crown.style.opacity = 1 - progress;
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          crown.remove();
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }
+}
+
+class RetroBloodTideAnimation {
+  static play(color = '#dc143c', intensity = 1) {
+    const container = document.body;
+    const wave = document.createElement('div');
+    wave.style.cssText = `
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: -100px;
+      height: 100px;
+      background: ${color};
+      box-shadow: 0 0 30px ${color};
+      pointer-events: none;
+      z-index: 13500;
+      will-change: transform, opacity;
+      opacity: 0.85;
+    `;
+    container.appendChild(wave);
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(15 * intensity, 500);
+    }
+
+    const start = performance.now();
+    const duration = 700;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      let y = 0;
+      let opacity = 0.85;
+
+      if (progress < 0.3) {
+        // Wave surges upward
+        y = (progress / 0.3) * -220;
+      } else if (progress < 0.7) {
+        // Hold high and shake
+        y = -220 + Math.sin(progress * Math.PI * 10) * 10;
+      } else {
+        // Wave retreats down
+        y = -220 + ((progress - 0.7) / 0.3) * 220;
+        opacity = 0.85 * (1 - (progress - 0.7) / 0.3);
+      }
+
+      wave.style.transform = `translate3d(0, ${y}px, 0)`;
+      wave.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        wave.remove();
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+class RetroLavaSpitAnimation {
+  static play(cardElement, color = '#ff4500', intensity = 1) {
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      cx = rect.left + rect.width / 2;
+      cy = rect.top + rect.height / 2;
+    }
+    const container = document.body;
+
+    const ball = document.createElement('div');
+    const size = 25 * intensity;
+    ball.style.cssText = `
+      position: fixed;
+      left: ${cx - size/2}px;
+      top: ${cy - size/2}px;
+      width: ${size}px;
+      height: ${size}px;
+      background: radial-gradient(circle, #ffffff 0%, ${color} 60%, transparent 100%);
+      box-shadow: 0 0 20px ${color};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 13600;
+      will-change: transform, opacity;
+    `;
+    container.appendChild(ball);
+
+    const targetX = window.innerWidth / 2;
+    const targetY = window.innerHeight * 0.7; // Target user's area
+
+    const start = performance.now();
+    const duration = 600;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      // Quadratic bezier trajectory (arc up)
+      const currentX = cx + (targetX - cx) * progress;
+      const linearY = cy + (targetY - cy) * progress;
+      const arcY = linearY - Math.sin(progress * Math.PI) * 150;
+
+      ball.style.transform = `translate3d(${currentX - cx}px, ${arcY - cy}px, 0) scale(${1 + progress * 0.5})`;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        ball.remove();
+        // Trigger splash burst explosion on impact
+        if (typeof RetroOrbBurstAnimation !== 'undefined') {
+          RetroOrbBurstAnimation.play(null, color);
+        }
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+          ScreenEffects.shake(14 * intensity, 250);
+        }
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+class RetroSpectralSwordsAnimation {
+  static play(cardElement, color = '#8a2be2', intensity = 1) {
+    const container = document.body;
+    const count = Math.round(8 * intensity);
+
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const sword = document.createElement('div');
+        const sizeW = 12;
+        const sizeH = 45;
+        const left = Math.random() * 80 + 10;
+        const startY = -60;
+        
+        sword.style.cssText = `
+          position: fixed;
+          left: ${left}vw;
+          top: ${startY}px;
+          width: ${sizeW}px;
+          height: ${sizeH}px;
+          pointer-events: none;
+          z-index: 13400;
+          will-change: transform, opacity;
+          opacity: 0.9;
+        `;
+        // Blocky pixel-art SVG sword pointing down
+        sword.innerHTML = `
+          <svg viewBox="0 0 10 30" style="width: 100%; height: 100%;">
+            <path d="M4 0h2v18H4zm3 18v2H3v-2zm1 2v2H2v-2zm-3 2h2v4H4z" fill="${color}" stroke="#ffffff" stroke-width="0.8" />
+          </svg>
+        `;
+        container.appendChild(sword);
+
+        const start = performance.now();
+        const duration = 400;
+        const targetY = window.innerHeight * 0.7 + Math.random() * 100;
+
+        const animate = () => {
+          const progress = Math.min(1, (performance.now() - start) / duration);
+          const y = startY + progress * (targetY - startY);
+          sword.style.transform = `translate3d(0, ${y}px, 0)`;
+          sword.style.opacity = 0.9 * (1 - progress * 0.2);
+
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            sword.remove();
+          }
+        };
+        requestAnimationFrame(animate);
+      }, i * 100);
+    }
+  }
+}
+
+class RetroSolarFlareAnimation {
+  static play(cardElement, color = '#ffd700', intensity = 1) {
+    const container = document.body;
+    const sun = document.createElement('div');
+    const size = 150 * intensity;
+    sun.style.cssText = `
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      width: ${size}px;
+      height: ${size}px;
+      background: radial-gradient(circle, #ffffff 0%, ${color} 50%, transparent 100%);
+      box-shadow: 0 0 40px ${color};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 13550;
+      will-change: transform, opacity;
+      transform: translate3d(-50%, -50%, 0) scale(0.1);
+      opacity: 0;
+    `;
+    container.appendChild(sun);
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(18 * intensity, 650);
+    }
+
+    const start = performance.now();
+    const duration = 650;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      let scale = 0.1;
+      let opacity = 0;
+
+      if (progress < 0.4) {
+        scale = 0.1 + (progress / 0.4) * 1.5;
+        opacity = (progress / 0.4) * 0.95;
+      } else {
+        scale = 1.6 + ((progress - 0.4) / 0.6) * 1.2;
+        opacity = 0.95 * (1 - (progress - 0.4) / 0.6);
+      }
+
+      sun.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
+      sun.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        sun.remove();
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+class RetroVoidBlackHoleAnimation {
+  static play(cardElement, color = '#4a0e4e', intensity = 1) {
+    let cx = window.innerWidth / 2;
+    let cy = window.innerHeight / 2;
+    if (cardElement) {
+      const rect = cardElement.getBoundingClientRect();
+      cx = rect.left + rect.width / 2;
+      cy = rect.top + rect.height / 2;
+    }
+    const container = document.body;
+
+    // A swirling black center hole
+    const hole = document.createElement('div');
+    const size = 120 * intensity;
+    hole.style.cssText = `
+      position: fixed;
+      left: ${cx - size/2}px;
+      top: ${cy - size/2}px;
+      width: ${size}px;
+      height: ${size}px;
+      background: radial-gradient(circle, #000000 30%, ${color} 70%, transparent 100%);
+      box-shadow: 0 0 30px ${color}, inset 0 0 20px #000;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 13700;
+      will-change: transform, opacity;
+      transform: scale(0.1) rotate(0deg);
+      opacity: 0;
+    `;
+    container.appendChild(hole);
+
+    // Temp scale animation on the boss card itself if present
+    const origTransform = cardElement ? cardElement.style.transform : '';
+    if (cardElement) {
+      cardElement.style.transition = 'transform 600ms cubic-bezier(0.25, 0.8, 0.25, 1)';
+      cardElement.style.transform = `${origTransform} scale(0.85)`;
+    }
+
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
+      ScreenEffects.shake(25 * intensity, 750);
+    }
+
+    const start = performance.now();
+    const duration = 800;
+
+    const animate = () => {
+      const progress = Math.min(1, (performance.now() - start) / duration);
+      let scale = 0.1;
+      let opacity = 0;
+
+      if (progress < 0.3) {
+        scale = 0.1 + (progress / 0.3) * 0.9;
+        opacity = (progress / 0.3);
+      } else if (progress < 0.85) {
+        scale = 1.0;
+        opacity = 1.0;
+      } else {
+        scale = 1.0 - (progress - 0.85) / 0.15;
+        opacity = 1.0 - (progress - 0.85) / 0.15;
+      }
+
+      hole.style.transform = `scale(${scale}) rotate(${progress * 720}deg)`;
+      hole.style.opacity = opacity;
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        hole.remove();
+        if (cardElement) {
+          cardElement.style.transform = origTransform;
+          cardElement.style.transition = '';
+        }
+        // Big flash overlay on completion
+        if (typeof ScreenEffects !== 'undefined' && ScreenEffects.flash) {
+          ScreenEffects.flash('rgba(255, 255, 255, 0.7)', 250);
+        }
+      }
+    };
+    requestAnimationFrame(animate);
+  }
+}
+
+
