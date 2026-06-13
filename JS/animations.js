@@ -1,4 +1,4 @@
-﻿/**
+/**
  * NEMESIS ROGUELIKE â€” ANIMATION SYSTEM
  * Particles, screen shake, floating numbers, popups, juicy effects
  */
@@ -3027,18 +3027,16 @@ class RetroVoidBlackHoleAnimation {
 }
 
 // ============================================================
-// WEAPON HIT ANIMATIONS  v2
-// All animations scoped to enemy cards only (no full-screen FX).
-// Each attack shows a bold SVG weapon icon centred on the card.
+// WEAPON HIT ANIMATIONS
+// One dispatcher class — all animations scoped to enemy card elements only.
+// No full-screen overlays. play() is the single entry point.
 // ============================================================
 class WeaponHitAnimation {
 
-  // ── shared helpers ────────────────────────────────────────────────────────
-
   static _cardCenter(card) {
-    if (!card) return { x:window.innerWidth/2, y:window.innerHeight/2, w:80, h:100, r:{left:window.innerWidth/2-40,top:window.innerHeight/2-50} };
+    if (!card) return { x: window.innerWidth/2, y: window.innerHeight/2, w:80, h:100, r:{left:window.innerWidth/2-40,top:window.innerHeight/2-50} };
     const r = card.getBoundingClientRect();
-    return { x:r.left+r.width/2, y:r.top+r.height/2, w:r.width, h:r.height, r };
+    return { x: r.left+r.width/2, y: r.top+r.height/2, w:r.width, h:r.height, r };
   }
 
   static _overlay(card) {
@@ -3060,8 +3058,9 @@ class WeaponHitAnimation {
     requestAnimationFrame(tick);
   }
 
-  /** Shake an overlay div; never touches the card's own transform. */
   static _shakeCard(card, intensity, duration) {
+    // Animate an overlay div instead of touching card.style.transform,
+    // so the game's layout transform is never disturbed.
     if (!card) return;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
@@ -3075,234 +3074,71 @@ class WeaponHitAnimation {
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration+140);
+    // Safety cleanup
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 120);
   }
 
-  /** Squish an overlay div; never touches the card's own transform. */
   static _squishCard(card, scaleY, duration) {
+    // Animate an overlay div that covers the card instead of touching
+    // card.style.transform — prevents permanent size mutation on the card.
     if (!card) return;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
-    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:rgba(0,0,0,0.1);transform-origin:center center;will-change:transform;`;
+    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:rgba(0,0,0,0.08);transform-origin:center center;will-change:transform;`;
     document.body.appendChild(el);
-    const inDur = Math.round(duration*0.28);
-    const outDur = duration-inDur;
+    const inDur = Math.round(duration * 0.28);
+    const outDur = duration - inDur;
+    // Phase 1: squish
     el.style.transition = `transform ${inDur}ms cubic-bezier(0.25,0,0,1)`;
     requestAnimationFrame(() => { el.style.transform = `scaleY(${scaleY})`; });
     const t1 = setTimeout(() => {
+      // Phase 2: spring back
       el.style.transition = `transform ${outDur}ms cubic-bezier(0.2,1.6,0.4,1)`;
       el.style.transform = 'scaleY(1)';
-      setTimeout(() => { try { el.remove(); } catch(e){} }, outDur+60);
-    }, inDur+12);
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration+320);
+      const t2 = setTimeout(() => { try { el.remove(); } catch(e){} }, outDur + 60);
+      el._t2 = t2;
+    }, inDur + 12);
+    el._t1 = t1;
+    // Safety: always remove after full duration
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 300);
   }
 
-  /** Tint overlay; never touches card.style.background. */
   static _tintCard(card, color, duration) {
+    // Use a fixed overlay instead of touching card.style.background.
     if (!card) return;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
-    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13098;border-radius:6px;background:${color};will-change:opacity;opacity:0;`;
+    el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13098;border-radius:6px;background:${color};will-change:opacity;`;
     document.body.appendChild(el);
+    // Fade in quickly, then fade out
+    el.style.opacity = '0';
     requestAnimationFrame(() => {
       el.style.transition = `opacity ${Math.round(duration*0.15)}ms ease-out`;
       el.style.opacity = '1';
       setTimeout(() => {
         el.style.transition = `opacity ${Math.round(duration*0.6)}ms ease-in`;
         el.style.opacity = '0';
-        setTimeout(() => { try { el.remove(); } catch(e){} }, Math.round(duration*0.6)+60);
+        setTimeout(() => { try { el.remove(); } catch(e){} }, Math.round(duration*0.6) + 50);
       }, Math.round(duration*0.35));
     });
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration+220);
+    // Safety cleanup
+    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 200);
   }
+
 
   static _cardParticles(card, count, color, speed, size, lifetime) {
     if (!card) return;
     const c = this._cardCenter(card);
-    const sys = new ParticleSystem({ container:document.body });
-    const n = Math.max(3, Math.round(count*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
+    const sys = new ParticleSystem({ container: document.body });
+    const n = Math.max(2, Math.round(count*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
     for (let i=0;i<n;i++) {
-      sys.emit(c.x+(Math.random()-0.5)*c.w*0.85, c.y+(Math.random()-0.5)*c.h*0.85, 1,
+      sys.emit(c.x+(Math.random()-0.5)*c.w*0.8, c.y+(Math.random()-0.5)*c.h*0.8, 1,
         { color, lifetime, velocity:speed, spread:Math.PI*2, size });
     }
   }
 
-  // ── SVG weapon icons ──────────────────────────────────────────────────────
-
-  /** Returns { color, inner } for a 64×64 viewBox SVG. */
-  static _svgForWeapon(name) {
-    const W = {
-      'Rusty Sword': {
-        color: '#c8a04a',
-        inner: `<line x1="11" y1="53" x2="53" y2="11" stroke-width="6" stroke-linecap="round"/>
-                <line x1="25" y1="47" x2="39" y2="33" stroke-width="13" stroke-linecap="round" opacity="0.22"/>
-                <line x1="17" y1="53" x2="11" y2="59" stroke-width="6" stroke-linecap="round"/>
-                <line x1="29" y1="35" x2="43" y2="49" stroke-width="6" stroke-linecap="round"/>
-                <circle cx="11" cy="59" r="5" fill="currentColor"/>`
-      },
-      'Great Hammer': {
-        color: '#9ca3af',
-        inner: `<line x1="32" y1="56" x2="32" y2="26" stroke-width="7" stroke-linecap="round"/>
-                <rect x="13" y="8" width="38" height="22" rx="4" fill="none" stroke-width="6"/>
-                <line x1="32" y1="8" x2="32" y2="30" stroke-width="3" opacity="0.4"/>`
-      },
-      'Dagger': {
-        color: '#e2e8f0',
-        inner: `<line x1="32" y1="58" x2="32" y2="22" stroke-width="6" stroke-linecap="round"/>
-                <polygon points="32,6 25,22 39,22" fill="currentColor"/>
-                <line x1="19" y1="40" x2="45" y2="40" stroke-width="7" stroke-linecap="round"/>
-                <line x1="26" y1="50" x2="38" y2="50" stroke-width="5" stroke-linecap="round"/>`
-      },
-      'Bomb': {
-        color: '#ef4444',
-        inner: `<circle cx="32" cy="38" r="20" fill="none" stroke-width="6"/>
-                <path d="M32,18 Q40,8 48,4" fill="none" stroke-width="5" stroke-linecap="round"/>
-                <circle cx="49" cy="3" r="5" fill="currentColor"/>
-                <circle cx="32" cy="38" r="6" fill="currentColor" opacity="0.4"/>`
-      },
-      'Buckler': {
-        color: '#ffd700',
-        inner: `<circle cx="32" cy="32" r="26" fill="none" stroke-width="6"/>
-                <circle cx="32" cy="32" r="14" fill="none" stroke-width="4"/>
-                <circle cx="32" cy="32" r="5" fill="currentColor"/>
-                <line x1="32" y1="6" x2="32" y2="58" stroke-width="2" opacity="0.35"/>
-                <line x1="6" y1="32" x2="58" y2="32" stroke-width="2" opacity="0.35"/>`
-      },
-      'Grimoire': {
-        color: '#c084fc',
-        inner: `<path d="M6,6 L6,58 L32,54 L58,58 L58,6 Z" fill="none" stroke-width="5" stroke-linejoin="round"/>
-                <line x1="32" y1="10" x2="32" y2="54" stroke-width="3"/>
-                <line x1="6" y1="20" x2="32" y2="18" stroke-width="2" opacity="0.5"/>
-                <line x1="6" y1="30" x2="32" y2="28" stroke-width="2" opacity="0.5"/>
-                <line x1="32" y1="18" x2="58" y2="20" stroke-width="2" opacity="0.5"/>
-                <line x1="32" y1="28" x2="58" y2="30" stroke-width="2" opacity="0.5"/>
-                <text x="14" y="46" font-size="13" fill="currentColor" font-family="serif">✦</text>
-                <text x="36" y="46" font-size="13" fill="currentColor" font-family="serif">✦</text>`
-      },
-      'Vampire Dagger': {
-        color: '#f43f5e',
-        inner: `<path d="M32,58 Q16,42 14,22 Q22,6 32,6 Q42,6 50,22 Q48,42 32,58 Z" fill="none" stroke-width="5" stroke-linejoin="round"/>
-                <line x1="32" y1="6" x2="32" y2="58" stroke-width="2" opacity="0.3"/>
-                <circle cx="22" cy="52" r="5" fill="currentColor"/>
-                <circle cx="42" cy="52" r="5" fill="currentColor"/>`
-      },
-      'Bazooka': {
-        color: '#f97316',
-        inner: `<rect x="6" y="24" width="44" height="16" rx="8" fill="none" stroke-width="6"/>
-                <line x1="50" y1="32" x2="62" y2="32" stroke-width="10" stroke-linecap="round"/>
-                <line x1="20" y1="40" x2="20" y2="56" stroke-width="6" stroke-linecap="round"/>
-                <circle cx="36" cy="32" r="5" fill="none" stroke-width="3" opacity="0.5"/>`
-      },
-      'Uzi': {
-        color: '#fde68a',
-        inner: `<rect x="8" y="16" width="38" height="24" rx="4" fill="none" stroke-width="6"/>
-                <line x1="46" y1="24" x2="60" y2="24" stroke-width="7" stroke-linecap="round"/>
-                <rect x="18" y="40" width="16" height="16" rx="3" fill="none" stroke-width="5"/>
-                <line x1="14" y1="24" x2="14" y2="32" stroke-width="3" opacity="0.4"/>
-                <line x1="22" y1="24" x2="22" y2="32" stroke-width="3" opacity="0.4"/>`
-      },
-      'Thunder Hammer': {
-        color: '#facc15',
-        inner: `<line x1="32" y1="58" x2="32" y2="28" stroke-width="7" stroke-linecap="round"/>
-                <rect x="12" y="8" width="40" height="24" rx="4" fill="none" stroke-width="6"/>
-                <polyline points="35,12 27,24 35,24 27,38" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`
-      },
-      'Lazer': {
-        color: '#60a5fa',
-        inner: `<rect x="4" y="22" width="38" height="20" rx="5" fill="none" stroke-width="6"/>
-                <line x1="42" y1="32" x2="62" y2="32" stroke-width="5" stroke-linecap="round"/>
-                <line x1="42" y1="28" x2="60" y2="20" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
-                <line x1="42" y1="36" x2="60" y2="44" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
-                <line x1="4" y1="26" x2="4" y2="38" stroke-width="8" stroke-linecap="round"/>`
-      },
-      'Vine Spell': {
-        color: '#4ade80',
-        inner: `<path d="M32,58 Q18,44 18,32 Q18,14 32,6 Q46,14 46,32 Q46,44 32,58 Z" fill="none" stroke-width="5"/>
-                <path d="M32,42 Q16,38 12,22" fill="none" stroke-width="4" stroke-linecap="round"/>
-                <path d="M32,42 Q48,38 52,22" fill="none" stroke-width="4" stroke-linecap="round"/>
-                <circle cx="12" cy="20" r="5" fill="currentColor"/>
-                <circle cx="52" cy="20" r="5" fill="currentColor"/>`
-      },
-      'Death Spell': {
-        color: '#a855f7',
-        inner: `<line x1="14" y1="58" x2="14" y2="12" stroke-width="6" stroke-linecap="round"/>
-                <path d="M14,12 Q48,4 54,28 Q52,50 28,52" fill="none" stroke-width="6" stroke-linecap="round"/>
-                <line x1="6" y1="50" x2="22" y2="58" stroke-width="6" stroke-linecap="round"/>
-                <circle cx="54" cy="28" r="5" fill="currentColor" opacity="0.6"/>`
-      },
-      'Heavy Hammer': {
-        color: '#6b7280',
-        inner: `<line x1="32" y1="60" x2="32" y2="22" stroke-width="9" stroke-linecap="round"/>
-                <rect x="8" y="4" width="48" height="24" rx="5" fill="none" stroke-width="7"/>
-                <line x1="20" y1="4" x2="20" y2="28" stroke-width="3" opacity="0.3"/>
-                <line x1="44" y1="4" x2="44" y2="28" stroke-width="3" opacity="0.3"/>`
-      },
-      'Echo Bow': {
-        color: '#e879f9',
-        inner: `<path d="M14,6 Q2,32 14,58" fill="none" stroke-width="6" stroke-linecap="round"/>
-                <line x1="14" y1="6" x2="14" y2="58" stroke-width="2" opacity="0.5"/>
-                <line x1="14" y1="32" x2="56" y2="32" stroke-width="5" stroke-linecap="round"/>
-                <polyline points="50,25 60,32 50,39" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M20,18 Q6,32 20,46" fill="none" stroke-width="2" stroke-dasharray="3,4" opacity="0.6"/>`
-      },
-      'Aegis': {
-        color: '#60a5fa',
-        inner: `<path d="M32,4 L56,14 L56,42 Q32,62 32,62 Q8,42 8,42 L8,14 Z" fill="none" stroke-width="6" stroke-linejoin="round"/>
-                <line x1="32" y1="12" x2="32" y2="54" stroke-width="3" opacity="0.5"/>
-                <line x1="14" y1="28" x2="50" y2="28" stroke-width="3" opacity="0.5"/>
-                <circle cx="32" cy="28" r="7" fill="none" stroke-width="3"/>`
-      },
-    };
-    return W[name] || null;
-  }
-
-  /** Show a large glowing SVG weapon icon centred on the card. */
-  static _showWeaponIcon(card, weaponName) {
-    const def = this._svgForWeapon(weaponName);
-    if (!def || !card) return;
-    const c = this._cardCenter(card);
-    const sz = Math.max(c.w, c.h) * 1.35; // bigger than the card
-    const el = document.createElement('div');
-    el.style.cssText = `
-      position:fixed;
-      left:${c.x - sz/2}px; top:${c.y - sz/2}px;
-      width:${sz}px; height:${sz}px;
-      pointer-events:none; z-index:13150;
-      will-change:transform,opacity;
-      filter:drop-shadow(0 0 14px ${def.color}) drop-shadow(0 0 28px ${def.color}99);
-      display:flex; align-items:center; justify-content:center;
-    `;
-    el.innerHTML = `<svg viewBox="0 0 64 64" width="${sz}" height="${sz}"
-      xmlns="http://www.w3.org/2000/svg"
-      stroke="${def.color}" fill="${def.color}"
-      style="overflow:visible;display:block">
-      ${def.inner}
-    </svg>`;
-    document.body.appendChild(el);
-    // pop-in → hold → bloom-out
-    this._raf(820, p => {
-      if (p < 0.18) {
-        const pp = p/0.18;
-        el.style.transform = `scale(${0.15 + pp*0.95})`;
-        el.style.opacity = pp;
-      } else if (p < 0.62) {
-        el.style.transform = `scale(${1 + Math.sin((p-0.18)/(0.44)*Math.PI)*0.06})`;
-        el.style.opacity = '1';
-      } else {
-        const pp = (p-0.62)/0.38;
-        el.style.transform = `scale(${1 + pp*0.35})`;
-        el.style.opacity = 1 - pp;
-      }
-    }, () => { try { el.remove(); } catch(e){} });
-    setTimeout(() => { try { el.remove(); } catch(e){} }, 1060);
-  }
-
-  // ── dispatcher ────────────────────────────────────────────────────────────
-
   static play(weaponName, card, opts = {}) {
     try {
-      // Always show the centred weapon icon first
-      this._showWeaponIcon(card, weaponName);
       switch (weaponName) {
         case 'Rusty Sword':    this._rustBurst(card,opts);       break;
         case 'Great Hammer':   this._gravityCrush(card,opts);    break;
@@ -3325,284 +3161,554 @@ class WeaponHitAnimation {
     } catch(e) { console.warn('[WeaponHitAnimation]',e); }
   }
 
-  // ── individual animations ─────────────────────────────────────────────────
-
   static _rustBurst(card) {
     if (!card) return;
-    this._tintCard(card,'rgba(180,110,50,0.45)',240);
-    this._shakeCard(card,7,380);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    
+    this._tintCard(card, 'rgba(180, 110, 50, 0.6)', 220);
+    this._shakeCard(card, 12 * sf, 350);
+    
     const c = this._cardCenter(card);
-    const sys = new ParticleSystem({container:document.body});
-    const cols=['#b8860b','#8b6914','#c8a04a','#e0c060','#a07030'];
-    const n=Math.max(6,Math.round(16*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
-    for(let i=0;i<n;i++) sys.emit(c.x+(Math.random()-0.5)*c.w*0.75,c.y+(Math.random()-0.5)*c.h*0.65,1,{color:cols[i%5],lifetime:580,velocity:3.5,spread:Math.PI*2,size:4});
-    const {el}=this._overlay(card);
-    el.style.cssText+=`width:${c.w+8}px;height:${c.h+8}px;left:${c.r.left-4}px;top:${c.r.top-4}px;border-radius:8px;border:3px solid rgba(180,110,50,0.7);background:transparent;box-shadow:0 0 12px rgba(180,110,50,0.4);`;
-    this._raf(420,p=>{el.style.opacity=1-p;},()=>el.remove());
+    const sys = new ParticleSystem({ container: document.body });
+    const cols = ['#b8860b', '#8b6914', '#c8a04a', '#e0c060'];
+    const n = Math.max(4, Math.round((isLow ? 10 : 24) * (typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1)));
+    
+    for (let i = 0; i < n; i++) {
+      sys.emit(
+        c.x + (Math.random() - 0.5) * c.w * 0.8,
+        c.y + (Math.random() - 0.5) * c.h * 0.7,
+        1,
+        {
+          color: cols[i % 4],
+          lifetime: 550,
+          velocity: 5.0 * sf,
+          spread: Math.PI * 2,
+          size: 6 * sf
+        }
+      );
+    }
+    
+    const { el } = this._overlay(card);
+    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;border:4px solid rgba(180, 110, 50, 0.95);background:transparent;box-shadow: 0 0 20px rgba(180, 110, 50, 0.9), inset 0 0 10px rgba(180, 110, 50, 0.6);`;
+    this._raf(350, p => {
+      el.style.opacity = 1 - p;
+      el.style.transform = `scale(${1.0 + (1 - p) * 0.08})`;
+    }, () => el.remove());
   }
 
   static _gravityCrush(card) {
     if (!card) return;
-    this._squishCard(card,0.62,460);
-    this._tintCard(card,'rgba(120,120,120,0.45)',260);
-    this._shakeCard(card,6,340);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    
+    this._squishCard(card, isLow ? 0.58 : 0.45, 400);
+    this._tintCard(card, 'rgba(59, 7, 100, 0.6)', 300);
+    this._shakeCard(card, 15 * sf, 400);
+
+    const c = this._cardCenter(card);
+    if (!isLow) {
+      // Expanding gravitational rings
+      const { el: ring } = this._overlay(card);
+      const ringSize = Math.max(c.w, c.h) * 1.5;
+      ring.style.cssText += `width:${ringSize}px;height:${ringSize}px;left:${c.x - ringSize / 2}px;top:${c.y - ringSize / 2}px;border-radius:50%;border:4px double #8b5cf6;box-shadow:0 0 15px #6d28d9;background:transparent;`;
+      this._raf(400, p => {
+        ring.style.transform = `scale(${0.3 + p * 1.1})`;
+        ring.style.opacity = 1 - p;
+      }, () => ring.remove());
+
+      // Dark falling particles
+      const sys = new ParticleSystem({ container: document.body });
+      for (let i = 0; i < 8; i++) {
+        sys.emit(
+          c.x + (Math.random() - 0.5) * c.w,
+          c.y - c.h / 2,
+          1,
+          {
+            color: '#3b0764',
+            lifetime: 400,
+            velocity: 4,
+            spread: Math.PI / 4,
+            size: 6
+          }
+        );
+      }
+    }
   }
 
   static _rapidJabFlash(card) {
     if (!card) return;
-    [0,90,180,260].forEach(d=>setTimeout(()=>this._tintCard(card,'rgba(255,255,255,0.65)',75),d));
-    this._shakeCard(card,5,320);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    
+    const flashDur = 65;
+    const intervals = isLow ? [0, 80, 160] : [0, 60, 120, 180];
+    intervals.forEach(d => {
+      setTimeout(() => {
+        this._tintCard(card, 'rgba(255, 255, 255, 0.85)', flashDur);
+        if (!isLow) {
+          // Add diagonal slash slits
+          const { el } = this._overlay(card);
+          const deg = (Math.random() > 0.5 ? 45 : -45) + (Math.random() - 0.5) * 15;
+          el.style.cssText += `width:${c.w * 1.4}px;height:6px;left:${c.x - c.w * 0.7}px;top:${c.y + (Math.random() - 0.5) * c.h * 0.5}px;background:#fff;box-shadow:0 0 8px #fff;transform:rotate(${deg}deg);`;
+          this._raf(flashDur, p => { el.style.opacity = 1 - p; }, () => el.remove());
+        }
+      }, d);
+    });
+    this._shakeCard(card, 8 * sf, 300);
   }
 
   static _smokeCloud(card,{allCards=[]}={}) {
-    const targets = allCards.length?allCards:(card?[card]:[]);
-    targets.forEach(tgt=>{
-      if(!tgt) return;
-      const c=this._cardCenter(tgt);
-      const {el}=this._overlay(tgt);
-      const size=Math.max(c.w,c.h)*1.55;
-      el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;background:radial-gradient(circle,rgba(90,90,90,0.88) 0%,rgba(50,50,50,0.6) 55%,transparent 100%);`;
-      this._raf(700,p=>{el.style.transform=`scale(${0.2+p*1.0})`;el.style.opacity=p<0.3?p/0.3:1-(p-0.3)/0.7;},()=>el.remove());
-      this._shakeCard(tgt,5,280);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const targets = allCards.length ? allCards : (card ? [card] : []);
+    
+    targets.forEach(tgt => {
+      if (!tgt) return;
+      const c = this._cardCenter(tgt);
+      const { el } = this._overlay(tgt);
+      const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 1.9);
+      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(249, 115, 22, 0.95) 0%, rgba(80, 80, 80, 0.85) 45%, rgba(0, 0, 0, 0.6) 75%, transparent 100%);box-shadow: 0 0 25px rgba(249, 115, 22, 0.4);`;
+      
+      this._raf(500, p => {
+        el.style.transform = `scale(${0.2 + p * 0.95})`;
+        el.style.opacity = p < 0.35 ? p / 0.35 : 1 - (p - 0.35) / 0.65;
+      }, () => el.remove());
+      
+      this._shakeCard(tgt, 10 * sf, 350);
+      
+      if (!isLow) {
+        // Emit embers
+        const sys = new ParticleSystem({ container: document.body });
+        for (let i = 0; i < 12; i++) {
+          sys.emit(
+            c.x + (Math.random() - 0.5) * c.w * 0.4,
+            c.y + (Math.random() - 0.5) * c.h * 0.4,
+            1,
+            {
+              color: Math.random() > 0.5 ? '#f97316' : '#ef4444',
+              lifetime: 450,
+              velocity: 4,
+              spread: Math.PI * 2,
+              size: 5
+            }
+          );
+        }
+      }
     });
   }
 
   static _shieldRing(card) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    // Two rings for boldness
-    [1.4, 1.8].forEach((mult,i)=>{
-      const {el}=this._overlay(card);
-      const size=Math.max(c.w,c.h)*mult;
-      el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;border:${i===0?4:2}px solid rgba(255,215,0,${i===0?0.95:0.5});background:transparent;`;
-      this._raf(700+i*120,p=>{el.style.transform=`scale(${0.4+p*0.85})`;el.style.opacity=1-p;},()=>el.remove());
-    });
-    this._tintCard(card,'rgba(255,215,0,0.25)',420);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const { el } = this._overlay(card);
+    const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 2.0);
+    
+    el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;border:${isLow ? '4px' : '7px double'} solid rgba(255, 215, 0, 0.95);background:transparent;box-shadow:0 0 25px rgba(255, 215, 0, 0.95);`;
+    
+    this._raf(500, p => {
+      el.style.transform = `scale(${0.4 + p * 0.8})`;
+      el.style.opacity = 1 - p;
+    }, () => el.remove());
+    
+    this._tintCard(card, 'rgba(255, 215, 0, 0.45)', 300);
+    
+    if (!isLow) {
+      // Golden star particles
+      const sys = new ParticleSystem({ container: document.body });
+      for (let i = 0; i < 10; i++) {
+        sys.emit(c.x, c.y, 1, {
+          color: '#ffd700',
+          lifetime: 500,
+          velocity: 3.5,
+          spread: Math.PI * 2,
+          size: 5
+        });
+      }
+    }
   }
 
   static _arcaneRuneBurst(card) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    ['✦','✧','⊕','⊗','✦','✧'].forEach((r,i)=>{
-      const el=document.createElement('div');
-      const angle=(i/6)*Math.PI*2;
-      el.textContent=r;
-      el.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${20+i%2*6}px;color:#c084fc;text-shadow:0 0 10px rgba(192,132,252,0.95);will-change:transform,opacity;transform:translate(-50%,-50%);`;
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    
+    const runes = isLow ? ['✦', '✧', '⊕', '⊗'] : ['☯', '卍', '☽', '☼', '✦', '✧', '⊕', '⊗'];
+    runes.forEach((r, i) => {
+      const el = document.createElement('div');
+      const angle = (i / runes.length) * Math.PI * 2;
+      el.textContent = r;
+      el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#c084fc;text-shadow:0 0 8px rgba(192,132,252,0.9), 0 0 16px rgba(192,132,252,0.7);will-change:transform,opacity;transform:translate(-50%,-50%);`;
       document.body.appendChild(el);
-      this._raf(580+i*20,p=>{
-        const d=p*60;
-        el.style.transform=`translate(calc(-50% + ${Math.cos(angle)*d}px),calc(-50% + ${Math.sin(angle)*d}px)) scale(${1.2-p*0.7}) rotate(${p*220}deg)`;
-        el.style.opacity=1-Math.pow(p,1.6);
-      },()=>el.remove());
+      
+      const dist = isLow ? 44 : 90;
+      this._raf(500, p => {
+        const d = p * dist;
+        el.style.transform = `translate(calc(-50% + ${Math.cos(angle) * d}px),calc(-50% + ${Math.sin(angle) * d}px)) scale(${1 - p * 0.4}) rotate(${p * 270}deg)`;
+        el.style.opacity = 1 - Math.pow(p, 2.0);
+      }, () => el.remove());
     });
-    this._tintCard(card,'rgba(192,132,252,0.35)',280);
+    
+    this._tintCard(card, 'rgba(192, 132, 252, 0.55)', 250);
   }
 
   static _bloodVeinCrack(card) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    const {el}=this._overlay(card);
-    el.style.cssText+=`width:${c.w+6}px;height:${c.h+6}px;left:${c.r.left-3}px;top:${c.r.top-3}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 3px rgba(200,0,40,0.85),0 0 14px rgba(200,0,40,0.5);border:2px solid rgba(200,0,40,0.6);`;
-    this._raf(700,p=>{el.style.opacity=p<0.18?p/0.18:1-(p-0.18)/0.82;},()=>el.remove());
-    const sys=new ParticleSystem({container:document.body});
-    const n=Math.max(6,Math.round(14*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
-    for(let i=0;i<n;i++) setTimeout(()=>sys.emit(c.x+(Math.random()-0.5)*c.w*0.65,c.y+(Math.random()-0.5)*c.h*0.45,1,{color:'#c00028',lifetime:680,velocity:3.0,spread:Math.PI,size:4}),i*28);
-    this._tintCard(card,'rgba(200,0,40,0.3)',360);
-    this._shakeCard(card,5,280);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const { el } = this._overlay(card);
+    
+    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 4px rgba(220,20,60,0.95), 0 0 15px rgba(220,20,60,0.6);border:2px solid rgba(220,20,60,0.8);`;
+    this._raf(550, p => {
+      el.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
+      el.style.transform = `scale(${1.0 + Math.sin(p * Math.PI) * 0.05})`;
+    }, () => el.remove());
+    
+    const sys = new ParticleSystem({ container: document.body });
+    const n = Math.max(4, Math.round((isLow ? 8 : 18) * (typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1)));
+    for (let i = 0; i < n; i++) {
+      setTimeout(() => {
+        sys.emit(
+          c.x + (Math.random() - 0.5) * c.w * 0.7,
+          c.y + (Math.random() - 0.5) * c.h * 0.5,
+          1,
+          {
+            color: '#c00028',
+            lifetime: 550,
+            velocity: 4.0 * sf,
+            spread: Math.PI * 1.5,
+            size: 6 * sf
+          }
+        );
+      }, i * (isLow ? 30 : 18));
+    }
+    
+    this._tintCard(card, 'rgba(200, 0, 40, 0.5)', 250);
+    this._shakeCard(card, 8 * sf, 260);
   }
 
   static _explosionBloom(card,{allCards=[]}={}) {
-    const targets=allCards.length?allCards:(card?[card]:[]);
-    targets.forEach((tgt,idx)=>{
-      if(!tgt) return;
-      const isPrimary=idx===0;
-      const c=this._cardCenter(tgt);
-      // Core bloom
-      const {el}=this._overlay(tgt);
-      const size=(isPrimary?2.0:1.35)*Math.max(c.w,c.h);
-      el.style.cssText+=`width:${size}px;height:${size}px;left:${c.x-size/2}px;top:${c.y-size/2}px;border-radius:50%;background:radial-gradient(circle,rgba(255,220,80,1) 0%,rgba(255,120,0,0.9) 35%,rgba(200,60,0,0.5) 65%,transparent 100%);`;
-      this._raf(isPrimary?660:440,p=>{el.style.transform=`scale(${0.08+p*1.1})`;el.style.opacity=p<0.2?p/0.2:1-(p-0.2)/0.8;},()=>el.remove());
-      // Ring
-      const {el:ring}=this._overlay(tgt);
-      const rSz=size*1.2;
-      ring.style.cssText+=`width:${rSz}px;height:${rSz}px;left:${c.x-rSz/2}px;top:${c.y-rSz/2}px;border-radius:50%;border:${isPrimary?4:2}px solid rgba(255,180,0,0.7);background:transparent;`;
-      this._raf(isPrimary?800:560,p=>{ring.style.transform=`scale(${0.1+p})`;ring.style.opacity=1-p;},()=>ring.remove());
-      this._shakeCard(tgt,isPrimary?9:5,340);
-      this._cardParticles(tgt,isPrimary?16:8,'#ff8800',5,4,480);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const targets = allCards.length ? allCards : (card ? [card] : []);
+    
+    if (typeof ScreenEffects !== 'undefined' && ScreenEffects.flash) {
+      ScreenEffects.flash('rgba(255, 120, 0, 0.25)', 200);
+    }
+    
+    targets.forEach((tgt, idx) => {
+      if (!tgt) return;
+      const isPrimary = idx === 0;
+      const c = this._cardCenter(tgt);
+      const { el } = this._overlay(tgt);
+      const scaleMultiplier = isPrimary ? (isLow ? 1.6 : 2.2) : (isLow ? 1.1 : 1.6);
+      const size = scaleMultiplier * Math.max(c.w, c.h);
+      
+      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(255, 245, 200, 0.98) 0%, rgba(255, 120, 0, 0.9) 35%, rgba(180, 40, 0, 0.6) 70%, transparent 100%);box-shadow:0 0 30px rgba(255, 100, 0, 0.8);`;
+      
+      const dur = isPrimary ? 550 : 380;
+      this._raf(dur, p => {
+        el.style.transform = `scale(${0.1 + p})`;
+        el.style.opacity = p < 0.25 ? p / 0.25 : 1 - (p - 0.25) / 0.75;
+      }, () => el.remove());
+      
+      this._shakeCard(tgt, isPrimary ? 16 * sf : 10 * sf, 300);
+      this._cardParticles(tgt, isPrimary ? (isLow ? 10 : 24) : (isLow ? 5 : 12), '#ff8800', 8 * sf, 6 * sf, 450);
     });
   }
 
   static _bulletHail(card,{fireRate=6}={}) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    const count=Math.min(fireRate+2,10);
-    for(let i=0;i<count;i++){
-      setTimeout(()=>{
-        const el=document.createElement('div');
-        const sz=8+Math.random()*10;
-        el.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x+(Math.random()-0.5)*c.w*0.75-sz/2}px;top:${c.y+(Math.random()-0.5)*c.h*0.75-sz/2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255,245,180,0.98);box-shadow:0 0 10px rgba(255,230,100,0.9);will-change:opacity;`;
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const count = isLow ? Math.min(fireRate, 7) : Math.min(fireRate * 2, 14);
+    
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        const sz = isLow ? (6 + Math.random() * 6) : (10 + Math.random() * 8);
+        const offsetX = (Math.random() - 0.5) * c.w * 0.8;
+        const offsetY = (Math.random() - 0.5) * c.h * 0.8;
+        
+        el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x + offsetX - sz / 2}px;top:${c.y + offsetY - sz / 2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255, 245, 180, 0.95);box-shadow:0 0 10px rgba(255, 230, 100, 0.9);will-change:opacity,transform;`;
         document.body.appendChild(el);
-        this._raf(150,p=>{el.style.opacity=1-p;},()=>el.remove());
-      },i*44);
+        
+        this._raf(120, p => {
+          el.style.transform = `scale(${1 + p * 0.4})`;
+          el.style.opacity = 1 - p;
+        }, () => el.remove());
+      }, i * (isLow ? 45 : 28));
     }
-    this._shakeCard(card,4,440);
+    this._shakeCard(card, 6 * sf, 350);
   }
 
   static _lightningStrike(card,{isCrit=false}={}) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    const NS='http://www.w3.org/2000/svg';
-    // Main bolt
-    const svg=document.createElementNS(NS,'svg');
-    const bH=c.h*1.7,bW=52;
-    svg.setAttribute('width',String(bW));svg.setAttribute('height',String(bH));
-    svg.style.cssText=`position:fixed;pointer-events:none;z-index:13110;left:${c.x-bW/2}px;top:${c.y-bH}px;overflow:visible;`;
-    let d=`M${bW/2},0`;
-    const jitter=isCrit?20:14;
-    for(let s=1;s<=8;s++) d+=` L${bW/2+(s%2===0?-jitter:jitter)},${(s/8)*bH}`;
-    const defs=document.createElementNS(NS,'defs');
-    defs.innerHTML=`<filter id="boltGlowWHA2"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
-    const path=document.createElementNS(NS,'path');
-    path.setAttribute('d',d);path.setAttribute('stroke',isCrit?'#ffe040':'#facc15');
-    path.setAttribute('stroke-width',isCrit?'6':'4');path.setAttribute('fill','none');
-    path.setAttribute('filter','url(#boltGlowWHA2)');
-    svg.appendChild(defs);svg.appendChild(path);document.body.appendChild(svg);
-    // Glow halo on second frame
-    const halo=document.createElementNS(NS,'path');
-    halo.setAttribute('d',d);halo.setAttribute('stroke','rgba(255,255,200,0.4)');
-    halo.setAttribute('stroke-width',isCrit?'14':'10');halo.setAttribute('fill','none');
-    svg.insertBefore(halo,path);
-    this._raf(460,p=>{svg.style.opacity=1-Math.pow(p,1.4);},()=>svg.remove());
-    this._tintCard(card,'rgba(250,204,21,0.55)',200);
-    this._shakeCard(card,isCrit?10:7,360);
-    if(isCrit) this._cardParticles(card,14,'#facc15',5,4,480);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    const bH = c.h * 1.6, bW = 60;
+    
+    svg.setAttribute('width', String(bW));
+    svg.setAttribute('height', String(bH));
+    svg.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x - bW / 2}px;top:${c.y - bH}px;overflow:visible;`;
+    
+    let d = `M${bW / 2},0`;
+    const segments = 6;
+    for (let s = 1; s <= segments; s++) {
+      d += ` L${bW / 2 + (s % 2 === 0 ? -18 : 18) * (isCrit ? 1.5 : 1.1)},${(s / segments) * bH}`;
+    }
+    
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', isCrit ? '#fffbeb' : '#facc15');
+    path.setAttribute('stroke-width', isCrit ? (isLow ? '6' : '9') : (isLow ? '4' : '6'));
+    path.setAttribute('fill', 'none');
+    
+    const defs = document.createElementNS(NS, 'defs');
+    defs.innerHTML = `<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="${isLow ? 3 : 6}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+    path.setAttribute('filter', 'url(#boltGlowWHA)');
+    
+    svg.appendChild(defs);
+    svg.appendChild(path);
+    document.body.appendChild(svg);
+    
+    this._raf(350, p => {
+      svg.style.opacity = 1 - Math.pow(p, 1.8);
+      svg.style.transform = `scaleX(${1.0 + (1 - p) * 0.3})`;
+    }, () => svg.remove());
+    
+    this._tintCard(card, 'rgba(250, 204, 21, 0.75)', 180);
+    this._shakeCard(card, isCrit ? 18 * sf : 12 * sf, 300);
+    
+    if (isCrit || !isLow) {
+      const count = isCrit ? 18 : 8;
+      this._cardParticles(card, count, Math.random() > 0.5 ? '#facc15' : '#00e5ff', 6 * sf, 5 * sf, 400);
+    }
   }
 
   static _beamPierce(card,{secondaryCard=null}={}) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    // Fat horizontal beam
-    const {el}=this._overlay(card);
-    const beamH=8;
-    el.style.cssText+=`left:${c.r.left-10}px;top:${c.y-beamH/2}px;width:${c.w+20}px;height:${beamH}px;background:linear-gradient(90deg,transparent,#4ea3ff,#d0eaff,#4ea3ff,transparent);border-radius:4px;box-shadow:0 0 14px 4px rgba(78,163,255,0.6);`;
-    this._raf(420,p=>{el.style.opacity=p<0.12?p/0.12:1-(p-0.12)/0.88;},()=>el.remove());
-    this._tintCard(card,'rgba(78,163,255,0.45)',280);
-    if(secondaryCard && secondaryCard!==card){
-      const cs=this._cardCenter(secondaryCard);
-      const NS='http://www.w3.org/2000/svg';
-      const svg=document.createElementNS(NS,'svg');
-      const minX=Math.min(c.x,cs.x)-28,minY=Math.min(c.y,cs.y)-60;
-      const maxX=Math.max(c.x,cs.x)+28,maxY=Math.max(c.y,cs.y)+28;
-      svg.style.cssText=`position:fixed;pointer-events:none;z-index:13105;left:${minX}px;top:${minY}px;width:${maxX-minX}px;height:${maxY-minY}px;overflow:visible;`;
-      const mx=(c.x+cs.x)/2-minX,my=Math.min(c.y,cs.y)-52-minY;
-      const mkL=(xa,ya,xb,yb,col,sw,da)=>{
-        const l=document.createElementNS(NS,'line');
-        l.setAttribute('x1',String(xa));l.setAttribute('y1',String(ya));
-        l.setAttribute('x2',String(xb));l.setAttribute('y2',String(yb));
-        l.setAttribute('stroke',col);l.setAttribute('stroke-width',sw);
-        if(da) l.setAttribute('stroke-dasharray',da);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const { el } = this._overlay(card);
+    const beamHeight = isLow ? 8 : 16;
+    
+    el.style.cssText += `left:${c.r.left}px;top:${c.y - beamHeight / 2}px;width:${c.w}px;height:${beamHeight}px;background:linear-gradient(90deg,transparent,#60a5fa,#a0d0ff,#60a5fa,transparent);border-radius:4px;box-shadow: 0 0 20px #60a5fa, 0 0 35px #3b82f6;`;
+    
+    this._raf(300, p => {
+      el.style.transform = `scaleY(${p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8})`;
+      el.style.opacity = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+    }, () => el.remove());
+    
+    this._tintCard(card, 'rgba(78, 163, 255, 0.65)', 200);
+    this._shakeCard(card, 6 * sf, 200);
+    
+    if (secondaryCard && secondaryCard !== card) {
+      const cs = this._cardCenter(secondaryCard);
+      const NS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(NS, 'svg');
+      const minX = Math.min(c.x, cs.x) - 40, minY = Math.min(c.y, cs.y) - 60;
+      const maxX = Math.max(c.x, cs.x) + 40, maxY = Math.max(c.y, cs.y) + 40;
+      
+      svg.style.cssText = `position:fixed;pointer-events:none;z-index:13105;left:${minX}px;top:${minY}px;width:${maxX - minX}px;height:${maxY - minY}px;overflow:visible;`;
+      const mx = (c.x + cs.x) / 2 - minX, my = Math.min(c.y, cs.y) - 60 - minY;
+      
+      const mkL = (xa, ya, xb, yb, col) => {
+        const l = document.createElementNS(NS, 'path');
+        l.setAttribute('d', `M${xa},${ya} Q${mx},${my} ${xb},${yb}`);
+        l.setAttribute('stroke', col);
+        l.setAttribute('stroke-width', isLow ? '3' : '6');
+        l.setAttribute('fill', 'none');
+        l.setAttribute('filter', 'url(#boltGlowWHA)');
         return l;
       };
-      svg.appendChild(mkL(c.x-minX,c.y-minY,mx,my,'rgba(125,211,252,0.5)','6',''));
-      svg.appendChild(mkL(c.x-minX,c.y-minY,mx,my,'#7dd3fc','3','8 5'));
-      svg.appendChild(mkL(mx,my,cs.x-minX,cs.y-minY,'rgba(78,163,255,0.5)','6',''));
-      svg.appendChild(mkL(mx,my,cs.x-minX,cs.y-minY,'#4ea3ff','3','8 5'));
+      
+      const glowDefs = document.createElementNS(NS, 'defs');
+      glowDefs.innerHTML = '<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+      svg.appendChild(glowDefs);
+      svg.appendChild(mkL(c.x - minX, c.y - minY, cs.x - minX, cs.y - minY, '#60a5fa'));
+      
       document.body.appendChild(svg);
-      this._raf(660,p=>{svg.style.opacity=1-p;},()=>svg.remove());
-      setTimeout(()=>{
-        this._tintCard(secondaryCard,'rgba(78,163,255,0.6)',240);
-        this._shakeCard(secondaryCard,5,240);
-      },120);
+      
+      this._raf(500, p => {
+        svg.style.opacity = 1 - p;
+      }, () => svg.remove());
+      
+      setTimeout(() => {
+        this._tintCard(secondaryCard, 'rgba(78, 163, 255, 0.7)', 220);
+        this._shakeCard(secondaryCard, 8 * sf, 200);
+      }, 100);
     }
   }
 
   static _vineWrap(card) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    // Outer vine frame
-    const {el}=this._overlay(card);
-    el.style.cssText+=`width:${c.w+12}px;height:${c.h+12}px;left:${c.r.left-6}px;top:${c.r.top-6}px;border-radius:10px;border:4px solid rgba(48,200,90,0.9);background:transparent;box-shadow:0 0 16px rgba(48,200,90,0.6),inset 0 0 12px rgba(48,200,90,0.25);`;
-    this._raf(850,p=>{
-      el.style.transform=`scale(${p<0.12?0.75+p/0.12*0.25:p<0.72?1:1-(p-0.72)/0.28*0.12})`;
-      el.style.opacity=p<0.12?p/0.12:p<0.72?1:1-(p-0.72)/0.28;
-    },()=>el.remove());
-    // Inner glow
-    const {el:glow}=this._overlay(card);
-    glow.style.cssText+=`width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:rgba(48,200,90,0.18);`;
-    this._raf(600,p=>{glow.style.opacity=p<0.3?p/0.3:1-(p-0.3)/0.7;},()=>glow.remove());
-    this._cardParticles(card,10,'#30c85a',3,4,560);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const { el } = this._overlay(card);
+    const borderWidth = isLow ? 4 : 8;
+    
+    el.style.cssText += `width:${c.w + 10}px;height:${c.h + 10}px;left:${c.r.left - 5}px;top:${c.r.top - 5}px;border-radius:10px;border:${borderWidth}px solid rgba(34, 197, 94, 0.95);background:transparent;box-shadow:0 0 20px rgba(34, 197, 94, 0.8), inset 0 0 15px rgba(34, 197, 94, 0.45);`;
+    
+    this._raf(650, p => {
+      const scaleVal = p < 0.15 ? 0.8 + (p / 0.15) * 0.2 : p < 0.75 ? (1.0 - (p - 0.15) / 0.6 * 0.12) : 0.88;
+      el.style.transform = `scale(${scaleVal})`;
+      el.style.opacity = p < 0.15 ? p / 0.15 : p < 0.75 ? 1.0 : 1 - (p - 0.75) / 0.25;
+    }, () => el.remove());
+    
+    const count = isLow ? 6 : 15;
+    this._cardParticles(card, count, '#22c55e', 3 * sf, 5 * sf, 500);
+    this._tintCard(card, 'rgba(34, 197, 94, 0.35)', 400);
   }
 
   static _reaperArc(card,{isResisted=false}={}) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    // Scythe arc via SVG
-    const NS='http://www.w3.org/2000/svg';
-    const sz=Math.max(c.w,c.h)*1.4;
-    const svgEl=document.createElementNS(NS,'svg');
-    svgEl.setAttribute('viewBox','0 0 64 64');
-    svgEl.setAttribute('width',String(sz));svgEl.setAttribute('height',String(sz));
-    svgEl.style.cssText=`position:fixed;pointer-events:none;z-index:13120;left:${c.x-sz/2}px;top:${c.y-sz/2}px;will-change:transform,opacity;overflow:visible;`;
-    const col=isResisted?'#ef4444':'#7c3aed';
-    svgEl.innerHTML=`<line x1="14" y1="58" x2="14" y2="12" stroke="${col}" stroke-width="6" stroke-linecap="round"/>
-      <path d="M14,12 Q48,4 54,28 Q52,50 28,52" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round"/>
-      <line x1="6" y1="50" x2="22" y2="58" stroke="${col}" stroke-width="6" stroke-linecap="round"/>
-      <filter id="reaperGlow"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
-    document.body.appendChild(svgEl);
-    this._raf(700,p=>{
-      const angle=-100+p*240;
-      const sc=p<0.3?0.3+p/0.3*0.7:p<0.7?1:1-(p-0.7)/0.3*0.7;
-      svgEl.style.transform=`rotate(${angle}deg)`;
-      svgEl.style.transformOrigin=`${c.x}px ${c.y}px`;
-      svgEl.style.opacity=p<0.18?p/0.18:1-(p-0.18)/0.82;
-    },()=>svgEl.remove());
-    this._tintCard(card,isResisted?'rgba(239,68,68,0.35)':'rgba(50,0,80,0.55)',420);
-    if(isResisted) this._shakeCard(card,8,360);
-    else this._cardParticles(card,8,'#9333ea',3,4,450);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    const el = document.createElement('div');
+    const sz = Math.max(c.w, c.h) * (isLow ? 1.0 : 1.8);
+    
+    el.textContent = '☽';
+    el.style.cssText = `position:fixed;pointer-events:none;z-index:13120;left:${c.x}px;top:${c.y}px;font-size:${sz}px;line-height:1;color:${isResisted ? '#ef4444' : '#31105e'};text-shadow:0 0 20px ${isResisted ? 'rgba(239,68,68,0.95)' : 'rgba(124,58,237,0.95)'}, 0 0 30px ${isResisted ? '#b91c1c' : '#5b21b6'};will-change:transform,opacity;transform:translate(-50%,-50%) rotate(-80deg) scale(0.3);`;
+    document.body.appendChild(el);
+    
+    this._raf(600, p => {
+      el.style.transform = `translate(-50%,-50%) rotate(${-80 + p * 240}deg) scale(${p < 0.35 ? 0.3 + (p / 0.35) * 0.7 : 1.0 - (p - 0.35) / 0.65 * 0.6})`;
+      el.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
+    }, () => el.remove());
+    
+    this._tintCard(card, isResisted ? 'rgba(239, 68, 68, 0.45)' : 'rgba(30, 0, 60, 0.75)', 400);
+    this._shakeCard(card, isResisted ? 14 * sf : 8 * sf, 350);
+    
+    if (!isLow) {
+      const sys = new ParticleSystem({ container: document.body });
+      for (let i = 0; i < 15; i++) {
+        sys.emit(c.x + (Math.random() - 0.5) * c.w, c.y + c.h / 2, 1, {
+          color: isResisted ? '#ef4444' : '#a78bfa',
+          lifetime: 600,
+          velocity: -4,
+          spread: Math.PI / 6,
+          size: 6
+        });
+      }
+    }
   }
 
   static _anvilDrop(card,{isCrit=false}={}) {
     if (!card) return;
-    this._squishCard(card,0.54,500);
-    this._tintCard(card,isCrit?'rgba(255,160,40,0.5)':'rgba(130,130,130,0.45)',260);
-    this._shakeCard(card,isCrit?11:8,420);
-    if(isCrit) this._cardParticles(card,16,'#ff9900',6,4,560);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    
+    this._squishCard(card, isLow ? 0.55 : 0.42, 400);
+    this._tintCard(card, isCrit ? 'rgba(255, 140, 0, 0.55)' : 'rgba(80, 80, 80, 0.65)', 250);
+    this._shakeCard(card, isCrit ? 18 * sf : 12 * sf, 350);
+    
+    const anvil = document.createElement('div');
+    anvil.innerHTML = `<span style="font-size:${isLow ? '36px' : '64px'};text-shadow:0 0 10px rgba(0,0,0,0.8);filter:brightness(0.9);">█▄▄▄▄█</span>`;
+    anvil.style.cssText = `position:fixed;pointer-events:none;z-index:13125;left:${c.x}px;top:${c.y - 200}px;will-change:transform,opacity;transform:translate(-50%,-50%);font-family:monospace;color:#6b7280;`;
+    document.body.appendChild(anvil);
+    
+    const fallDuration = 200;
+    this._raf(fallDuration, p => {
+      const y = (c.y - 200) + p * 200;
+      anvil.style.top = `${y}px`;
+      anvil.style.opacity = p < 0.15 ? p / 0.15 : 1.0;
+    }, () => {
+      anvil.style.transition = 'opacity 150ms ease-out';
+      anvil.style.opacity = '0';
+      setTimeout(() => anvil.remove(), 150);
+      
+      const particleCount = isCrit ? 18 : 8;
+      const col = isCrit ? '#ff8800' : '#d1d5db';
+      this._cardParticles(card, particleCount, col, 7 * sf, 6 * sf, 450);
+    });
   }
 
   static _arrowTrail(card,{echoBowHitIndex=0}={}) {
     if (!card) return;
-    const isDouble=echoBowHitIndex>0&&(echoBowHitIndex%3===0);
-    const c=this._cardCenter(card);
-    const tw=c.w*(isDouble?1.0:0.65);
-    const col=isDouble?'#ff44ff':'#c4b5fd';
-    // Trail beam
-    const {el}=this._overlay(card);
-    const bh=isDouble?9:5;
-    el.style.cssText+=`left:${c.x-tw/2}px;top:${c.y-bh/2}px;width:${tw}px;height:${bh}px;border-radius:4px;background:linear-gradient(90deg,transparent,${col},white,${col},transparent);${isDouble?`box-shadow:0 0 18px 6px ${col};`:'box-shadow:0 0 8px 2px '+col+';'}`;
-    this._raf(isDouble?630:400,p=>{el.style.opacity=p<0.1?p/0.1:1-(p-0.1)/0.9;},()=>el.remove());
-    // Arrowhead flash
-    const tip=document.createElement('div');
-    const tSz=isDouble?22:14;
-    tip.style.cssText=`position:fixed;pointer-events:none;z-index:13111;left:${c.x+tw/2-tSz/2}px;top:${c.y-tSz/2}px;width:${tSz}px;height:${tSz}px;background:${col};clip-path:polygon(0 50%,100% 0,100% 100%);box-shadow:0 0 10px ${col};`;
-    document.body.appendChild(tip);
-    this._raf(isDouble?420:260,p=>{tip.style.opacity=1-p;},()=>tip.remove());
-    if(isDouble){this._tintCard(card,'rgba(200,80,255,0.4)',320);this._cardParticles(card,10,'#dd88ff',4,4,440);}
-    this._shakeCard(card,isDouble?7:3,250);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const isDouble = echoBowHitIndex > 0 && (echoBowHitIndex % 3 === 0);
+    const c = this._cardCenter(card);
+    const tw = c.w * (isDouble ? 1.35 : 0.85);
+    const col = isDouble ? '#d946ef' : '#c4b5fd';
+    
+    const lineCount = isDouble ? 3 : 1;
+    for (let i = 0; i < lineCount; i++) {
+      const { el } = this._overlay(card);
+      const yOffset = isDouble ? (i - 1) * 12 : 0;
+      el.style.cssText += `left:${c.x - tw / 2}px;top:${c.y + yOffset - (isDouble ? 3 : 1.5)}px;width:${tw}px;height:${isDouble ? '6px' : '3px'};border-radius:3px;background:linear-gradient(90deg,transparent,${col},white,${col},transparent);box-shadow: 0 0 12px ${col};`;
+      this._raf(isDouble ? 450 : 280, p => {
+        el.style.opacity = p < 0.1 ? p / 0.1 : 1 - (p - 0.1) / 0.9;
+        el.style.transform = `scaleX(${1.0 + p * 0.2})`;
+      }, () => el.remove());
+    }
+    
+    const arrow = document.createElement('div');
+    arrow.innerHTML = `<span style="font-size:${isDouble ? '28px' : '18px'};color:${col};text-shadow:0 0 8px ${col};">➤</span>`;
+    arrow.style.cssText = `position:fixed;pointer-events:none;z-index:13125;left:${c.x - tw / 2}px;top:${c.y}px;transform:translate(-50%,-50%);will-change:transform;`;
+    document.body.appendChild(arrow);
+    this._raf(isDouble ? 350 : 220, p => {
+      arrow.style.left = `${c.x - tw / 2 + p * tw}px`;
+      arrow.style.opacity = 1 - p;
+    }, () => arrow.remove());
+    
+    if (isDouble) {
+      this._tintCard(card, 'rgba(200, 100, 255, 0.45)', 250);
+      const count = isLow ? 6 : 15;
+      this._cardParticles(card, count, '#d946ef', 4 * sf, 5 * sf, 350);
+    }
+    this._shakeCard(card, isDouble ? 8 * sf : 4 * sf, 220);
   }
 
   static _aegisWard(card) {
     if (!card) return;
-    const c=this._cardCenter(card);
-    // Outer glow pulse
-    const {el:glow}=this._overlay(card);
-    const gSz=Math.max(c.w,c.h)*1.6;
-    glow.style.cssText+=`width:${gSz}px;height:${gSz}px;left:${c.x-gSz/2}px;top:${c.y-gSz/2}px;border-radius:50%;background:radial-gradient(circle,rgba(96,165,250,0.5) 0%,rgba(96,165,250,0.2) 50%,transparent 100%);`;
-    this._raf(600,p=>{glow.style.transform=`scale(${0.3+p*0.9})`;glow.style.opacity=1-p;},()=>glow.remove());
-    // Blue frame ring
-    const {el:outline}=this._overlay(card);
-    outline.style.cssText+=`width:${c.w+10}px;height:${c.h+10}px;left:${c.r.left-5}px;top:${c.r.top-5}px;border-radius:10px;border:3px solid rgba(96,165,250,0.9);background:transparent;box-shadow:0 0 16px rgba(96,165,250,0.55),inset 0 0 10px rgba(96,165,250,0.2);`;
-    this._raf(900,p=>{outline.style.opacity=p<0.12?p/0.12:1-(p-0.12)/0.88;},()=>outline.remove());
-    this._tintCard(card,'rgba(96,165,250,0.3)',340);
-    this._cardParticles(card,8,'#93c5fd',3,3,420);
+    const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
+    const sf = isLow ? 0.5 : 1.0;
+    const c = this._cardCenter(card);
+    
+    const stamp = document.createElement('div');
+    stamp.textContent = '🛡';
+    stamp.style.cssText = `position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w,c.h) * (isLow ? 0.8 : 1.4)}px;line-height:1;filter:drop-shadow(0 0 12px rgba(96,165,250,0.95)) drop-shadow(0 0 6px #fff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
+    document.body.appendChild(stamp);
+    
+    this._raf(650, p => {
+      stamp.style.transform = `translate(-50%,-50%) scale(${p < 0.3 ? 0.1 + (p / 0.3) * 0.9 : 1.0}) rotate(${(1 - p) * 15}deg)`;
+      stamp.style.opacity = p < 0.25 ? p / 0.25 : p < 0.65 ? 1.0 : 1 - (p - 0.65) / 0.35;
+    }, () => stamp.remove());
+    
+    const { el: outline } = this._overlay(card);
+    const crestBorder = isLow ? 4 : 8;
+    outline.style.cssText += `width:${c.w + 12}px;height:${c.h + 12}px;left:${c.r.left - 6}px;top:${c.r.top - 6}px;border-radius:10px;border:${crestBorder}px double rgba(96,165,250,0.95);background:transparent;box-shadow:0 0 25px rgba(96,165,250,0.8), inset 0 0 15px rgba(96,165,250,0.45);`;
+    this._raf(750, p => {
+      outline.style.opacity = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
+      outline.style.transform = `scale(${1.0 + (1 - p) * 0.05})`;
+    }, () => outline.remove());
+    
+    if (!isLow) {
+      const { el: grid } = this._overlay(card);
+      grid.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background-image:radial-gradient(rgba(96, 165, 250, 0.15) 30%, transparent 70%);background-size:16px 16px;mix-blend-mode:screen;`;
+      this._raf(700, p => {
+        grid.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
+      }, () => grid.remove());
+    }
+    
+    this._tintCard(card, 'rgba(96, 165, 250, 0.45)', 300);
   }
 }
+
+
+
