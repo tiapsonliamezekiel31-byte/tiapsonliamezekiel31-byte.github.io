@@ -1008,8 +1008,8 @@ body::before {
 }
 
 .enemy-card.boss .enemy-emoji {
-  font-size: 38px;
-  top: -24px;
+  font-size: 58px;
+  top: -4px;
 }
 
 .enemy-card.boss-phase-2 {
