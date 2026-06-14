@@ -6674,10 +6674,13 @@ button:hover,
   padding: 12px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 #compendiumSearch {
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   padding: 10px 14px;
   background: rgba(5, 4, 8, 0.8);
@@ -6697,8 +6700,12 @@ button:hover,
 
 .compendium-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 6px;
   overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
