@@ -6574,3 +6574,45 @@ button:hover,
   30% { transform: scaleX(1.0); }
   100% { opacity: 0; transform: scaleX(0.4); }
 }
+
+/* ============================================================
+   GPU HARDWARE ACCELERATION OPTIMIZATIONS
+   ============================================================ */
+#gameArea,
+#gameContainer,
+.draggable-hud,
+.weapon-strip,
+.floating-shop-btn,
+.floating-lootbox-btn,
+.floating-stage-indicator,
+.enemy-circle-container,
+.floating-damage-number,
+.shop-overlay,
+.shop-panel,
+.holy-light-beam,
+.hud-bar .fill,
+.task-panel,
+.popup-overlay,
+.popup-panel,
+.nm-popup-scale,
+.nm-popup-scale-centered,
+.nm-screen-flash {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Optimize backdrop blurs on mobile devices to prevent compositing overhead */
+@media (max-width: 900px) {
+  .shop-overlay,
+  .shop-panel,
+  .draggable-hud,
+  .weapon-strip,
+  .popup-overlay,
+  .popup-panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: rgba(10, 8, 18, 0.95) !important;
+  }
+}

@@ -127,7 +127,7 @@ function resolveCssColorToRgb(colorStr) {
       const a = parts[3] !== undefined ? parseFloat(parts[3]) : 1;
       return { r, g, b, a };
     }
-  } catch (e) {}
+  } catch (e) { }
   return null;
 }
 
@@ -195,10 +195,10 @@ class ParticleSystem {
 
       // reuse element from pool when possible
       const particle = ParticleSystem._pool.length ? ParticleSystem._pool.pop() : document.createElement('div');
-      
+
       const borderRadius = options.shape === 'square' ? '0px' : '50%';
       const glowStyle = options.glow ? `box-shadow: 0 0 10px ${color}, 0 0 20px ${color};` : '';
-      
+
       particle.style.cssText = `
         position: fixed;
         left: 0;
@@ -247,7 +247,7 @@ class ParticleSystem {
       const elapsed = now - p.start;
       const progress = elapsed / p.lifetime;
       if (progress >= 1) {
-        try { p.el.remove(); } catch (e) {}
+        try { p.el.remove(); } catch (e) { }
         // recycle element
         ParticleSystem._pool.push(p.el);
         list.splice(i, 1);
@@ -258,7 +258,7 @@ class ParticleSystem {
       const tFrames = elapsed / 16;
       let px = p.x + p.vx * tFrames;
       let py = p.y + p.vy * tFrames;
-      
+
       if (p.gravity) {
         py += 0.5 * p.gravity * tFrames * tFrames;
       }
@@ -383,11 +383,11 @@ class FloatingDamageNumber {
     const burstValues = Array.isArray(values) && values.length
       ? values.map(v => Number(v) || 0)
       : Array.from({ length: count }, (_, index) => {
-          const base = Math.floor(numericTotal / count);
-          const remainder = Math.abs(numericTotal % count);
-          const sign = numericTotal < 0 ? -1 : 1;
-          return sign * (base + (index < remainder ? 1 : 0));
-        });
+        const base = Math.floor(numericTotal / count);
+        const remainder = Math.abs(numericTotal % count);
+        const sign = numericTotal < 0 ? -1 : 1;
+        return sign * (base + (index < remainder ? 1 : 0));
+      });
 
     burstValues.forEach((value, index) => {
       setTimeout(() => {
@@ -413,7 +413,7 @@ FloatingDamageNumber._anchoredList = []; // all active anchored floats
 FloatingDamageNumber._anchoredActiveByKey = {}; // anchorKey -> [floatObj,...]
 FloatingDamageNumber._anchoredRunning = false;
 
-FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options = {}) {
+FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, options = {}) {
   // Defaults: hold for 1000ms, then fade over 200ms (total 1200ms)
   const DEFAULT_HOLD = 1000;
   const DEFAULT_FADE = 200;
@@ -442,7 +442,7 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
   if (anchorElementOrRect instanceof Element) {
     const el = anchorElementOrRect;
     if (!anchorKey) anchorKey = el.dataset && el.dataset.enemyId ? String(el.dataset.enemyId) : null;
-    
+
     // Check if positioning dataset is available to avoid layouts
     if (el.dataset.x) {
       const circle = document.querySelector('.enemy-circle-container');
@@ -521,7 +521,7 @@ FloatingDamageNumber.showAnchored = function(anchorElementOrRect, value, options
   return div;
 };
 
-FloatingDamageNumber._anchoredTick = function() {
+FloatingDamageNumber._anchoredTick = function () {
   const now = performance.now();
   const list = FloatingDamageNumber._anchoredList;
 
@@ -547,7 +547,7 @@ FloatingDamageNumber._anchoredTick = function() {
       const v = variantForStack(base, slotIndex);
       f.div.style.color = v;
       f.div.style.webkitTextStroke = `0.5px ${v}`;
-    } catch (e) {}
+    } catch (e) { }
 
     const baseX = f.baseX;
     const baseY = f.baseY;
@@ -570,7 +570,7 @@ FloatingDamageNumber._anchoredTick = function() {
     f.div.style.opacity = opacity;
 
     if (progress >= 1) {
-      try { f.div.remove(); } catch (e) {}
+      try { f.div.remove(); } catch (e) { }
       list.splice(i, 1);
       if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
         const arr = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey];
@@ -590,7 +590,7 @@ FloatingDamageNumber._anchoredTick = function() {
 };
 
 // Non-anchored floats centralized tick
-FloatingDamageNumber._tickNonAnchored = function() {
+FloatingDamageNumber._tickNonAnchored = function () {
   const now = performance.now();
   const list = FloatingDamageNumber._list || [];
   for (let i = list.length - 1; i >= 0; i--) {
@@ -607,13 +607,13 @@ FloatingDamageNumber._tickNonAnchored = function() {
     try {
       const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
       if (key) slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(f.div) || 0;
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
       f.div.style.color = v;
       f.div.style.webkitTextStroke = `0.5px ${v}`;
-    } catch (e) {}
+    } catch (e) { }
 
     const yOffset = progress * -50;
     const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
@@ -626,7 +626,7 @@ FloatingDamageNumber._tickNonAnchored = function() {
     f.div.style.opacity = opacity;
 
     if (progress >= 1) {
-      try { f.div.remove(); } catch (e) {}
+      try { f.div.remove(); } catch (e) { }
       // remove from coord map
       try {
         const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
@@ -636,7 +636,7 @@ FloatingDamageNumber._tickNonAnchored = function() {
           if (idx !== -1) arr.splice(idx, 1);
           if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
         }
-      } catch (e) {}
+      } catch (e) { }
 
       list.splice(i, 1);
     }
@@ -666,27 +666,27 @@ class ScreenEffects {
     const element = document.documentElement;
     const scaledIntensity = intensity * AnimationRuntime.shakeIntensityScale;
     const startTime = performance.now();
-    
+
     const animate = () => {
       const elapsed = performance.now() - startTime;
       const progress = elapsed / duration;
-      
+
       if (progress >= 1) {
         element.style.transform = '';
         return;
       }
-      
+
       const remainingIntensity = scaledIntensity * (1 - progress);
       const x = (Math.random() - 0.5) * remainingIntensity * 2;
       const y = (Math.random() - 0.5) * remainingIntensity * 2;
-      
+
       element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       requestAnimationFrame(animate);
     };
-    
+
     animate();
   }
-  
+
   static flash(color = 'rgba(255, 255, 255, 0.3)', duration = 200) {
     const now = performance.now();
     if (now - this.lastFlashAt < AnimationRuntime.flashMinInterval) {
@@ -728,14 +728,14 @@ class ScreenEffects {
         this.flashOverlay?.classList.remove('nm-screen-flash');
         this.flashOverlay.style.background = 'transparent';
         this.flashOverlay.style.removeProperty('--nm-duration');
-      } catch (e) {}
+      } catch (e) { }
     }, duration + 16);
   }
-  
+
   static fadeToWhite(duration = 500) {
     this.flash('rgba(255, 255, 255, 0.5)', duration);
   }
-  
+
   static fadeToBlack(duration = 500) {
     this.flash('rgba(0, 0, 0, 0.5)', duration);
   }
@@ -764,14 +764,14 @@ class MeterAnimation {
     element.style.setProperty('--nm-duration', `${duration}ms`);
     restartAnimationClass(element, 'nm-meter-pulse');
   }
-  
+
   static shimmer(element, color = (typeof UIManager !== 'undefined') ? UIManager.themeColor('--mana-blue', '#134E8E') : '#00ff00', duration = 400) {
     ensureAnimationStyles();
     element.style.setProperty('--nm-meter-color', color);
     element.style.setProperty('--nm-duration', `${duration}ms`);
     restartAnimationClass(element, 'nm-meter-shimmer');
   }
-  
+
   static crackle(element, color = (typeof UIManager !== 'undefined') ? UIManager.themeColor('--ap-gold', '#FFB33F') : '#ffd700', duration = 300, count = 5) {
     const now = performance.now();
     const last = Number(element.dataset.lastCrackleAt || 0);
@@ -783,11 +783,11 @@ class MeterAnimation {
     const rect = element.getBoundingClientRect();
     const particles = new ParticleSystem({ container: element.parentElement });
     const adjustedCount = Math.max(1, Math.round(count * AnimationRuntime.particleScale));
-    
+
     for (let i = 0; i < adjustedCount; i++) {
       const x = rect.left + Math.random() * rect.width;
       const y = rect.top + Math.random() * rect.height;
-      
+
       particles.emit(x, y, 3, {
         color: color,
         lifetime: duration,
@@ -803,7 +803,7 @@ class TypewriterEffect {
   static type(element, text, speed = 50) {
     element.textContent = '';
     let index = 0;
-    
+
     const type = () => {
       if (index < text.length) {
         element.textContent += text[index];
@@ -811,7 +811,7 @@ class TypewriterEffect {
         setTimeout(type, speed);
       }
     };
-    
+
     type();
   }
 }
@@ -823,12 +823,12 @@ class ComboAnimation {
     element.textContent = `COMBO Ã—${combo}`;
     restartAnimationClass(element, 'nm-combo-scale');
   }
-  
+
   static shatter(element) {
     ensureAnimationStyles();
     const rect = element.getBoundingClientRect();
     const particles = new ParticleSystem();
-    
+
     particles.emit(rect.left + rect.width / 2, rect.top + rect.height / 2, 20, {
       color: (typeof UIManager !== 'undefined') ? UIManager.themeColor('--danger-red', '#C00707') : '#ff6b6b',
       lifetime: 600,
@@ -836,7 +836,7 @@ class ComboAnimation {
       spread: Math.PI * 2,
       size: 3
     });
-    
+
     restartAnimationClass(element, 'nm-combo-shatter');
   }
 }
@@ -847,7 +847,7 @@ class EnemyDeathAnimation {
     const state = typeof getGameState === 'function' ? getGameState() : null;
     const effect = state?.playerState?.equippedDeathEffect || 'Default';
     const particles = new ParticleSystem();
-    
+
     if (isElite) {
       ScreenEffects.shake(20, 350);
     }
@@ -861,7 +861,7 @@ class EnemyDeathAnimation {
         const speed = (isElite ? 12 : 8) * (0.7 + Math.random() * 0.6);
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        
+
         particles.emit(x, y, 1, {
           color: color,
           lifetime: isElite ? 1400 : 1000,
@@ -881,7 +881,7 @@ class EnemyDeathAnimation {
         const color = colors[i % colors.length];
         const vx = (Math.random() - 0.5) * 6;
         const vy = -6 - Math.random() * 8;
-        
+
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 1000,
@@ -902,7 +902,7 @@ class EnemyDeathAnimation {
         const speed = (2.5 + Math.random() * 4);
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        
+
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 1200,
@@ -921,9 +921,9 @@ class EnemyDeathAnimation {
         const color = colors[i % colors.length];
         const vx = 0; // vertical drop
         const vy = 2 + Math.random() * 3;
-        
+
         // Spawn slightly offset horizontally to look like a grid channel
-        const spawnX = x + (Math.floor(Math.random() * 9) - 4) * 16; 
+        const spawnX = x + (Math.floor(Math.random() * 9) - 4) * 16;
         const spawnY = y + (Math.random() - 0.5) * 40;
 
         particles.emit(spawnX, spawnY, 1, {
@@ -948,14 +948,14 @@ class EnemyDeathAnimation {
       beam.style.boxShadow = `0 0 40px #ffd700, 0 0 80px #ffd700`;
       document.body.appendChild(beam);
       setTimeout(() => beam.remove(), 800);
-      
+
       const count = Math.max(20, Math.round((isElite ? 70 : 40) * AnimationRuntime.particleScale));
       const colors = ['#ffffff', '#ffd700', '#fff0a6', '#fff9d6'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
         const vx = (Math.random() - 0.5) * 3;
         const vy = -6 - Math.random() * 8;
-        
+
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 900,
@@ -975,7 +975,7 @@ class EnemyDeathAnimation {
         const speed = (isElite ? 18 : 10) * (0.8 + Math.random() * 0.4);
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
-        
+
         particles.emit(x, y, 1, {
           color: color,
           lifetime: 1100,
@@ -1029,28 +1029,28 @@ class ConsumableDropAnimation {
       will-change: transform, opacity;
     `;
     document.body.appendChild(icon);
-    
+
     const startTime = performance.now();
     const animate = () => {
       const elapsed = performance.now() - startTime;
       const progress = Math.min(1, elapsed / duration);
-      
+
       if (progress >= 1) {
         icon.remove();
         return;
       }
-      
+
       // Ease-in, arc path
       const x = fromX + (toX - fromX) * progress;
       const arcHeight = -30 * Math.sin(progress * Math.PI);
       const y = fromY + (toY - fromY) * progress + arcHeight;
-      
+
       icon.style.transform = `translate3d(${x}px, ${y}px, 0)`;
       icon.style.opacity = 1 - (progress > 0.8 ? (progress - 0.8) / 0.2 : 0);
-      
+
       requestAnimationFrame(animate);
     };
-    
+
     animate();
   }
 }
@@ -1060,7 +1060,7 @@ class HpBarAnimation {
   static animateChange(element, oldValue, newValue, maxValue, duration = 300) {
     const oldPercent = (oldValue / maxValue) * 100;
     const newPercent = (newValue / maxValue) * 100;
-    
+
     element.style.width = oldPercent + '%';
     element.style.transition = `width ${duration}ms ease-out`;
     requestAnimationFrame(() => {
@@ -1073,11 +1073,11 @@ class RetroHitAnimation {
   static play(x, y, color = '#ff0044') {
     const container = document.body;
     const burstCount = 10;
-    
-    for(let i = 0; i < burstCount; i++) {
+
+    for (let i = 0; i < burstCount; i++) {
       const square = document.createElement('div');
       const size = 16 + Math.random() * 32;
-      
+
       square.style.cssText = `
         position: fixed;
         left: 0;
@@ -1090,40 +1090,40 @@ class RetroHitAnimation {
         will-change: transform, opacity;
       `;
       container.appendChild(square);
-      
+
       const angle = (i / burstCount) * Math.PI * 2 + (Math.random() * 0.5);
       const distance = 60 + Math.random() * 80;
-      
+
       const targetX = Math.cos(angle) * distance;
       const targetY = Math.sin(angle) * distance;
-      
+
       const startTime = performance.now();
       const duration = 450 + Math.random() * 250;
-      
+
       const animate = () => {
         const elapsed = performance.now() - startTime;
         const progress = Math.min(1, elapsed / duration);
         // easeOutCubic
         const easeOut = 1 - Math.pow(1 - progress, 3);
-        
+
         const curX = x + targetX * easeOut;
         const curY = y + targetY * easeOut;
-        
+
         // Shrink slower at first, then faster
         const scale = 1 - Math.pow(progress, 2);
-        
-        square.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${scale})`;
-        
+
+        square.style.transform = `translate3d(${curX - size / 2}px, ${curY - size / 2}px, 0) scale(${scale})`;
+
         if (progress < 1) {
           requestAnimationFrame(animate);
         } else {
           square.remove();
         }
       };
-      
+
       requestAnimationFrame(animate);
     }
-    
+
     // Quick flash square
     const flash = document.createElement('div');
     flash.style.cssText = `
@@ -1138,10 +1138,10 @@ class RetroHitAnimation {
       will-change: transform, opacity;
     `;
     container.appendChild(flash);
-    
+
     const flashStart = performance.now();
     const flashDuration = 200;
-    
+
     const animateFlash = () => {
       const elapsed = performance.now() - flashStart;
       const progress = Math.min(1, elapsed / flashDuration);
@@ -1168,16 +1168,16 @@ class RetroDodgeAnimation {
     const burstCount = lowPower ? 6 : 12;
 
     // Coordinate overlapping animations on the card
-    const origTransform = cardElement.dataset.originalTransform !== undefined 
-      ? cardElement.dataset.originalTransform 
+    const origTransform = cardElement.dataset.originalTransform !== undefined
+      ? cardElement.dataset.originalTransform
       : (cardElement.style.transform || 'translate(-50%, -50%)');
-      
+
     if (cardElement.dataset.originalTransform === undefined) {
       cardElement.dataset.originalTransform = origTransform;
     }
-    
+
     cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
-    
+
     if (cardElement.animResetTimeout) {
       clearTimeout(cardElement.animResetTimeout);
     }
@@ -1203,12 +1203,12 @@ class RetroDodgeAnimation {
       delete cardElement.dataset.originalTransform;
       delete cardElement.dataset.activeAnimsCount;
     }, 1000);
-    
+
     // 1. Squares collapse inwards
-    for(let i = 0; i < burstCount; i++) {
+    for (let i = 0; i < burstCount; i++) {
       const square = document.createElement('div');
       const size = (10 + Math.random() * 20) * scaleFactor;
-      
+
       square.style.cssText = `
         position: fixed;
         left: 0;
@@ -1221,35 +1221,35 @@ class RetroDodgeAnimation {
         will-change: transform, opacity;
       `;
       container.appendChild(square);
-      
+
       const angle = (i / burstCount) * Math.PI * 2 + (Math.random() * 0.5);
       const startDistance = 60 + Math.random() * 40;
-      
+
       const startX = Math.cos(angle) * startDistance;
       const startY = Math.sin(angle) * startDistance;
-      
+
       const startTime = performance.now();
       const collapseDuration = 200 + Math.random() * 100;
-      
+
       const animateCollapse = () => {
         const elapsed = performance.now() - startTime;
         const progress = Math.min(1, elapsed / collapseDuration);
-        
+
         // easeInCubic to accelerate inwards
         const easeIn = Math.pow(progress, 3);
-        
+
         const curX = cx + startX * (1 - easeIn);
         const curY = cy + startY * (1 - easeIn);
-        
-        square.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${1 - progress})`;
-        
+
+        square.style.transform = `translate3d(${curX - size / 2}px, ${curY - size / 2}px, 0) scale(${1 - progress})`;
+
         if (progress < 1) {
           requestAnimationFrame(animateCollapse);
         } else {
           square.remove();
         }
       };
-      
+
       requestAnimationFrame(animateCollapse);
     }
 
@@ -1259,60 +1259,60 @@ class RetroDodgeAnimation {
       const slideDistance = 40; // Slide to the right
       const slideDuration = 150;
       const slideStart = performance.now();
-      
+
       // Temporarily disable CSS transitions on the card itself to prevent layout thrashing
       cardElement.style.transition = 'none';
       cardElement.style.willChange = 'transform, opacity';
-      
+
       const slideAnimate = () => {
         const elapsed = performance.now() - slideStart;
         const progress = Math.min(1, elapsed / slideDuration);
-        
+
         // Move horizontally and fade out
         cardElement.style.transform = `${origTransform} translateX(${slideDistance * progress}px)`;
         cardElement.style.opacity = 1 - progress;
-        
+
         if (progress < 1) {
           requestAnimationFrame(slideAnimate);
         } else {
           // Stay invisible for a split second, then slide back
           setTimeout(() => {
             resetCard();
-            
+
             // Reappear burst (outward)
             const reappearCount = lowPower ? 4 : 8;
-            for(let j = 0; j < reappearCount; j++) {
-               const sq = document.createElement('div');
-               const sqSize = 15 * scaleFactor;
-               sq.style.cssText = `
+            for (let j = 0; j < reappearCount; j++) {
+              const sq = document.createElement('div');
+              const sqSize = 15 * scaleFactor;
+              sq.style.cssText = `
                  position: fixed; left: 0; top: 0;
                  width: ${sqSize}px; height: ${sqSize}px; background: ${color};
                  pointer-events: none; z-index: 13000;
                  will-change: transform, opacity;
                `;
-               container.appendChild(sq);
-               
-               const a = (j / reappearCount) * Math.PI * 2;
-               const dist = 30 + Math.random() * 20;
-               const tx = Math.cos(a) * dist;
-               const ty = Math.sin(a) * dist;
-               
-               const outStart = performance.now();
-               const outDur = 200;
-               
-               const animateOut = () => {
-                 const p2 = Math.min(1, (performance.now() - outStart) / outDur);
-                 sq.style.transform = `translate3d(${cx + tx * Math.pow(p2, 0.5) - sqSize/2}px, ${cy + ty * Math.pow(p2, 0.5) - sqSize/2}px, 0) scale(${1 - p2})`;
-                 if (p2 < 1) requestAnimationFrame(animateOut);
-                 else sq.remove();
-               };
-               requestAnimationFrame(animateOut);
+              container.appendChild(sq);
+
+              const a = (j / reappearCount) * Math.PI * 2;
+              const dist = 30 + Math.random() * 20;
+              const tx = Math.cos(a) * dist;
+              const ty = Math.sin(a) * dist;
+
+              const outStart = performance.now();
+              const outDur = 200;
+
+              const animateOut = () => {
+                const p2 = Math.min(1, (performance.now() - outStart) / outDur);
+                sq.style.transform = `translate3d(${cx + tx * Math.pow(p2, 0.5) - sqSize / 2}px, ${cy + ty * Math.pow(p2, 0.5) - sqSize / 2}px, 0) scale(${1 - p2})`;
+                if (p2 < 1) requestAnimationFrame(animateOut);
+                else sq.remove();
+              };
+              requestAnimationFrame(animateOut);
             }
           }, 100);
         }
       };
       requestAnimationFrame(slideAnimate);
-      
+
     }, 150);
   }
 }
@@ -1325,7 +1325,7 @@ class RetroTaskCompleteAnimation {
 
     const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
-    
+
     // Retrieve task difficulty from TaskManager
     const taskId = element?.dataset?.id;
     const task = (taskId && typeof TaskManager !== 'undefined') ? TaskManager.getTaskById(taskId) : null;
@@ -1334,8 +1334,8 @@ class RetroTaskCompleteAnimation {
 
     // Scale options by difficulty
     const burstCount = isHard ? (lowPower ? 30 : 60) : (lowPower ? 15 : 30);
-    const colors = isHard 
-      ? ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF'] 
+    const colors = isHard
+      ? ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF']
       : ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
 
     // Determine center; fallback to screen center if no rect
@@ -1365,7 +1365,7 @@ class RetroTaskCompleteAnimation {
       });
 
       setTimeout(() => {
-        try { shockwave.remove(); } catch (e) {}
+        try { shockwave.remove(); } catch (e) { }
       }, 850);
     }
 
@@ -1380,11 +1380,11 @@ class RetroTaskCompleteAnimation {
     }
 
     // Spawn traveling particles
-    for(let i = 0; i < burstCount; i++) {
+    for (let i = 0; i < burstCount; i++) {
       const square = document.createElement('div');
       const size = (8 + Math.random() * 15) * scaleFactor;
       const color = colors[Math.floor(Math.random() * colors.length)];
-      
+
       square.style.cssText = `
         position: fixed;
         left: 0;
@@ -1398,29 +1398,29 @@ class RetroTaskCompleteAnimation {
         will-change: transform, opacity;
       `;
       container.appendChild(square);
-      
+
       const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.4 - 0.2);
       const velocity = 5 + Math.random() * 8;
       let vx = Math.cos(angle) * velocity;
       let vy = Math.sin(angle) * velocity - 4; // upward bias
-      
+
       let x = cx;
       let y = cy;
       let life = 1.0;
       const decay = 0.005 + Math.random() * 0.004;
       const gravity = 0.2;
-      
+
       const animateParticle = () => {
         vy += gravity;
         x += vx;
         y += vy;
         life -= decay;
-        
+
         if (life > 0) {
-          square.style.transform = `translate3d(${x - size/2}px, ${y - size/2}px, 0) scale(${life})`;
+          square.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0) scale(${life})`;
           requestAnimationFrame(animateParticle);
         } else {
-          try { square.remove(); } catch (e) {}
+          try { square.remove(); } catch (e) { }
         }
       };
       requestAnimationFrame(animateParticle);
@@ -1443,7 +1443,7 @@ class RetroBossEntranceAnimation {
       will-change: opacity;
     `;
     document.body.appendChild(overlay);
-    
+
     // 2. Glitch lines
     const glitchLinesCount = (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower) ? 3 : 5;
     for (let i = 0; i < glitchLinesCount; i++) {
@@ -1461,7 +1461,7 @@ class RetroBossEntranceAnimation {
         will-change: transform, opacity;
       `;
       document.body.appendChild(line);
-      
+
       const animateGlitch = () => {
         line.style.transition = 'transform 100ms steps(3), opacity 100ms';
         line.style.transform = 'scaleX(1)';
@@ -1484,7 +1484,7 @@ class RetroBossEntranceAnimation {
     bossCard.style.transform = `${origTransform} scale(3) translateY(-100px)`;
     bossCard.style.opacity = '0';
     bossCard.style.willChange = 'transform, opacity';
-    
+
     // Force reflow
     void bossCard.offsetWidth;
 
@@ -1544,7 +1544,7 @@ class RetroWarpAnimation {
     cardElement.style.opacity = '0';
     cardElement.style.filter = 'brightness(2) contrast(1.5)';
     cardElement.style.willChange = 'transform, opacity, filter';
-    
+
     void cardElement.offsetWidth; // Reflow
 
     // 1. Beam down
@@ -1593,7 +1593,7 @@ class RetroWarpAnimation {
 
         const animateOut = () => {
           const p = Math.min(1, (performance.now() - outStart) / outDur);
-          sq.style.transform = `translate3d(${cx + tx * p - size/2}px, ${cy + ty * p - size/2}px, 0) scale(${1 - p})`;
+          sq.style.transform = `translate3d(${cx + tx * p - size / 2}px, ${cy + ty * p - size / 2}px, 0) scale(${1 - p})`;
           if (p < 1) requestAnimationFrame(animateOut);
           else sq.remove();
         };
@@ -1637,14 +1637,14 @@ class RetroLevelUpAnimation {
 
     // 2. Floating glowing particles moving up across the entire screen width
     const particlesCount = lowPower ? 20 : 45; // more particles since it's full screen now!
-    for(let i = 0; i < particlesCount; i++) {
+    for (let i = 0; i < particlesCount; i++) {
       const p = document.createElement('div');
       const size = (6 + Math.random() * 12) * scaleFactor;
       const isGold = Math.random() > 0.5;
-      
+
       // Span across the entire viewport width
       const startX = Math.random() * window.innerWidth;
-      
+
       p.style.cssText = `
         position: fixed;
         left: ${startX}px;
@@ -1669,7 +1669,7 @@ class RetroLevelUpAnimation {
           const progress = Math.min(1, (performance.now() - start) / duration);
           const y = window.innerHeight - (progress * window.innerHeight * 1.25); // Shoot past top
           const currentX = startX + drift * Math.sin(progress * Math.PI * 2);
-          
+
           p.style.transform = `translate3d(${currentX - startX}px, ${y - window.innerHeight}px, 0) scale(${1 - progress * 0.4})`;
           p.style.opacity = 1 - progress;
 
@@ -1694,7 +1694,7 @@ class RetroHealAnimation {
 
     const lowPower = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const scaleFactor = typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1;
-    
+
     // Bubble particles
     const bubbleCount = lowPower ? 8 : 15;
     for (let i = 0; i < bubbleCount; i++) {
@@ -1727,7 +1727,7 @@ class RetroHealAnimation {
           const progress = Math.min(1, (performance.now() - start) / duration);
           const currentY = startY - (progress * 150); // float up
           const currentX = startX + drift * Math.sin(progress * Math.PI * 4); // wiggle
-          
+
           bubble.style.transform = `translate3d(${currentX - startX}px, ${currentY - startY}px, 0) scale(${1 - progress * 0.3})`;
           bubble.style.opacity = 1 - progress;
 
@@ -1744,7 +1744,7 @@ class RetroCritSlashAnimation {
   static play(cardElement, elementColor = '#ffb33f') {
     if (!cardElement) return;
     const rect = cardElement.getBoundingClientRect();
-    
+
     // Create the absolute wrapper matching card bounds
     const wrapper = document.createElement('div');
     wrapper.className = 'crit-slash-wrapper';
@@ -1753,28 +1753,28 @@ class RetroCritSlashAnimation {
     wrapper.style.width = `${rect.width}px`;
     wrapper.style.height = `${rect.height}px`;
     wrapper.style.setProperty('--slash-color', elementColor);
-    
+
     // Create the two slashes
     const slash1 = document.createElement('div');
     slash1.className = 'crit-slash-line slash-1';
-    
+
     const slash2 = document.createElement('div');
     slash2.className = 'crit-slash-line slash-2';
-    
+
     wrapper.appendChild(slash1);
     wrapper.appendChild(slash2);
     document.body.appendChild(wrapper);
-    
+
     // Trigger card shake
     cardElement.classList.add('crit-shaking');
-    
+
     // Remove classes and elements after animation finishes
     setTimeout(() => {
-      try { cardElement.classList.remove('crit-shaking'); } catch (e) {}
+      try { cardElement.classList.remove('crit-shaking'); } catch (e) { }
     }, 260);
 
     setTimeout(() => {
-      try { wrapper.remove(); } catch (e) {}
+      try { wrapper.remove(); } catch (e) { }
     }, 450);
   }
 }
@@ -1798,16 +1798,16 @@ class RetroComboFinisherAnimation {
     }
 
     // Coordinate overlapping animations on the card
-    const origTransform = cardElement.dataset.originalTransform !== undefined 
-      ? cardElement.dataset.originalTransform 
+    const origTransform = cardElement.dataset.originalTransform !== undefined
+      ? cardElement.dataset.originalTransform
       : (cardElement.style.transform || 'translate(-50%, -50%)');
-      
+
     if (cardElement.dataset.originalTransform === undefined) {
       cardElement.dataset.originalTransform = origTransform;
     }
-    
+
     cardElement.dataset.activeAnimsCount = Number(cardElement.dataset.activeAnimsCount || 0) + 1;
-    
+
     if (cardElement.animResetTimeout) {
       clearTimeout(cardElement.animResetTimeout);
     }
@@ -1838,7 +1838,7 @@ class RetroComboFinisherAnimation {
     cardElement.style.transition = 'none';
     cardElement.style.willChange = 'transform';
     cardElement.style.transform = `${origTransform} scale(1.22) translateY(20px)`;
-    
+
     setTimeout(() => {
       cardElement.style.transform = `${origTransform} scale(0.9) translateY(-10px)`;
       setTimeout(() => {
@@ -1853,8 +1853,8 @@ class RetroComboFinisherAnimation {
         const startSize = Math.min(rect.width, rect.height) * 0.5;
         ring.style.cssText = `
           position: fixed;
-          left: ${cx - startSize/2}px;
-          top: ${cy - startSize/2}px;
+          left: ${cx - startSize / 2}px;
+          top: ${cy - startSize / 2}px;
           width: ${startSize}px;
           height: ${startSize}px;
           border: ${borderSize}px solid #ffd700;
@@ -1917,7 +1917,7 @@ class RetroComboFinisherAnimation {
         const p = Math.min(1, (performance.now() - pStart) / pDur);
         const curX = cx + vx * p * 18;
         const curY = cy + vy * p * 18;
-        sq.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${1.2 - p * 1.2}) rotate(${p * 360}deg)`;
+        sq.style.transform = `translate3d(${curX - size / 2}px, ${curY - size / 2}px, 0) scale(${1.2 - p * 1.2}) rotate(${p * 360}deg)`;
         sq.style.opacity = 1 - p;
 
         if (p < 1) requestAnimationFrame(animateParticle);
@@ -1938,11 +1938,11 @@ class RetroWeaknessAnimation {
 
     const circle = document.createElement('div');
     const startSize = Math.max(rect.width, rect.height) * 2.0;
-    
+
     circle.style.cssText = `
       position: fixed;
-      left: ${cx - startSize/2}px;
-      top: ${cy - startSize/2}px;
+      left: ${cx - startSize / 2}px;
+      top: ${cy - startSize / 2}px;
       width: ${startSize}px;
       height: ${startSize}px;
       border: 6px solid ${color};
@@ -1956,13 +1956,13 @@ class RetroWeaknessAnimation {
 
     const start = performance.now();
     const duration = 500;
-    
+
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
       const currentScale = 1 - progress;
       const currentRotation = progress * 360;
       const opacity = 1 - Math.pow(progress, 3);
-      
+
       circle.style.transform = `scale(${currentScale}) rotate(${currentRotation}deg)`;
       circle.style.opacity = opacity;
 
@@ -1986,11 +1986,11 @@ class RetroResistanceAnimation {
 
     const square = document.createElement('div');
     const maxSize = Math.max(rect.width, rect.height) * 2.0;
-    
+
     square.style.cssText = `
       position: fixed;
-      left: ${cx - maxSize/2}px;
-      top: ${cy - maxSize/2}px;
+      left: ${cx - maxSize / 2}px;
+      top: ${cy - maxSize / 2}px;
       width: ${maxSize}px;
       height: ${maxSize}px;
       border: 6px solid ${color};
@@ -2003,13 +2003,13 @@ class RetroResistanceAnimation {
 
     const start = performance.now();
     const duration = 500;
-    
+
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
       const currentScale = 0.1 + progress * 0.9;
       const currentRotation = progress * 360;
       const opacity = 1 - Math.pow(progress, 3);
-      
+
       square.style.transform = `scale(${currentScale}) rotate(${currentRotation}deg)`;
       square.style.opacity = opacity;
 
@@ -2029,33 +2029,33 @@ class DodgeTetherAnimation {
     const rect = cardElement.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    
+
     // Create projectile
     const proj = document.createElement('div');
     proj.className = 'dodge-tether-projectile';
     proj.style.left = `${fromX}px`;
     proj.style.top = `${fromY}px`;
     document.body.appendChild(proj);
-    
+
     const startTime = performance.now();
     const duration = 250; // 250ms
-    
+
     const animate = () => {
       const elapsed = performance.now() - startTime;
       const progress = Math.min(1, elapsed / duration);
-      
+
       const curX = fromX + (cx - fromX) * progress;
       const curY = fromY + (cy - fromY) * progress;
-      
+
       proj.style.left = `${curX}px`;
       proj.style.top = `${curY}px`;
       proj.style.transform = `translate(-50%, -50%) scale(${1 + progress * 0.3})`;
-      
+
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
         proj.remove();
-        
+
         // Spawn collapsing forcefield
         const ff = document.createElement('div');
         ff.className = 'dodge-tether-forcefield';
@@ -2064,12 +2064,12 @@ class DodgeTetherAnimation {
         ff.style.width = `${rect.width}px`;
         ff.style.height = `${rect.height}px`;
         document.body.appendChild(ff);
-        
+
         // Trigger transition to active state
         requestAnimationFrame(() => {
           ff.classList.add('active');
         });
-        
+
         // Keep active for 1.2s, then fade out
         setTimeout(() => {
           ff.classList.remove('active');
@@ -2078,7 +2078,7 @@ class DodgeTetherAnimation {
         }, 1200);
       }
     };
-    
+
     requestAnimationFrame(animate);
   }
 }
@@ -2120,8 +2120,8 @@ class RetroSlamWaveAnimation {
         const startSize = Math.min(rect.width, rect.height) * 0.4;
         ring.style.cssText = `
           position: fixed;
-          left: ${cx - startSize/2}px;
-          top: ${cy - startSize/2}px;
+          left: ${cx - startSize / 2}px;
+          top: ${cy - startSize / 2}px;
           width: ${startSize}px;
           height: ${startSize}px;
           border: 4px double ${color};
@@ -2177,7 +2177,7 @@ class RetroGlitchInvertAnimation {
     // Apply color inversion to body
     const originalFilter = document.body.style.filter || '';
     document.body.style.filter = `invert(0.8) hue-rotate(90deg) contrast(1.2)`;
-    
+
     // Intense camera shake
     if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
       ScreenEffects.shake(20 * intensity, 400);
@@ -2256,7 +2256,7 @@ class RetroEnergyBeamAnimation {
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
-      
+
       let scaleX = 0.2;
       let opacity = 0;
       if (progress < 0.2) {
@@ -2327,14 +2327,14 @@ class RetroOrbBurstAnimation {
       const animate = () => {
         const progress = Math.min(1, (performance.now() - start) / duration);
         const easeOut = 1 - Math.pow(1 - progress, 2);
-        
+
         // Add a slight retro wiggle using sin
         const wiggle = Math.sin(progress * Math.PI * 4) * 8;
-        const curX = cx + tx * easeOut + (Math.cos(angle + Math.PI/2) * wiggle);
-        const curY = cy + ty * easeOut + (Math.sin(angle + Math.PI/2) * wiggle);
+        const curX = cx + tx * easeOut + (Math.cos(angle + Math.PI / 2) * wiggle);
+        const curY = cy + ty * easeOut + (Math.sin(angle + Math.PI / 2) * wiggle);
         const scale = 1 - progress;
 
-        sq.style.transform = `translate3d(${curX - size/2}px, ${curY - size/2}px, 0) scale(${scale})`;
+        sq.style.transform = `translate3d(${curX - size / 2}px, ${curY - size / 2}px, 0) scale(${scale})`;
         sq.style.opacity = 1 - progress;
 
         if (progress < 1) {
@@ -2352,13 +2352,13 @@ class RetroPixelRainAnimation {
   static play(color = '#00ffff') {
     const container = document.body;
     const columns = Math.floor(window.innerWidth / 30);
-    
+
     for (let i = 0; i < columns; i += 2) {
       setTimeout(() => {
         const drop = document.createElement('div');
         const size = 8 + Math.random() * 8;
         const startX = i * 30 + Math.random() * 15;
-        
+
         drop.style.cssText = `
           position: fixed;
           left: ${startX}px;
@@ -2379,7 +2379,7 @@ class RetroPixelRainAnimation {
         const animate = () => {
           const progress = Math.min(1, (performance.now() - start) / duration);
           const y = progress * window.innerHeight;
-          
+
           drop.style.transform = `translate3d(0, ${y}px, 0) scale(${1 - progress * 0.3})`;
           drop.style.opacity = 1 - progress;
 
@@ -2412,7 +2412,7 @@ class RetroRagePulseAnimation {
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
-      
+
       // Pulse size up/down rapid sine
       const pulse = 1.0 + Math.sin(progress * Math.PI * 4) * 0.12;
       const glowSize = 10 + Math.sin(progress * Math.PI * 4) * 15;
@@ -2440,7 +2440,7 @@ class RetroHellfireAnimation {
     if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
       ScreenEffects.shake(12 * intensity, 400);
     }
-    
+
     // Spawn rising fire pixel columns
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
@@ -2550,8 +2550,8 @@ class RetroMagicCircleAnimation {
     const size = Math.max(rect.width, rect.height) * 1.6;
     div.style.cssText = `
       position: fixed;
-      left: ${cx - size/2}px;
-      top: ${cy - size/2}px;
+      left: ${cx - size / 2}px;
+      top: ${cy - size / 2}px;
       width: ${size}px;
       height: ${size}px;
       pointer-events: none;
@@ -2661,7 +2661,7 @@ class RetroEarthShatterAnimation {
     if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
       ScreenEffects.shake(22 * intensity, 500);
     }
-    
+
     // Create rising ground rocks
     const shardCount = Math.round(15 * intensity);
     for (let i = 0; i < shardCount; i++) {
@@ -2839,8 +2839,8 @@ class RetroRoyalCrownBurstAnimation {
       const size = 18 + Math.random() * 10;
       crown.style.cssText = `
         position: fixed;
-        left: ${cx - size/2}px;
-        top: ${cy - size/2}px;
+        left: ${cx - size / 2}px;
+        top: ${cy - size / 2}px;
         width: ${size}px;
         height: ${size}px;
         pointer-events: none;
@@ -2954,8 +2954,8 @@ class RetroLavaSpitAnimation {
     const size = 25 * intensity;
     ball.style.cssText = `
       position: fixed;
-      left: ${cx - size/2}px;
-      top: ${cy - size/2}px;
+      left: ${cx - size / 2}px;
+      top: ${cy - size / 2}px;
       width: ${size}px;
       height: ${size}px;
       background: radial-gradient(circle, #ffffff 0%, ${color} 60%, transparent 100%);
@@ -3011,7 +3011,7 @@ class RetroSpectralSwordsAnimation {
         const sizeH = 45;
         const left = Math.random() * 80 + 10;
         const startY = -60;
-        
+
         sword.style.cssText = `
           position: fixed;
           left: ${left}vw;
@@ -3124,8 +3124,8 @@ class RetroVoidBlackHoleAnimation {
     const size = 120 * intensity;
     hole.style.cssText = `
       position: fixed;
-      left: ${cx - size/2}px;
-      top: ${cy - size/2}px;
+      left: ${cx - size / 2}px;
+      top: ${cy - size / 2}px;
       width: ${size}px;
       height: ${size}px;
       background: radial-gradient(circle, #000000 30%, ${color} 70%, transparent 100%);
@@ -3198,9 +3198,9 @@ class RetroVoidBlackHoleAnimation {
 class WeaponHitAnimation {
 
   static _cardCenter(card) {
-    if (!card) return { x: window.innerWidth/2, y: window.innerHeight/2, w:80, h:100, r:{left:window.innerWidth/2-40,top:window.innerHeight/2-50} };
+    if (!card) return { x: window.innerWidth / 2, y: window.innerHeight / 2, w: 80, h: 100, r: { left: window.innerWidth / 2 - 40, top: window.innerHeight / 2 - 50 } };
     const r = card.getBoundingClientRect();
-    return { x: r.left+r.width/2, y: r.top+r.height/2, w:r.width, h:r.height, r };
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, r };
   }
 
   static _overlay(card) {
@@ -3214,7 +3214,7 @@ class WeaponHitAnimation {
   static _raf(duration, onFrame, onDone) {
     const start = performance.now();
     const tick = () => {
-      const p = Math.min(1, (performance.now()-start)/duration);
+      const p = Math.min(1, (performance.now() - start) / duration);
       onFrame(p);
       if (p < 1) requestAnimationFrame(tick);
       else if (onDone) onDone();
@@ -3232,14 +3232,14 @@ class WeaponHitAnimation {
     document.body.appendChild(el);
     const start = performance.now();
     const tick = () => {
-      const p = Math.min(1, (performance.now()-start)/duration);
-      if (p >= 1) { try { el.remove(); } catch(e){} return; }
-      el.style.transform = `translateX(${(Math.random()-0.5)*intensity*2*(1-p)}px)`;
+      const p = Math.min(1, (performance.now() - start) / duration);
+      if (p >= 1) { try { el.remove(); } catch (e) { } return; }
+      el.style.transform = `translateX(${(Math.random() - 0.5) * intensity * 2 * (1 - p)}px)`;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
     // Safety cleanup
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 120);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 120);
   }
 
   static _squishCard(card, scaleY, duration) {
@@ -3259,12 +3259,12 @@ class WeaponHitAnimation {
       // Phase 2: spring back
       el.style.transition = `transform ${outDur}ms cubic-bezier(0.2,1.6,0.4,1)`;
       el.style.transform = 'scaleY(1)';
-      const t2 = setTimeout(() => { try { el.remove(); } catch(e){} }, outDur + 60);
+      const t2 = setTimeout(() => { try { el.remove(); } catch (e) { } }, outDur + 60);
       el._t2 = t2;
     }, inDur + 12);
     el._t1 = t1;
     // Safety: always remove after full duration
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 300);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 300);
   }
 
   static _tintCard(card, color, duration) {
@@ -3277,16 +3277,16 @@ class WeaponHitAnimation {
     // Fade in quickly, then fade out
     el.style.opacity = '0';
     requestAnimationFrame(() => {
-      el.style.transition = `opacity ${Math.round(duration*0.15)}ms ease-out`;
+      el.style.transition = `opacity ${Math.round(duration * 0.15)}ms ease-out`;
       el.style.opacity = '1';
       setTimeout(() => {
-        el.style.transition = `opacity ${Math.round(duration*0.6)}ms ease-in`;
+        el.style.transition = `opacity ${Math.round(duration * 0.6)}ms ease-in`;
         el.style.opacity = '0';
-        setTimeout(() => { try { el.remove(); } catch(e){} }, Math.round(duration*0.6) + 50);
-      }, Math.round(duration*0.35));
+        setTimeout(() => { try { el.remove(); } catch (e) { } }, Math.round(duration * 0.6) + 50);
+      }, Math.round(duration * 0.35));
     });
     // Safety cleanup
-    setTimeout(() => { try { el.remove(); } catch(e){} }, duration + 200);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 200);
   }
 
 
@@ -3294,50 +3294,50 @@ class WeaponHitAnimation {
     if (!card) return;
     const c = this._cardCenter(card);
     const sys = new ParticleSystem({ container: document.body });
-    const n = Math.max(2, Math.round(count*(typeof AnimationRuntime!=='undefined'?AnimationRuntime.particleScale:1)));
-    for (let i=0;i<n;i++) {
-      sys.emit(c.x+(Math.random()-0.5)*c.w*0.8, c.y+(Math.random()-0.5)*c.h*0.8, 1,
-        { color, lifetime, velocity:speed, spread:Math.PI*2, size });
+    const n = Math.max(2, Math.round(count * (typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1)));
+    for (let i = 0; i < n; i++) {
+      sys.emit(c.x + (Math.random() - 0.5) * c.w * 0.8, c.y + (Math.random() - 0.5) * c.h * 0.8, 1,
+        { color, lifetime, velocity: speed, spread: Math.PI * 2, size });
     }
   }
 
   static play(weaponName, card, opts = {}) {
     try {
       switch (weaponName) {
-        case 'Rusty Sword':    this._rustBurst(card,opts);       break;
-        case 'Great Hammer':   this._gravityCrush(card,opts);    break;
-        case 'Dagger':         this._rapidJabFlash(card,opts);   break;
-        case 'Bomb':           this._smokeCloud(card,opts);      break;
-        case 'Buckler':        this._shieldRing(card,opts);      break;
-        case 'Grimoire':       this._arcaneRuneBurst(card,opts); break;
-        case 'Vampire Dagger': this._bloodVeinCrack(card,opts);  break;
-        case 'Bazooka':        this._explosionBloom(card,opts);  break;
-        case 'Uzi':            this._bulletHail(card,opts);      break;
-        case 'Thunder Hammer': this._lightningStrike(card,opts); break;
-        case 'Lazer':          this._beamPierce(card,opts);      break;
-        case 'Vine Spell':     this._vineWrap(card,opts);        break;
-        case 'Death Spell':    this._reaperArc(card,opts);       break;
-        case 'Heavy Hammer':   this._anvilDrop(card,opts);       break;
-        case 'Echo Bow':       this._arrowTrail(card,opts);      break;
-        case 'Aegis':          this._aegisWard(card,opts);       break;
+        case 'Rusty Sword': this._rustBurst(card, opts); break;
+        case 'Great Hammer': this._gravityCrush(card, opts); break;
+        case 'Dagger': this._rapidJabFlash(card, opts); break;
+        case 'Bomb': this._smokeCloud(card, opts); break;
+        case 'Buckler': this._shieldRing(card, opts); break;
+        case 'Grimoire': this._arcaneRuneBurst(card, opts); break;
+        case 'Vampire Dagger': this._bloodVeinCrack(card, opts); break;
+        case 'Bazooka': this._explosionBloom(card, opts); break;
+        case 'Uzi': this._bulletHail(card, opts); break;
+        case 'Thunder Hammer': this._lightningStrike(card, opts); break;
+        case 'Lazer': this._beamPierce(card, opts); break;
+        case 'Vine Spell': this._vineWrap(card, opts); break;
+        case 'Death Spell': this._reaperArc(card, opts); break;
+        case 'Heavy Hammer': this._anvilDrop(card, opts); break;
+        case 'Echo Bow': this._arrowTrail(card, opts); break;
+        case 'Aegis': this._aegisWard(card, opts); break;
         default: break;
       }
-    } catch(e) { console.warn('[WeaponHitAnimation]',e); }
+    } catch (e) { console.warn('[WeaponHitAnimation]', e); }
   }
 
   static _rustBurst(card) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
-    
+
     this._tintCard(card, 'rgba(180, 110, 50, 0.6)', 220);
     this._shakeCard(card, 12 * sf, 350);
-    
+
     const c = this._cardCenter(card);
     const sys = new ParticleSystem({ container: document.body });
     const cols = ['#b8860b', '#8b6914', '#c8a04a', '#e0c060'];
     const n = Math.max(4, Math.round((isLow ? 10 : 24) * (typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1)));
-    
+
     for (let i = 0; i < n; i++) {
       sys.emit(
         c.x + (Math.random() - 0.5) * c.w * 0.8,
@@ -3352,7 +3352,7 @@ class WeaponHitAnimation {
         }
       );
     }
-    
+
     const { el } = this._overlay(card);
     el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;border:4px solid rgba(180, 110, 50, 0.95);background:transparent;box-shadow: 0 0 20px rgba(180, 110, 50, 0.9), inset 0 0 10px rgba(180, 110, 50, 0.6);`;
     this._raf(350, p => {
@@ -3365,7 +3365,7 @@ class WeaponHitAnimation {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
-    
+
     this._squishCard(card, isLow ? 0.58 : 0.45, 400);
     this._tintCard(card, 'rgba(59, 7, 100, 0.6)', 300);
     this._shakeCard(card, 15 * sf, 400);
@@ -3405,7 +3405,7 @@ class WeaponHitAnimation {
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
-    
+
     const flashDur = 65;
     const intervals = isLow ? [0, 80, 160] : [0, 60, 120, 180];
     intervals.forEach(d => {
@@ -3423,25 +3423,25 @@ class WeaponHitAnimation {
     this._shakeCard(card, 8 * sf, 300);
   }
 
-  static _smokeCloud(card,{allCards=[]}={}) {
+  static _smokeCloud(card, { allCards = [] } = {}) {
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const targets = allCards.length ? allCards : (card ? [card] : []);
-    
+
     targets.forEach(tgt => {
       if (!tgt) return;
       const c = this._cardCenter(tgt);
       const { el } = this._overlay(tgt);
       const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 1.9);
       el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(249, 115, 22, 0.95) 0%, rgba(80, 80, 80, 0.85) 45%, rgba(0, 0, 0, 0.6) 75%, transparent 100%);box-shadow: 0 0 25px rgba(249, 115, 22, 0.4);`;
-      
+
       this._raf(500, p => {
         el.style.transform = `scale(${0.2 + p * 0.95})`;
         el.style.opacity = p < 0.35 ? p / 0.35 : 1 - (p - 0.35) / 0.65;
       }, () => el.remove());
-      
+
       this._shakeCard(tgt, 10 * sf, 350);
-      
+
       if (!isLow) {
         // Emit embers
         const sys = new ParticleSystem({ container: document.body });
@@ -3470,16 +3470,16 @@ class WeaponHitAnimation {
     const c = this._cardCenter(card);
     const { el } = this._overlay(card);
     const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 2.0);
-    
+
     el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;border:${isLow ? '4px' : '7px double'} solid rgba(255, 215, 0, 0.95);background:transparent;box-shadow:0 0 25px rgba(255, 215, 0, 0.95);`;
-    
+
     this._raf(500, p => {
       el.style.transform = `scale(${0.4 + p * 0.8})`;
       el.style.opacity = 1 - p;
     }, () => el.remove());
-    
+
     this._tintCard(card, 'rgba(255, 215, 0, 0.45)', 300);
-    
+
     if (!isLow) {
       // Golden star particles
       const sys = new ParticleSystem({ container: document.body });
@@ -3500,7 +3500,7 @@ class WeaponHitAnimation {
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
-    
+
     const runes = isLow ? ['✦', '✧', '⊕', '⊗'] : ['☯', '卍', '☽', '☼', '✦', '✧', '⊕', '⊗'];
     runes.forEach((r, i) => {
       const el = document.createElement('div');
@@ -3508,7 +3508,7 @@ class WeaponHitAnimation {
       el.textContent = r;
       el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#c084fc;text-shadow:0 0 8px rgba(192,132,252,0.9), 0 0 16px rgba(192,132,252,0.7);will-change:transform,opacity;transform:translate(-50%,-50%);`;
       document.body.appendChild(el);
-      
+
       const dist = isLow ? 44 : 90;
       this._raf(500, p => {
         const d = p * dist;
@@ -3516,7 +3516,7 @@ class WeaponHitAnimation {
         el.style.opacity = 1 - Math.pow(p, 2.0);
       }, () => el.remove());
     });
-    
+
     this._tintCard(card, 'rgba(192, 132, 252, 0.55)', 250);
   }
 
@@ -3526,13 +3526,13 @@ class WeaponHitAnimation {
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
     const { el } = this._overlay(card);
-    
+
     el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 4px rgba(220,20,60,0.95), 0 0 15px rgba(220,20,60,0.6);border:2px solid rgba(220,20,60,0.8);`;
     this._raf(550, p => {
       el.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
       el.style.transform = `scale(${1.0 + Math.sin(p * Math.PI) * 0.05})`;
     }, () => el.remove());
-    
+
     const sys = new ParticleSystem({ container: document.body });
     const n = Math.max(4, Math.round((isLow ? 8 : 18) * (typeof AnimationRuntime !== 'undefined' ? AnimationRuntime.particleScale : 1)));
     for (let i = 0; i < n; i++) {
@@ -3551,20 +3551,20 @@ class WeaponHitAnimation {
         );
       }, i * (isLow ? 30 : 18));
     }
-    
+
     this._tintCard(card, 'rgba(200, 0, 40, 0.5)', 250);
     this._shakeCard(card, 8 * sf, 260);
   }
 
-  static _explosionBloom(card,{allCards=[]}={}) {
+  static _explosionBloom(card, { allCards = [] } = {}) {
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const targets = allCards.length ? allCards : (card ? [card] : []);
-    
+
     if (typeof ScreenEffects !== 'undefined' && ScreenEffects.flash) {
       ScreenEffects.flash('rgba(255, 120, 0, 0.25)', 200);
     }
-    
+
     targets.forEach((tgt, idx) => {
       if (!tgt) return;
       const isPrimary = idx === 0;
@@ -3572,37 +3572,37 @@ class WeaponHitAnimation {
       const { el } = this._overlay(tgt);
       const scaleMultiplier = isPrimary ? (isLow ? 1.6 : 2.2) : (isLow ? 1.1 : 1.6);
       const size = scaleMultiplier * Math.max(c.w, c.h);
-      
+
       el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(255, 245, 200, 0.98) 0%, rgba(255, 120, 0, 0.9) 35%, rgba(180, 40, 0, 0.6) 70%, transparent 100%);box-shadow:0 0 30px rgba(255, 100, 0, 0.8);`;
-      
+
       const dur = isPrimary ? 550 : 380;
       this._raf(dur, p => {
         el.style.transform = `scale(${0.1 + p})`;
         el.style.opacity = p < 0.25 ? p / 0.25 : 1 - (p - 0.25) / 0.75;
       }, () => el.remove());
-      
+
       this._shakeCard(tgt, isPrimary ? 16 * sf : 10 * sf, 300);
       this._cardParticles(tgt, isPrimary ? (isLow ? 10 : 24) : (isLow ? 5 : 12), '#ff8800', 8 * sf, 6 * sf, 450);
     });
   }
 
-  static _bulletHail(card,{fireRate=6}={}) {
+  static _bulletHail(card, { fireRate = 6 } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
     const count = isLow ? Math.min(fireRate, 7) : Math.min(fireRate * 2, 14);
-    
+
     for (let i = 0; i < count; i++) {
       setTimeout(() => {
         const el = document.createElement('div');
         const sz = isLow ? (6 + Math.random() * 6) : (10 + Math.random() * 8);
         const offsetX = (Math.random() - 0.5) * c.w * 0.8;
         const offsetY = (Math.random() - 0.5) * c.h * 0.8;
-        
+
         el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x + offsetX - sz / 2}px;top:${c.y + offsetY - sz / 2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255, 245, 180, 0.95);box-shadow:0 0 10px rgba(255, 230, 100, 0.9);will-change:opacity,transform;`;
         document.body.appendChild(el);
-        
+
         this._raf(120, p => {
           el.style.transform = `scale(${1 + p * 0.4})`;
           el.style.opacity = 1 - p;
@@ -3612,7 +3612,7 @@ class WeaponHitAnimation {
     this._shakeCard(card, 6 * sf, 350);
   }
 
-  static _lightningStrike(card,{isCrit=false}={}) {
+  static _lightningStrike(card, { isCrit = false } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
@@ -3620,73 +3620,73 @@ class WeaponHitAnimation {
     const NS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(NS, 'svg');
     const bH = c.h * 1.6, bW = 60;
-    
+
     svg.setAttribute('width', String(bW));
     svg.setAttribute('height', String(bH));
     svg.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x - bW / 2}px;top:${c.y - bH}px;overflow:visible;`;
-    
+
     let d = `M${bW / 2},0`;
     const segments = 6;
     for (let s = 1; s <= segments; s++) {
       d += ` L${bW / 2 + (s % 2 === 0 ? -18 : 18) * (isCrit ? 1.5 : 1.1)},${(s / segments) * bH}`;
     }
-    
+
     const path = document.createElementNS(NS, 'path');
     path.setAttribute('d', d);
     path.setAttribute('stroke', isCrit ? '#fffbeb' : '#facc15');
     path.setAttribute('stroke-width', isCrit ? (isLow ? '6' : '9') : (isLow ? '4' : '6'));
     path.setAttribute('fill', 'none');
-    
+
     const defs = document.createElementNS(NS, 'defs');
     defs.innerHTML = `<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="${isLow ? 3 : 6}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
     path.setAttribute('filter', 'url(#boltGlowWHA)');
-    
+
     svg.appendChild(defs);
     svg.appendChild(path);
     document.body.appendChild(svg);
-    
+
     this._raf(350, p => {
       svg.style.opacity = 1 - Math.pow(p, 1.8);
       svg.style.transform = `scaleX(${1.0 + (1 - p) * 0.3})`;
     }, () => svg.remove());
-    
+
     this._tintCard(card, 'rgba(250, 204, 21, 0.75)', 180);
     this._shakeCard(card, isCrit ? 18 * sf : 12 * sf, 300);
-    
+
     if (isCrit || !isLow) {
       const count = isCrit ? 18 : 8;
       this._cardParticles(card, count, Math.random() > 0.5 ? '#facc15' : '#00e5ff', 6 * sf, 5 * sf, 400);
     }
   }
 
-  static _beamPierce(card,{secondaryCard=null}={}) {
+  static _beamPierce(card, { secondaryCard = null } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
     const { el } = this._overlay(card);
     const beamHeight = isLow ? 8 : 16;
-    
+
     el.style.cssText += `left:${c.r.left}px;top:${c.y - beamHeight / 2}px;width:${c.w}px;height:${beamHeight}px;background:linear-gradient(90deg,transparent,#60a5fa,#a0d0ff,#60a5fa,transparent);border-radius:4px;box-shadow: 0 0 20px #60a5fa, 0 0 35px #3b82f6;`;
-    
+
     this._raf(300, p => {
       el.style.transform = `scaleY(${p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8})`;
       el.style.opacity = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
     }, () => el.remove());
-    
+
     this._tintCard(card, 'rgba(78, 163, 255, 0.65)', 200);
     this._shakeCard(card, 6 * sf, 200);
-    
+
     if (secondaryCard && secondaryCard !== card) {
       const cs = this._cardCenter(secondaryCard);
       const NS = 'http://www.w3.org/2000/svg';
       const svg = document.createElementNS(NS, 'svg');
       const minX = Math.min(c.x, cs.x) - 40, minY = Math.min(c.y, cs.y) - 60;
       const maxX = Math.max(c.x, cs.x) + 40, maxY = Math.max(c.y, cs.y) + 40;
-      
+
       svg.style.cssText = `position:fixed;pointer-events:none;z-index:13105;left:${minX}px;top:${minY}px;width:${maxX - minX}px;height:${maxY - minY}px;overflow:visible;`;
       const mx = (c.x + cs.x) / 2 - minX, my = Math.min(c.y, cs.y) - 60 - minY;
-      
+
       const mkL = (xa, ya, xb, yb, col) => {
         const l = document.createElementNS(NS, 'path');
         l.setAttribute('d', `M${xa},${ya} Q${mx},${my} ${xb},${yb}`);
@@ -3696,18 +3696,18 @@ class WeaponHitAnimation {
         l.setAttribute('filter', 'url(#boltGlowWHA)');
         return l;
       };
-      
+
       const glowDefs = document.createElementNS(NS, 'defs');
       glowDefs.innerHTML = '<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
       svg.appendChild(glowDefs);
       svg.appendChild(mkL(c.x - minX, c.y - minY, cs.x - minX, cs.y - minY, '#60a5fa'));
-      
+
       document.body.appendChild(svg);
-      
+
       this._raf(500, p => {
         svg.style.opacity = 1 - p;
       }, () => svg.remove());
-      
+
       setTimeout(() => {
         this._tintCard(secondaryCard, 'rgba(78, 163, 255, 0.7)', 220);
         this._shakeCard(secondaryCard, 8 * sf, 200);
@@ -3722,40 +3722,40 @@ class WeaponHitAnimation {
     const c = this._cardCenter(card);
     const { el } = this._overlay(card);
     const borderWidth = isLow ? 4 : 8;
-    
+
     el.style.cssText += `width:${c.w + 10}px;height:${c.h + 10}px;left:${c.r.left - 5}px;top:${c.r.top - 5}px;border-radius:10px;border:${borderWidth}px solid rgba(34, 197, 94, 0.95);background:transparent;box-shadow:0 0 20px rgba(34, 197, 94, 0.8), inset 0 0 15px rgba(34, 197, 94, 0.45);`;
-    
+
     this._raf(650, p => {
       const scaleVal = p < 0.15 ? 0.8 + (p / 0.15) * 0.2 : p < 0.75 ? (1.0 - (p - 0.15) / 0.6 * 0.12) : 0.88;
       el.style.transform = `scale(${scaleVal})`;
       el.style.opacity = p < 0.15 ? p / 0.15 : p < 0.75 ? 1.0 : 1 - (p - 0.75) / 0.25;
     }, () => el.remove());
-    
+
     const count = isLow ? 6 : 15;
     this._cardParticles(card, count, '#22c55e', 3 * sf, 5 * sf, 500);
     this._tintCard(card, 'rgba(34, 197, 94, 0.35)', 400);
   }
 
-  static _reaperArc(card,{isResisted=false}={}) {
+  static _reaperArc(card, { isResisted = false } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
     const sz = Math.max(c.w, c.h) * (isLow ? 1.0 : 1.8);
-    
+
     el.textContent = '☽';
     el.style.cssText = `position:fixed;pointer-events:none;z-index:13120;left:${c.x}px;top:${c.y}px;font-size:${sz}px;line-height:1;color:${isResisted ? '#ef4444' : '#31105e'};text-shadow:0 0 20px ${isResisted ? 'rgba(239,68,68,0.95)' : 'rgba(124,58,237,0.95)'}, 0 0 30px ${isResisted ? '#b91c1c' : '#5b21b6'};will-change:transform,opacity;transform:translate(-50%,-50%) rotate(-80deg) scale(0.3);`;
     document.body.appendChild(el);
-    
+
     this._raf(600, p => {
       el.style.transform = `translate(-50%,-50%) rotate(${-80 + p * 240}deg) scale(${p < 0.35 ? 0.3 + (p / 0.35) * 0.7 : 1.0 - (p - 0.35) / 0.65 * 0.6})`;
       el.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
     }, () => el.remove());
-    
+
     this._tintCard(card, isResisted ? 'rgba(239, 68, 68, 0.45)' : 'rgba(30, 0, 60, 0.75)', 400);
     this._shakeCard(card, isResisted ? 14 * sf : 8 * sf, 350);
-    
+
     if (!isLow) {
       const sys = new ParticleSystem({ container: document.body });
       for (let i = 0; i < 15; i++) {
@@ -3770,21 +3770,21 @@ class WeaponHitAnimation {
     }
   }
 
-  static _anvilDrop(card,{isCrit=false}={}) {
+  static _anvilDrop(card, { isCrit = false } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
-    
+
     this._squishCard(card, isLow ? 0.55 : 0.42, 400);
     this._tintCard(card, isCrit ? 'rgba(255, 140, 0, 0.55)' : 'rgba(80, 80, 80, 0.65)', 250);
     this._shakeCard(card, isCrit ? 18 * sf : 12 * sf, 350);
-    
+
     const anvil = document.createElement('div');
     anvil.innerHTML = `<span style="font-size:${isLow ? '36px' : '64px'};text-shadow:0 0 10px rgba(0,0,0,0.8);filter:brightness(0.9);">█▄▄▄▄█</span>`;
     anvil.style.cssText = `position:fixed;pointer-events:none;z-index:13125;left:${c.x}px;top:${c.y - 200}px;will-change:transform,opacity;transform:translate(-50%,-50%);font-family:monospace;color:#6b7280;`;
     document.body.appendChild(anvil);
-    
+
     const fallDuration = 200;
     this._raf(fallDuration, p => {
       const y = (c.y - 200) + p * 200;
@@ -3794,14 +3794,14 @@ class WeaponHitAnimation {
       anvil.style.transition = 'opacity 150ms ease-out';
       anvil.style.opacity = '0';
       setTimeout(() => anvil.remove(), 150);
-      
+
       const particleCount = isCrit ? 18 : 8;
       const col = isCrit ? '#ff8800' : '#d1d5db';
       this._cardParticles(card, particleCount, col, 7 * sf, 6 * sf, 450);
     });
   }
 
-  static _arrowTrail(card,{echoBowHitIndex=0}={}) {
+  static _arrowTrail(card, { echoBowHitIndex = 0 } = {}) {
     if (!card) return;
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
@@ -3809,7 +3809,7 @@ class WeaponHitAnimation {
     const c = this._cardCenter(card);
     const tw = c.w * (isDouble ? 1.35 : 0.85);
     const col = isDouble ? '#d946ef' : '#c4b5fd';
-    
+
     const lineCount = isDouble ? 3 : 1;
     for (let i = 0; i < lineCount; i++) {
       const { el } = this._overlay(card);
@@ -3820,7 +3820,7 @@ class WeaponHitAnimation {
         el.style.transform = `scaleX(${1.0 + p * 0.2})`;
       }, () => el.remove());
     }
-    
+
     const arrow = document.createElement('div');
     arrow.innerHTML = `<span style="font-size:${isDouble ? '28px' : '18px'};color:${col};text-shadow:0 0 8px ${col};">➤</span>`;
     arrow.style.cssText = `position:fixed;pointer-events:none;z-index:13125;left:${c.x - tw / 2}px;top:${c.y}px;transform:translate(-50%,-50%);will-change:transform;`;
@@ -3829,7 +3829,7 @@ class WeaponHitAnimation {
       arrow.style.left = `${c.x - tw / 2 + p * tw}px`;
       arrow.style.opacity = 1 - p;
     }, () => arrow.remove());
-    
+
     if (isDouble) {
       this._tintCard(card, 'rgba(200, 100, 255, 0.45)', 250);
       const count = isLow ? 6 : 15;
@@ -3843,17 +3843,17 @@ class WeaponHitAnimation {
     const isLow = typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower;
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
-    
+
     const stamp = document.createElement('div');
     stamp.textContent = '🛡';
-    stamp.style.cssText = `position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w,c.h) * (isLow ? 0.8 : 1.4)}px;line-height:1;filter:drop-shadow(0 0 12px rgba(96,165,250,0.95)) drop-shadow(0 0 6px #fff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
+    stamp.style.cssText = `position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w, c.h) * (isLow ? 0.8 : 1.4)}px;line-height:1;filter:drop-shadow(0 0 12px rgba(96,165,250,0.95)) drop-shadow(0 0 6px #fff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
     document.body.appendChild(stamp);
-    
+
     this._raf(650, p => {
       stamp.style.transform = `translate(-50%,-50%) scale(${p < 0.3 ? 0.1 + (p / 0.3) * 0.9 : 1.0}) rotate(${(1 - p) * 15}deg)`;
       stamp.style.opacity = p < 0.25 ? p / 0.25 : p < 0.65 ? 1.0 : 1 - (p - 0.65) / 0.35;
     }, () => stamp.remove());
-    
+
     const { el: outline } = this._overlay(card);
     const crestBorder = isLow ? 4 : 8;
     outline.style.cssText += `width:${c.w + 12}px;height:${c.h + 12}px;left:${c.r.left - 6}px;top:${c.r.top - 6}px;border-radius:10px;border:${crestBorder}px double rgba(96,165,250,0.95);background:transparent;box-shadow:0 0 25px rgba(96,165,250,0.8), inset 0 0 15px rgba(96,165,250,0.45);`;
@@ -3861,7 +3861,7 @@ class WeaponHitAnimation {
       outline.style.opacity = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
       outline.style.transform = `scale(${1.0 + (1 - p) * 0.05})`;
     }, () => outline.remove());
-    
+
     if (!isLow) {
       const { el: grid } = this._overlay(card);
       grid.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background-image:radial-gradient(rgba(96, 165, 250, 0.15) 30%, transparent 70%);background-size:16px 16px;mix-blend-mode:screen;`;
@@ -3869,7 +3869,7 @@ class WeaponHitAnimation {
         grid.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
       }, () => grid.remove());
     }
-    
+
     this._tintCard(card, 'rgba(96, 165, 250, 0.45)', 300);
   }
 }
