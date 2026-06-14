@@ -228,6 +228,11 @@ class UIManager {
           <div class="hud-bar ap-bar"><div id="apFill" class="fill" style="width: 100%"></div></div>
           <div class="hud-resource-text"><span id="apValue">0</span>/<span id="apMax">0</span></div>
         </div>
+        <div class="hud-resource" id="pendingDmgRow" style="display: none;">
+          <label style="color: #ff5a5a;">PENDING</label>
+          <div class="hud-bar" style="background: rgba(255, 90, 90, 0.15); border-color: rgba(255, 90, 90, 0.3);"><div id="pendingDmgFill" class="fill" style="width: 0%; background: linear-gradient(90deg, #ff5a5a, #ff3333);"></div></div>
+          <div class="hud-resource-text" style="color: #ff9b9b;"><span id="pendingDmgValue">0</span> DMG</div>
+        </div>
       </div>
       <div class="hud-currencies">
         <span>💰 <span id="goldValue">0</span></span>
@@ -1493,10 +1498,18 @@ class UIManager {
           let preRolledTalisman = null;
 
           if (event.type === 'Sacred Tree') {
+            if (!event.rewardType) {
+              event.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
+              event.rewardVal = Math.floor(Math.random() * 11) + 20; // 20 to 30
+              gs.save();
+            }
+            const isHp = event.rewardType === 'hp';
+            const statName = isHp ? 'Max HP' : 'Max Mana';
+            const icon = isHp ? '❤️' : '💧';
             rewardData = {
-              name: '+2 Max HP & Mana',
-              icon: '🌿',
-              description: 'Permanently increases your maximum Health by +2 and maximum Mana by +2.',
+              name: `+${event.rewardVal} ${statName}`,
+              icon: icon,
+              description: `Permanently increases your maximum ${isHp ? 'Health' : 'Mana'} by +${event.rewardVal}.`,
               claimButtonText: 'CLAIM STAT UPGRADE'
             };
           } else if (event.type === 'Shrine') {
@@ -1540,11 +1553,21 @@ class UIManager {
                 try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch(err) {}
               }
             } else if (event.type === 'Sacred Tree') {
-              gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + 2;
-              gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + 2;
-              gs.addHp(2);
-              gs.addMana(2);
-              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+2 Max HP & Mana', { color: '#84cc16' }); } catch(err) {}
+              if (!event.rewardType) {
+                event.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
+                event.rewardVal = Math.floor(Math.random() * 11) + 20;
+              }
+              const isHp = event.rewardType === 'hp';
+              const val = event.rewardVal;
+              if (isHp) {
+                gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + val;
+                gs.addHp(val);
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max HP`, { color: '#84cc16' }); } catch(err) {}
+              } else {
+                gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + val;
+                gs.addMana(val);
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max Mana`, { color: '#3b82f6' }); } catch(err) {}
+              }
             } else if (event.type === 'Shrine') {
               if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
                 PopupsManager.showShrineSkillChoice();
@@ -2357,6 +2380,39 @@ class UIManager {
 
     if (hpFillEl && maxHp > 0 && newHp < maxHp * 0.25) {
       try { MeterAnimation.pulse(hpFillEl, UIManager.themeColor('--hp-red', '#C00707')); } catch (e) { }
+    }
+    try { this.updatePendingDamageDisplay(); } catch (e) {}
+  }
+
+  static updatePendingDamageDisplay() {
+    try {
+      const state = getGameState();
+      if (!state) return;
+      const pendingDmg = Math.ceil(TaskManager.calculateMissedDailyDamage() * 5);
+      const pendingRow = document.getElementById('pendingDmgRow');
+      const pendingVal = document.getElementById('pendingDmgValue');
+      const pendingFill = document.getElementById('pendingDmgFill');
+      if (pendingRow) {
+        if (pendingDmg > 0) {
+          pendingRow.style.display = 'block';
+          if (pendingVal) pendingVal.textContent = pendingDmg;
+          if (pendingFill) {
+            const maxHp = state.playerState?.maxHp || 100;
+            const fillPct = Math.min(100, (pendingDmg / maxHp) * 100);
+            pendingFill.style.width = fillPct + '%';
+          }
+        } else {
+          pendingRow.style.display = 'none';
+        }
+      }
+      const summaryEl = document.getElementById('dailiesSummary');
+      if (summaryEl) {
+        const dailies = TaskManager.getAllDailies();
+        const completedCount = dailies.filter(daily => daily.completed).length;
+        summaryEl.textContent = `${completedCount}/${dailies.length} complete${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
+      }
+    } catch (e) {
+      console.warn('updatePendingDamageDisplay error', e);
     }
   }
 
@@ -4200,11 +4256,7 @@ class UIManager {
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
     const visibleDailies = showCompleted ? dailies : dailies.filter(daily => !daily.completed);
-    const summaryEl = document.getElementById('dailiesSummary');
-    if (summaryEl) {
-      const completedCount = dailies.filter(daily => daily.completed).length;
-      summaryEl.textContent = `${completedCount}/${dailies.length} complete`;
-    }
+    this.updatePendingDamageDisplay();
 
     const computeDailyStreak = (dailyId) => {
       if (typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyStreak === 'function') {
@@ -6079,6 +6131,8 @@ class UIManager {
       this.updateGoldDisplay({ oldGold: state.playerState?.gold, newGold: state.playerState?.gold });
       this.updateDiamondDisplay({ oldDiamonds: state.playerState?.diamonds, newDiamonds: state.playerState?.diamonds });
       this.updateLootboxKeysDisplay({ oldKeys: state.playerState?.lootboxKeys, newKeys: state.playerState?.lootboxKeys });
+
+      this.updatePendingDamageDisplay();
     } catch (e) {
       console.warn('refreshGameUI: failed to sync resources', e);
     }

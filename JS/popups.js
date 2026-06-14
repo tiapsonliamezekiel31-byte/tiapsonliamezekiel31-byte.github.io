@@ -1881,6 +1881,8 @@ class PopupsManager {
             const randomDaily = activeDailies[Math.floor(Math.random() * activeDailies.length)];
             state.systemState.specialEvent.targets = [randomDaily.id];
           }
+          state.systemState.specialEvent.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
+          state.systemState.specialEvent.rewardVal = Math.floor(Math.random() * 11) + 20; // 20 to 30
         } else if (eventType === 'Statue') {
           // Pick up to 3 random dailies as targets
           const shuffled = [...activeDailies].sort(() => Math.random() - 0.5);
@@ -1890,6 +1892,20 @@ class PopupsManager {
         state.save();
         try { UIManager.refreshEventBanner?.(); UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: `Set event to ${eventType}` };
+      }
+
+      if (lower === 'reset enemy attributes' || lower === 'reset nemesis attributes' || lower === 'reset enemy attrs' || lower === 'reset nemesis attrs') {
+        state.nemesisState.attributes = {
+          STR: { points: 0, level: 1 },
+          INT: { points: 0, level: 1 },
+          DISC: { points: 0, level: 1 },
+          CREA: { points: 0, level: 1 },
+          SOC: { points: 0, level: 1 },
+          CAP: { points: 0, level: 1 },
+          RESP: { points: 0, level: 1 }
+        };
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Nemesis attributes reset' };
       }
 
       if (lower === 'resume' || lower === 'close') {

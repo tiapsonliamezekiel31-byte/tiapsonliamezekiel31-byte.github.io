@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add diamond cheat command, auto-hide visuals panel on preview, make death animations bolder and bigger"
+$commitMsg = "fix: make pending damage display constantly update, buff Sacred Tree rewards to 20-30 max hp/mana"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
