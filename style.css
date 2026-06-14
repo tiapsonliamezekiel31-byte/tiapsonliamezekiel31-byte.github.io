@@ -6616,11 +6616,3 @@ button:hover,
     background-color: rgba(10, 8, 18, 0.95) !important;
   }
 }
-
-/* CSS Containment to optimize browser repaint/reflow cycles */
-#gameArea,
-.shop-panel,
-.popup-panel,
-.enemy-circle-container {
-  contain: layout paint;
-}
