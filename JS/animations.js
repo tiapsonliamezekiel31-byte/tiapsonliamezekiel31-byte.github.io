@@ -285,6 +285,8 @@ class ParticleSystem {
 }
 
 class FloatingDamageNumber {
+  static _pool = [];
+
   static show(x, y, value, options = {}) {
     // Defaults: hold for 1000ms, then fade over 200ms (total 1200ms)
     const DEFAULT_HOLD = 1000;
@@ -310,7 +312,7 @@ class FloatingDamageNumber {
     const driftX = (Math.random() * 10) - 5;
     const driftY = (Math.random() * 8) - 4;
 
-    const div = document.createElement('div');
+    const div = FloatingDamageNumber._pool.length ? FloatingDamageNumber._pool.pop() : document.createElement('div');
     const displayValue = isMiss ? 'MISS' : value;
     const fontSize = isCrit ? 28 : 20;
     const baseRotation = (Math.random() - 0.5) * 8;
@@ -638,6 +640,7 @@ FloatingDamageNumber._tickNonAnchored = function () {
         }
       } catch (e) { }
 
+      FloatingDamageNumber._pool.push(f.div);
       list.splice(i, 1);
     }
   }
