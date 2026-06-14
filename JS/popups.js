@@ -3326,6 +3326,7 @@ class PopupsManager {
           <button class="compendium-tab-btn" data-tab="talismans">🧿 TALISMANS</button>
           <button class="compendium-tab-btn" data-tab="buffs">✨ BUFFS</button>
           <button class="compendium-tab-btn" data-tab="runes">🧪 RUNES & ITEMS</button>
+          <button class="compendium-tab-btn" data-tab="mechanics">📖 GUIDE</button>
         </div>
       </div>
       <div id="compendiumContent" class="compendium-content-body"></div>
@@ -3384,6 +3385,9 @@ class PopupsManager {
           const searchString = `${name} ${data.type} ${data.special || ''}`.toLowerCase();
           if (query && !searchString.includes(query)) return;
 
+          const wPrice = (typeof ShopManager !== 'undefined' && typeof ShopManager.getWeaponPrice === 'function') ? ShopManager.getWeaponPrice(name) : null;
+          const priceStr = wPrice !== null ? `${wPrice}💰` : (data.price ? `${data.price}💎` : 'Free');
+
           html += `
             <div class="compendium-card weapon-card">
               <h3>${name}</h3>
@@ -3393,7 +3397,7 @@ class PopupsManager {
                 <span>Dmg Mult: <strong>${data.damageMultiplier}x</strong></span>
                 <span>Crit: <strong>${Math.round(data.critChance * 100)}%</strong></span>
                 <span>Fire Rate: <strong>${data.fireRate}</strong></span>
-                <span>Price: <strong>${data.price}💎</strong></span>
+                <span>Price: <strong>${priceStr}</strong></span>
               </div>
               ${data.special ? `
               <div class="compendium-card-section">
@@ -3479,6 +3483,9 @@ class PopupsManager {
           const searchString = `${name} ${data.type} ${data.effect || ''}`.toLowerCase();
           if (query && !searchString.includes(query)) return;
 
+          const cPrice = (typeof ShopManager !== 'undefined' && typeof ShopManager.getConsumablePrice === 'function') ? ShopManager.getConsumablePrice(name) : null;
+          const priceStr = cPrice !== null ? `${cPrice}💰` : (data.price ? `${data.price}💎` : 'Free');
+
           html += `
             <div class="compendium-card consumable-card">
               <div class="compendium-card-header">
@@ -3487,7 +3494,7 @@ class PopupsManager {
               </div>
               <div class="weapon-type-badge">${data.type}</div>
               <div class="compendium-card-stats">
-                <span>Price: <strong>${data.price}💎</strong></span>
+                <span>Price: <strong>${priceStr}</strong></span>
               </div>
               <div class="compendium-card-section">
                 <div class="section-label">EFFECT</div>
@@ -3499,6 +3506,52 @@ class PopupsManager {
         html += '</div>';
 
         html += '</div>';
+      } else if (currentTab === 'mechanics') {
+        const searchString = `damage scaling leveling attributes kill tags runes pet mechanics guide`.toLowerCase();
+        if (!query || searchString.includes(query)) {
+          html += `
+            <div class="compendium-guide-container">
+              <div class="guide-section">
+                <h3>⚔️ DAMAGE FORMULA & SCALING</h3>
+                <p>Damage dealt is computed as: <strong>Damage = (Scaled AP Cost × Weapon Multiplier)</strong></p>
+                <ul>
+                  <li><strong>AP Scaling:</strong> The base AP cost of weapons scales based on your maximum AP: <code>S = max(0.3, min(2.0, Max AP / 350))</code>. The scaled cost is <code>Math.round(Base AP Cost × S)</code>.</li>
+                  <li><strong>Crit Multiplier:</strong> Critical hits deal <strong>2.0×</strong> damage.</li>
+                  <li><strong>Combo Multiplier:</strong> Each combo chain stack adds <strong>+10%</strong> damage and reduces AP cost by <strong>-5%</strong> (up to 3 stacks base, or 10 stacks for Uzi).</li>
+                  <li><strong>Daily Streak:</strong> Perfect completion days grant <strong>+1%</strong> damage bonus per streak day.</li>
+                  <li><strong>Talismans & Passives:</strong> e.g., <em>Wrathstone</em> grants <strong>+40%</strong> damage below 30% HP; <em>Void Lens</em> grants <strong>+100%</strong> damage after an enemy resists.</li>
+                </ul>
+              </div>
+
+              <div class="guide-section">
+                <h3>📈 LEVELING & ATTRIBUTES</h3>
+                <p>Gain character levels to progress through stages.</p>
+                <ul>
+                  <li><strong>Leveling Up:</strong> You level up automatically upon clearing all enemies in a room. Character level itself does not automatically raise HP/Mana.</li>
+                  <li><strong>Attribute Points:</strong> Earn points by completing Dailies and To-Dos. Reaching point thresholds levels up attributes (STR, DISC, RESP, SOC, CAP, CREA, INT), boosting combat capacity.</li>
+                </ul>
+              </div>
+
+              <div class="guide-section">
+                <h3>🏷️ KILL TAGS & RUNES</h3>
+                <p>Defeating enemies with a weapon awards Kill Tags used for customization and enhancement.</p>
+                <ul>
+                  <li><strong>Kill Tags:</strong> Gain +1 Kill Tag per defeated enemy. Spend 5 Kill Tags in the smith shop to purchase permanent weapon upgrades. Rangers gain tags every 3 kills instead of 5, and can carry 3 weapons.</li>
+                  <li><strong>Rune Infusion:</strong> Reaching <strong>15, 30, and 45 Kill Tags</strong> on any weapon triggers a selection to infuse Tier 1, Tier 2, and Tier 3 Runes respectively (e.g. Flame, Frost, Storm, Venom, Siphon, Focus, Hoard, Blast, Overpower).</li>
+                </ul>
+              </div>
+
+              <div class="guide-section">
+                <h3>🐾 PET MECHANICS</h3>
+                <p>Pets attack automatically alongside the player.</p>
+                <ul>
+                  <li><strong>Pet Damage:</strong> Base damage scales with Player Level and Max AP: <code>Pet Damage = Max AP × (0.02 + (Player Level - 1) × 0.01)</code>.</li>
+                  <li><strong>Druid Class Synergy:</strong> Druid class multiplies pet damage by <strong>5.0×</strong>.</li>
+                </ul>
+              </div>
+            </div>
+          `;
+        }
       }
 
       contentBody.innerHTML = html || '<div class="compendium-empty">No results found matching your search.</div>';

@@ -6899,3 +6899,56 @@ button:hover,
     gap: 8px;
   }
 }
+
+/* Guide & Mechanics styles */
+.compendium-guide-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px;
+}
+
+.guide-section {
+  background: rgba(20, 15, 30, 0.4);
+  border: 1px solid rgba(161, 92, 255, 0.15);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.guide-section h3 {
+  font-size: 10px;
+  color: var(--accent-gold) !important;
+  margin-top: 0;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed rgba(255, 215, 106, 0.2);
+  padding-bottom: 6px;
+}
+
+.guide-section p {
+  font-size: 8px;
+  line-height: 1.4;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.guide-section ul {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guide-section li {
+  font-size: 7.5px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.guide-section code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #d1b3ff;
+  font-family: monospace;
+}
