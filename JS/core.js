@@ -165,6 +165,7 @@ class GameState {
       consumables: {}, // { consumableName: count }
       kills: 0,
       killTagsByWeapon: {}, // { weaponName: count }
+      weaponRunes: {}, // { weaponName: { tier1, tier2, tier3 } }
       talismans: [],
       borrowedSkills: [],
       sacredTreeHpBonus: 0,
@@ -289,6 +290,7 @@ class GameState {
     this.playerState.consumables = {};
     this.playerState.kills = 0;
     this.playerState.killTagsByWeapon = {};
+    this.playerState.weaponRunes = {};
     this.playerState.weaponUpgrades = {};
     this.playerState.talismans = [];
     this.playerState.borrowedSkills = [];
@@ -796,6 +798,9 @@ class GameState {
           this.playerState.weaponElements.push(null);
         }
       }
+      if (!this.playerState.weaponRunes) {
+        this.playerState.weaponRunes = {};
+      }
       this.dailiesState = data.dailiesState;
       this.stageState = data.stageState;
       this.combatState = data.combatState;
@@ -1146,21 +1151,35 @@ function performCheckIn() {
   try {
     const alive = StageManager.getAliveEnemies();
     alive.forEach(enemy => {
-      if (enemy && !enemy.isDead && enemy.statusEffects && enemy.statusEffects.poison) {
-        const poison = enemy.statusEffects.poison;
-        if (poison.daysRemaining > 0 && poison.damagePerDay > 0) {
-          const dmg = poison.damagePerDay;
-          enemy.takeDamage(dmg);
-          state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: dmg, source: 'poison', targetId: enemy.id });
-          poison.daysRemaining--;
-          if (poison.daysRemaining <= 0) {
-            delete enemy.statusEffects.poison;
+      if (enemy && !enemy.isDead && enemy.statusEffects) {
+        if (enemy.statusEffects.poison) {
+          const poison = enemy.statusEffects.poison;
+          if (poison.daysRemaining > 0 && poison.damagePerDay > 0) {
+            const dmg = poison.damagePerDay;
+            enemy.takeDamage(dmg);
+            state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: dmg, source: 'poison', targetId: enemy.id });
+            poison.daysRemaining--;
+            if (poison.daysRemaining <= 0) {
+              delete enemy.statusEffects.poison;
+            }
+          }
+        }
+        if (enemy.statusEffects.burn) {
+          const burn = enemy.statusEffects.burn;
+          if (burn.daysRemaining > 0 && burn.damagePerDay > 0) {
+            const dmg = burn.damagePerDay;
+            enemy.takeDamage(dmg);
+            state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: dmg, source: 'burn', targetId: enemy.id });
+            burn.daysRemaining--;
+            if (burn.daysRemaining <= 0) {
+              delete enemy.statusEffects.burn;
+            }
           }
         }
       }
     });
   } catch (e) {
-    console.warn('Poison DoT application failed during check-in', e);
+    console.warn('Poison/Burn DoT application failed during check-in', e);
   }
 
   // 2b) Pet attacks random enemy (moved to the end of doDailyRegenAndSave)
@@ -1501,6 +1520,14 @@ function performCheckIn() {
           return;
         }
 
+        // Apply Freeze Rune damage reduction (reduces next retaliation damage by 45%)
+        let isFrozen = false;
+        if (enemy?.statusEffects?.freeze) {
+          damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
+          delete enemy.statusEffects.freeze;
+          isFrozen = true;
+        }
+
         // Check for dodge target
         const dodgeTarget = state.combatState?.dodgeTarget;
         const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
@@ -1579,7 +1606,8 @@ function performCheckIn() {
           name: enemy.name,
           isBoss,
           damage,
-          hpBefore: state.playerState.hp
+          hpBefore: state.playerState.hp,
+          isFrozen
         });
 
         state.takeDamage(damage);

@@ -202,15 +202,23 @@ class CombatManager {
       actualCost *= (1 - apCostReduction);
     }
 
+    const target = StageManager.getEnemyById(targetEnemyId);
+    if (!target || target.isDead) {
+      return { success: false, reason: 'Target not found or dead', apCost: Math.max(1, Math.round(actualCost)) };
+    }
+
+    const hasFocusRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Focus Rune';
+    if (hasFocusRune && target && weapon.element) {
+      const weaknessMultiplier = resolveWeaponWeaknessMultiplier(target, weapon.element);
+      if (weaknessMultiplier > 1.0) {
+        actualCost *= 0.8;
+      }
+    }
+
     actualCost = Math.max(1, Math.round(actualCost));
 
     if (state.playerState.ap < actualCost) {
       return { success: false, reason: 'Not enough AP', apCost: actualCost };
-    }
-
-    const target = StageManager.getEnemyById(targetEnemyId);
-    if (!target || target.isDead) {
-      return { success: false, reason: 'Target not found or dead', apCost: actualCost };
     }
 
     const comboWithinWindow = attackPlan.isWithinComboWindow();
@@ -266,6 +274,11 @@ class CombatManager {
     const scaledCost = attackPlan.getScaledApCost();
     const fireRate = Math.max(1, Math.floor(Number(weaponData.fireRate || 1)));
 
+    const target = StageManager.getEnemyById(targetEnemyId);
+    if (!target || target.isDead) {
+      return { success: false, reason: 'Target not found or dead' };
+    }
+
     // Calculate AP cost with combo/buffs BEFORE spending
     let actualCost = scaledCost;
     if (state.hasBuff('Efficiency')) {
@@ -277,6 +290,14 @@ class CombatManager {
       actualCost *= (1 - apCostReduction);
     }
 
+    const hasFocusRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Focus Rune';
+    if (hasFocusRune && target && weapon.element) {
+      const weaknessMultiplier = resolveWeaponWeaknessMultiplier(target, weapon.element);
+      if (weaknessMultiplier > 1.0) {
+        actualCost *= 0.8;
+      }
+    }
+
     actualCost = Math.max(1, Math.round(actualCost));
 
     if (state.playerState.ap < actualCost) {
@@ -285,12 +306,6 @@ class CombatManager {
 
     // Spend AP up-front so misses still cost AP
     state.spendAp(actualCost);
-
-    // Get target (may be dead)
-    const target = StageManager.getEnemyById(targetEnemyId);
-    if (!target || target.isDead) {
-      return { success: false, reason: 'Target not found or dead', apCost: actualCost };
-    }
 
     if (weapon.name === 'Echo Bow') {
       state.combatState.echoBowCount = (state.combatState.echoBowCount || 0) + 1;
@@ -462,6 +477,105 @@ class CombatManager {
           element: attackPlan.weaponElement
         });
 
+        // Apply Runes (Flame, Frost, Storm, Venom, Siphon, Blast)
+        const hasFlameRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Flame Rune';
+        if (hasFlameRune && !tgt.isDead) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.burn = {
+            daysRemaining: 3,
+            damagePerDay: Math.max(1, Math.round(enforcedDamage * 0.1))
+          };
+          pushSpecialPopup('BURN APPLIED', '#ff9a2e');
+        }
+
+        const hasFrostRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Frost Rune';
+        if (hasFrostRune && !tgt.isDead) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.freeze = {
+            damageMultiplier: 0.55
+          };
+          pushSpecialPopup('FROST APPLIED', '#4ea3ff');
+        }
+
+        const hasStormRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Storm Rune';
+        if (hasStormRune && !tgt.isDead && Math.random() < 0.15) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.stunned = true;
+          pushSpecialPopup('STUNNED', '#ffd76a');
+        }
+
+        const hasVenomRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Venom Rune';
+        if (hasVenomRune && !tgt.isDead) {
+          tgt.statusEffects = tgt.statusEffects || {};
+          tgt.statusEffects.poison = {
+            daysRemaining: 3,
+            damagePerDay: Math.max(1, Math.round(state.playerState.maxAp * 0.04))
+          };
+          pushSpecialPopup('POISON APPLIED', '#84cc16');
+        }
+
+        const hasSiphonRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Siphon Rune';
+        if (isCrit && hasSiphonRune) {
+          state.addMana(10);
+          pushSpecialPopup('+10 MANA', '#4ea3ff');
+        }
+
+        const hasBlastRune = state.playerState.weaponRunes?.[weapon.name]?.tier3 === 'Blast Rune';
+        if (hasBlastRune && tgt === target) {
+          const all = StageManager.getAllEnemies();
+          const idx = all.indexOf(tgt);
+          if (idx > -1) {
+            const adj = EnemyManager.getAdjacentEnemies(all, idx);
+            adj.forEach(a => {
+              if (a && !a.isDead) {
+                const splashDmg = Math.max(1, Math.round(enforcedDamage * 0.2));
+                a.takeDamage(splashDmg);
+
+                hitDetails.push({
+                  enemyId: a.id,
+                  damage: splashDmg,
+                  isCrit: false,
+                  isDead: a.isDead,
+                  weaknessMatch: false,
+                  resistanceMatch: false,
+                  element: attackPlan.weaponElement
+                });
+
+                try {
+                  const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${a.id}"]`);
+                  let tx = window.innerWidth / 2;
+                  let ty = window.innerHeight / 2;
+                  if (targetCard) {
+                    const rect = targetCard.getBoundingClientRect();
+                    tx = rect.left + rect.width / 2;
+                    ty = rect.top + rect.height / 2;
+                  }
+                  FloatingDamageNumber.show(tx, ty, `${splashDmg}`, { color: '#ffb33f', scale: 0.8 });
+                } catch (e) {}
+
+                if (a.isDead) {
+                  anyKilled = true;
+                  state.systemState.runStats.enemiesDefeated++;
+                  const hasHoardRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Hoard Rune';
+                  const splashGold = EnemyManager.getGoldDrop(a);
+                  state.addGold(hasHoardRune ? Math.round(splashGold * 1.25) : splashGold);
+                  PlayerManager.incrementKillTags(weapon.name);
+                  if (state.hasBuff('Bloodlust')) state.addHp(5);
+                  if (state.hasBuff('Vampiric Touch')) state.addHp(splashDmg * 0.1);
+                  
+                  state.eventBus.emit(EVENTS.KILL_ENEMY, {
+                    enemyId: a.id,
+                    damage: splashDmg,
+                    isCrit: false,
+                    goldDrop: splashGold
+                  });
+                }
+              }
+            });
+            pushSpecialPopup('BLAST SPLASH', '#ffb33f');
+          }
+        }
+
         if (attackPlan.specialId === 'vine') {
           const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
             dayKey: getLocalDayKey(),
@@ -531,7 +645,11 @@ class CombatManager {
           if (tgt.isBoss) {
             state.systemState.runStats.bossesSailed = (state.systemState.runStats.bossesSailed || 0) + 1;
           }
-          const goldDrop = EnemyManager.getGoldDrop(tgt);
+          let goldDrop = EnemyManager.getGoldDrop(tgt);
+          const hasHoardRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Hoard Rune';
+          if (hasHoardRune) {
+            goldDrop = Math.round(goldDrop * 1.25);
+          }
           state.addGold(goldDrop);
           PlayerManager.incrementKillTags(weapon.name);
 

@@ -3930,6 +3930,43 @@ body::before {
   line-height: 1.3;
 }
 
+/* Rune Selection specific styling */
+.rune-selection-popup {
+  border-color: #00f3ff !important;
+  box-shadow: 0 0 25px rgba(0, 243, 255, 0.45) !important;
+}
+
+.rune-option {
+  border-color: rgba(0, 243, 255, 0.5) !important;
+  border-radius: 8px;
+}
+
+.rune-option:hover {
+  border-color: #00f3ff !important;
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.35) !important;
+  transform: translateY(-2px);
+}
+
+.rune-icon {
+  font-size: 36px;
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.6);
+}
+
+.rune-title {
+  color: #00f3ff !important;
+  text-shadow: 0 0 4px rgba(0, 243, 255, 0.3);
+}
+
+@media (min-width: 600px) {
+  .rune-selection-popup {
+    max-width: 550px !important;
+  }
+  .rune-selection-popup .buff-selection-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px;
+  }
+}
+
 /* Class Selection */
 .class-grid {
   display: grid;
@@ -6614,5 +6651,232 @@ button:hover,
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     background-color: rgba(10, 8, 18, 0.95) !important;
+  }
+}
+
+/* ============================================================
+   BUILD COMPENDIUM MODAL STYLING
+   ============================================================ */
+.compendium-popup {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, #0d0b14 0%, #08060c 100%) !important;
+  border: 2px solid var(--accent-purple) !important;
+  box-shadow: 0 0 30px rgba(161, 92, 255, 0.25) !important;
+}
+
+.compendium-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#compendiumSearch {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: rgba(5, 4, 8, 0.8);
+  border: 1px solid rgba(161, 92, 255, 0.4);
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#compendiumSearch:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 8px rgba(255, 215, 106, 0.2);
+}
+
+.compendium-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.compendium-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.compendium-tab-btn {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  background: rgba(161, 92, 255, 0.08);
+  border: 1px solid rgba(161, 92, 255, 0.3);
+  color: var(--text-muted);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.compendium-tab-btn:hover {
+  background: rgba(161, 92, 255, 0.18);
+  color: #fff;
+}
+
+.compendium-tab-btn.active {
+  background: var(--accent-purple);
+  border-color: var(--accent-gold);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(161, 92, 255, 0.4);
+}
+
+.compendium-content-body {
+  flex: 1;
+  overflow-y: auto;
+  max-height: min(50vh, 50dvh);
+  padding-right: 6px;
+  overscroll-behavior-y: contain;
+}
+
+.compendium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.compendium-card {
+  background: rgba(20, 15, 30, 0.6);
+  border: 1px solid rgba(161, 92, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.compendium-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(161, 92, 255, 0.5);
+  background: rgba(25, 20, 38, 0.8);
+}
+
+.compendium-card h3 {
+  font-size: 11px;
+  color: #fff0b8;
+  margin: 0;
+  border: none;
+  padding: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.compendium-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compendium-card-icon {
+  font-size: 16px;
+}
+
+.compendium-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 7px;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.compendium-card-stats span strong {
+  color: var(--accent-gold);
+}
+
+.compendium-card-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-label {
+  font-size: 6.5px;
+  font-weight: bold;
+  color: var(--accent-purple);
+  text-transform: uppercase;
+}
+
+.section-desc {
+  font-size: 8px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.weapon-type-badge {
+  align-self: flex-start;
+  font-size: 6.5px;
+  font-weight: bold;
+  background: rgba(161, 92, 255, 0.2);
+  color: #d1b3ff;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(161, 92, 255, 0.3);
+}
+
+.rune-tier-label {
+  font-size: 6px;
+  background: rgba(255, 215, 106, 0.15);
+  color: var(--accent-gold);
+  padding: 1px 4px;
+  border-radius: 2px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.compendium-subsections h2 {
+  font-size: 11px;
+  color: var(--accent-gold);
+  border-bottom: 1px solid rgba(255, 215, 106, 0.2);
+  padding-bottom: 6px;
+  margin: 16px 0 10px 0;
+  text-align: left;
+}
+
+.compendium-subsections h2.section-divider {
+  margin-top: 24px;
+}
+
+.compendium-empty {
+  text-align: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 9px;
+  border: 1px dashed rgba(161, 92, 255, 0.2);
+  border-radius: 6px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 600px) {
+  .compendium-popup {
+    padding: 12px;
+  }
+  
+  .compendium-tabs {
+    gap: 4px;
+  }
+  
+  .compendium-tab-btn {
+    padding: 6px 10px;
+    font-size: 7.5px;
+  }
+  
+  .compendium-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }

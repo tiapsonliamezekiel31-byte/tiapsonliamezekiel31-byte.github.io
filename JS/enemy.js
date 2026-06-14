@@ -298,16 +298,29 @@ class EnemyManager {
     const state = getGameState();
     const overkillThreshold = targetEnemy.maxHp * state.config.overkillThreshold;
     
-    if (damage <= overkillThreshold) return 0;
+    const hasOverkillBuff = state.hasBuff('Overkill');
+    if (!hasOverkillBuff && damage <= overkillThreshold) return 0;
 
     const roll = Math.random();
     const chance = state.config.overkillChance;
     console.debug(`[EnemyManager.applyOverkill] roll=${roll} chance=${chance}`);
     if (roll >= chance) return 0;
     
-    const excess = damage - overkillThreshold;
-    const perAdjacentEnemy = excess / adjacentEnemies.length;
-    
+    const baseThreshold = (hasOverkillBuff && damage <= overkillThreshold) ? 0 : overkillThreshold;
+    let excess = damage - baseThreshold;
+    if (excess < 0) excess = 0;
+
+    let multiplier = 1.0;
+    try {
+      if (typeof PlayerManager !== 'undefined') {
+        const weapon = PlayerManager.getCurrentWeapon();
+        if (weapon && state.playerState.weaponRunes?.[weapon.name]?.tier3 === 'Overpower Rune') {
+          multiplier = 1.5;
+        }
+      }
+    } catch (e) {}
+
+    const perAdjacentEnemy = (excess / adjacentEnemies.length) * multiplier;
     return perAdjacentEnemy;
   }
   

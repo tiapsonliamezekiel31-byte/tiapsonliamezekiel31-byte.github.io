@@ -211,7 +211,38 @@ class PlayerManager {
       state.playerState.killTagsByWeapon[weaponName] = 0;
     }
     
+    const oldTags = state.playerState.killTagsByWeapon[weaponName];
     state.playerState.killTagsByWeapon[weaponName] += count;
+    const newTags = state.playerState.killTagsByWeapon[weaponName];
+    
+    if (!state.playerState.weaponRunes) {
+      state.playerState.weaponRunes = {};
+    }
+    if (!state.playerState.weaponRunes[weaponName]) {
+      state.playerState.weaponRunes[weaponName] = {};
+    }
+    
+    const runes = state.playerState.weaponRunes[weaponName];
+    
+    if (oldTags < 15 && newTags >= 15 && !runes.tier1) {
+      setTimeout(() => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showRuneSelection === 'function') {
+          PopupsManager.showRuneSelection(weaponName, 1);
+        }
+      }, 600);
+    } else if (oldTags < 30 && newTags >= 30 && !runes.tier2) {
+      setTimeout(() => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showRuneSelection === 'function') {
+          PopupsManager.showRuneSelection(weaponName, 2);
+        }
+      }, 600);
+    } else if (oldTags < 45 && newTags >= 45 && !runes.tier3) {
+      setTimeout(() => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showRuneSelection === 'function') {
+          PopupsManager.showRuneSelection(weaponName, 3);
+        }
+      }, 600);
+    }
   }
   
   static getKillTags(weaponName) {

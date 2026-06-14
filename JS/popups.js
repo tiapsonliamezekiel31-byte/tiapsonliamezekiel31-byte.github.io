@@ -1357,6 +1357,7 @@ class PopupsManager {
         <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
         <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
+        <button class="btn-pause-action" id="buildCompendiumBtn">📖 BUILD COMPENDIUM</button>
         <button class="btn-pause-action" id="resetLayoutBtn">📐 RESET LAYOUT</button>
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
         <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
@@ -1429,6 +1430,10 @@ class PopupsManager {
 
     popup.querySelector('#backupBtn').addEventListener('click', () => {
       this.showDataBackup();
+    });
+
+    popup.querySelector('#buildCompendiumBtn').addEventListener('click', () => {
+      this.showBuildCompendium();
     });
 
     popup.querySelector('#resetLayoutBtn').addEventListener('click', () => {
@@ -3218,6 +3223,307 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
+
+  static showRuneSelection(weaponName, tier) {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const tierKey = 'tier' + tier;
+    const tierRunes = state.config.runes?.[tierKey];
+    if (!tierRunes) return;
+
+    const allRuneNames = Object.keys(tierRunes);
+    const selectedRunes = [];
+
+    // Select up to 3 random runes from this tier
+    const countToSelect = Math.min(3, allRuneNames.length);
+    while (selectedRunes.length < countToSelect) {
+      const rune = allRuneNames[Math.floor(Math.random() * allRuneNames.length)];
+      if (!selectedRunes.includes(rune)) {
+        selectedRunes.push(rune);
+      }
+    }
+
+    const overlay = this.createPopupOverlay();
+    overlay.style.pointerEvents = 'none'; // Prevent closing by clicking overlay
+
+    const popup = document.createElement('div');
+    popup.className = 'popup buff-selection-popup rune-selection-popup';
+    popup.style.pointerEvents = 'auto';
+
+    let html = `<h2>INFUSE ${weaponName.toUpperCase()}<br>(Tier ${tier} Rune)</h2>`;
+    html += '<div class="buff-selection-grid">';
+
+    selectedRunes.forEach(runeName => {
+      const rune = tierRunes[runeName];
+      html += `
+        <div class="buff-option rune-option" data-rune="${runeName}">
+          <div class="buff-icon rune-icon">${rune.icon}</div>
+          <div class="buff-title rune-title">${runeName}</div>
+          <div class="buff-effect rune-effect">${rune.description}</div>
+          <button class="btn-select">INFUSE</button>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+    popup.innerHTML = html;
+
+    popup.querySelectorAll('.btn-select').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const chosenRuneName = e.target.closest('.rune-option').dataset.rune;
+        if (!state.playerState.weaponRunes) {
+          state.playerState.weaponRunes = {};
+        }
+        if (!state.playerState.weaponRunes[weaponName]) {
+          state.playerState.weaponRunes[weaponName] = {};
+        }
+        state.playerState.weaponRunes[weaponName][tierKey] = chosenRuneName;
+        
+        try {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Infused ${chosenRuneName}!`, { color: '#ffd700' });
+        } catch (err) {}
+        
+        this.closeAllPopups();
+        state.save();
+        if (window.UIManager && UIManager.refreshGameUI) {
+          UIManager.refreshGameUI();
+        }
+      });
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
+
+  static showBuildCompendium() {
+    this.closeAllPopups();
+    const state = getGameState();
+    const overlay = this.createPopupOverlay();
+    overlay.style.pointerEvents = 'auto';
+
+    const popup = document.createElement('div');
+    popup.className = 'popup compendium-popup';
+    popup.style.width = 'min(900px, 95vw)';
+    popup.style.maxWidth = '900px';
+
+    popup.innerHTML = `
+      <h2>📖 BUILD COMPENDIUM</h2>
+      <button class="btn-close">✕</button>
+      <div class="compendium-controls">
+        <input type="text" id="compendiumSearch" placeholder="Search items, passives, skills, effects..." autocomplete="off" />
+        <div class="compendium-tabs">
+          <button class="compendium-tab-btn active" data-tab="classes">🛡️ CLASSES</button>
+          <button class="compendium-tab-btn" data-tab="weapons">⚔️ WEAPONS</button>
+          <button class="compendium-tab-btn" data-tab="talismans">🧿 TALISMANS</button>
+          <button class="compendium-tab-btn" data-tab="buffs">✨ BUFFS</button>
+          <button class="compendium-tab-btn" data-tab="runes">🧪 RUNES & ITEMS</button>
+        </div>
+      </div>
+      <div id="compendiumContent" class="compendium-content-body"></div>
+    `;
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    const searchInput = popup.querySelector('#compendiumSearch');
+    const tabButtons = popup.querySelectorAll('.compendium-tab-btn');
+    const contentBody = popup.querySelector('#compendiumContent');
+
+    let currentTab = 'classes';
+
+    const render = () => {
+      const query = searchInput.value.toLowerCase().trim();
+      let html = '';
+
+      if (currentTab === 'classes') {
+        html += '<div class="compendium-grid classes-grid">';
+        const classes = state.config.classes || {};
+        const skillMetas = state.config.classSkillMeta || {};
+        Object.entries(classes).forEach(([name, data]) => {
+          const skillMeta = skillMetas[name] || {};
+          const searchString = `${name} ${data.passive} ${data.skill || ''} ${skillMeta.name || ''}`.toLowerCase();
+          if (query && !searchString.includes(query)) return;
+
+          const skillIcon = skillMeta.icon || '✨';
+          const skillColor = skillMeta.color || '#38bdf8';
+
+          html += `
+            <div class="compendium-card class-card">
+              <h3>${name}</h3>
+              <div class="compendium-card-stats">
+                <span>HP: <strong>${data.hp}</strong></span>
+                <span>Mana: <strong>${data.mana}</strong></span>
+                <span>HP Regen: <strong>${data.hpRegen}</strong></span>
+                <span>Mana Regen: <strong>${data.manaRegen}</strong></span>
+              </div>
+              <div class="compendium-card-section">
+                <div class="section-label">PASSIVE</div>
+                <div class="section-desc">${data.passive}</div>
+              </div>
+              <div class="compendium-card-section">
+                <div class="section-label" style="color: ${skillColor}">SKILL: ${skillMeta.name || 'Active'}</div>
+                <div class="section-desc">${skillIcon} ${data.skill || 'No skill'}</div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+      } else if (currentTab === 'weapons') {
+        html += '<div class="compendium-grid weapons-grid">';
+        const weapons = state.config.weapons || {};
+        Object.entries(weapons).forEach(([name, data]) => {
+          const searchString = `${name} ${data.type} ${data.special || ''}`.toLowerCase();
+          if (query && !searchString.includes(query)) return;
+
+          html += `
+            <div class="compendium-card weapon-card">
+              <h3>${name}</h3>
+              <div class="weapon-type-badge">${data.type}</div>
+              <div class="compendium-card-stats">
+                <span>AP Cost: <strong>${data.baseApCost}</strong></span>
+                <span>Dmg Mult: <strong>${data.damageMultiplier}x</strong></span>
+                <span>Crit: <strong>${Math.round(data.critChance * 100)}%</strong></span>
+                <span>Fire Rate: <strong>${data.fireRate}</strong></span>
+                <span>Price: <strong>${data.price}💎</strong></span>
+              </div>
+              ${data.special ? `
+              <div class="compendium-card-section">
+                <div class="section-label">SPECIAL</div>
+                <div class="section-desc">${data.special}</div>
+              </div>` : ''}
+            </div>
+          `;
+        });
+        html += '</div>';
+      } else if (currentTab === 'talismans') {
+        html += '<div class="compendium-grid talismans-grid">';
+        const talismans = state.config.talismans || {};
+        Object.entries(talismans).forEach(([name, data]) => {
+          const searchString = `${name} ${data.description || ''}`.toLowerCase();
+          if (query && !searchString.includes(query)) return;
+
+          html += `
+            <div class="compendium-card talisman-card">
+              <div class="compendium-card-header">
+                <span class="compendium-card-icon">${data.icon || '🧿'}</span>
+                <h3>${name}</h3>
+              </div>
+              <div class="compendium-card-section">
+                <div class="section-desc">${data.description || 'No description'}</div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+      } else if (currentTab === 'buffs') {
+        html += '<div class="compendium-grid buffs-grid">';
+        const buffs = state.config.buffs || {};
+        Object.entries(buffs).forEach(([name, data]) => {
+          const searchString = `${name} ${data.description || ''}`.toLowerCase();
+          if (query && !searchString.includes(query)) return;
+
+          html += `
+            <div class="compendium-card buff-card">
+              <div class="compendium-card-header">
+                <span class="compendium-card-icon">${data.icon || '✨'}</span>
+                <h3>${name}</h3>
+              </div>
+              <div class="compendium-card-section">
+                <div class="section-desc">${data.description || 'No description'}</div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+      } else if (currentTab === 'runes') {
+        html += '<div class="compendium-subsections">';
+        
+        // Runes
+        html += '<h2>RUNES</h2>';
+        html += '<div class="compendium-grid runes-grid">';
+        const runes = state.config.runes || {};
+        Object.entries(runes).forEach(([tierName, tierRunes]) => {
+          Object.entries(tierRunes).forEach(([name, data]) => {
+            const searchString = `${name} ${tierName} ${data.description || ''}`.toLowerCase();
+            if (query && !searchString.includes(query)) return;
+
+            html += `
+              <div class="compendium-card rune-card">
+                <div class="compendium-card-header">
+                  <span class="compendium-card-icon">${data.icon || '🧪'}</span>
+                  <h3>${name} <span class="rune-tier-label">${tierName.toUpperCase()}</span></h3>
+                </div>
+                <div class="compendium-card-section">
+                  <div class="section-desc">${data.description || 'No description'}</div>
+                </div>
+              </div>
+            `;
+          });
+        });
+        html += '</div>';
+
+        // Consumables
+        html += '<h2 class="section-divider">CONSUMABLES</h2>';
+        html += '<div class="compendium-grid consumables-grid">';
+        const consumables = state.config.consumables || {};
+        Object.entries(consumables).forEach(([name, data]) => {
+          const searchString = `${name} ${data.type} ${data.effect || ''}`.toLowerCase();
+          if (query && !searchString.includes(query)) return;
+
+          html += `
+            <div class="compendium-card consumable-card">
+              <div class="compendium-card-header">
+                <span class="compendium-card-icon">🧪</span>
+                <h3>${name}</h3>
+              </div>
+              <div class="weapon-type-badge">${data.type}</div>
+              <div class="compendium-card-stats">
+                <span>Price: <strong>${data.price}💎</strong></span>
+              </div>
+              <div class="compendium-card-section">
+                <div class="section-label">EFFECT</div>
+                <div class="section-desc">${data.effect || 'No description'}</div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+        html += '</div>';
+      }
+
+      contentBody.innerHTML = html || '<div class="compendium-empty">No results found matching your search.</div>';
+    };
+
+    // Tab switching
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTab = btn.dataset.tab;
+        render();
+      });
+    });
+
+    // Search input
+    searchInput.addEventListener('input', render);
+
+    popup.querySelector('.btn-close').addEventListener('click', () => {
+      this.closeAllPopups();
+    });
+
+    // Render initially
+    render();
+
     if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
       PopupAnimation.scale(popup);
     }
