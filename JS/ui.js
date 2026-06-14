@@ -403,30 +403,30 @@ class UIManager {
     const centerGroup = gameArea.querySelector('#gameCenter');
     const handle = gameArea.querySelector('#centerDragHandle');
     let isDragging = false;
-    let startX = 0, startY = 0, currentTx = 0, currentTy = 0, initialTx = 0, initialTy = 0;
+    let startX = 0, currentTx = 0, initialTx = 0;
 
     const savedPos = localStorage.getItem('nemesis_center_pos');
     if (savedPos) {
       try {
-        const { ty } = JSON.parse(savedPos);
-        currentTy = ty;
-        centerGroup.style.transform = `translate(0px, ${currentTy}px)`;
+        const { tx } = JSON.parse(savedPos);
+        currentTx = tx || 0;
+        centerGroup.style.transform = `translate(${currentTx}px, 0px)`;
       } catch (e) { }
     }
 
     const onDown = (e) => {
       isDragging = true;
-      startY = e.clientY;
-      initialTy = currentTy;
+      startX = e.clientX;
+      initialTx = currentTx;
       handle.setPointerCapture(e.pointerId);
     };
 
     const onMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dy = e.clientY - startY;
-      currentTy = initialTy + dy;
-      centerGroup.style.transform = `translate(0px, ${currentTy}px)`;
+      const dx = e.clientX - startX;
+      currentTx = initialTx + dx;
+      centerGroup.style.transform = `translate(${currentTx}px, 0px)`;
     };
 
     const onUp = (e) => {
@@ -434,8 +434,8 @@ class UIManager {
       isDragging = false;
       handle.releasePointerCapture(e.pointerId);
       localStorage.setItem('nemesis_center_pos', JSON.stringify({
-        tx: 0,
-        ty: currentTy
+        tx: currentTx,
+        ty: 0
       }));
     };
 

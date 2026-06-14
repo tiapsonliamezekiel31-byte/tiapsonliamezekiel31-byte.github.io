@@ -296,6 +296,16 @@ class GameState {
     this.playerState.sacredTreeManaBonus = 0;
     this.playerState.weaponUpgrades = {};
 
+    // Reset pet progress and cosmetics (keeping custom petImage and petEmoji)
+    this.playerState.petPoints = 0;
+    this.playerState.petLevel = 1;
+    this.playerState.petUpgradeLevel = 0;
+    this.playerState.petHunger = 100;
+    this.playerState.unlockedPetAnimations = ['Default'];
+    this.playerState.equippedPetAnimation = 'Default';
+    this.playerState.unlockedDeathEffects = ['Default'];
+    this.playerState.equippedDeathEffect = 'Default';
+
     this.stageState.stage = 1;
     this.stageState.stageVariation = 'A';
     this.stageState.level = 1;
@@ -899,39 +909,41 @@ class GameState {
       targets: []
     };
 
-    if (type === 'Sacred Tree') {
+    if (type === 'Sacred Tree' || type === 'Statue') {
       const activeDailies = this.dailiesState.dailies || [];
       if (activeDailies.length > 0) {
-        const randomDaily = activeDailies[Math.floor(Math.random() * activeDailies.length)];
-        this.systemState.specialEvent.targets = [randomDaily.id];
-      }
-    } else if (type === 'Statue') {
-      const activeDailies = this.dailiesState.dailies || [];
-      // Calculate completion rate during this run only
-      const history = this.dailiesState.history || [];
-      const stats = {};
-      activeDailies.forEach(d => {
-        stats[d.id] = { completed: 0, total: 0 };
-      });
-      history.forEach(entry => {
-        // Only count history since run start
-        if (this.systemState.gameStartTime && new Date(entry.date) < new Date(this.systemState.gameStartTime)) return;
+        // Calculate completion rate during this run only
+        const history = this.dailiesState.history || [];
+        const stats = {};
+        activeDailies.forEach(d => {
+          stats[d.id] = { completed: 0, total: 0 };
+        });
+        history.forEach(entry => {
+          // Only count history since run start
+          if (this.systemState.gameStartTime && new Date(entry.date) < new Date(this.systemState.gameStartTime)) return;
+          
+          (entry.completedDailies || []).forEach(d => {
+            if (stats[d.id]) { stats[d.id].completed++; stats[d.id].total++; }
+          });
+          (entry.missedDailies || []).forEach(d => {
+            if (stats[d.id]) { stats[d.id].total++; }
+          });
+        });
         
-        (entry.completedDailies || []).forEach(d => {
-          if (stats[d.id]) { stats[d.id].completed++; stats[d.id].total++; }
+        const rates = Object.keys(stats).map(id => {
+          const total = stats[id].total;
+          // New/unattempted dailies (0/0) count as 100% (1)
+          return { id, rate: total > 0 ? stats[id].completed / total : 1 };
         });
-        (entry.missedDailies || []).forEach(d => {
-          if (stats[d.id]) { stats[d.id].total++; }
-        });
-      });
-      
-      const rates = Object.keys(stats).map(id => {
-        const total = stats[id].total;
-        return { id, rate: total > 0 ? stats[id].completed / total : 0 };
-      });
-      
-      rates.sort((a, b) => a.rate - b.rate);
-      this.systemState.specialEvent.targets = rates.slice(0, 3).map(r => r.id);
+        
+        rates.sort((a, b) => a.rate - b.rate);
+
+        if (type === 'Sacred Tree') {
+          this.systemState.specialEvent.targets = [rates[0].id];
+        } else {
+          this.systemState.specialEvent.targets = rates.slice(0, 3).map(r => r.id);
+        }
+      }
     }
   }
 }
