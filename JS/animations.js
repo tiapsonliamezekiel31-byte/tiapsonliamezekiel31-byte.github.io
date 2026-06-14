@@ -302,7 +302,8 @@ class FloatingDamageNumber {
       container = document.body,
       isCrit = false,
       isMiss = false,
-      stackKey // optional override for grouping coordinate floats
+      stackKey, // optional override for grouping coordinate floats
+      rotationRange = 8
     } = options;
 
     const effectiveDuration = Number(duration) || DEFAULT_DURATION;
@@ -311,11 +312,13 @@ class FloatingDamageNumber {
     const xOffset = 0;
     const driftX = (Math.random() * 10) - 5;
     const driftY = (Math.random() * 8) - 4;
+    const travelX = (Math.random() - 0.5) * 30;
+    const travelY = -50 - (Math.random() * 20);
 
     const div = FloatingDamageNumber._pool.length ? FloatingDamageNumber._pool.pop() : document.createElement('div');
     const displayValue = isMiss ? 'MISS' : value;
     const fontSize = isCrit ? 28 : 20;
-    const baseRotation = (Math.random() - 0.5) * 8;
+    const baseRotation = (Math.random() - 0.5) * rotationRange;
 
     // Estimate width to prevent synchronous layout reads (layout thrashing) on creation
     const rectWidth = String(displayValue).length * (fontSize * scale * sizeMultiplier * 0.65);
@@ -355,6 +358,8 @@ class FloatingDamageNumber {
       y,
       driftX,
       driftY,
+      travelX,
+      travelY,
       createdAt,
       duration: effectiveDuration,
       fadeDelay: effectiveFadeDelay,
@@ -617,14 +622,15 @@ FloatingDamageNumber._tickNonAnchored = function () {
       f.div.style.webkitTextStroke = `0.5px ${v}`;
     } catch (e) { }
 
-    const yOffset = progress * -50;
+    const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
+    const dy = progress * (f.travelY !== undefined ? f.travelY : -50);
     const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
     const wobbleAmplitude = f.isCrit ? 6 : 3;
     const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
     const driftX = (f.driftX || 0) * Math.min(1, progress);
     const driftY = (f.driftY || 0) * Math.min(1, progress);
 
-    f.div.style.transform = `translate3d(${f.x + driftX}px, ${f.y + yOffset + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+    f.div.style.transform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
     f.div.style.opacity = opacity;
 
     if (progress >= 1) {

@@ -3109,7 +3109,7 @@ class UIManager {
         }
 
         if (result && result.apCost) {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${Math.ceil(result.apCost)} AP`, { color: '#ffd700' });
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight - 100, `-${Math.ceil(result.apCost)} AP`, { color: '#ffd700', scale: 0.7, rotationRange: 40 });
         }
 
         if (!result.success) {
@@ -3653,7 +3653,7 @@ class UIManager {
     // This is now a placeholder; dodge is handled via hold/release
     const result = CombatManager.attemptDodge();
     if (result.success) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${Math.ceil(result.dodgeCost)} AP`, { color: '#ffd700' });
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight - 100, `-${Math.ceil(result.dodgeCost)} AP`, { color: '#ffd700', scale: 0.7, rotationRange: 40 });
       console.log('Dodge active');
       this.renderEnemies();
     }
