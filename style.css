@@ -6629,10 +6629,6 @@ button:hover,
 .holy-light-beam,
 .hud-bar .fill,
 .task-panel,
-.popup-overlay,
-.popup-panel,
-.nm-popup-scale,
-.nm-popup-scale-centered,
 .nm-screen-flash {
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
