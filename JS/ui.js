@@ -309,6 +309,22 @@ class UIManager {
     hamburger.innerHTML = '☰';
     document.body.appendChild(hamburger);
 
+    const refreshBtn = document.createElement('div');
+    refreshBtn.id = 'navRefreshBtn';
+    refreshBtn.className = 'nav-hamburger-btn';
+    refreshBtn.style.left = '68px';
+    refreshBtn.innerHTML = '↻';
+    refreshBtn.title = 'Force Refresh';
+    refreshBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof window.forceRefreshNemesisApp === 'function') {
+        window.forceRefreshNemesisApp();
+      } else {
+        window.location.reload(true);
+      }
+    });
+    document.body.appendChild(refreshBtn);
+
     const navPanel = document.createElement('div');
     navPanel.id = 'navMenuPanel';
     navPanel.className = 'nav-menu-panel';
