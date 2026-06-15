@@ -11,6 +11,24 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css?v=20260606c">
+  <script>
+    (async function() {
+      try {
+        if (!localStorage.getItem('nemesis_emergency_fix_v2')) {
+          localStorage.setItem('nemesis_emergency_fix_v2', 'true');
+          const keys = await caches.keys();
+          for (const key of keys) {
+            await caches.delete(key);
+          }
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) {
+            await r.unregister();
+          }
+          window.location.replace(window.location.href.split('?')[0] + '?forced=1');
+        }
+      } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
   <div id="gameContainer"></div>
