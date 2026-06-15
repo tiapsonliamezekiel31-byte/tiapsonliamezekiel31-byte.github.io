@@ -266,7 +266,7 @@ class UIManager {
       hud.style.right = 'auto';
       hud.style.left = initialLeft + 'px';
       hud.style.top = initialTop + 'px';
-      try { hud.setPointerCapture(e.pointerId); } catch (err) {}
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
     };
 
     const onPointerMove = (e) => {
@@ -289,7 +289,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      try { hud.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_hud_pos', JSON.stringify({
         left: parseInt(hud.style.left, 10) || 0,
         top: parseInt(hud.style.top, 10) || 0
@@ -495,7 +495,7 @@ class UIManager {
       rcPanel.style.bottom = 'auto';
       rcPanel.style.left = rcInitialLeft + 'px';
       rcPanel.style.top = rcInitialTop + 'px';
-      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) {}
+      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) { }
     };
 
     const onRcMove = (e) => {
@@ -518,7 +518,7 @@ class UIManager {
     const onRcUp = (e) => {
       if (!isRcDragging) return;
       isRcDragging = false;
-      try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
         left: parseInt(rcPanel.style.left, 10) || 0,
         top: parseInt(rcPanel.style.top, 10) || 0
@@ -580,7 +580,7 @@ class UIManager {
       ebPanel.style.transform = 'none';
       ebPanel.style.left = ebInitialLeft + 'px';
       ebPanel.style.top = ebInitialTop + 'px';
-      try { ebPanel.setPointerCapture(e.pointerId); } catch (err) {}
+      try { ebPanel.setPointerCapture(e.pointerId); } catch (err) { }
     };
 
     const onEbMove = (e) => {
@@ -603,7 +603,7 @@ class UIManager {
     const onEbUp = (e) => {
       if (!isEbDragging) return;
       isEbDragging = false;
-      try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
         left: parseInt(ebPanel.style.left, 10) || 0,
         top: parseInt(ebPanel.style.top, 10) || 0
@@ -642,7 +642,7 @@ class UIManager {
         resizeStartY = e.clientY;
         resizeStartW = ebPanel.offsetWidth;
         resizeStartH = ebPanel.offsetHeight;
-        try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) {}
+        try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) { }
       });
 
       resizeHandle.addEventListener('pointermove', (e) => {
@@ -1295,7 +1295,7 @@ class UIManager {
     if (this.eventListenersBound) return;
     this.eventListenersBound = true;
     const state = getGameState();
-    
+
     // Global listener to clear note selections on clicking outside
     document.addEventListener('pointerdown', (e) => {
       if (!e.target.closest('.daily-note-card') && !e.target.closest('.todo-note-card')) {
@@ -1488,8 +1488,8 @@ class UIManager {
             if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
               FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Requires 1 Lootbox Key 🔑', { color: '#ff6666' });
             }
-          } catch (e) {}
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          } catch (e) { }
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           return;
         }
         if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showLootbox === 'function') {
@@ -1551,8 +1551,8 @@ class UIManager {
 
           const executeClaim = () => {
             event.claimed = true;
-            try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) {}
-            
+            try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) { }
+
             if (event.type === 'Statue') {
               const talisman = preRolledTalisman || (() => {
                 const talismans = Object.keys(gs.config.talismans);
@@ -1566,7 +1566,7 @@ class UIManager {
               } else {
                 if (!gs.playerState.talismans) gs.playerState.talismans = [];
                 gs.playerState.talismans.push(talisman);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch(err) {}
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch (err) { }
               }
             } else if (event.type === 'Sacred Tree') {
               if (!event.rewardType) {
@@ -1578,11 +1578,11 @@ class UIManager {
               if (isHp) {
                 gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + val;
                 gs.addHp(val);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max HP`, { color: '#84cc16' }); } catch(err) {}
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max HP`, { color: '#84cc16' }); } catch (err) { }
               } else {
                 gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + val;
                 gs.addMana(val);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max Mana`, { color: '#3b82f6' }); } catch(err) {}
+                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max Mana`, { color: '#3b82f6' }); } catch (err) { }
               }
             } else if (event.type === 'Shrine') {
               if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
@@ -1667,7 +1667,7 @@ class UIManager {
           canvas.height = h;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          
+
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
           const state = getGameState();
           state.playerState.petImage = compressedBase64;
@@ -1700,7 +1700,7 @@ class UIManager {
         state.playerState.petLevel = (state.playerState.petLevel || 1) + 1;
         state.save();
         UIManager.updatePetUI();
-        try { SoundManager.play('levelUp'); } catch (err) {}
+        try { SoundManager.play('levelUp'); } catch (err) { }
       }
     });
     // add buttons
@@ -1787,9 +1787,9 @@ class UIManager {
     });
 
     const panelId = which === 'dailies' ? 'dailiesPanel' :
-                    which === 'todos' ? 'todosPanel' :
-                    which === 'achievements' ? 'achievementsPanel' :
-                    which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
+      which === 'todos' ? 'todosPanel' :
+        which === 'achievements' ? 'achievementsPanel' :
+          which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     if (!panel) return;
     const open = panel.classList.contains('open');
@@ -1819,9 +1819,9 @@ class UIManager {
 
   static closeTaskPanel(which) {
     const panelId = which === 'dailies' ? 'dailiesPanel' :
-                    which === 'todos' ? 'todosPanel' :
-                    which === 'achievements' ? 'achievementsPanel' :
-                    which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
+      which === 'todos' ? 'todosPanel' :
+        which === 'achievements' ? 'achievementsPanel' :
+          which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
   }
@@ -1898,7 +1898,7 @@ class UIManager {
     Object.entries(effects).forEach(([id, info]) => {
       const isUnlocked = state.playerState.unlockedDeathEffects.includes(id);
       const isEquipped = state.playerState.equippedDeathEffect === id;
-      
+
       const priceMultiplier = info.tier === 'premium' ? 3.0 : 2.0;
       const minPrice = info.tier === 'premium' ? 15 : 10;
       const cost = Math.max(minPrice, Math.ceil(maxDiamonds * priceMultiplier));
@@ -1940,7 +1940,7 @@ class UIManager {
             state.unlockDeathEffect(id);
             state.save();
             this.updateCosmeticsList();
-            try { SoundManager.play('coin'); } catch (err) {}
+            try { SoundManager.play('coin'); } catch (err) { }
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Unlocked ${id}!`, {
               color: UIManager.themeColor('--accent-gold', '#FFB33F')
             });
@@ -1949,16 +1949,16 @@ class UIManager {
           state.equipDeathEffect(id);
           state.save();
           this.updateCosmeticsList();
-          try { SoundManager.play('lootbox_open'); } catch (err) {}
+          try { SoundManager.play('lootbox_open'); } catch (err) { }
         } else if (btn.classList.contains('btn-preview-cosmetic')) {
           const prevEquipped = state.playerState.equippedDeathEffect;
           state.playerState.equippedDeathEffect = id;
-          
+
           const panel = document.getElementById('cosmeticsPanel');
           if (panel) {
             panel.classList.add('preview-hiding');
           }
-          
+
           try {
             EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2 - 100, false);
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Previewing ${id}`, {
@@ -1982,7 +1982,7 @@ class UIManager {
 
   static updatePetUI() {
     const state = getGameState();
-    
+
     const imgDisplay = document.getElementById('petImageDisplay');
     const levelVal = document.getElementById('petLevelVal');
     const dmgBonusVal = document.getElementById('petDmgBonusVal');
@@ -1992,16 +1992,16 @@ class UIManager {
     const upgradeBtn = document.getElementById('petUpgradeBtn');
     const upgradeCostVal = document.getElementById('petUpgradeCostVal');
     const clearPicBtn = document.getElementById('petClearImageBtn');
-    
+
     if (!levelVal) return;
-    
+
     const petPoints = state.playerState.petPoints || 0;
     const petLevel = state.playerState.petLevel || 1;
     const petUpgradeLevel = state.playerState.petUpgradeLevel || 0;
     const petHunger = state.playerState.petHunger !== undefined ? state.playerState.petHunger : 100;
     const petEmoji = state.playerState.petEmoji || '🐾';
     const petImage = state.playerState.petImage;
-    
+
     if (petImage) {
       imgDisplay.innerHTML = `<img src="${petImage}" style="width: 100%; height: 100%; object-fit: cover;">`;
       if (clearPicBtn) clearPicBtn.style.display = 'inline-block';
@@ -2009,13 +2009,13 @@ class UIManager {
       imgDisplay.innerHTML = petEmoji;
       if (clearPicBtn) clearPicBtn.style.display = 'none';
     }
-    
+
     levelVal.textContent = petLevel;
     const dmgBonusPct = petUpgradeLevel * 1.5;
     const dmgBonusFlat = Math.round(state.playerState.maxAp * (petUpgradeLevel * 0.015));
     dmgBonusVal.textContent = `${dmgBonusFlat} (+${dmgBonusPct}% AP)`;
     pointsVal.textContent = petPoints;
-    
+
     hungerText.textContent = `${petHunger}/100`;
     if (hungerFill) {
       hungerFill.style.width = `${petHunger}%`;
@@ -2028,13 +2028,13 @@ class UIManager {
         hungerFill.style.background = 'linear-gradient(90deg, #30C85A, #7AE88E)';
       }
     }
-    
+
     const cost = 5 + petUpgradeLevel * 2;
     if (upgradeCostVal) upgradeCostVal.textContent = cost;
     if (upgradeBtn) {
       upgradeBtn.disabled = petPoints < cost;
     }
-    
+
     const emojiGrid = document.getElementById('petEmojiGrid');
     if (emojiGrid) {
       const emojis = ['🐾', '🐶', '🐱', '🦊', '🦁', '🦉', '🐉', '🐼', '🐸', '🦄', '🦅', '🦖'];
@@ -2048,7 +2048,7 @@ class UIManager {
         `;
       });
       emojiGrid.innerHTML = emojiHtml;
-      
+
       emojiGrid.querySelectorAll('.pet-emoji-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           state.playerState.petEmoji = btn.dataset.emoji;
@@ -2057,7 +2057,7 @@ class UIManager {
         });
       });
     }
-    
+
     const foodGrid = document.getElementById('petFoodGrid');
     if (foodGrid) {
       const foods = [
@@ -2080,7 +2080,7 @@ class UIManager {
         { name: 'Cake', emoji: '🍰', cost: 5, hunger: 100 },
         { name: 'Honey', emoji: '🍯', cost: 8, hunger: 100 }
       ];
-      
+
       let foodHtml = '';
       foods.forEach(f => {
         const canAfford = petPoints >= f.cost;
@@ -2094,12 +2094,12 @@ class UIManager {
         `;
       });
       foodGrid.innerHTML = foodHtml;
-      
+
       foodGrid.querySelectorAll('.pet-food-card').forEach(card => {
         card.addEventListener('click', () => {
           const cost = parseInt(card.dataset.cost, 10);
           const hunger = parseInt(card.dataset.hunger, 10);
-          
+
           if (state.playerState.petPoints >= cost) {
             state.playerState.petPoints -= cost;
             state.playerState.petHunger = Math.min(100, (state.playerState.petHunger || 0) + hunger);
@@ -2107,7 +2107,7 @@ class UIManager {
             UIManager.updatePetUI();
             try {
               SoundManager.play('heal');
-            } catch (e) {}
+            } catch (e) { }
           }
         });
       });
@@ -2186,13 +2186,13 @@ class UIManager {
               }
               state.save();
               UIManager.updatePetUI();
-              try { SoundManager.play('coin'); } catch (err) {}
+              try { SoundManager.play('coin'); } catch (err) { }
             }
           } else if (btn.classList.contains('btn-equip-anim')) {
             state.playerState.equippedPetAnimation = id;
             state.save();
             UIManager.updatePetUI();
-            try { SoundManager.play('lootbox_open'); } catch (err) {}
+            try { SoundManager.play('lootbox_open'); } catch (err) { }
           }
         });
       });
@@ -2397,7 +2397,7 @@ class UIManager {
     if (hpFillEl && maxHp > 0 && newHp < maxHp * 0.25) {
       try { MeterAnimation.pulse(hpFillEl, UIManager.themeColor('--hp-red', '#C00707')); } catch (e) { }
     }
-    try { this.updatePendingDamageDisplay(); } catch (e) {}
+    try { this.updatePendingDamageDisplay(); } catch (e) { }
   }
 
   static updatePendingDamageDisplay() {
@@ -2829,7 +2829,7 @@ class UIManager {
           else if (step.isMinionSummon) actionDesc = `SUMMON ${step.minionName}`;
           else if (step.isHeavy) actionDesc = 'HEAVY SLAM';
           else if (step.isCrit) actionDesc = 'CRITICAL STRIKE';
-          
+
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 150, actionDesc, {
             color: '#ffd76a',
             duration: 2200,
@@ -2973,7 +2973,7 @@ class UIManager {
               resolve();
               return;
             }
-            try { SoundManager.play('pet'); } catch (e) {}
+            try { SoundManager.play('pet'); } catch (e) { }
 
             FloatingDamageNumber.show(x, y - 20, `-${Math.ceil(pAttack.damage)} 🐾`, {
               color: '#ffaa00',
@@ -3207,7 +3207,7 @@ class UIManager {
               if (echoTarget && !echoTarget.isDead) {
                 const echoDmg = Math.max(1, Math.ceil(echo.damage * 0.5));
                 echoTarget.takeDamage(echoDmg);
-                
+
                 let targetX = window.innerWidth / 2;
                 let targetY = window.innerHeight / 2;
                 const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${echoTarget.id}"]`);
@@ -3223,20 +3223,20 @@ class UIManager {
                     targetY = rect.top + rect.height / 2;
                   }
                 }
-                
+
                 if (typeof RetroHitAnimation !== 'undefined') {
                   RetroHitAnimation.play(targetX, targetY, '#a855f7');
                 }
-                
+
                 FloatingDamageNumber.show(
                   targetX,
                   targetY - 20,
                   `ECHO: -${echoDmg} ⏳`,
                   { color: '#a855f7', scale: 1.2, duration: 1500 }
                 );
-                
-                try { this.renderEnemies(); } catch (e) {}
-                try { this.refreshGameUI(); } catch (e) {}
+
+                try { this.renderEnemies(); } catch (e) { }
+                try { this.refreshGameUI(); } catch (e) { }
               }
             } catch (e) {
               console.warn('Chrono-Shift echo failed', e);
@@ -3294,7 +3294,7 @@ class UIManager {
                   scale: 1.2,
                   fadeDelay: 700
                 });
-              } catch (e) {}
+              } catch (e) { }
             } else if (hit.resistanceMatch && typeof RetroResistanceAnimation !== 'undefined') {
               RetroResistanceAnimation.play(targetCard, elementColor);
               try {
@@ -3304,7 +3304,7 @@ class UIManager {
                   scale: 0.9,
                   fadeDelay: 700
                 });
-              } catch (e) {}
+              } catch (e) { }
             }
 
             if (hit.isCrit && typeof RetroCritSlashAnimation !== 'undefined') {
@@ -3398,7 +3398,7 @@ class UIManager {
             'No target to select',
             { color: '#ff6666', duration: 1200 }
           );
-        } catch (e) {}
+        } catch (e) { }
         this.finishAttackSpinner();
         return;
       }
@@ -3416,7 +3416,7 @@ class UIManager {
           reason,
           { color: '#ff6666', duration: 1200 }
         );
-      } catch (e) {}
+      } catch (e) { }
       this.finishAttackSpinner();
       return;
     }
@@ -3454,7 +3454,7 @@ class UIManager {
           case 'Brute':
             // Wrath Unleashed: +200% damage today, cannot dodge
             state.combatState.skillEffects.wrathUnleashed = true;
-            state.combatState.skillEffects.wrathDamageMultiplier = (state.combatState.skillEffects.wrathDamageMultiplier || 1.0) + 2.0; 
+            state.combatState.skillEffects.wrathDamageMultiplier = (state.combatState.skillEffects.wrathDamageMultiplier || 1.0) + 2.0;
             state.combatState.skillEffects.cannotDodge = true;
             break;
 
@@ -3497,7 +3497,7 @@ class UIManager {
                       FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
                     }
                   }
-                } catch (e) {}
+                } catch (e) { }
 
                 const weapon = PlayerManager.getCurrentWeapon();
                 if (weapon) {
@@ -3511,7 +3511,7 @@ class UIManager {
                         if (adj && !adj.isDead && adj.maxHp > 0) {
                           const splashDmg = Math.ceil(adj.maxHp * 0.15);
                           adj.takeDamage(splashDmg);
-                          
+
                           try {
                             const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
                             if (adjCard) {
@@ -3524,7 +3524,7 @@ class UIManager {
                                 FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
                               }
                             }
-                          } catch (e) {}
+                          } catch (e) { }
                         }
                       });
 
@@ -3536,7 +3536,7 @@ class UIManager {
                             'CONCOCTION EXPLOSION! 💥',
                             { color: '#84cc16', duration: 1500 }
                           );
-                        } catch (e) {}
+                        } catch (e) { }
                       }
                     }
                   }
@@ -3561,10 +3561,10 @@ class UIManager {
       }
 
       // Persist state after skill activation
-      try { state.save(); } catch (e) {}
+      try { state.save(); } catch (e) { }
       // Refresh enemies display if AoE killed something
-      try { this.renderEnemies(); } catch (e) {}
-      try { this.refreshGameUI(); } catch (e) {}
+      try { this.renderEnemies(); } catch (e) { }
+      try { this.refreshGameUI(); } catch (e) { }
     } catch (e) {
       console.warn('Failed to apply skill effects', e);
     }
@@ -3607,7 +3607,7 @@ class UIManager {
       // Screen flash with primary class color
       try {
         ScreenEffects.flash(primaryColor + '18', 300);
-      } catch (e) {}
+      } catch (e) { }
 
       // 2. Borrowed Skill Cards (if any)
       if (Array.isArray(state.playerState.borrowedSkills)) {
@@ -3639,7 +3639,7 @@ class UIManager {
           setTimeout(() => {
             try {
               ScreenEffects.flash(borrowedColor + '14', 250);
-            } catch (e) {}
+            } catch (e) { }
           }, 250 * (index + 1));
         });
       }
@@ -3651,7 +3651,7 @@ class UIManager {
           container.style.opacity = '0';
           container.style.transform = 'translate(-50%, -60%)';
           setTimeout(() => container.remove(), 600);
-        } catch (e) {}
+        } catch (e) { }
       }, 3000);
     } catch (e) {
       console.warn('Failed to show skill activation popup', e);
@@ -3883,7 +3883,7 @@ class UIManager {
         const attackCost = new WeaponAttack(weapon.name).getScaledApCost();
         if (state.playerState.ap < attackCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           if (targetElement) {
             targetElement.classList.add('shake');
             setTimeout(() => targetElement.classList.remove('shake'), 300);
@@ -3894,7 +3894,7 @@ class UIManager {
         const dodgeCost = CombatManager.getDodgeCost();
         if (state.playerState.ap < dodgeCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           if (targetElement) {
             targetElement.classList.add('shake');
             setTimeout(() => targetElement.classList.remove('shake'), 300);
@@ -3909,7 +3909,7 @@ class UIManager {
         }
         if (state.playerState.mana < skillCost) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana', { color: '#ff6666' });
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           if (targetElement) {
             targetElement.classList.add('shake');
             setTimeout(() => targetElement.classList.remove('shake'), 300);
@@ -3981,7 +3981,7 @@ class UIManager {
 
         line.className.baseVal = dragType;
 
-         const targetedEnemy = getTargetEnemyByProximity(pointerX, pointerY);
+        const targetedEnemy = getTargetEnemyByProximity(pointerX, pointerY);
         clearHighlights();
 
         if (targetedEnemy) {
@@ -4009,7 +4009,7 @@ class UIManager {
       const isTargetingSkill = (dragType === 'skill' && hasAlchemist);
 
       if ((dragType === 'attack' || dragType === 'dodge' || isTargetingSkill) && targetElement) {
-        try { targetElement.releasePointerCapture(activePointerId); } catch (e) {}
+        try { targetElement.releasePointerCapture(activePointerId); } catch (e) { }
       }
 
       svg.style.display = 'none';
@@ -4030,7 +4030,7 @@ class UIManager {
 
               if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
                 FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
-                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
               } else {
                 const dodgeCost = CombatManager.getDodgeCost();
                 state.spendAp(dodgeCost);
@@ -4106,7 +4106,7 @@ class UIManager {
 
             if (currentDodges.map(id => String(id)).includes(String(target.id))) {
               FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
-              try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+              try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
             } else {
               const dodgeCost = CombatManager.getDodgeCost();
               state.spendAp(dodgeCost);
@@ -4219,13 +4219,13 @@ class UIManager {
           const weaponData = gs.config.weapons[detail.weaponName] || {};
 
           if (detail.weaponName === 'Bomb' ||
-              (weaponData.special && weaponData.special.includes('Hits ALL'))) {
+            (weaponData.special && weaponData.special.includes('Hits ALL'))) {
             // Bomb — hit every alive enemy card
             const allCards = Array.from(document.querySelectorAll('.enemy-card'));
             opts.allCards = allCards;
 
           } else if (detail.weaponName === 'Bazooka' ||
-                     (weaponData.special && weaponData.special.includes('adjacent'))) {
+            (weaponData.special && weaponData.special.includes('adjacent'))) {
             // Bazooka — primary + up to 2 adjacent
             const allEnemyCards = Array.from(document.querySelectorAll('.enemy-card'));
             const idx = allEnemyCards.indexOf(targetCard);
@@ -4252,7 +4252,7 @@ class UIManager {
             // Death Spell — check if the target is still alive (resisted = alive)
             const tgtCard = targetCard;
             opts.isResisted = !tgtCard.classList.contains('enemy-dead') &&
-                              !tgtCard.dataset.isDead;
+              !tgtCard.dataset.isDead;
           }
 
           WeaponHitAnimation.play(detail.weaponName, targetCard, opts);
@@ -4594,7 +4594,7 @@ class UIManager {
             const halfHeight = dragState.noteHeight / 2;
             const nextLeftPx = Math.max(halfWidth, Math.min(boardNow.width - halfWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
             const nextTopPx = Math.max(halfHeight, Math.min(boardNow.height - halfHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
-            
+
             dragState.moved = true;
             dragState.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
             dragState.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
@@ -4625,7 +4625,7 @@ class UIManager {
                     const selection = window.getSelection();
                     selection.removeAllRanges();
                     selection.addRange(range);
-                  } catch (err) {}
+                  } catch (err) { }
                 }
               } else {
                 document.querySelectorAll('.daily-note-card, .todo-note-card').forEach(el => el.classList.remove('selected'));
@@ -4791,7 +4791,7 @@ class UIManager {
             const boardNow = board.getBoundingClientRect();
             const nextLeftPx = Math.max(0, Math.min(boardNow.width - dragState.noteWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
             const nextTopPx = Math.max(0, Math.min(boardNow.height - dragState.noteHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
-            
+
             dragState.moved = true;
             dragState.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
             dragState.nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
@@ -4822,7 +4822,7 @@ class UIManager {
                     const selection = window.getSelection();
                     selection.removeAllRanges();
                     selection.addRange(range);
-                  } catch (err) {}
+                  } catch (err) { }
                 }
               } else {
                 document.querySelectorAll('.daily-note-card, .todo-note-card').forEach(el => el.classList.remove('selected'));
@@ -5223,6 +5223,18 @@ class UIManager {
         event.preventDefault();
 
         try { card.setPointerCapture(event.pointerId); } catch (error) { }
+
+        // Check double tap first
+        const now = Date.now();
+        const lastTap = Number(card.dataset.lastTapTime || 0);
+        if (now - lastTap < 300) {
+          // Double tap: toggle Blood Oath
+          clearTimeout(timer);
+          TaskManager.toggleBloodOathTodo(todoId);
+          card.dataset.lastTapTime = '0';
+          return;
+        }
+        card.dataset.lastTapTime = String(now);
 
         const timer = setTimeout(() => {
           isLongPressed = true;
@@ -5865,7 +5877,7 @@ class UIManager {
   static getEnemyEmoji(enemy) {
     const name = (enemy?.name || '').toLowerCase();
     const archetype = (enemy?.archetype || '').toLowerCase();
-    
+
     // Bosses
     if (name.includes('demon')) return '😈';
     if (name.includes('mummified marcher')) return '🧟';
@@ -5976,7 +5988,7 @@ class UIManager {
       container.style.bottom = 'auto';
       container.style.left = initialLeft + 'px';
       container.style.top = initialTop + 'px';
-      try { strip.setPointerCapture(e.pointerId); } catch (err) {}
+      try { strip.setPointerCapture(e.pointerId); } catch (err) { }
     };
 
     const onPointerMove = (e) => {
@@ -5999,7 +6011,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      try { strip.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { strip.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_weapon_pos', JSON.stringify({
         left: parseInt(container.style.left, 10) || 0,
         top: parseInt(container.style.top, 10) || 0
@@ -6172,13 +6184,13 @@ class UIManager {
     }
 
     banner.style.display = 'block';
-    
+
     const titleEl = document.getElementById('eventBannerTitle');
     const descEl = document.getElementById('eventBannerDesc');
     const claimBtn = document.getElementById('eventBannerClaimBtn');
-    
+
     let isComplete = false;
-    
+
     if (event.type === 'Shrine') {
       titleEl.textContent = '⛩️';
       descEl.textContent = 'Complete 100% of today\'s active Dailies.';
@@ -6209,7 +6221,7 @@ class UIManager {
   static updatePauseBtn() {
     // Implementation
   }
-  
+
 
 
   static getStageBackdropConfig() {
@@ -6576,7 +6588,7 @@ class UIManager {
     let card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
     if (!card) {
       console.log('[showPetIcon] Card not found for enemyId, rendering enemies...');
-      try { this.renderEnemies(); } catch (e) {}
+      try { this.renderEnemies(); } catch (e) { }
       card = layer.querySelector(`.enemy-card[data-enemy-id="${enemyId}"]`);
     }
     if (!card) {
@@ -6617,7 +6629,7 @@ class UIManager {
         Object.assign(p.style, animStyles);
       });
       setTimeout(() => {
-        try { p.remove(); } catch (e) {}
+        try { p.remove(); } catch (e) { }
       }, duration);
     };
 
@@ -6672,7 +6684,7 @@ class UIManager {
         if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
           ScreenEffects.shake(16, 300);
         }
-        
+
         // Full screen screen-flash overlay
         const flash = document.createElement('div');
         flash.style.position = 'fixed';
@@ -6683,7 +6695,7 @@ class UIManager {
         flash.style.transition = 'opacity 300ms ease-out';
         document.body.appendChild(flash);
         setTimeout(() => { flash.style.opacity = '0'; }, 50);
-        setTimeout(() => { try { flash.remove(); } catch(e){} }, 350);
+        setTimeout(() => { try { flash.remove(); } catch (e) { } }, 350);
 
         createParticle(enemyCenterX, enemyCenterY - 30, '💥', 600, {
           transform: 'scale(6)',
@@ -6784,12 +6796,12 @@ class UIManager {
 
       // Hit Impact at 1100ms
       setTimeout(() => {
-        try { meteor.remove(); } catch (e) {}
+        try { meteor.remove(); } catch (e) { }
         shakeCard(30, 24);
         if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
           ScreenEffects.shake(25, 450);
         }
-        
+
         // Full screen screen-flash overlay
         const flash = document.createElement('div');
         flash.style.position = 'fixed';
@@ -6800,7 +6812,7 @@ class UIManager {
         flash.style.transition = 'opacity 600ms ease-out';
         document.body.appendChild(flash);
         setTimeout(() => { flash.style.opacity = '0'; }, 50);
-        setTimeout(() => { try { flash.remove(); } catch(e){} }, 650);
+        setTimeout(() => { try { flash.remove(); } catch (e) { } }, 650);
 
         // Expanding blast wave ring
         const ring = document.createElement('div');
@@ -6822,7 +6834,7 @@ class UIManager {
           ring.style.height = '500px';
           ring.style.opacity = '0';
         }, 50);
-        setTimeout(() => { try { ring.remove(); } catch(e){} }, 750);
+        setTimeout(() => { try { ring.remove(); } catch (e) { } }, 750);
 
         // Exploding debris with gravity
         for (let i = 0; i < 36; i++) {
@@ -6864,7 +6876,7 @@ class UIManager {
             pulseRing.style.height = `${rect.height * 7}px`;
             pulseRing.style.opacity = '0';
           }, 50);
-          setTimeout(() => { try { pulseRing.remove(); } catch(e){} }, 1150);
+          setTimeout(() => { try { pulseRing.remove(); } catch (e) { } }, 1150);
         }, r * 200);
       }
 
@@ -6891,7 +6903,7 @@ class UIManager {
       flash.style.transition = 'opacity 800ms ease-out';
       document.body.appendChild(flash);
       setTimeout(() => { flash.style.opacity = '0'; }, 50);
-      setTimeout(() => { try { flash.remove(); } catch(e){} }, 850);
+      setTimeout(() => { try { flash.remove(); } catch (e) { } }, 850);
 
       if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
         ScreenEffects.shake(8, 600);
@@ -6913,7 +6925,7 @@ class UIManager {
           }, '32px');
         }, i * 25);
       }
-      
+
       // giant tornado at 900ms
       setTimeout(() => {
         const tornado = document.createElement('div');
@@ -6927,18 +6939,18 @@ class UIManager {
         tornado.style.pointerEvents = 'none';
         tornado.style.transition = 'all 700ms ease-out';
         document.body.appendChild(tornado);
-        
+
         requestAnimationFrame(() => {
           tornado.style.transform = 'translate(-50%, -50%) rotate(1080deg) scale(0.4)';
           tornado.style.opacity = '0';
         });
-        
+
         shakeCard(22, 16);
         if (typeof ScreenEffects !== 'undefined' && ScreenEffects.shake) {
           ScreenEffects.shake(12, 500);
         }
-        
-        setTimeout(() => { try { tornado.remove(); } catch(e){} }, 700);
+
+        setTimeout(() => { try { tornado.remove(); } catch (e) { } }, 700);
       }, 900);
 
     } else if (equippedAnim === 'Earthquake Shake') {
@@ -6971,7 +6983,7 @@ class UIManager {
       }, 50);
       setTimeout(() => {
         fissure.style.opacity = '0';
-        setTimeout(() => { try { fissure.remove(); } catch(e){} }, 400);
+        setTimeout(() => { try { fissure.remove(); } catch (e) { } }, 400);
       }, 1200);
 
       // Raise rock and dust debris (35 particles)
@@ -7046,7 +7058,7 @@ class UIManager {
       panel.style.bottom = 'auto';
       panel.style.left = initialLeft + 'px';
       panel.style.top = initialTop + 'px';
-      try { panel.setPointerCapture(e.pointerId); } catch (err) {}
+      try { panel.setPointerCapture(e.pointerId); } catch (err) { }
     };
 
     const onPointerMove = (e) => {
@@ -7069,7 +7081,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
-      try { panel.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { panel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_satchel_pos', JSON.stringify({
         left: parseInt(panel.style.left, 10) || 0,
         top: parseInt(panel.style.top, 10) || 0

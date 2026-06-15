@@ -26,22 +26,22 @@ class TaskManager {
       this.addTodo('First goal', 'Easy', 'CREA', null, ['Break it down']);
     }
   }
-  
+
   // ============================================================
   // DAILIES
   // ============================================================
-  
+
   static addDaily(name, difficulty, attribute, maxCompletions = 1) {
     const state = getGameState();
-    
+
     if (!['Easy', 'Medium', 'Hard', 'Ultra'].includes(difficulty)) {
       return null;
     }
-    
+
     if (!state.config.attributes.includes(attribute)) {
       return null;
     }
-    
+
     const daily = {
       id: this.generateTaskId(),
       name,
@@ -58,10 +58,10 @@ class TaskManager {
       dailySurplusEnabled: false,
       surplusMilestones: []
     };
-    
+
     state.dailiesState.dailies.push(daily);
     PlayerManager.recalculateMaxAp();
-    
+
     return daily;
   }
 
@@ -78,25 +78,25 @@ class TaskManager {
 
     return true;
   }
-  
+
   static removeDaily(dailyId) {
     const state = getGameState();
     const index = state.dailiesState.dailies.findIndex(d => d.id === dailyId);
-    
+
     if (index === -1) return false;
-    
+
     state.dailiesState.dailies.splice(index, 1);
     PlayerManager.recalculateMaxAp();
-    
+
     return true;
   }
-  
+
   static editDaily(dailyId, updates) {
     const state = getGameState();
     const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
-    
+
     if (!daily) return false;
-    
+
     // allow updating max completions per day
     if (updates.maxCompletionsPerDay !== undefined) {
       daily.maxCompletionsPerDay = Math.max(1, Number(updates.maxCompletionsPerDay) || 1);
@@ -104,7 +104,7 @@ class TaskManager {
     if (updates.size !== undefined) {
       daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
     }
-    
+
     if (updates.name !== undefined) {
       daily.baseName = updates.name;
     }
@@ -126,11 +126,11 @@ class TaskManager {
 
     return true;
   }
-  
+
   static completeDaily(dailyId) {
     const state = getGameState();
     const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
-    
+
     if (!daily) return false;
     if (!daily.maxCompletionsPerDay) daily.maxCompletionsPerDay = 1;
     if (daily.completionsToday >= daily.maxCompletionsPerDay) return false;
@@ -141,14 +141,14 @@ class TaskManager {
     } else {
       daily.completed = false;
     }
-    
+
     // Award rewards
     const reward = state.config.taskRewards[daily.difficulty];
     let apReward = reward.ap;
     let goldReward = reward.gold;
     let diamondReward = reward.diamonds;
     let attrReward = reward.attributePoints;
-    
+
     // Apply blood oath multiplier
     if (daily.bloodOathActive) {
       apReward *= state.config.bloodOathRewardMultiplier;
@@ -178,7 +178,7 @@ class TaskManager {
       goldReward *= surplusMultiplier;
       diamondReward *= surplusMultiplier;
     }
-    
+
     // Apply greed buff multiplier
     if (state.hasBuff('Greed')) {
       const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
@@ -190,7 +190,7 @@ class TaskManager {
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
     attrReward = this.roundValue(attrReward, 2);
-    
+
     state.addAp(apReward);
     state.addGold(goldReward);
     state.addDiamonds(diamondReward);
@@ -220,21 +220,21 @@ class TaskManager {
 
     return { success: true, rewards, completed: daily.completed };
   }
-  
+
   static toggleBloodOath(dailyId) {
     const state = getGameState();
     const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
-    
+
     if (!daily) return false;
-    
+
     const isActivating = !daily.bloodOathActive;
-    
+
     if (isActivating) {
       // Check mana cost
       if (state.playerState.mana < state.config.bloodOathManaCost) {
         return false;
       }
-      
+
       state.drainMana(state.config.bloodOathManaCost);
       daily.bloodOathActive = true;
       daily.bloodOath = true;
@@ -242,15 +242,15 @@ class TaskManager {
       daily.bloodOathActive = false;
       daily.bloodOath = false;
     }
-    
+
     return true;
   }
-  
+
   static getAllDailies() {
     const state = getGameState();
     return [...state.dailiesState.dailies];
   }
-  
+
   static getCompletedDailies() {
     const state = getGameState();
     return state.dailiesState.dailies.filter(d => d.completed);
@@ -267,31 +267,31 @@ class TaskManager {
 
     return maxDiamonds;
   }
-  
+
   static getMissedDailies() {
     const state = getGameState();
     return state.dailiesState.dailies.filter(d => !d.completed);
   }
-  
+
   static isAllDailiesComplete() {
     return this.getMissedDailies().length === 0;
   }
-  
+
   // ============================================================
   // TO-DOS
   // ============================================================
-  
-  static addTodo(name, difficulty, attribute, deadline = null, subtasks = []) {
+
+  static addTodo(name, difficulty, attribute, deadline = new Date(new Date().setHours(23, 59, 0, 0)), subtasks = []) {
     const state = getGameState();
-    
+
     if (!['Easy', 'Medium', 'Hard', 'Ultra'].includes(difficulty)) {
       return null;
     }
-    
+
     if (!state.config.attributes.includes(attribute)) {
       return null;
     }
-    
+
     const todo = {
       id: this.generateTaskId(),
       name,
@@ -309,7 +309,7 @@ class TaskManager {
       })),
       createdAt: Date.now()
     };
-    
+
     state.dailiesState.todos.push(todo);
     return todo;
   }
@@ -327,36 +327,36 @@ class TaskManager {
 
     return true;
   }
-  
+
   static removeTodo(todoId) {
     const state = getGameState();
     const index = state.dailiesState.todos.findIndex(t => t.id === todoId);
-    
+
     if (index === -1) return false;
-    
+
     state.dailiesState.todos.splice(index, 1);
     return true;
   }
-  
+
   static editTodo(todoId, updates) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return false;
-    
+
     Object.assign(todo, updates);
     return true;
   }
-  
+
   static completeTodo(todoId) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return false;
     if (todo.completed) return false;
-    
+
     todo.completed = true;
-    
+
     // Calculate rewards with subtask multiplier
     const reward = state.config.taskRewards[todo.difficulty] || state.config.taskRewards['Easy'];
     const completedSubtasks = (todo.subtasks || []).filter(st => st.completed).length;
@@ -364,12 +364,12 @@ class TaskManager {
       state.config.subtaskMultiplier || 1.2,
       completedSubtasks
     );
-    
+
     let apReward = reward.ap * subtaskMultiplier;
     let goldReward = reward.gold * subtaskMultiplier;
     let diamondReward = reward.diamonds * subtaskMultiplier;
     let attrReward = reward.attributePoints * subtaskMultiplier;
-    
+
     // Check if late
     if (todo.deadline && Date.now() > todo.deadline) {
       apReward *= state.config.lateTaskRewardMultiplier;
@@ -377,7 +377,7 @@ class TaskManager {
       diamondReward *= state.config.lateTaskRewardMultiplier;
       attrReward *= state.config.lateTaskRewardMultiplier;
     }
-    
+
     // Apply blood oath multiplier
     if (todo.bloodOathActive) {
       apReward *= state.config.bloodOathRewardMultiplier;
@@ -385,7 +385,7 @@ class TaskManager {
       diamondReward *= state.config.bloodOathRewardMultiplier;
       attrReward *= state.config.bloodOathRewardMultiplier;
     }
-    
+
     // Apply Tasker's Boon todo reward multiplier
     if (state.hasBuff("Tasker's Boon")) {
       const boonMult = state.config.buffs?.["Tasker's Boon"]?.effect?.todoRewardMultiplier || 1.8;
@@ -405,11 +405,11 @@ class TaskManager {
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
     attrReward = this.roundValue(attrReward, 2);
-    
+
     state.addAp(apReward);
     state.addGold(goldReward);
     state.addDiamonds(diamondReward);
-    
+
     if (todo.clusterAttributes) {
       for (const attr in todo.clusterAttributes) {
         const ratio = todo.clusterAttributes[attr] || 0;
@@ -421,15 +421,15 @@ class TaskManager {
     }
 
     // Keep clusterId, clusterIndex, and clusterAttributes to maintain the cluster structure and placeholder rendering
-    
+
     state.systemState.runStats.tasksCompleted++;
-    
+
     state.eventBus.emit(EVENTS.TODO_COMPLETED, {
       taskId: todoId,
       type: 'todo',
       rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward }
     });
-    
+
     // Award pet points silently
     const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
     const petPointsAwarded = petPointsMap[todo.difficulty] || 1;
@@ -535,20 +535,20 @@ class TaskManager {
       }
     };
   }
-  
+
   static toggleBloodOathTodo(todoId) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return false;
-    
+
     const isActivating = !todo.bloodOathActive;
-    
+
     if (isActivating) {
       if (state.playerState.mana < state.config.bloodOathManaCost) {
         return false;
       }
-      
+
       state.drainMana(state.config.bloodOathManaCost);
       todo.bloodOathActive = true;
       todo.bloodOath = true;
@@ -556,86 +556,86 @@ class TaskManager {
       todo.bloodOathActive = false;
       todo.bloodOath = false;
     }
-    
+
     return true;
   }
-  
+
   static addSubtask(todoId, subtaskName) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return null;
-    
+
     const subtask = {
       id: this.generateTaskId(),
       name: subtaskName,
       completed: false
     };
-    
+
     if (!todo.subtasks) todo.subtasks = [];
     todo.subtasks.push(subtask);
     return subtask;
   }
-  
+
   static toggleSubtask(todoId, subtaskId) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return false;
-    
+
     const subtask = (todo.subtasks || []).find(st => st.id === subtaskId);
     if (!subtask) return false;
-    
+
     subtask.completed = !subtask.completed;
     return true;
   }
-  
+
   static removeSubtask(todoId, subtaskId) {
     const state = getGameState();
     const todo = state.dailiesState.todos.find(t => t.id === todoId);
-    
+
     if (!todo) return false;
-    
+
     const index = (todo.subtasks || []).findIndex(st => st.id === subtaskId);
     if (index === -1) return false;
-    
+
     todo.subtasks.splice(index, 1);
     return true;
   }
-  
+
   static getAllTodos() {
     const state = getGameState();
     return [...state.dailiesState.todos];
   }
-  
+
   static getCompletedTodos() {
     const state = getGameState();
     return state.dailiesState.todos.filter(t => t.completed);
   }
-  
+
   static getUncompletedTodosNearDeadline(hours = 24) {
     const state = getGameState();
     const now = Date.now();
     const timeWindow = hours * 60 * 60 * 1000;
-    
+
     return state.dailiesState.todos.filter(t => {
       if (t.completed || !t.deadline) return false;
-      
+
       const timeTillDeadline = t.deadline - now;
       return timeTillDeadline >= 0 && timeTillDeadline <= timeWindow;
     });
   }
-  
+
   // ============================================================
   // STREAKS
   // ============================================================
-  
+
   static updateStreaks(allComplete = null) {
     const state = getGameState();
     const resolvedAllComplete = (typeof allComplete === 'boolean')
       ? allComplete
       : this.isAllDailiesComplete();
-    
+
     if (resolvedAllComplete) {
       state.dailiesState.streakCompletion++;
       state.dailiesState.streakNonCompletion = 0;
@@ -650,27 +650,27 @@ class TaskManager {
       state.dailiesState.streakNonCompletion++;
       state.dailiesState.streakCompletion = 0;
     }
-    
+
     state.eventBus.emit(EVENTS.DAILY_STREAK_CHANGED, {
       completion: state.dailiesState.streakCompletion,
       nonCompletion: state.dailiesState.streakNonCompletion
     });
   }
-  
+
   static getStreakBorderColor() {
     const state = getGameState();
-    
+
     if (state.dailiesState.streakCompletion >= 7) {
       return (typeof UIManager !== 'undefined') ? UIManager.themeColor('--ap-gold', '#FFB33F') : '#FFD700';
     }
-    
+
     if (state.dailiesState.streakNonCompletion >= 7) {
       return (typeof UIManager !== 'undefined') ? UIManager.themeColor('--hp-red', '#C00707') : '#FF4444';
     }
-    
+
     return (typeof UIManager !== 'undefined') ? UIManager.themeColor('--mana-blue', '#134E8E') : '#4488FF';
   }
-  
+
   static getDailyStreakDamageBonus() {
     const state = getGameState();
     return state.dailiesState.streakCompletion * state.config.perfectDayStreakDamageBonus;
@@ -712,7 +712,7 @@ class TaskManager {
 
     const streak = this.computeDailyStreak(daily.id);
     const milestones = Array.isArray(daily.surplusMilestones) ? daily.surplusMilestones : [];
-    
+
     // Sort ascending by streak threshold
     const sortedMilestones = [...milestones].sort((a, b) => a.streak - b.streak);
 
@@ -731,7 +731,7 @@ class TaskManager {
       daily.name = daily.baseName;
     }
   }
-  
+
   static resetDailies() {
     const state = getGameState();
 
@@ -742,7 +742,7 @@ class TaskManager {
     state.systemState.completeDayClaimDate = null;
     state.systemState.completeDayApBonus = 0;
     PlayerManager.recalculateMaxAp();
-    
+
     state.dailiesState.dailies.forEach(daily => {
       // Update surplus name prefix based on updated streak in history
       this.updateDailySurplusState(daily);
@@ -752,29 +752,29 @@ class TaskManager {
       daily.bloodOathActive = false;
       daily.completionsToday = 0;
     });
-    
+
     state.rollSpecialEvent();
-    
+
     state.eventBus.emit(EVENTS.DAILY_RESET, {
       dailies: state.dailiesState.dailies
     });
   }
-  
+
   // ============================================================
   // HELPERS
   // ============================================================
-  
+
   static getAllTasks() {
     return [...this.getAllDailies(), ...this.getAllTodos()];
   }
-  
+
   static getTaskById(taskId) {
     let task = this.getAllDailies().find(d => d.id === taskId);
     if (task) return task;
-    
+
     return this.getAllTodos().find(t => t.id === taskId);
   }
-  
+
   static calculateMissedDailyDamage() {
     const state = getGameState();
     const missedDailies = this.getMissedDailies();
@@ -785,7 +785,7 @@ class TaskManager {
       Hard: 2,
       Ultra: 3
     };
-    
+
     let damage = 0;
     missedDailies.forEach(daily => {
       const baseDamage = missedDailyDamageTable[daily.difficulty] ?? 0;
@@ -801,37 +801,37 @@ class TaskManager {
         damage *= 0.5;
       }
     }
-    
+
     return damage;
   }
-  
+
   static calculateLateTodoDamage() {
     const state = getGameState();
     const now = Date.now();
-    
+
     let damage = 0;
     this.getAllTodos().forEach(todo => {
       if (todo.completed || !todo.deadline || todo.deadline > now) return;
-      
+
       // Late todo
       const baseDamage = state.config.lateTaskDamage[todo.difficulty];
       damage += baseDamage;
     });
-    
+
     return damage;
   }
-  
+
   static validateDailyCount() {
     const state = getGameState();
     const count = state.dailiesState.dailies.length;
-    
+
     if (count < state.config.minRequiredDailies) {
       console.warn(
         `Warning: Only ${count} dailies. Minimum required: ${state.config.minRequiredDailies}`
       );
       return false;
     }
-    
+
     return true;
   }
 
@@ -839,7 +839,7 @@ class TaskManager {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
     const runStartTime = Number(state.systemState?.gameStartTime) || 0;
-    
+
     // Reset stats for all current dailies
     state.dailiesState.dailies.forEach(daily => {
       daily.longestStreak = 0;

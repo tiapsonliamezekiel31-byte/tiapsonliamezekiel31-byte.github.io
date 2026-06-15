@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: make pending damage display constantly update, buff Sacred Tree rewards to 20-30 max hp/mana"
+$commitMsg = "feat: add double-tap blood oath for todos + default 23:59 deadlines"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
@@ -14,7 +14,8 @@ function Get-RepoInfo {
     if ($remoteUrl -match "[:/]([^/]+)/([^/]+?)(?:\.git)?$") {
         $owner = $matches[1]
         $repo = $matches[2]
-    } else {
+    }
+    else {
         Write-Error "Unable to parse remote URL: $remoteUrl"
         exit 1
     }
@@ -31,7 +32,8 @@ if ((git status --porcelain) -ne "") {
     if ($commitMsg -eq "") { $commitMsg = "auto-commit" }
     git commit -m $commitMsg
     Write-Host "Committed changes with message: $commitMsg"
-} else { Write-Host "No changes to commit." }
+}
+else { Write-Host "No changes to commit." }
 
 # Bump Service Worker cache name if requested
 if ($bumpSw) {
@@ -109,7 +111,8 @@ if ($pollLiveSwSecs -gt 0) {
                 Write-Host "Live tag is: $liveTag"
                 if ($liveTag -eq $repoTag) { break }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to fetch live sw.js: $_"
         }
         $attempt++
