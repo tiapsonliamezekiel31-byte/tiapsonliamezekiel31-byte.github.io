@@ -18,6 +18,9 @@ const APP_SHELL = [
   './JS/shop.js',
   './JS/ui.js',
   './JS/popups.js',
+  './style_tycoon.css',
+  './JS/tycoon_worker_code.js',
+  './JS/tycoon.js',
   './assets/sounds/attack.mp3'
 ];
 

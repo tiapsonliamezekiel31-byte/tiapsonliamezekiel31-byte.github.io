@@ -987,6 +987,7 @@ class PopupsManager {
       <p class="death-quote">"Your ambition crumbled to dust."</p>
       <div class="button-group">
         <button class="btn-large btn-new-class">CHOOSE NEW CLASS</button>
+        <button class="btn-large btn-tycoon" style="background: linear-gradient(135deg, #fbbf24, #d97706); color: #000; font-weight: bold; border: 1px solid #f59e0b; margin-top: 8px;">ENTER TYCOON MODE</button>
         <button class="btn-large btn-quit">QUIT TO MENU</button>
       </div>
     `;
@@ -996,6 +997,26 @@ class PopupsManager {
     popup.querySelector('.btn-new-class').addEventListener('click', () => {
       this.closeAllPopups();
       this.showClassSelection();
+    });
+
+    popup.querySelector('.btn-tycoon').addEventListener('click', () => {
+      this.closeAllPopups();
+      if (window.TycoonManager) {
+        // Calculate task completion rate of the run to pass as rate multiplier
+        let completionRate = 1.0;
+        try {
+          const state = getGameState();
+          if (state && state.dailiesState) {
+            const dailies = state.dailiesState.dailies || [];
+            const completed = dailies.filter(d => d.completed).length;
+            const total = dailies.length;
+            completionRate = total > 0 ? (completed / total) : 1.0;
+          }
+        } catch(e) {}
+        window.TycoonManager.enterTycoonMode(completionRate);
+      } else {
+        alert("Tycoon Mode engine is not loaded yet.");
+      }
     });
     
     popup.querySelector('.btn-quit').addEventListener('click', () => {
