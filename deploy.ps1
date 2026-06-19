@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: restore tycoon styling loading, active mode refresh persistence, and mobile responsiveness"
+$commitMsg = "feat: add tycoon tasks stats dashboard, check-in HUD, flat textures, persistence fixes"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

@@ -77,12 +77,22 @@
       // Loop control
       this.isRenderLoopRunning = false;
       
+      // Load saved state immediately on startup
+      this.loadState();
+      
       // Initialize systems safely
       if (document.readyState === 'complete' || document.readyState === 'interactive') {
         this.initDOM();
       } else {
         window.addEventListener('DOMContentLoaded', () => this.initDOM());
       }
+
+      // Safeguard against refreshes/unloads (only if tycoon is active)
+      window.addEventListener('beforeunload', () => {
+        if (localStorage.getItem('nemesis_active_mode') === 'tycoon') {
+          this.saveState();
+        }
+      });
     }
 
     initDOM() {
@@ -100,6 +110,8 @@
               <div class="tycoon-stat rate">📈 <span id="tycoon-rate-val">1g/s</span></div>
             </div>
             <div class="tycoon-hud-panel" style="gap: 8px;">
+              <button class="tycoon-btn" id="tycoon-checkin-btn" style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4);">🌅 Check In</button>
+              <button class="tycoon-btn" id="tycoon-tasks-btn">📋 Tasks</button>
               <button class="tycoon-btn" id="tycoon-settings-btn">⚙️ Settings</button>
               <button class="tycoon-btn exit-btn" id="tycoon-exit-btn">🚪 Back</button>
             </div>
@@ -124,7 +136,7 @@
             </div>
             <div class="tycoon-shop-grid" id="tycoon-items-grid"></div>
           </div>
-
+ 
           <!-- Dialog / Overlays -->
           <div class="tycoon-overlay" id="tycoon-settings-dialog">
             <div class="tycoon-dialog">
@@ -141,6 +153,14 @@
                   <label for="tycoon-cheat-input" style="margin-bottom: 4px;">Cheat Console:</label>
                   <input type="text" id="tycoon-cheat-input" placeholder="e.g. gold 9999" style="width: 100% !important;">
                 </div>
+                <div class="tycoon-form-row" style="flex-direction: column; align-items: flex-start; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; width: 100%;">
+                  <label for="tycoon-import-export" style="margin-bottom: 4px;">Save Data (JSON Text):</label>
+                  <textarea id="tycoon-import-export" style="width: 100%; height: 50px; background: #0f172a; color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; font-family: monospace; font-size: 8px; resize: vertical; box-sizing: border-box;"></textarea>
+                  <div style="display: flex; gap: 8px; margin-top: 6px; width: 100%;">
+                    <button class="tycoon-btn" id="tycoon-export-btn" style="flex: 1; min-height: 28px; font-size: 8px; padding: 4px;">Export Save</button>
+                    <button class="tycoon-btn" id="tycoon-import-btn" style="flex: 1; min-height: 28px; font-size: 8px; padding: 4px; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4);">Import Save</button>
+                  </div>
+                </div>
               </div>
               <div class="tycoon-dialog-buttons">
                 <button class="tycoon-btn" id="settings-save-btn">Save</button>
@@ -148,7 +168,74 @@
               </div>
             </div>
           </div>
-
+ 
+          <div class="tycoon-overlay" id="tycoon-tasks-dialog">
+            <div class="tycoon-dialog" style="width: min(520px, 94vw); max-height: 85vh; overflow-y: auto;">
+              <h3>📋 DAILY TASKS & TO-DOS</h3>
+              <!-- Character & Base Game Stats Panel -->
+              <div id="tycoon-character-panel" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; font-weight: bold;">
+                  <span id="tycoon-char-class" style="color: #ffd700;">Class: -</span>
+                  <span id="tycoon-char-level" style="color: #4ade80;">Level: -</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; color: #cbd5e1;">
+                  <div>🪙 Gold: <span id="tycoon-base-gold" style="color: #ffd700; font-weight: bold;">-</span></div>
+                  <div>💎 Diamonds: <span id="tycoon-base-diamonds" style="color: #c084fc; font-weight: bold;">-</span></div>
+                  <div>⚡ AP: <span id="tycoon-base-ap" style="color: #38bdf8; font-weight: bold;">- / -</span></div>
+                </div>
+                <div id="tycoon-char-attrs" style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 7px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">
+                  <!-- Attributes list will go here -->
+                </div>
+              </div>
+              <div class="tycoon-dialog-body" style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Dailies Section -->
+                <div>
+                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">📅 DAILIES</h4>
+                  <div id="tycoon-dailies-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <!-- Todos Section -->
+                <div>
+                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;"> To-Dos</h4>
+                  <div id="tycoon-todos-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <!-- Add Task Form -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 9px;">➕ ADD TASK</h4>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; gap: 6px;">
+                      <input type="text" id="tycoon-new-task-name" placeholder="Task name..." style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
+                      <select id="tycoon-new-task-type" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
+                        <option value="daily">Daily</option>
+                        <option value="todo">To-Do</option>
+                      </select>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                      <select id="tycoon-new-task-diff" style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                        <option value="Ultra">Ultra</option>
+                      </select>
+                      <select id="tycoon-new-task-attr" style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
+                        <option value="STR">STR</option>
+                        <option value="INT">INT</option>
+                        <option value="DISC">DISC</option>
+                        <option value="CREA">CREA</option>
+                        <option value="SOC">SOC</option>
+                        <option value="CAP">CAP</option>
+                        <option value="RESP">RESP</option>
+                      </select>
+                      <button class="tycoon-btn" id="tycoon-add-task-btn" style="min-height: 28px; padding: 0 10px; font-size: 9px;">Add</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="tycoon-dialog-buttons">
+                <button class="tycoon-btn exit-btn" id="tycoon-tasks-close-btn">Close</button>
+              </div>
+            </div>
+          </div>
+ 
           <div class="tycoon-overlay" id="tycoon-farmer-dialog">
             <div class="tycoon-dialog">
               <h3 id="farmer-detail-title">🧑‍🌾 Farmer Details</h3>
@@ -366,6 +453,31 @@
       // Toggle back to base game
       document.getElementById('tycoon-exit-btn').addEventListener('click', () => this.exitTycoonMode());
 
+      // Check In Action
+      const checkinBtn = document.getElementById('tycoon-checkin-btn');
+      if (checkinBtn) {
+        checkinBtn.addEventListener('click', () => {
+          let completionRate = this.calculateCurrentCompletionRate();
+          
+          // Reset dailies on main thread
+          TaskManager.resetDailies();
+          try {
+            getGameState().save();
+          } catch(e) {}
+          
+          this.renderTasksList();
+          
+          // Trigger checkin in worker
+          if (this.worker) {
+            this.worker.postMessage({
+              type: 'checkin',
+              completionRate: completionRate
+            });
+          }
+          this.addNotification("🌅 Checked in! New day started.");
+        });
+      }
+
       // Shop Tab Buttons
       const tabBtns = document.querySelectorAll('.tycoon-tab-btn');
       tabBtns.forEach(btn => {
@@ -379,6 +491,7 @@
       // Settings Modals
       document.getElementById('tycoon-settings-btn').addEventListener('click', () => {
         document.getElementById('settings-checkin-hour').value = this.config.checkInHour;
+        document.getElementById('tycoon-import-export').value = JSON.stringify(this.getSerializableState());
         document.getElementById('tycoon-settings-dialog').style.display = 'flex';
       });
 
@@ -386,6 +499,7 @@
         document.getElementById('tycoon-settings-dialog').style.display = 'none';
       });
 
+      // Settings Save & Cheat Action
       document.getElementById('settings-save-btn').addEventListener('click', () => {
         const hour = Math.max(0, Math.min(23, Number(document.getElementById('settings-checkin-hour').value) || 10));
         this.config.checkInHour = hour;
@@ -400,32 +514,266 @@
           if (cmd === 'gold' || cmd === 'ap' || cmd === 'food') {
             this.resources[cmd] += amt;
             this.addNotification(`Cheat: Added ${amt} ${cmd}!`);
+          } else if (cmd === 'combat' || cmd === 'exit') {
+            document.getElementById('tycoon-settings-dialog').style.display = 'none';
+            this.exitTycoonMode();
+            return;
           } else if (cmd === 'clear') {
             localStorage.removeItem('nemesis_tycoon_data');
             this.loadState();
             this.addNotification("State cleared!");
           } else {
-            this.addNotification("Unknown cheat: gold/ap/food [amt]");
+            this.addNotification("Unknown cheat: gold/ap/food/combat [amt]");
           }
           if (cheatInput) cheatInput.value = '';
         }
         
         this.saveState();
-        this.worker.postMessage({
-          type: 'update_config',
-          config: this.config
-        });
-        // Sync resources with worker in case cheat was used
-        this.worker.postMessage({
-          type: 'init',
-          chunks: this.chunks,
-          farmers: this.farmers,
-          resources: this.resources,
-          config: this.config
-        });
+        // Sync config and resources dynamically without restarting simulation
+        if (this.worker) {
+          this.worker.postMessage({
+            type: 'sync_state',
+            chunks: this.getSerializableState().chunks,
+            farmers: this.farmers,
+            resources: this.resources,
+            config: this.config
+          });
+        }
         document.getElementById('tycoon-settings-dialog').style.display = 'none';
         this.addNotification("⚙️ Settings saved!");
       });
+
+      // Export Save
+      document.getElementById('tycoon-export-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        const textarea = document.getElementById('tycoon-import-export');
+        textarea.select();
+        try {
+          navigator.clipboard.writeText(textarea.value);
+          this.addNotification("📋 Copied to clipboard!");
+        } catch (err) {
+          this.addNotification("Could not copy automatically, please copy the text manually.");
+        }
+      });
+
+      // Import Save
+      document.getElementById('tycoon-import-btn').addEventListener('click', (e) => {
+        e.preventDefault();
+        try {
+          const text = document.getElementById('tycoon-import-export').value.trim();
+          if (!text) return;
+          const data = JSON.parse(text);
+          if (!data.resources || !data.config) {
+            throw new Error("Invalid format - missing resources/config.");
+          }
+          this.resources = data.resources;
+          this.farmers = data.farmers || [];
+          this.config = data.config;
+          this.chunks = {};
+          if (data.chunks) {
+            for (const k in data.chunks) {
+              this.chunks[k] = new Int32Array(data.chunks[k]);
+            }
+          }
+          this.saveState();
+          this.worker.postMessage({
+            type: 'init',
+            chunks: this.chunks,
+            farmers: this.farmers,
+            resources: this.resources,
+            config: this.config
+          });
+          this.updateHUD();
+          this.addNotification("💾 Save imported successfully!");
+          document.getElementById('tycoon-settings-dialog').style.display = 'none';
+        } catch (err) {
+          alert("Import failed: " + err.message);
+        }
+      });
+
+      // Tasks Dialog Toggles
+      document.getElementById('tycoon-tasks-btn').addEventListener('click', () => {
+        this.renderTasksList();
+        document.getElementById('tycoon-tasks-dialog').style.display = 'flex';
+      });
+
+      document.getElementById('tycoon-tasks-close-btn').addEventListener('click', () => {
+        document.getElementById('tycoon-tasks-dialog').style.display = 'none';
+      });
+
+      // Add Task Action
+      document.getElementById('tycoon-add-task-btn').addEventListener('click', () => {
+        const nameInput = document.getElementById('tycoon-new-task-name');
+        const name = nameInput.value.trim();
+        if (!name) return;
+        
+        const type = document.getElementById('tycoon-new-task-type').value;
+        const diff = document.getElementById('tycoon-new-task-diff').value;
+        const attr = document.getElementById('tycoon-new-task-attr').value;
+
+        if (type === 'daily') {
+          TaskManager.addDaily(name, diff, attr, 1);
+        } else {
+          TaskManager.addTodo(name, diff, attr);
+        }
+
+        nameInput.value = '';
+        try {
+          getGameState().save();
+        } catch (e) {}
+
+        this.renderTasksList();
+        this.addNotification("➕ Task added successfully!");
+      });
+    }
+
+    getSerializableState() {
+      const data = {
+        chunks: {},
+        farmers: this.farmers,
+        resources: this.resources,
+        config: this.config,
+        timestamp: Date.now()
+      };
+      for (const k in this.chunks) {
+        data.chunks[k] = Array.from(this.chunks[k]);
+      }
+      return data;
+    }
+
+    calculateCurrentCompletionRate() {
+      let completionRate = 1.0;
+      try {
+        const state = getGameState();
+        if (state && state.dailiesState) {
+          const dailies = state.dailiesState.dailies || [];
+          const completed = dailies.filter(d => d.completed).length;
+          const total = dailies.length;
+          completionRate = total > 0 ? (completed / total) : 1.0;
+        }
+      } catch(e) {}
+      return completionRate;
+    }
+
+    renderTasksList() {
+      // First update character stats panel
+      try {
+        const state = getGameState();
+        if (state) {
+          const charClass = state.playerState.className || 'None';
+          const charLevel = state.playerState.level || 1;
+          const baseGold = state.playerState.gold || 0;
+          const baseDiamonds = state.playerState.diamonds || 0;
+          const baseAp = state.playerState.ap || 0;
+          const maxAp = state.playerState.maxAp || 0;
+          const streak = state.dailiesState.streakCompletion || 0;
+          const streakHtml = streak > 0 ? ` <span style="color:#ef4444;margin-left:8px;">🔥 ${streak}d streak</span>` : '';
+
+          document.getElementById('tycoon-char-class').innerHTML = `Class: ${charClass}${streakHtml}`;
+          document.getElementById('tycoon-char-level').textContent = `Level: ${charLevel}`;
+          document.getElementById('tycoon-base-gold').textContent = Math.round(baseGold);
+          document.getElementById('tycoon-base-diamonds').textContent = Math.round(baseDiamonds);
+          document.getElementById('tycoon-base-ap').textContent = `${baseAp} / ${maxAp}`;
+
+          const attrs = state.playerState.attributes || {};
+          const attrHtml = Object.keys(attrs).map(key => {
+            const lv = attrs[key].level || 1;
+            const pts = attrs[key].points || 0;
+            return `<div style="flex: 1 1 30%; min-width: 60px;">${key}: <span style="color:#fff;">Lv.${lv} (${Math.round(pts)})</span></div>`;
+          }).join('');
+          document.getElementById('tycoon-char-attrs').innerHTML = attrHtml;
+        }
+      } catch (e) {
+        console.warn("Failed to render character panel inside tycoon tasks", e);
+      }
+
+      // Recalculate completion rate and send to worker
+      const currentRate = this.calculateCurrentCompletionRate();
+      if (this.worker) {
+        this.worker.postMessage({
+          type: 'update_completion_rate',
+          completionRate: currentRate
+        });
+      }
+
+      const dailiesList = document.getElementById('tycoon-dailies-list');
+      const todosList = document.getElementById('tycoon-todos-list');
+      if (!dailiesList || !todosList) return;
+
+      const dailies = TaskManager.getAllDailies() || [];
+      const todos = TaskManager.getAllTodos() || [];
+
+      // Render Dailies
+      if (dailies.length === 0) {
+        dailiesList.innerHTML = '<div style="font-size: 8px; color: #94a3b8; padding: 4px;">No Dailies configured.</div>';
+      } else {
+        dailiesList.innerHTML = dailies.map(d => {
+          const isDone = d.completed;
+          const streak = TaskManager.computeDailyStreak ? TaskManager.computeDailyStreak(d.id) : 0;
+          const streakIcon = streak > 0 ? `🔥${streak}` : '';
+          const checkbox = isDone 
+            ? '✅' 
+            : `<button class="tycoon-btn d-complete-btn" data-id="${d.id}" style="min-height: 24px; padding: 2px 6px; font-size: 8px; background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); pointer-events: auto;">DONE</button>`;
+          
+          return `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08); ${isDone ? 'opacity: 0.6;' : ''}">
+              <div>
+                <span style="font-weight: bold; color: ${isDone ? '#94a3b8' : '#ffd700'}">${d.name}</span>
+                <span style="color: #64748b; margin-left: 4px;">[${d.difficulty}] [${d.attribute}] ${streakIcon}</span>
+              </div>
+              <div style="pointer-events: auto;">${checkbox}</div>
+            </div>
+          `;
+        }).join('');
+
+        // Bind daily clicks
+        dailiesList.querySelectorAll('.d-complete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            const res = TaskManager.completeDaily(id);
+            if (res && res.success) {
+              const rewards = res.rewards;
+              this.addNotification(`✅ Completed daily! +${rewards.ap} AP, +${rewards.gold} Gold, +${rewards.diamonds} Diamonds`);
+              try {
+                getGameState().save();
+              } catch(err) {}
+              this.renderTasksList();
+            }
+          });
+        });
+      }
+
+      // Render Todos
+      const activeTodos = todos.filter(t => !t.completed);
+      if (activeTodos.length === 0) {
+        todosList.innerHTML = '<div style="font-size: 8px; color: #94a3b8; padding: 4px;">No active To-Dos.</div>';
+      } else {
+        todosList.innerHTML = activeTodos.map(t => `
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08);">
+            <div>
+              <span style="font-weight: bold; color: #38bdf8">${t.name}</span>
+              <span style="color: #64748b; margin-left: 4px;">[${t.difficulty}] [${t.attribute}]</span>
+            </div>
+            <div style="pointer-events: auto;">
+              <button class="tycoon-btn t-complete-btn" data-id="${t.id}" style="min-height: 24px; padding: 2px 6px; font-size: 8px; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); pointer-events: auto;">DONE</button>
+            </div>
+          </div>
+        `).join('');
+
+        // Bind todo clicks
+        todosList.querySelectorAll('.t-complete-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            if (TaskManager.completeTodo(id)) {
+              this.addNotification(`✅ Completed To-Do!`);
+              try {
+                getGameState().save();
+              } catch(err) {}
+              this.renderTasksList();
+            }
+          });
+        });
+      }
     }
 
     isDrawingPathActive() {
@@ -924,6 +1272,13 @@
             this.farmers = msg.farmers;
             this.resources = msg.resources;
             this.updateHUD();
+
+            // Throttled autosave every 5 seconds
+            const now = Date.now();
+            if (!this.lastAutoSaveTime || now - this.lastAutoSaveTime > 5000) {
+              this.saveState();
+              this.lastAutoSaveTime = now;
+            }
             break;
             
           case 'offline_summary':
@@ -931,6 +1286,11 @@
             break;
 
           case 'daily_summary':
+            TaskManager.resetDailies();
+            try {
+              getGameState().save();
+            } catch (err) {}
+            this.renderTasksList();
             this.showDailySummary(msg.summary);
             break;
             
@@ -1120,41 +1480,26 @@
         case TILE_TYPES.WATER:
           ctx.fillStyle = "#1e40af"; // Deep blue water
           ctx.fillRect(x, y, tw, tw);
-          
-          // Subtle wave pixels
-          ctx.fillStyle = "#3b82f6";
-          const waveShift = Math.floor(Date.now() / 800) % tw;
-          ctx.fillRect(x + ((noise + waveShift) % tw), y + (noise % tw), 6, 2);
           break;
           
         case TILE_TYPES.GRASS:
           ctx.fillStyle = "#166534"; // Grass dark green
           ctx.fillRect(x, y, tw, tw);
-          
-          ctx.fillStyle = "#22c55e"; // Grass light pixels
-          ctx.fillRect(x + (noise % (tw - 4)), y + ((noise * 7) % (tw - 4)), 2, 2);
-          ctx.fillRect(x + ((noise * 13) % (tw - 4)), y + ((noise * 3) % (tw - 4)), 2, 4);
           break;
           
         case TILE_TYPES.SAND:
           ctx.fillStyle = "#ca8a04"; // Yellow sand
           ctx.fillRect(x, y, tw, tw);
-          ctx.fillStyle = "#eab308";
-          ctx.fillRect(x + (noise % (tw - 2)), y + ((noise * 3) % (tw - 2)), 2, 2);
           break;
           
         case TILE_TYPES.STONE:
           ctx.fillStyle = "#4b5563"; // Dark gray stone
           ctx.fillRect(x, y, tw, tw);
-          ctx.fillStyle = "#94a3b8"; // highlights
-          ctx.fillRect(x + (noise % (tw - 6)), y + ((noise * 9) % (tw - 6)), 4, 2);
           break;
           
         case TILE_TYPES.PATH:
           ctx.fillStyle = "#78350f"; // Brown path
           ctx.fillRect(x, y, tw, tw);
-          ctx.fillStyle = "#451a03";
-          ctx.fillRect(x + (noise % (tw - 4)), y + ((noise * 5) % (tw - 4)), 3, 2);
           break;
           
         case TILE_TYPES.PRODUCER:

@@ -1779,13 +1779,21 @@ class PopupsManager {
         return { ok: true, message: 'All weapons equipped' };
       }
 
-      if (lower === 'tycoon' || lower === 'tycoon mode') {
+      if (lower === 'reset tycoon') {
         localStorage.removeItem('nemesis_tycoon_data');
         this.closeAllPopups();
         if (window.TycoonManager) {
           window.TycoonManager.enterTycoonMode(1.0);
         }
         return { ok: true, message: 'Resetting to Tycoon Mode' };
+      }
+
+      if (lower === 'tycoon' || lower === 'tycoon mode') {
+        this.closeAllPopups();
+        if (window.TycoonManager) {
+          window.TycoonManager.enterTycoonMode();
+        }
+        return { ok: true, message: 'Entering Tycoon Mode' };
       }
 
       if (lower.startsWith('weapon ') || lower.startsWith('give weapon ')) {

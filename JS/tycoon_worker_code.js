@@ -501,6 +501,26 @@ self.onmessage = function(e) {
       handleDailyCheckin(msg.completionRate || 0);
       break;
       
+    case "update_completion_rate":
+      config.completionRateCurrentDay = msg.completionRate;
+      break;
+      
+    case "update_config":
+      config = msg.config || config;
+      break;
+      
+    case "sync_state":
+      if (msg.chunks) {
+        // Rehydrate chunks
+        for (const k in msg.chunks) {
+          chunks[k] = new Int32Array(msg.chunks[k]);
+        }
+      }
+      if (msg.farmers) farmers = msg.farmers;
+      if (msg.resources) resources = msg.resources;
+      if (msg.config) config = msg.config;
+      break;
+      
     case "sync_request":
       self.postMessage({
         type: "state_update",
