@@ -814,6 +814,37 @@
       
       // Hide combat UI and show Tycoon Mode by adding class to body
       document.body.classList.add('tycoon-active');
+      
+      // Explicitly hide all other direct children of body in JS
+      Array.from(document.body.children).forEach(el => {
+        if (el.id !== 'tycoon-container' && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+          if (el.classList.contains('popup-overlay')) {
+            el.remove();
+          } else {
+            if (!el.hasAttribute('data-original-display')) {
+              el.setAttribute('data-original-display', el.style.display || '');
+            }
+            el.style.setProperty('display', 'none', 'important');
+          }
+        }
+      });
+
+      // Clear any other active animations or floating items
+      const selectorsToClean = [
+        '.holy-light-beam', 
+        '.floating-damage-number', 
+        '.popup-overlay', 
+        '[style*="z-index"]'
+      ];
+      selectorsToClean.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          const container = document.getElementById('tycoon-container');
+          if (container && !container.contains(el)) {
+            el.remove();
+          }
+        });
+      });
+
       document.getElementById('tycoon-container').style.display = 'flex';
       
       // Resize canvas to viewport size
@@ -842,6 +873,15 @@
       
       this.isRenderLoopRunning = false;
       document.body.classList.remove('tycoon-active');
+      
+      // Restore original display styles for direct children of body
+      Array.from(document.body.children).forEach(el => {
+        if (el.hasAttribute('data-original-display')) {
+          el.style.display = el.getAttribute('data-original-display');
+          el.removeAttribute('data-original-display');
+        }
+      });
+
       const container = document.getElementById('tycoon-container');
       if (container) {
         container.style.display = 'none';

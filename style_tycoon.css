@@ -387,3 +387,23 @@ body.tycoon-active > :not(#tycoon-container):not(script):not(style) {
   width: 100% !important;
   box-sizing: border-box;
 }
+
+/* Custom robust hiding rules for tycoon mode */
+.tycoon-hidden {
+  display: none !important;
+}
+
+body.tycoon-active #gameArea,
+body.tycoon-active #draggableHud,
+body.tycoon-active .draggable-hud,
+body.tycoon-active .nav-menu-panel,
+body.tycoon-active .floating-shop-btn,
+body.tycoon-active .floating-lootbox-btn,
+body.tycoon-active .floating-stage-indicator,
+body.tycoon-active .floating-tab-handle,
+body.tycoon-active .floating-tab,
+body.tycoon-active .action-ring,
+body.tycoon-active .enemy-circle-container,
+body.tycoon-active .stage-date-wrap {
+  display: none !important;
+}
