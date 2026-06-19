@@ -1,5 +1,9 @@
 /* style_tycoon.css - Glassmorphic, dark theme styles for Tycoon Mode */
 
+body.tycoon-active > :not(#tycoon-container):not(script):not(style) {
+  display: none !important;
+}
+
 #tycoon-container {
   position: fixed;
   top: 0;

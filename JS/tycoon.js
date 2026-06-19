@@ -77,8 +77,12 @@
       // Loop control
       this.isRenderLoopRunning = false;
       
-      // Initialize systems
-      window.addEventListener('DOMContentLoaded', () => this.initDOM());
+      // Initialize systems safely
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        this.initDOM();
+      } else {
+        window.addEventListener('DOMContentLoaded', () => this.initDOM());
+      }
     }
 
     initDOM() {
@@ -750,9 +754,17 @@
         }
       }
 
+      // Safety: Re-initialize DOM if body reset wiped the tycoon-container
+      const container = document.getElementById('tycoon-container');
+      if (!container) {
+        this.canvas = null; // force fresh binding
+        this.initDOM();
+      }
+
       this.loadState();
       
-      // Show Tycoon screen and hide other elements
+      // Hide combat UI and show Tycoon Mode by adding class to body
+      document.body.classList.add('tycoon-active');
       document.getElementById('tycoon-container').style.display = 'flex';
       
       // Resize canvas to viewport size
@@ -780,7 +792,11 @@
       }
       
       this.isRenderLoopRunning = false;
-      document.getElementById('tycoon-container').style.display = 'none';
+      document.body.classList.remove('tycoon-active');
+      const container = document.getElementById('tycoon-container');
+      if (container) {
+        container.style.display = 'none';
+      }
       
       // Save state
       this.saveState();
