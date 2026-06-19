@@ -708,35 +708,36 @@ class PopupsManager {
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup buff-selection-popup';
+    popup.style.width = 'min(500px, 94vw)';
 
     const classes = Object.keys(state.config.classes).filter(c => c !== state.playerState.className && !(state.playerState.borrowedSkills || []).includes(c));
-    const choices = [];
-    while (choices.length < 3 && classes.length > 0) {
-      const idx = Math.floor(Math.random() * classes.length);
-      choices.push(classes.splice(idx, 1)[0]);
-    }
 
-    let html = `<h2>SHRINE REWARD: Choose a Borrowed Skill</h2>`;
-    html += '<div class="buff-selection-grid">';
+    let html = `<h2>SHRINE REWARD: Choose a Borrowed Skill</h2><button class="btn-close">✕</button>`;
+    html += '<div class="popup-scrollable-body" style="max-height: 60vh; overflow-y: auto; padding-right: 8px; margin-top: 10px;">';
+    html += '<div class="buff-selection-grid" style="display: flex; flex-direction: column; gap: 12px;">';
 
-    choices.forEach(clsName => {
+    classes.forEach(clsName => {
       const meta = state.config.classSkillMeta?.[clsName] || {};
       const skillName = meta.name || clsName;
       const icon = meta.icon || '✨';
       const classConfig = state.config.classes?.[clsName];
       const skillDesc = classConfig?.skill || `Gain the active skill of the ${clsName} class.`;
       html += `
-        <div class="buff-option" data-class="${clsName}">
-          <div class="buff-icon">${icon}</div>
-          <div class="buff-title">${skillName}</div>
-          <div class="buff-effect">${skillDesc}</div>
-          <button class="btn-select">CHOOSE</button>
+        <div class="buff-option" data-class="${clsName}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div class="buff-icon" style="font-size: 24px; min-width: 36px; text-align: center;">${icon}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="buff-title" style="font-weight: bold; color: var(--accent-gold); font-size: 11px; margin-bottom: 4px;">${skillName}</div>
+            <div class="buff-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${skillDesc}</div>
+          </div>
+          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0;">CHOOSE</button>
         </div>
       `;
     });
 
-    html += '</div>';
+    html += '</div></div>';
     popup.innerHTML = html;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
 
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
@@ -749,6 +750,68 @@ class PopupsManager {
         try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Borrowed ${clsName} Skill!`, { color: '#ffd700' }); } catch(err) {}
         this.closeAllPopups();
         try { UIManager.refreshGameUI(); } catch (err) {}
+      });
+    });
+  }
+
+  // ============================================================
+  // STATUE TALISMAN CHOICE POPUP
+  // ============================================================
+  static showStatueTalismanChoice() {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup talisman-selection-popup';
+    popup.style.width = 'min(500px, 94vw)';
+
+    const equipped = state.playerState.talismans || [];
+    const available = Object.keys(state.config.talismans || {}).filter(t => !equipped.includes(t));
+
+    let html = `<h2>STATUE REWARD: Choose a Talisman</h2><button class="btn-close">✕</button>`;
+    html += '<div class="popup-scrollable-body" style="max-height: 60vh; overflow-y: auto; padding-right: 8px; margin-top: 10px;">';
+    html += '<div class="talisman-selection-grid" style="display: flex; flex-direction: column; gap: 12px;">';
+
+    available.forEach(tName => {
+      const config = state.config.talismans[tName];
+      const icon = config?.icon || '🧿';
+      const desc = config?.description || 'A mysterious talisman.';
+      html += `
+        <div class="talisman-option" data-talisman="${tName}" style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);">
+          <div class="talisman-icon" style="font-size: 24px; min-width: 36px; text-align: center;">${icon}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div class="talisman-title" style="font-weight: bold; color: #eebbff; font-size: 11px; margin-bottom: 4px;">${tName}</div>
+            <div class="talisman-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${desc}</div>
+          </div>
+          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0;">CHOOSE</button>
+        </div>
+      `;
+    });
+
+    html += '</div></div>';
+    popup.innerHTML = html;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+
+    popup.querySelectorAll('.btn-select').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tName = e.target.closest('.talisman-option').dataset.talisman;
+        this.closeAllPopups();
+        const equippedNow = state.playerState.talismans || [];
+        if (equippedNow.length >= 2) {
+          // Trigger replace flow
+          this.showTalismanDiscard(tName);
+        } else {
+          PlayerManager.equipTalisman(tName);
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Equipped ${tName}`, { color: '#eebbff' }); } catch(err) {}
+          try { state.save(); } catch (err) {}
+          try { UIManager.refreshGameUI(); } catch (err) {}
+        }
       });
     });
   }

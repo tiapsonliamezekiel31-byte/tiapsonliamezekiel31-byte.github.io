@@ -182,15 +182,10 @@ const ShopManager = (function() {
   }
 
   function getAvailableWeapons() {
-    // Prefer current offers if generated, otherwise return all non-equipped weapons
     const state = getGameState();
     if (!state || !state.config || !state.config.weapons) return [];
     const equipped = (state.playerState && state.playerState.weapons) ? state.playerState.weapons.filter(Boolean) : [];
-    if (currentOffers.weapons && currentOffers.weapons.length) {
-      // filter out any that were acquired since offers were generated
-      return currentOffers.weapons.filter(w => !equipped.includes(w));
-    }
-    return Object.keys(state.config.weapons).filter(n => !equipped.includes(n));
+    return Object.keys(state.config.weapons).filter(w => w !== 'Rusty Sword' && !equipped.includes(w));
   }
 
   function getAvailableConsumables() {

@@ -1536,17 +1536,12 @@ class UIManager {
               claimButtonText: 'CLAIM SKILL CHOICE'
             };
           } else if (event.type === 'Statue') {
-            const talismans = Object.keys(gs.config.talismans || {});
-            if (talismans.length > 0) {
-              preRolledTalisman = talismans[Math.floor(Math.random() * talismans.length)];
-              const tConfig = gs.config.talismans[preRolledTalisman];
-              rewardData = {
-                name: `${preRolledTalisman} Talisman`,
-                icon: tConfig?.icon || '🏺',
-                description: tConfig?.description || 'A mysterious talisman.',
-                claimButtonText: `CLAIM ${preRolledTalisman.toUpperCase()}`
-              };
-            }
+            rewardData = {
+              name: 'Statue Reward: Choose Talisman',
+              icon: '🏺',
+              description: 'Allows you to choose a new powerful talisman to equip.',
+              claimButtonText: 'CHOOSE TALISMAN'
+            };
           }
 
           const executeClaim = () => {
@@ -1554,19 +1549,8 @@ class UIManager {
             try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) { }
 
             if (event.type === 'Statue') {
-              const talisman = preRolledTalisman || (() => {
-                const talismans = Object.keys(gs.config.talismans);
-                return talismans[Math.floor(Math.random() * talismans.length)];
-              })();
-              const oldTalismans = gs.playerState.talismans || [];
-              if (oldTalismans.length >= 3) {
-                if (typeof PopupsManager !== 'undefined' && PopupsManager.showTalismanDiscard) {
-                  PopupsManager.showTalismanDiscard(talisman);
-                }
-              } else {
-                if (!gs.playerState.talismans) gs.playerState.talismans = [];
-                gs.playerState.talismans.push(talisman);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Gained ${talisman}`, { color: '#eebbff' }); } catch (err) { }
+              if (typeof PopupsManager !== 'undefined' && PopupsManager.showStatueTalismanChoice) {
+                PopupsManager.showStatueTalismanChoice();
               }
             } else if (event.type === 'Sacred Tree') {
               if (!event.rewardType) {
