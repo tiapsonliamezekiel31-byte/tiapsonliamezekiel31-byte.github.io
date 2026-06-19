@@ -729,7 +729,7 @@ class PopupsManager {
             <div class="buff-title" style="font-weight: bold; color: var(--accent-gold); font-size: 11px; margin-bottom: 4px;">${skillName}</div>
             <div class="buff-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${skillDesc}</div>
           </div>
-          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0;">CHOOSE</button>
+          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
         </div>
       `;
     });
@@ -784,7 +784,7 @@ class PopupsManager {
             <div class="talisman-title" style="font-weight: bold; color: #eebbff; font-size: 11px; margin-bottom: 4px;">${tName}</div>
             <div class="talisman-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${desc}</div>
           </div>
-          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0;">CHOOSE</button>
+          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
         </div>
       `;
     });
