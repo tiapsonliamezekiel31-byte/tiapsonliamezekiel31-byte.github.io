@@ -137,6 +137,10 @@
                 <div style="font-size: 8px; color: #94a3b8; line-height: 1.4; margin-bottom: 12px;">
                   * Sleep cycle ends at this hour. Night begins 8 hours prior.
                 </div>
+                <div class="tycoon-form-row" style="flex-direction: column; align-items: flex-start; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+                  <label for="tycoon-cheat-input" style="margin-bottom: 4px;">Cheat Console:</label>
+                  <input type="text" id="tycoon-cheat-input" placeholder="e.g. gold 9999" style="width: 100% !important;">
+                </div>
               </div>
               <div class="tycoon-dialog-buttons">
                 <button class="tycoon-btn" id="settings-save-btn">Save</button>
@@ -385,9 +389,38 @@
       document.getElementById('settings-save-btn').addEventListener('click', () => {
         const hour = Math.max(0, Math.min(23, Number(document.getElementById('settings-checkin-hour').value) || 10));
         this.config.checkInHour = hour;
+        
+        // Process cheat inside settings dialog
+        const cheatInput = document.getElementById('tycoon-cheat-input');
+        const cheatVal = cheatInput ? cheatInput.value.trim().toLowerCase() : '';
+        if (cheatVal) {
+          const parts = cheatVal.split(/\s+/);
+          const cmd = parts[0];
+          const amt = parseInt(parts[1]) || 1000;
+          if (cmd === 'gold' || cmd === 'ap' || cmd === 'food') {
+            this.resources[cmd] += amt;
+            this.addNotification(`Cheat: Added ${amt} ${cmd}!`);
+          } else if (cmd === 'clear') {
+            localStorage.removeItem('nemesis_tycoon_data');
+            this.loadState();
+            this.addNotification("State cleared!");
+          } else {
+            this.addNotification("Unknown cheat: gold/ap/food [amt]");
+          }
+          if (cheatInput) cheatInput.value = '';
+        }
+        
         this.saveState();
         this.worker.postMessage({
           type: 'update_config',
+          config: this.config
+        });
+        // Sync resources with worker in case cheat was used
+        this.worker.postMessage({
+          type: 'init',
+          chunks: this.chunks,
+          farmers: this.farmers,
+          resources: this.resources,
           config: this.config
         });
         document.getElementById('tycoon-settings-dialog').style.display = 'none';
@@ -737,23 +770,6 @@
 
     // Entering Tycoon Mode
     enterTycoonMode(completionRate = null) {
-      if (completionRate !== null) {
-        this.config.completionRatePrevDay = completionRate;
-      } else {
-        // Calculate based on main game state
-        try {
-          const state = getGameState();
-          if (state && state.dailiesState) {
-            const dailies = state.dailiesState.dailies || [];
-            const completed = dailies.filter(d => d.completed).length;
-            const total = dailies.length;
-            this.config.completionRatePrevDay = total > 0 ? (completed / total) : 1.0;
-          }
-        } catch(e) {
-          this.config.completionRatePrevDay = 1.0;
-        }
-      }
-
       // Safety: Re-initialize DOM if body reset wiped the tycoon-container
       const container = document.getElementById('tycoon-container');
       if (!container) {
@@ -762,6 +778,39 @@
       }
 
       this.loadState();
+
+      // Calculate weighted completion rate based on main game state
+      let weightedRate = 1.0;
+      try {
+        const state = getGameState();
+        if (state && state.dailiesState) {
+          const dailies = state.dailiesState.dailies || [];
+          if (dailies.length > 0) {
+            const difficultyWeights = {
+              'easy': 1,
+              'medium': 2,
+              'hard': 3,
+              'ultra': 4
+            };
+            let totalWeight = 0;
+            let completedWeight = 0;
+            dailies.forEach(d => {
+              const diff = (d.difficulty || 'medium').toLowerCase();
+              const weight = difficultyWeights[diff] || 2;
+              totalWeight += weight;
+              if (d.completed) {
+                completedWeight += weight;
+              }
+            });
+            weightedRate = totalWeight > 0 ? (completedWeight / totalWeight) : 1.0;
+          }
+        }
+      } catch (e) {
+        weightedRate = 1.0;
+      }
+
+      this.config.completionRatePrevDay = completionRate !== null ? completionRate : weightedRate;
+      this.config.completionRateCurrentDay = this.config.completionRatePrevDay;
       
       // Hide combat UI and show Tycoon Mode by adding class to body
       document.body.classList.add('tycoon-active');

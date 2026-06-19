@@ -382,3 +382,8 @@ body.tycoon-active > :not(#tycoon-container):not(script):not(style) {
   font-weight: bold;
   color: #38bdf8;
 }
+
+#tycoon-cheat-input {
+  width: 100% !important;
+  box-sizing: border-box;
+}

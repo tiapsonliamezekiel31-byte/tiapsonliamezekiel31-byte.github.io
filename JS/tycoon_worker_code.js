@@ -18,6 +18,7 @@ let config = {
 };
 let isRunning = false;
 let simulationInterval = null;
+let lastTickTime = null;
 
 // Tile Consts matching main thread
 const TILE_TYPES = {
@@ -69,6 +70,37 @@ function setTile(x, y, value) {
   chunks[key][idx] = value;
 }
 
+function crossedCheckinTime(prevTime, currTime) {
+  const prevDate = new Date(prevTime);
+  const currDate = new Date(currTime);
+  
+  // Create a Date object for the check-in time on the prevTime day
+  const checkinPrev = new Date(prevTime);
+  checkinPrev.setHours(config.checkInHour, 0, 0, 0);
+  
+  // Create a Date object for the check-in time on the currTime day
+  const checkinCurr = new Date(currTime);
+  checkinCurr.setHours(config.checkInHour, 0, 0, 0);
+
+  // If the time spans across the check-in time of the starting day
+  if (prevTime < checkinPrev.getTime() && currTime >= checkinPrev.getTime()) {
+    return true;
+  }
+  
+  // If the currTime has passed the check-in time of the current day,
+  // and the prevTime was before the check-in of the current day
+  if (currTime >= checkinCurr.getTime() && prevTime < checkinCurr.getTime()) {
+    return true;
+  }
+  
+  // Also check if they are on different days and more than 24 hours have elapsed
+  if (currTime - prevTime >= 24 * 3600 * 1000) {
+    return true;
+  }
+  
+  return false;
+}
+
 // Checks if current hour is night (fixed 8-hour window ending at checkInHour)
 function isNightTime(timestamp) {
   const date = new Date(timestamp);
@@ -86,6 +118,15 @@ function isNightTime(timestamp) {
 
 // Runs a single 1Hz (per-second) simulation tick
 function tickSimulation(timestamp) {
+  if (lastTickTime !== null) {
+    if (crossedCheckinTime(lastTickTime, timestamp)) {
+      const compRate = config.completionRateCurrentDay !== undefined ? config.completionRateCurrentDay : 0.0;
+      handleDailyCheckin(compRate);
+      config.completionRateCurrentDay = 0.0; // reset for subsequent days
+    }
+  }
+  lastTickTime = timestamp;
+
   const isNight = isNightTime(timestamp);
   
   // 1. Gather all maintenance and increaser buildings to apply radius effects
@@ -311,6 +352,7 @@ function simulateOfflineProgress(now) {
   const initialAp = resources.ap;
   const initialFood = resources.food;
   
+  lastTickTime = config.lastSaveTime;
   let simulatedTime = config.lastSaveTime;
   for (let i = 0; i < maxTicks; i++) {
     simulatedTime += 1000;
@@ -394,6 +436,7 @@ self.onmessage = function(e) {
       
       // Perform offline calculations
       simulateOfflineProgress(Date.now());
+      lastTickTime = Date.now();
       
       // Start worker loop
       if (simulationInterval) clearInterval(simulationInterval);
