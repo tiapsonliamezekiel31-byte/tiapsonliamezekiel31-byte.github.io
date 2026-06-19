@@ -198,36 +198,10 @@
                   <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;"> To-Dos</h4>
                   <div id="tycoon-todos-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
                 </div>
-                <!-- Add Task Form -->
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 9px;">➕ ADD TASK</h4>
-                  <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; gap: 6px;">
-                      <input type="text" id="tycoon-new-task-name" placeholder="Task name..." style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
-                      <select id="tycoon-new-task-type" style="background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
-                        <option value="daily">Daily</option>
-                        <option value="todo">To-Do</option>
-                      </select>
-                    </div>
-                    <div style="display: flex; gap: 6px;">
-                      <select id="tycoon-new-task-diff" style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
-                        <option value="Easy">Easy</option>
-                        <option value="Medium">Medium</option>
-                        <option value="Hard">Hard</option>
-                        <option value="Ultra">Ultra</option>
-                      </select>
-                      <select id="tycoon-new-task-attr" style="flex: 1; background: #0f172a; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px; border-radius: 6px; font-family: inherit; font-size: 9px;">
-                        <option value="STR">STR</option>
-                        <option value="INT">INT</option>
-                        <option value="DISC">DISC</option>
-                        <option value="CREA">CREA</option>
-                        <option value="SOC">SOC</option>
-                        <option value="CAP">CAP</option>
-                        <option value="RESP">RESP</option>
-                      </select>
-                      <button class="tycoon-btn" id="tycoon-add-task-btn" style="min-height: 28px; padding: 0 10px; font-size: 9px;">Add</button>
-                    </div>
-                  </div>
+                <!-- Add Task Panel -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: flex; gap: 8px; width: 100%;">
+                  <button class="tycoon-btn" id="tycoon-add-daily-popup-btn" style="flex: 1; min-height: 38px; justify-content: center; font-size: 8px; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4); pointer-events: auto;">➕ Add Daily</button>
+                  <button class="tycoon-btn" id="tycoon-add-todo-popup-btn" style="flex: 1; min-height: 38px; justify-content: center; font-size: 8px; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); pointer-events: auto;">➕ Add To-Do</button>
                 </div>
               </div>
               <div class="tycoon-dialog-buttons">
@@ -601,29 +575,19 @@
         document.getElementById('tycoon-tasks-dialog').style.display = 'none';
       });
 
-      // Add Task Action
-      document.getElementById('tycoon-add-task-btn').addEventListener('click', () => {
-        const nameInput = document.getElementById('tycoon-new-task-name');
-        const name = nameInput.value.trim();
-        if (!name) return;
-        
-        const type = document.getElementById('tycoon-new-task-type').value;
-        const diff = document.getElementById('tycoon-new-task-diff').value;
-        const attr = document.getElementById('tycoon-new-task-attr').value;
-
-        if (type === 'daily') {
-          TaskManager.addDaily(name, diff, attr, 1);
-        } else {
-          TaskManager.addTodo(name, diff, attr);
+      // Add Task Action via PopupsManager Wizards
+      document.getElementById('tycoon-add-daily-popup-btn').addEventListener('click', () => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showAddDailyPopup === 'function') {
+          document.getElementById('tycoon-tasks-dialog').style.display = 'none';
+          PopupsManager.showAddDailyPopup();
         }
+      });
 
-        nameInput.value = '';
-        try {
-          getGameState().save();
-        } catch (e) {}
-
-        this.renderTasksList();
-        this.addNotification("➕ Task added successfully!");
+      document.getElementById('tycoon-add-todo-popup-btn').addEventListener('click', () => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showAddTodoWizard === 'function') {
+          document.getElementById('tycoon-tasks-dialog').style.display = 'none';
+          PopupsManager.showAddTodoWizard(50, 50, window.innerWidth / 2, window.innerHeight / 2);
+        }
       });
     }
 
@@ -717,16 +681,16 @@
           
           return `
             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08); ${isDone ? 'opacity: 0.6;' : ''}">
-              <div>
-                <span style="font-weight: bold; color: ${isDone ? '#94a3b8' : '#ffd700'}">${d.name}</span>
-                <span style="color: #64748b; margin-left: 4px;">[${d.difficulty}] [${d.attribute}] ${streakIcon}</span>
+              <div class="tycoon-task-info-click d-edit-clickable" data-id="${d.id}" style="cursor: pointer; flex: 1; text-align: left; pointer-events: auto;">
+                <span style="font-weight: bold; color: ${isDone ? '#94a3b8' : '#ffd700'}; pointer-events: none;">${d.name}</span>
+                <span style="color: #64748b; margin-left: 4px; pointer-events: none;">[${d.difficulty}] [${d.attribute}] ${streakIcon}</span>
               </div>
-              <div style="pointer-events: auto;">${checkbox}</div>
+              <div style="pointer-events: auto; margin-left: 6px;">${checkbox}</div>
             </div>
           `;
         }).join('');
 
-        // Bind daily clicks
+        // Bind daily complete clicks
         dailiesList.querySelectorAll('.d-complete-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
@@ -741,6 +705,17 @@
             }
           });
         });
+
+        // Bind daily edit clicks
+        dailiesList.querySelectorAll('.d-edit-clickable').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showEditDaily === 'function') {
+              document.getElementById('tycoon-tasks-dialog').style.display = 'none';
+              PopupsManager.showEditDaily(id);
+            }
+          });
+        });
       }
 
       // Render Todos
@@ -750,17 +725,17 @@
       } else {
         todosList.innerHTML = activeTodos.map(t => `
           <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08);">
-            <div>
-              <span style="font-weight: bold; color: #38bdf8">${t.name}</span>
-              <span style="color: #64748b; margin-left: 4px;">[${t.difficulty}] [${t.attribute}]</span>
+            <div class="tycoon-task-info-click t-edit-clickable" data-id="${t.id}" style="cursor: pointer; flex: 1; text-align: left; pointer-events: auto;">
+              <span style="font-weight: bold; color: #38bdf8; pointer-events: none;">${t.name}</span>
+              <span style="color: #64748b; margin-left: 4px; pointer-events: none;">[${t.difficulty}] [${t.attribute}]</span>
             </div>
-            <div style="pointer-events: auto;">
+            <div style="pointer-events: auto; margin-left: 6px;">
               <button class="tycoon-btn t-complete-btn" data-id="${t.id}" style="min-height: 24px; padding: 2px 6px; font-size: 8px; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); pointer-events: auto;">DONE</button>
             </div>
           </div>
         `).join('');
 
-        // Bind todo clicks
+        // Bind todo complete clicks
         todosList.querySelectorAll('.t-complete-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             const id = e.target.dataset.id;
@@ -770,6 +745,17 @@
                 getGameState().save();
               } catch(err) {}
               this.renderTasksList();
+            }
+          });
+        });
+
+        // Bind todo edit clicks
+        todosList.querySelectorAll('.t-edit-clickable').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const id = e.currentTarget.dataset.id;
+            if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showEditTodo === 'function') {
+              document.getElementById('tycoon-tasks-dialog').style.display = 'none';
+              PopupsManager.showEditTodo(id);
             }
           });
         });

@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add tycoon tasks stats dashboard, check-in HUD, flat textures, persistence fixes"
+$commitMsg = "feat: integrate original popups and shape wizards in Tycoon Mode"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

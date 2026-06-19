@@ -10,6 +10,22 @@ class PopupsManager {
     
     const overlays = document.querySelectorAll('.popup-overlay');
     overlays.forEach(overlay => overlay.remove());
+
+    const wizards = document.querySelectorAll('.floating-wizard');
+    wizards.forEach(w => w.remove());
+
+    // Refresh tycoon tasks list if tycoon is active
+    if (localStorage.getItem('nemesis_active_mode') === 'tycoon' && window.TycoonManager && typeof window.TycoonManager.renderTasksList === 'function') {
+      try {
+        window.TycoonManager.renderTasksList();
+        const tasksDialog = document.getElementById('tycoon-tasks-dialog');
+        if (tasksDialog) {
+          tasksDialog.style.display = 'flex';
+        }
+      } catch (e) {
+        console.warn("Failed to refresh tycoon tasks list on closeAllPopups", e);
+      }
+    }
   }
   
   static createPopupOverlay() {
@@ -1239,6 +1255,60 @@ class PopupsManager {
 
     renderList();
   }
+
+  static showAddDailyPopup() {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    overlay.style.pointerEvents = 'auto';
+
+    const popup = document.createElement('div');
+    popup.className = 'popup add-dailies-popup';
+
+    const attrsOptions = state.config.attributes.map(a => `<option value="${a}">${a}</option>`).join('');
+    popup.innerHTML = `
+      <h2>ADD NEW DAILY</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body" style="padding-top: 10px;">
+        <div class="add-daily-form" style="display: flex; flex-direction: column; gap: 8px;">
+          <label>Daily Name</label>
+          <input id="newDailyName" placeholder="Daily name (e.g. 'Stretch')" />
+          <label>Difficulty</label>
+          <select id="newDailyDiff">
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+            <option>Ultra</option>
+          </select>
+          <label>Attribute</label>
+          <select id="newDailyAttr">${attrsOptions}</select>
+          <label>Max completions per day</label>
+          <input id="newDailyMax" type="number" min="1" value="1" />
+          <button id="addDailyBtn" class="btn-large" style="margin-top: 10px;">ADD DAILY</button>
+        </div>
+      </div>
+    `;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    popup.querySelector('#addDailyBtn').addEventListener('click', () => {
+      const name = (popup.querySelector('#newDailyName').value || 'New Daily').trim();
+      const diff = popup.querySelector('#newDailyDiff').value;
+      const attr = popup.querySelector('#newDailyAttr').value;
+      const max = Math.max(1, Number(popup.querySelector('#newDailyMax').value) || 1);
+
+      const d = TaskManager.addDaily(name, diff, attr, max);
+      if (d) {
+        this.closeAllPopups();
+        state.save();
+      }
+    });
+
+    PopupAnimation.scale(popup);
+  }
   
   // ============================================================
   // DIALOGUE POPUP
@@ -2237,11 +2307,11 @@ class PopupsManager {
       }
 
       const closeBtn = popup.querySelector('.btn-close');
-      if (closeBtn) closeBtn.addEventListener('click', () => popup.remove());
+      if (closeBtn) closeBtn.addEventListener('click', () => this.closeAllPopups());
       PopupAnimation.scaleCentered(popup);
     };
 
-    const board = document.getElementById('todosList');
+    const board = document.getElementById('todosList') || document.getElementById('tycoon-container') || document.body;
     if (board) board.appendChild(popup);
     renderStep();
   }

@@ -1,6 +1,6 @@
 /* style_tycoon.css - Glassmorphic, dark theme styles for Tycoon Mode */
 
-body.tycoon-active > :not(#tycoon-container):not(script):not(style) {
+body.tycoon-active > :not(#tycoon-container):not(.popup-overlay):not(.floating-wizard):not(script):not(style) {
   display: none !important;
 }
 
