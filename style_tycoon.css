@@ -9,7 +9,9 @@ body.tycoon-active > :not(#tycoon-container):not(script):not(style) {
   top: 0;
   left: 0;
   width: 100vw;
+  width: 100dvw;
   height: 100vh;
+  height: 100dvh;
   z-index: 9999;
   background: #0f172a;
   color: #f8fafc;
@@ -406,4 +408,99 @@ body.tycoon-active .action-ring,
 body.tycoon-active .enemy-circle-container,
 body.tycoon-active .stage-date-wrap {
   display: none !important;
+}
+
+/* Responsive adjustments for mobile devices */
+@media (max-width: 600px) {
+  .tycoon-header {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 6px;
+  }
+  
+  .tycoon-hud-panel {
+    padding: 6px 10px;
+    gap: 10px;
+  }
+  
+  .tycoon-stat {
+    font-size: 8px;
+    gap: 4px;
+  }
+  
+  .tycoon-btn {
+    padding: 6px 10px;
+    font-size: 8px;
+    min-height: 36px;
+  }
+
+  .tycoon-shop-drawer {
+    padding: 10px;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  .tycoon-shop-title {
+    font-size: 10px;
+  }
+
+  .tycoon-tab-btn {
+    font-size: 8px;
+    padding: 4px 8px;
+    min-height: 32px;
+  }
+
+  .tycoon-shop-grid {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    max-height: 140px;
+    gap: 8px;
+  }
+
+  .tycoon-shop-card {
+    padding: 6px 2px;
+    min-height: 75px;
+  }
+
+  .tycoon-shop-item-emoji {
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .tycoon-shop-item-name {
+    font-size: 6px;
+  }
+
+  .tycoon-shop-item-cost {
+    font-size: 6px;
+  }
+  
+  .tycoon-dialog {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .tycoon-dialog h3 {
+    font-size: 11px;
+  }
+  
+  .tycoon-form-row {
+    margin-bottom: 8px;
+  }
+  
+  .tycoon-form-row label {
+    font-size: 8px;
+  }
+  
+  .tycoon-form-row input, .tycoon-form-row select {
+    padding: 6px;
+    font-size: 8px;
+    width: 80px;
+  }
+  
+  .tycoon-active-tool-banner {
+    top: 75px;
+    padding: 6px 12px;
+    font-size: 8px;
+  }
 }

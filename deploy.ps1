@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: tycoon mode visual leak of roguelike combat elements"
+$commitMsg = "fix: restore tycoon styling loading, active mode refresh persistence, and mobile responsiveness"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

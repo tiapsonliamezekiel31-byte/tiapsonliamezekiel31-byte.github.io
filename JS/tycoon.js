@@ -814,6 +814,7 @@
       
       // Hide combat UI and show Tycoon Mode by adding class to body
       document.body.classList.add('tycoon-active');
+      localStorage.setItem('nemesis_active_mode', 'tycoon');
       
       // Explicitly hide all other direct children of body in JS
       Array.from(document.body.children).forEach(el => {
@@ -873,6 +874,7 @@
       
       this.isRenderLoopRunning = false;
       document.body.classList.remove('tycoon-active');
+      localStorage.setItem('nemesis_active_mode', 'combat');
       
       // Restore original display styles for direct children of body
       Array.from(document.body.children).forEach(el => {
