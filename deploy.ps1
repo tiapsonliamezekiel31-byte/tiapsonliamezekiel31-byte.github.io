@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: integrate original popups and shape wizards in Tycoon Mode"
+$commitMsg = "fix: tycoon tabs visible, live completion rate drives production, reset farm command"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

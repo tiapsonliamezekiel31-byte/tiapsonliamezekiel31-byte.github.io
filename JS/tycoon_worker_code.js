@@ -231,8 +231,12 @@ function tickSimulation(timestamp) {
           }
           let multiplier = 1.0 + (increaserCount * 0.20);
           
-          // Apply completion rate of previous day: completionRatePrevDay acts as direct multiplier (e.g. 0% to 150%)
-          multiplier *= config.completionRatePrevDay;
+          // Apply live task completion rate: current-day rate drives production in real time.
+          // Falls back to previous day's rate if current day hasn't been tracked yet.
+          const liveRate = (config.completionRateCurrentDay !== undefined && config.completionRateCurrentDay >= 0)
+            ? config.completionRateCurrentDay
+            : config.completionRatePrevDay;
+          multiplier *= Math.max(0.1, liveRate); // Floor at 10% so farm never goes dead
           
           // Calculate gains
           goldProducedThisSecond += Math.round(goldBase * multiplier);
@@ -409,7 +413,7 @@ function handleDailyCheckin(completionRate) {
   resources.accumulatedApToday = 0;
   
   self.postMessage({
-    type: "daily_summary",
+    type: "tycoon_daily_summary",
     summary
   });
 }
@@ -433,6 +437,10 @@ self.onmessage = function(e) {
         completionRatePrevDay: 1.0,
         lastSaveTime: Date.now()
       };
+      // Seed live rate from prev day if not already tracked
+      if (config.completionRateCurrentDay === undefined) {
+        config.completionRateCurrentDay = config.completionRatePrevDay;
+      }
       
       // Perform offline calculations
       simulateOfflineProgress(Date.now());

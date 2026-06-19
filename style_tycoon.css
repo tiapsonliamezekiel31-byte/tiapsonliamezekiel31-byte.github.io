@@ -1,6 +1,6 @@
 /* style_tycoon.css - Glassmorphic, dark theme styles for Tycoon Mode */
 
-body.tycoon-active > :not(#tycoon-container):not(.popup-overlay):not(.floating-wizard):not(script):not(style) {
+body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#dailiesTabHandle):not(#todosPanel):not(#todosTabHandle):not(.popup-overlay):not(.floating-wizard):not(script):not(style) {
   display: none !important;
 }
 
@@ -402,11 +402,15 @@ body.tycoon-active .nav-menu-panel,
 body.tycoon-active .floating-shop-btn,
 body.tycoon-active .floating-lootbox-btn,
 body.tycoon-active .floating-stage-indicator,
-body.tycoon-active .floating-tab-handle,
-body.tycoon-active .floating-tab,
 body.tycoon-active .action-ring,
 body.tycoon-active .enemy-circle-container,
-body.tycoon-active .stage-date-wrap {
+body.tycoon-active .stage-date-wrap,
+body.tycoon-active #achievementsPanel,
+body.tycoon-active #achievementsTabHandle,
+body.tycoon-active #cosmeticsPanel,
+body.tycoon-active #cosmeticsTabHandle,
+body.tycoon-active #petPanel,
+body.tycoon-active #petTabHandle {
   display: none !important;
 }
 

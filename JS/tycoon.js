@@ -171,20 +171,33 @@
  
           <div class="tycoon-overlay" id="tycoon-tasks-dialog">
             <div class="tycoon-dialog" style="width: min(520px, 94vw); max-height: 85vh; overflow-y: auto;">
-              <h3>📋 DAILY TASKS & TO-DOS</h3>
-              <!-- Character & Base Game Stats Panel -->
+              <h3>🌾 FARM TASKS</h3>
+              <!-- Tycoon Farm Stats + Read-only Main Game Snapshot -->
               <div id="tycoon-character-panel" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto;">
+                <!-- Tycoon-native stats -->
                 <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; font-weight: bold;">
-                  <span id="tycoon-char-class" style="color: #ffd700;">Class: -</span>
-                  <span id="tycoon-char-level" style="color: #4ade80;">Level: -</span>
+                  <span style="color: #4ade80;">🌾 FARM PROGRESS</span>
+                  <span id="tycoon-prestige-days" style="color: #fbbf24; font-size: 7px;">Day -</span>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; color: #cbd5e1;">
-                  <div>🪙 Gold: <span id="tycoon-base-gold" style="color: #ffd700; font-weight: bold;">-</span></div>
-                  <div>💎 Diamonds: <span id="tycoon-base-diamonds" style="color: #c084fc; font-weight: bold;">-</span></div>
-                  <div>⚡ AP: <span id="tycoon-base-ap" style="color: #38bdf8; font-weight: bold;">- / -</span></div>
+                  <div>🪙 Farm Gold: <span id="tycoon-farm-gold" style="color: #ffd700; font-weight: bold;">-</span></div>
+                  <div>🧑‍🌾 Farmers: <span id="tycoon-farm-farmers" style="color: #4ade80; font-weight: bold;">-</span></div>
+                  <div>🌲 Tiles: <span id="tycoon-farm-tiles" style="color: #38bdf8; font-weight: bold;">-</span></div>
                 </div>
-                <div id="tycoon-char-attrs" style="display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 7px; color: #94a3b8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 4px;">
-                  <!-- Attributes list will go here -->
+                <!-- Read-only main-game snapshot -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; margin-top: 2px;">
+                  <div style="font-size: 7px; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">⚔️ MAIN GAME SNAPSHOT (read-only)</div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span id="tycoon-char-class" style="color: #ffd700; font-size: 7px;">Class: -</span>
+                    <span id="tycoon-char-level" style="color: #4ade80; font-size: 7px;">Level: -</span>
+                  </div>
+                  <div style="margin-top: 4px;">
+                    <div style="font-size: 7px; color: #64748b; margin-bottom: 2px;">Today's task completion:</div>
+                    <div style="background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; height: 6px;">
+                      <div id="tycoon-completion-bar" style="height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); width: 0%; transition: width 0.4s ease; border-radius: 4px;"></div>
+                    </div>
+                    <div id="tycoon-completion-label" style="font-size: 6px; color: #94a3b8; margin-top: 2px; text-align: right;">0%</div>
+                  </div>
                 </div>
               </div>
               <div class="tycoon-dialog-body" style="display: flex; flex-direction: column; gap: 14px;">
@@ -427,28 +440,22 @@
       // Toggle back to base game
       document.getElementById('tycoon-exit-btn').addEventListener('click', () => this.exitTycoonMode());
 
-      // Check In Action
+      // Check In Action — Tycoon manages its own day cycle via the worker.
+      // We only read task completion rate as a passive multiplier; we never
+      // reset the main game's dailies from inside tycoon.
       const checkinBtn = document.getElementById('tycoon-checkin-btn');
       if (checkinBtn) {
         checkinBtn.addEventListener('click', () => {
-          let completionRate = this.calculateCurrentCompletionRate();
+          const completionRate = this.calculateCurrentCompletionRate();
           
-          // Reset dailies on main thread
-          TaskManager.resetDailies();
-          try {
-            getGameState().save();
-          } catch(e) {}
-          
-          this.renderTasksList();
-          
-          // Trigger checkin in worker
+          // Post manual check-in to worker (worker handles its own daily cycle)
           if (this.worker) {
             this.worker.postMessage({
               type: 'checkin',
               completionRate: completionRate
             });
           }
-          this.addNotification("🌅 Checked in! New day started.");
+          this.addNotification("🌅 Tycoon day checked in! Production boosted.");
         });
       }
 
@@ -496,8 +503,44 @@
             localStorage.removeItem('nemesis_tycoon_data');
             this.loadState();
             this.addNotification("State cleared!");
+          } else if (cheatVal === 'reset farm') {
+            // Reset tycoon game progress (map, farmers, resources) only.
+            // Preserves checkInHour, completionRatePrevDay, and ALL main-game task/streak data.
+            const savedHour = this.config.checkInHour || 10;
+            const savedPrevRate = this.config.completionRatePrevDay || 1.0;
+            this.resources = { gold: 100, ap: 0, food: 0 };
+            this.farmers = [];
+            this.chunks = {};
+            // Starter 8×8 island with one AP tree
+            for (let y = -4; y < 4; y++) {
+              for (let x = -4; x < 4; x++) {
+                this.setTileTypeAt(x, y, TILE_TYPES.GRASS);
+              }
+            }
+            let treeVal = TILE_TYPES.PRODUCER;
+            treeVal |= (100 << 8);
+            treeVal |= (PRODUCER_SUBS.TREE << 24);
+            this.setTileTypeAt(0, 0, treeVal);
+            this.camera.x = 0;
+            this.camera.y = 0;
+            this.config = { checkInHour: savedHour, completionRatePrevDay: savedPrevRate, completionRateCurrentDay: savedPrevRate, lastSaveTime: Date.now() };
+            this.saveState();
+            if (this.worker) {
+              this.worker.postMessage({
+                type: 'init',
+                chunks: this.chunks,
+                farmers: this.farmers,
+                resources: this.resources,
+                config: this.config
+              });
+            }
+            this.updateHUD();
+            this.renderShopGrid('terrain');
+            this.addNotification('🌱 Farm reset! Task streaks and main game data preserved.');
+            document.getElementById('tycoon-settings-dialog').style.display = 'none';
+            return;
           } else {
-            this.addNotification("Unknown cheat: gold/ap/food/combat [amt]");
+            this.addNotification("Unknown cheat: gold/ap/food/combat [amt] · reset farm");
           }
           if (cheatInput) cheatInput.value = '';
         }
@@ -620,38 +663,61 @@
     }
 
     renderTasksList() {
-      // First update character stats panel
+      // --- Tycoon-native farm stats ---
+      try {
+        document.getElementById('tycoon-farm-gold').textContent = Math.floor(this.resources.gold);
+        document.getElementById('tycoon-farm-farmers').textContent = this.farmers.length;
+        // Count placed producer/increaser/maintenance/cosmetic tiles
+        let tileCnt = 0;
+        for (const key in this.chunks) {
+          const arr = this.chunks[key];
+          for (let i = 0; i < 1024; i++) {
+            const t = arr[i] & 0xFF;
+            if (t >= TILE_TYPES.PRODUCER && t <= TILE_TYPES.COSMETIC) tileCnt++;
+          }
+        }
+        document.getElementById('tycoon-farm-tiles').textContent = tileCnt;
+        // Day counter approximation from lastSaveTime
+        const daysSince = Math.max(1, Math.floor((Date.now() - (this.config.lastSaveTime || Date.now())) / 86400000) + 1);
+        const prestige = document.getElementById('tycoon-prestige-days');
+        if (prestige) prestige.textContent = `Day ${daysSince}`;
+      } catch (e) {
+        console.warn('Failed to render tycoon farm stats', e);
+      }
+
+      // --- Read-only main-game snapshot ---
       try {
         const state = getGameState();
         if (state) {
           const charClass = state.playerState.className || 'None';
           const charLevel = state.playerState.level || 1;
-          const baseGold = state.playerState.gold || 0;
-          const baseDiamonds = state.playerState.diamonds || 0;
-          const baseAp = state.playerState.ap || 0;
-          const maxAp = state.playerState.maxAp || 0;
           const streak = state.dailiesState.streakCompletion || 0;
-          const streakHtml = streak > 0 ? ` <span style="color:#ef4444;margin-left:8px;">🔥 ${streak}d streak</span>` : '';
+          const streakHtml = streak > 0 ? ` <span style="color:#ef4444;margin-left:4px;">🔥${streak}d</span>` : '';
 
-          document.getElementById('tycoon-char-class').innerHTML = `Class: ${charClass}${streakHtml}`;
-          document.getElementById('tycoon-char-level').textContent = `Level: ${charLevel}`;
-          document.getElementById('tycoon-base-gold').textContent = Math.round(baseGold);
-          document.getElementById('tycoon-base-diamonds').textContent = Math.round(baseDiamonds);
-          document.getElementById('tycoon-base-ap').textContent = `${baseAp} / ${maxAp}`;
+          const classEl = document.getElementById('tycoon-char-class');
+          const levelEl = document.getElementById('tycoon-char-level');
+          if (classEl) classEl.innerHTML = `Class: ${charClass}${streakHtml}`;
+          if (levelEl) levelEl.textContent = `Lv.${charLevel}`;
 
-          const attrs = state.playerState.attributes || {};
-          const attrHtml = Object.keys(attrs).map(key => {
-            const lv = attrs[key].level || 1;
-            const pts = attrs[key].points || 0;
-            return `<div style="flex: 1 1 30%; min-width: 60px;">${key}: <span style="color:#fff;">Lv.${lv} (${Math.round(pts)})</span></div>`;
-          }).join('');
-          document.getElementById('tycoon-char-attrs').innerHTML = attrHtml;
+          // Completion bar
+          const pct = Math.round(this.calculateCurrentCompletionRate() * 100);
+          const barEl = document.getElementById('tycoon-completion-bar');
+          const labelEl = document.getElementById('tycoon-completion-label');
+          if (barEl) barEl.style.width = `${pct}%`;
+          if (labelEl) labelEl.textContent = `${pct}%`;
+          if (barEl) {
+            barEl.style.background = pct >= 80
+              ? 'linear-gradient(90deg, #22c55e, #4ade80)'
+              : pct >= 40
+                ? 'linear-gradient(90deg, #d97706, #fbbf24)'
+                : 'linear-gradient(90deg, #dc2626, #f87171)';
+          }
         }
       } catch (e) {
-        console.warn("Failed to render character panel inside tycoon tasks", e);
+        console.warn('Failed to render main-game snapshot in tycoon tasks', e);
       }
 
-      // Recalculate completion rate and send to worker
+      // Sync completion rate to worker
       const currentRate = this.calculateCurrentCompletionRate();
       if (this.worker) {
         this.worker.postMessage({
@@ -659,6 +725,7 @@
           completionRate: currentRate
         });
       }
+
 
       const dailiesList = document.getElementById('tycoon-dailies-list');
       const todosList = document.getElementById('tycoon-todos-list');
@@ -1068,9 +1135,9 @@
     }
 
     updateHUD() {
-      document.getElementById('tycoon-gold-val').textContent = this.resources.gold;
-      document.getElementById('tycoon-ap-val').textContent = this.resources.ap;
-      document.getElementById('tycoon-food-val').textContent = this.resources.food;
+      document.getElementById('tycoon-gold-val').textContent = Math.floor(this.resources.gold);
+      document.getElementById('tycoon-ap-val').textContent = Math.floor(this.resources.ap);
+      document.getElementById('tycoon-food-val').textContent = Math.floor(this.resources.food);
       
       // Calculate rate estimation
       let totalRate = 0;
@@ -1100,6 +1167,16 @@
       });
       totalRate = Math.max(1, Math.round(totalRate));
       document.getElementById('tycoon-rate-val').textContent = `${totalRate}g/s`;
+
+      // Read-only task completion indicator on HUD
+      const rate = this.calculateCurrentCompletionRate();
+      const rateEl = document.getElementById('tycoon-rate-val');
+      if (rateEl) {
+        const pct = Math.round(rate * 100);
+        const color = pct >= 80 ? '#4ade80' : pct >= 40 ? '#fbbf24' : '#f87171';
+        rateEl.title = `Task completion today: ${pct}% (affects production multiplier)`;
+        rateEl.style.color = color;
+      }
     }
 
     // Entering Tycoon Mode
@@ -1151,8 +1228,10 @@
       localStorage.setItem('nemesis_active_mode', 'tycoon');
       
       // Explicitly hide all other direct children of body in JS
+      // Skip the dailies/todos panels & handles — their visibility is managed by CSS in tycoon mode
+      const TYCOON_PANEL_IDS = new Set(['dailiesPanel','dailiesTabHandle','todosPanel','todosTabHandle']);
       Array.from(document.body.children).forEach(el => {
-        if (el.id !== 'tycoon-container' && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+        if (el.id !== 'tycoon-container' && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE' && !TYCOON_PANEL_IDS.has(el.id)) {
           if (el.classList.contains('popup-overlay')) {
             el.remove();
           } else {
@@ -1226,10 +1305,18 @@
       // Save state
       this.saveState();
       
-      // Trigger full page reload or show main menu popup
+      // Return to main game cleanly — no reload needed.
+      // The data-original-display restoration above already brings the main UI back.
+      // Refresh the game HUD so resource values are current.
       try {
+        if (window.UIManager && typeof UIManager.refreshGameUI === 'function') {
+          UIManager.refreshGameUI();
+        }
+      } catch(e) {
+        // Fallback only if UI manager is genuinely unavailable
+        console.warn('Tycoon exit: UIManager not available, reloading as fallback', e);
         location.reload();
-      } catch(e) {}
+      }
     }
 
     spawnWorker() {
@@ -1271,12 +1358,9 @@
             this.showOfflineSummary(msg);
             break;
 
-          case 'daily_summary':
-            TaskManager.resetDailies();
-            try {
-              getGameState().save();
-            } catch (err) {}
-            this.renderTasksList();
+          // Tycoon's own daily cycle fired — show summary popup only.
+          // We never reset the main game's dailies from inside tycoon.
+          case 'tycoon_daily_summary':
             this.showDailySummary(msg.summary);
             break;
             
