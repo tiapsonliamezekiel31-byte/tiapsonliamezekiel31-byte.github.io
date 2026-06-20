@@ -1267,15 +1267,35 @@
       const maxTileX = Math.ceil(worldRight / tw) + 2;
       const maxTileY = Math.ceil(worldBottom / tw) + 2;
       
-      // Step 1: Render visible tiles
+      // Pass 1: Render terrain backgrounds
+      for (let ty = minTileY; ty <= maxTileY; ty++) {
+        for (let tx = minTileX; tx <= maxTileX; tx++) {
+          const tile = this.getTileTypeAt(tx, ty);
+          let type = tile & 0xFF;
+          const charge = (tile >> 8) & 0xFF;
+          const subType = (tile >> 24) & 0xFF;
+          
+          // Draw standard land under objects during background pass
+          if (type === TILE_TYPES.PRODUCER || type === TILE_TYPES.INCREASER || 
+              type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.COSMETIC) {
+            type = TILE_TYPES.GRASS;
+          }
+          
+          this.drawTileTexture(ctx, tx, ty, type, charge, subType);
+        }
+      }
+
+      // Pass 2: Render 3x3 objects on top of terrain backgrounds
       for (let ty = minTileY; ty <= maxTileY; ty++) {
         for (let tx = minTileX; tx <= maxTileX; tx++) {
           const tile = this.getTileTypeAt(tx, ty);
           const type = tile & 0xFF;
-          const charge = (tile >> 8) & 0xFF;
-          const subType = (tile >> 24) & 0xFF;
-          
-          this.drawTileTexture(ctx, tx, ty, type, charge, subType);
+          if (type === TILE_TYPES.PRODUCER || type === TILE_TYPES.INCREASER || 
+              type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.COSMETIC) {
+            const charge = (tile >> 8) & 0xFF;
+            const subType = (tile >> 24) & 0xFF;
+            this.drawTileObject(ctx, tx, ty, type, charge, subType);
+          }
         }
       }
 
@@ -1380,13 +1400,20 @@
       ctx.restore();
     }
 
+    getTerrainBaseType(type) {
+      if (type === TILE_TYPES.PRODUCER || 
+          type === TILE_TYPES.INCREASER || 
+          type === TILE_TYPES.MAINTENANCE || 
+          type === TILE_TYPES.COSMETIC) {
+        return TILE_TYPES.GRASS; // Generic land type base
+      }
+      return type;
+    }
+
     drawTileTexture(ctx, tx, ty, type, charge, subType) {
       const tw = this.tileWidth;
       const x = tx * tw;
       const y = ty * tw;
-      
-      // Deterministic noise for tile pixel patterns
-      const noise = (tx * 17 + ty * 31) % 100;
       
       switch (type) {
         case TILE_TYPES.WATER:
@@ -1413,7 +1440,47 @@
           ctx.fillStyle = "#78350f"; // Brown path
           ctx.fillRect(x, y, tw, tw);
           break;
-          
+      }
+
+      // Draw darker borders if adjacent to a different base terrain
+      const currentBase = this.getTerrainBaseType(type);
+      
+      const upBase = this.getTerrainBaseType(this.getTileTypeAt(tx, ty - 1) & 0xFF);
+      const downBase = this.getTerrainBaseType(this.getTileTypeAt(tx, ty + 1) & 0xFF);
+      const leftBase = this.getTerrainBaseType(this.getTileTypeAt(tx - 1, ty) & 0xFF);
+      const rightBase = this.getTerrainBaseType(this.getTileTypeAt(tx + 1, ty) & 0xFF);
+      
+      ctx.fillStyle = "rgba(15, 23, 42, 0.45)"; // Dark slate boundary color
+      const borderThickness = 3;
+      
+      if (upBase !== currentBase) {
+        ctx.fillRect(x, y, tw, borderThickness);
+      }
+      if (downBase !== currentBase) {
+        ctx.fillRect(x, y + tw - borderThickness, tw, borderThickness);
+      }
+      if (leftBase !== currentBase) {
+        ctx.fillRect(x, y, borderThickness, tw);
+      }
+      if (rightBase !== currentBase) {
+        ctx.fillRect(x + tw - borderThickness, y, borderThickness, tw);
+      }
+      
+      // Draw light border grid lines to make it look premium and organized
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, tw, tw);
+    }
+
+    drawTileObject(ctx, tx, ty, type, charge, subType) {
+      const tw = this.tileWidth;
+      const x = tx * tw;
+      const y = ty * tw;
+      
+      // Deterministic noise for tile pixel patterns
+      const noise = (tx * 17 + ty * 31) % 100;
+      
+      switch (type) {
         case TILE_TYPES.PRODUCER: {
           // Warm brown soil overlay on the 3x3 footprint
           ctx.fillStyle = "rgba(120, 53, 15, 0.25)";
@@ -1504,12 +1571,6 @@
           break;
         }
       }
-      
-      // Draw light border grid lines to make it look premium and organized
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, tw, tw);
-    }
 
     // Save state
     saveState() {
