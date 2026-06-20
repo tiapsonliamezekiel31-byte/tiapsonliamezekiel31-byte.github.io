@@ -793,16 +793,6 @@ class UIManager {
         if (notesWidget) notesWidget.style.display = 'none';
         if (notesMinimized) notesMinimized.style.display = 'flex';
         localStorage.setItem('nemesis_stage_notes_collapsed', 'true');
-        
-        if (notesWidget && notesMinimized) {
-          const rect = notesWidget.getBoundingClientRect();
-          const areaRect = gameArea.getBoundingClientRect();
-          const left = rect.left - areaRect.left;
-          const top = rect.top - areaRect.top;
-          notesMinimized.style.left = left + 'px';
-          notesMinimized.style.top = top + 'px';
-          localStorage.setItem('nemesis_stage_notes_minimized_pos', JSON.stringify({ left, top }));
-        }
       });
     }
 
@@ -831,15 +821,6 @@ class UIManager {
         const { left, top } = JSON.parse(savedWidgetPos);
         notesWidget.style.left = left + 'px';
         notesWidget.style.top = top + 'px';
-      } catch(err){}
-    }
-
-    const savedMinPos = localStorage.getItem('nemesis_stage_notes_minimized_pos');
-    if (savedMinPos && notesMinimized) {
-      try {
-        const { left, top } = JSON.parse(savedMinPos);
-        notesMinimized.style.left = left + 'px';
-        notesMinimized.style.top = top + 'px';
       } catch(err){}
     }
 
@@ -896,9 +877,6 @@ class UIManager {
     if (notesWidget) {
       const header = notesWidget.querySelector('#stageNotesHeader');
       setupDraggableNotes(notesWidget, header, 'nemesis_stage_notes_pos');
-    }
-    if (notesMinimized) {
-      setupDraggableNotes(notesMinimized, notesMinimized, 'nemesis_stage_notes_minimized_pos');
     }
 
     this.updateStageBackdrop();
