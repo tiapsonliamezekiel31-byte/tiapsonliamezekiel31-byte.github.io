@@ -2112,14 +2112,26 @@ class RetroCritSlashAnimation {
     wrapper.style.top = `${rect.top}px`;
     wrapper.style.width = `${rect.width}px`;
     wrapper.style.height = `${rect.height}px`;
+    wrapper.style.overflow = 'visible';
     wrapper.style.setProperty('--slash-color', elementColor);
 
-    // Create the two slashes
+    // Create the two slashes with random angles
+    const angle1 = Math.floor(Math.random() * 360);
+    const angle2 = angle1 + 60 + Math.floor(Math.random() * 60);
+
     const slash1 = document.createElement('div');
     slash1.className = 'crit-slash-line slash-1';
+    slash1.style.top = '50%';
+    slash1.style.left = '50%';
+    slash1.style.transformOrigin = 'center';
+    slash1.style.transform = `translate(-50%, -50%) rotate(${angle1}deg)`;
 
     const slash2 = document.createElement('div');
     slash2.className = 'crit-slash-line slash-2';
+    slash2.style.top = '50%';
+    slash2.style.left = '50%';
+    slash2.style.transformOrigin = 'center';
+    slash2.style.transform = `translate(-50%, -50%) rotate(${angle2}deg)`;
 
     wrapper.appendChild(slash1);
     wrapper.appendChild(slash2);
