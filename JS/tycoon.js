@@ -447,7 +447,6 @@
         this.hoverTile = null;
       });
     }
-    }
 
     setupUIHandlers() {
       // Toggle back to base game
