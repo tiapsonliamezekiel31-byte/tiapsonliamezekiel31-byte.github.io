@@ -1433,20 +1433,130 @@ body::before {
   overflow: visible;
 }
 
-.tab-handle {
+/* CONSOLIDATED TAB HANDLES DOCK */
+.tab-handles-dock {
   position: fixed;
   bottom: 80px;
-  z-index: 41;
-  background: linear-gradient(180deg, rgba(15, 10, 7, 0.98), rgba(10, 8, 5, 0.98));
-  border: 2px solid var(--accent-copper);
-  color: var(--accent-gold);
-  padding: 8px 10px;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  cursor: pointer;
-  box-shadow: none;
-  border-radius: 3px;
-  transition: border-color 0.16s ease, background 0.16s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2005;
+  pointer-events: auto;
+}
+
+.tab-handles-dock-left {
+  left: 0;
+  align-items: flex-start;
+}
+
+.tab-handles-dock-right {
+  right: 0;
+  align-items: flex-end;
+}
+
+/* Glassmorphic refinement for Tab Handles */
+.tab-handle {
+  position: static !important;
+  background: linear-gradient(180deg, rgba(20, 15, 30, 0.72), rgba(10, 8, 16, 0.8)) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(232, 184, 74, 0.4) !important;
+  color: var(--accent-gold, #ffd700) !important;
+  padding: 6px 10px !important;
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 7px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.tab-handles-dock-left .tab-handle {
+  border-left: none !important;
+  border-top-right-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+.tab-handles-dock-right .tab-handle {
+  border-right: none !important;
+  border-top-left-radius: 8px !important;
+  border-bottom-left-radius: 8px !important;
+}
+
+.tab-handle:hover {
+  background: linear-gradient(180deg, rgba(161, 92, 255, 0.35), rgba(111, 53, 193, 0.4)) !important;
+  border-color: rgba(161, 92, 255, 0.8) !important;
+  color: #fff !important;
+  transform: scale(1.03);
+}
+
+/* Badges and indicators styling */
+.tab-handle .badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger-red, #ff4444);
+  color: #fff;
+  font-size: 6px;
+  font-weight: bold;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  padding: 0 2px;
+  box-shadow: 0 0 6px rgba(255, 68, 68, 0.6);
+  pointer-events: none;
+}
+
+.tab-handle .badge.active {
+  display: inline-flex;
+}
+
+/* Glowing animations for visual indicators */
+.tab-handle.glow-gold {
+  animation: glowPulseGold 1.5s infinite alternate;
+}
+
+.tab-handle.glow-green {
+  animation: glowPulseGreen 1.5s infinite alternate;
+}
+
+@keyframes glowPulseGold {
+  from {
+    box-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
+    border-color: rgba(255, 215, 0, 0.4) !important;
+  }
+  to {
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.8);
+    border-color: rgba(255, 215, 0, 0.9) !important;
+  }
+}
+
+@keyframes glowPulseGreen {
+  from {
+    box-shadow: 0 0 4px rgba(68, 255, 68, 0.3);
+    border-color: rgba(68, 255, 68, 0.4) !important;
+  }
+  to {
+    box-shadow: 0 0 14px rgba(68, 255, 68, 0.8);
+    border-color: rgba(68, 255, 68, 0.9) !important;
+  }
+}
+
+/* Mobile responsive collapse */
+@media (max-width: 600px) {
+  .tab-handles-dock {
+    bottom: 60px;
+    gap: 6px;
+  }
+  .tab-handle {
+    padding: 8px !important;
+  }
+  .tab-handle .label {
+    display: none !important;
+  }
 }
 
 .tab-handle-left {

@@ -750,35 +750,47 @@ class UIManager {
   }
 
   static createPullTabs() {
+    // Create left handles dock container
+    const leftDock = document.createElement('div');
+    leftDock.id = 'leftTabHandlesContainer';
+    leftDock.className = 'tab-handles-dock tab-handles-dock-left';
+    document.body.appendChild(leftDock);
+
+    // Create right handles dock container
+    const rightDock = document.createElement('div');
+    rightDock.id = 'rightTabHandlesContainer';
+    rightDock.className = 'tab-handles-dock tab-handles-dock-right';
+    document.body.appendChild(rightDock);
+
     const leftHandle = document.createElement('button');
     leftHandle.id = 'dailiesTabHandle';
     leftHandle.className = 'tab-handle tab-handle-left';
-    leftHandle.textContent = 'DAILIES';
-    document.body.appendChild(leftHandle);
+    leftHandle.innerHTML = `<span class="icon">📅</span><span class="label">DAILIES</span><span class="badge" id="dailiesBadge"></span>`;
+    leftDock.appendChild(leftHandle);
 
     const achievementsHandle = document.createElement('button');
     achievementsHandle.id = 'achievementsTabHandle';
     achievementsHandle.className = 'tab-handle tab-handle-left tab-handle-left-achievements';
-    achievementsHandle.textContent = '🏆 ACHIEVEMENTS';
-    document.body.appendChild(achievementsHandle);
+    achievementsHandle.innerHTML = `<span class="icon">🏆</span><span class="label">ACHIEVEMENTS</span><span class="badge" id="achievementsBadge"></span>`;
+    leftDock.appendChild(achievementsHandle);
 
     const cosmeticsHandle = document.createElement('button');
     cosmeticsHandle.id = 'cosmeticsTabHandle';
     cosmeticsHandle.className = 'tab-handle tab-handle-left tab-handle-left-cosmetics';
-    cosmeticsHandle.textContent = '✨ VISUALS';
-    document.body.appendChild(cosmeticsHandle);
+    cosmeticsHandle.innerHTML = `<span class="icon">✨</span><span class="label">VISUALS</span>`;
+    leftDock.appendChild(cosmeticsHandle);
 
     const rightHandle = document.createElement('button');
     rightHandle.id = 'todosTabHandle';
     rightHandle.className = 'tab-handle tab-handle-right';
-    rightHandle.textContent = 'TO-DOS';
-    document.body.appendChild(rightHandle);
+    rightHandle.innerHTML = `<span class="badge" id="todosBadge"></span><span class="label">TO-DOS</span><span class="icon">📋</span>`;
+    rightDock.appendChild(rightHandle);
 
     const petHandle = document.createElement('button');
     petHandle.id = 'petTabHandle';
     petHandle.className = 'tab-handle tab-handle-right tab-handle-right-pet';
-    petHandle.textContent = '🐾 PET EVOLUTION';
-    document.body.appendChild(petHandle);
+    petHandle.innerHTML = `<span class="badge" id="petBadge"></span><span class="label">PET EVOLUTION</span><span class="icon">🐾</span>`;
+    rightDock.appendChild(petHandle);
 
     // Left tab - Dailies
     const leftTab = document.createElement('div');
@@ -6367,6 +6379,7 @@ class UIManager {
     this.updateDeathDefianceBadge();
     this.updatePauseBtn();
     this.updateTaskVisibilityToggleLabels();
+    this.updateTabIndicators();
   }
 
   static refreshEventBanner() {
@@ -7381,6 +7394,80 @@ class UIManager {
         setTimeout(() => el.classList.remove('buff-gain'), 950);
       }
     } catch (e) { }
+  }
+
+  static updateTabIndicators() {
+    try {
+      const state = getGameState();
+      if (!state) return;
+
+      // 1. Dailies count badge
+      const dailies = TaskManager.getAllDailies() || [];
+      const uncompletedDailies = dailies.filter(d => !d.completed).length;
+      const dailiesBadge = document.getElementById('dailiesBadge');
+      if (dailiesBadge) {
+        if (uncompletedDailies > 0) {
+          dailiesBadge.textContent = uncompletedDailies;
+          dailiesBadge.classList.add('active');
+        } else {
+          dailiesBadge.classList.remove('active');
+        }
+      }
+
+      // 2. To-Dos count badge
+      const todos = TaskManager.getAllTodos() || [];
+      const uncompletedTodos = todos.filter(t => !t.completed).length;
+      const todosBadge = document.getElementById('todosBadge');
+      if (todosBadge) {
+        if (uncompletedTodos > 0) {
+          todosBadge.textContent = uncompletedTodos;
+          todosBadge.classList.add('active');
+        } else {
+          todosBadge.classList.remove('active');
+        }
+      }
+
+      // 3. Pet upgrade/hunger indicators
+      const petHandle = document.getElementById('petTabHandle');
+      const petBadge = document.getElementById('petBadge');
+      if (petHandle) {
+        const petHunger = state.playerState?.petHunger !== undefined ? state.playerState.petHunger : 100;
+        const petPoints = state.playerState?.petPoints || 0;
+        const petUpgradeLevel = state.playerState?.petUpgradeLevel || 0;
+        const cost = 5 + petUpgradeLevel * 2;
+        
+        petHandle.classList.remove('glow-green', 'glow-gold');
+        if (petBadge) petBadge.classList.remove('active');
+
+        if (petHunger <= 30) {
+          if (petBadge) {
+            petBadge.textContent = '!';
+            petBadge.style.background = 'var(--danger-red, #ff4444)';
+            petBadge.classList.add('active');
+          }
+          petHandle.classList.add('glow-gold');
+        } else if (petPoints >= cost) {
+          petHandle.classList.add('glow-green');
+          if (petBadge) {
+            petBadge.textContent = '▲';
+            petBadge.style.background = 'var(--success-green, #44ff44)';
+            petBadge.classList.add('active');
+          }
+        }
+      }
+
+      // 4. Achievements claim indicator
+      const achievementsHandle = document.getElementById('achievementsTabHandle');
+      if (achievementsHandle) {
+        const currentRate = (dailies.length > 0) ? (dailies.filter(d => d.completed).length / dailies.length) : 0;
+        achievementsHandle.classList.remove('glow-gold');
+        if (currentRate === 1) {
+          achievementsHandle.classList.add('glow-gold');
+        }
+      }
+    } catch (e) {
+      console.warn('updateTabIndicators error', e);
+    }
   }
 
 }
