@@ -470,8 +470,16 @@ class UIManager {
           <button class="focus-duration-btn" data-mins="15">15m</button>
           <button class="focus-duration-btn active" data-mins="25">25m</button>
           <button class="focus-duration-btn" data-mins="50">50m</button>
+          <button class="focus-duration-btn" id="focusCustomBtn">Custom</button>
         </div>
-        <button class="focus-action-btn focus-start-btn" id="focusStartBtn">START</button>
+        <div id="focusCustomInputGroup" style="display: none; margin-bottom: 12px; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 7px; color: #a0aec0;">Minutes:</span>
+          <input type="number" id="focusCustomMins" min="1" max="1440" value="25" style="width: 60px; background: rgba(0,0,0,0.5); border: 1px solid #ffb33f; color: #fff; font-family: inherit; font-size: 8px; padding: 4px; text-align: center; border-radius: 4px;" />
+        </div>
+        <div id="focusActionContainer" style="display: flex; gap: 8px; width: 100%;">
+          <button class="focus-action-btn focus-start-btn" id="focusStartBtn" style="flex: 1;">START</button>
+          <button class="focus-action-btn focus-cancel-btn" id="focusStopBtn" style="flex: 1; display: none;">STOP</button>
+        </div>
         <div class="focus-cost-warning">Costs 30 Mana<br>Doubles Daily & To-Do rewards</div>
       </div>
       <div id="focus-mini-widget" style="display: none;">
@@ -1378,20 +1386,22 @@ class UIManager {
     const popup = document.getElementById('focus-clock-popup');
     const closeBtn = document.getElementById('focusPopupClose');
     const startBtn = document.getElementById('focusStartBtn');
+    const stopBtn = document.getElementById('focusStopBtn');
     const digital = document.getElementById('digitalClock');
     const durationBtns = document.querySelectorAll('.focus-duration-btn');
     const miniWidget = document.getElementById('focus-mini-widget');
     const miniTime = document.getElementById('focusMiniTime');
 
-    const hHand = document.getElementById('hourHand');
-    const mHand = document.getElementById('minuteHand');
-    const sHand = document.getElementById('secondHand');
+    const customBtn = document.getElementById('focusCustomBtn');
+    const customInputGroup = document.getElementById('focusCustomInputGroup');
+    const customMinsInput = document.getElementById('focusCustomMins');
 
     if (!btn || !overlay || !popup || !startBtn || !digital) return;
 
     let selectedMinutes = 25;
     let secondsLeft = 25 * 60;
     let timerInterval = null;
+    let isTimerPaused = false;
 
     let isDragging = false;
     let dragStartX = 0, dragStartY = 0, initialLeft = 0, initialTop = 0;
@@ -1449,7 +1459,7 @@ class UIManager {
         bottomSand.setAttribute('height', bottomHeight);
       }
       if (sandStream) {
-        sandStream.style.display = (isActive && currentSecs > 0) ? 'block' : 'none';
+        sandStream.style.display = (isActive && !isTimerPaused && currentSecs > 0) ? 'block' : 'none';
       }
       if (runicProgress) {
         const offset = 314.16 * elapsedRatio;
@@ -1471,13 +1481,42 @@ class UIManager {
     durationBtns.forEach(dBtn => {
       dBtn.addEventListener('click', () => {
         if (state.systemState.focusTimerActive) return;
+        if (dBtn === customBtn) return;
         durationBtns.forEach(b => b.classList.remove('active'));
+        if (customBtn) customBtn.classList.remove('active');
         dBtn.classList.add('active');
+        if (customInputGroup) customInputGroup.style.display = 'none';
         selectedMinutes = parseInt(dBtn.dataset.mins, 10);
         secondsLeft = selectedMinutes * 60;
         updateDisplay();
       });
     });
+
+    if (customBtn && customInputGroup) {
+      customBtn.addEventListener('click', () => {
+        if (state.systemState.focusTimerActive) return;
+        durationBtns.forEach(b => b.classList.remove('active'));
+        customBtn.classList.add('active');
+        customInputGroup.style.display = customInputGroup.style.display === 'none' ? 'flex' : 'none';
+        if (customInputGroup.style.display === 'flex' && customMinsInput) {
+          selectedMinutes = parseInt(customMinsInput.value, 10) || 25;
+          secondsLeft = selectedMinutes * 60;
+          updateDisplay();
+        }
+      });
+    }
+
+    if (customMinsInput) {
+      customMinsInput.addEventListener('input', () => {
+        if (state.systemState.focusTimerActive) return;
+        let val = parseInt(customMinsInput.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 1440) val = 1440;
+        selectedMinutes = val;
+        secondsLeft = selectedMinutes * 60;
+        updateDisplay();
+      });
+    }
 
     const hidePopup = () => {
       if (state.systemState.focusTimerActive) {
@@ -1520,10 +1559,12 @@ class UIManager {
 
     const resetTimer = () => {
       clearInterval(timerInterval);
+      timerInterval = null;
+      isTimerPaused = false;
       state.systemState.focusTimerActive = false;
       btn.classList.remove('active');
       startBtn.textContent = 'START';
-      startBtn.className = 'focus-action-btn focus-start-btn';
+      if (stopBtn) stopBtn.style.display = 'none';
       secondsLeft = selectedMinutes * 60;
       updateDisplay();
       hidePopup();
@@ -1531,10 +1572,45 @@ class UIManager {
       UIManager.refreshGameUI();
     };
 
+    const startTimerCountdown = () => {
+      timerInterval = setInterval(() => {
+        if (state.systemState.isPaused) return;
+        secondsLeft--;
+        updateDisplay();
+
+        if (secondsLeft <= 0) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+          state.systemState.focusTimerActive = false;
+          btn.classList.remove('active');
+          try {
+            if (window.SoundManager) SoundManager.play('heal');
+            PopupsManager.showConfirm('Focus Complete! ⏱️', 'Awesome focus session completed! Doubled rewards have ended.', () => {
+              resetTimer();
+            });
+          } catch (e) {
+            alert('Focus Session Complete!');
+            resetTimer();
+          }
+        }
+      }, 1000);
+    };
+
     startBtn.addEventListener('click', () => {
       if (state.systemState.focusTimerActive) {
-        if (confirm('Cancel focus timer? Doubled rewards will end immediately.')) {
-          resetTimer();
+        if (isTimerPaused) {
+          isTimerPaused = false;
+          startBtn.textContent = 'PAUSE';
+          startTimerCountdown();
+          const sandStream = document.getElementById('sandStream');
+          if (sandStream) sandStream.style.display = 'block';
+        } else {
+          isTimerPaused = true;
+          startBtn.textContent = 'RESUME';
+          clearInterval(timerInterval);
+          timerInterval = null;
+          const sandStream = document.getElementById('sandStream');
+          if (sandStream) sandStream.style.display = 'none';
         }
       } else {
         const mana = state.playerState.mana || 0;
@@ -1546,37 +1622,28 @@ class UIManager {
 
         state.drainMana(30);
         state.systemState.focusTimerActive = true;
+        isTimerPaused = false;
         btn.classList.add('active');
-        startBtn.textContent = 'CANCEL';
-        startBtn.className = 'focus-action-btn focus-cancel-btn';
+        
+        startBtn.textContent = 'PAUSE';
+        if (stopBtn) stopBtn.style.display = 'block';
+        
         secondsLeft = selectedMinutes * 60;
         updateDisplay();
-        hidePopup();
 
         try { if (window.SoundManager) SoundManager.play('levelUp'); } catch (e) {}
 
-        timerInterval = setInterval(() => {
-          if (state.systemState.isPaused) return;
-          secondsLeft--;
-          updateDisplay();
-
-          if (secondsLeft <= 0) {
-            clearInterval(timerInterval);
-            state.systemState.focusTimerActive = false;
-            btn.classList.remove('active');
-            try {
-              if (window.SoundManager) SoundManager.play('heal');
-              PopupsManager.showConfirm('Focus Complete! ⏱️', 'Awesome focus session completed! Doubled rewards have ended.', () => {
-                resetTimer();
-              });
-            } catch (e) {
-              alert('Focus Session Complete!');
-              resetTimer();
-            }
-          }
-        }, 1000);
+        startTimerCountdown();
       }
     });
+
+    if (stopBtn) {
+      stopBtn.addEventListener('click', () => {
+        if (confirm('Cancel focus timer? Doubled rewards will end immediately.')) {
+          resetTimer();
+        }
+      });
+    }
   }
 
   static bindEventListeners() {

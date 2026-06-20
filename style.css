@@ -7246,7 +7246,6 @@ button:hover,
 }
 
 .focus-action-btn {
-  width: 100%;
   padding: 11px;
   font-family: inherit;
   font-size: 9px;
@@ -7256,6 +7255,12 @@ button:hover,
   border: 2px solid #ffb33f;
   transition: all 0.2s;
   letter-spacing: 1px;
+}
+
+#focusCustomMins:focus {
+  outline: none;
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
 }
 
 .focus-start-btn {
