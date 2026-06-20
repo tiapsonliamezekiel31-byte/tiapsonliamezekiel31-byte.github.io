@@ -128,19 +128,27 @@
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   border-radius: 8px;
   padding: 12px;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
 }
 
 .shop-column h4 {
   color: var(--accent-gold);
   margin-bottom: 8px;
   font-size: 12px;
+  flex-shrink: 0;
 }
 
 .shop-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
 }
 
 .shop-item {

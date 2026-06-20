@@ -444,6 +444,7 @@ const DEFAULT_GAME_CONFIG = {
     // BASIC WEAPONS (6)
     'Rusty Sword': {
       type: 'Standard',
+      icon: '🗡️',
       baseApCost: 15,
       damageMultiplier: 1.0,
       critChance: 0.05,
@@ -453,6 +454,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Great Hammer': {
       type: 'Heavy',
+      icon: '🔨',
       baseApCost: 28,
       damageMultiplier: 1.8,
       critChance: 0.05,
@@ -462,6 +464,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Dagger': {
       type: 'Light',
+      icon: '🗡️',
       baseApCost: 11,
       damageMultiplier: 0.6,
       critChance: 0.5,
@@ -471,6 +474,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bomb': {
       type: 'AoE',
+      icon: '💣',
       baseApCost: 28,
       damageMultiplier: 0.2,
       critChance: 0.08,
@@ -480,6 +484,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Buckler': {
       type: 'Shield',
+      icon: '🛡️',
       baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
@@ -491,6 +496,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Grimoire': {
       type: 'Special',
+      icon: '📖',
       baseApCost: 20,
       damageMultiplier: 1.1,
       critChance: 0.1,
@@ -502,6 +508,7 @@ const DEFAULT_GAME_CONFIG = {
     // EXPANDED WEAPONS (10 more)
     'Vampire Dagger': {
       type: 'Light/Leg',
+      icon: '🧛',
       baseApCost: 19,
       damageMultiplier: 0.7,
       critChance: 0.28,
@@ -511,6 +518,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bazooka': {
       type: 'Heavy/AoE',
+      icon: '🚀',
       baseApCost: 33,
       damageMultiplier: 2.8,
       critChance: 0.0,
@@ -520,6 +528,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Uzi': {
       type: 'Light',
+      icon: '🔫',
       baseApCost: 6,
       damageMultiplier: 2.0,
       critChance: 0.08,
@@ -532,6 +541,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Thunder Hammer': {
       type: 'Heavy/Leg',
+      icon: '⚡',
       baseApCost: 50,
       damageMultiplier: 1.5,
       critChance: 0.15,
@@ -541,6 +551,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Lazer': {
       type: 'Special',
+      icon: '🔴',
       baseApCost: 25,
       damageMultiplier: 0.8,
       critChance: 0.2,
@@ -552,6 +563,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Vine Spell': {
       type: 'Special/AoE',
+      icon: '🌿',
       baseApCost: 22,
       damageMultiplier: 0.5,
       critChance: 0.08,
@@ -563,6 +575,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Death Spell': {
       type: 'Legendary',
+      icon: '💀',
       baseApCost: 150,
       damageMultiplier: Infinity, // instakill
       critChance: 0,
@@ -572,6 +585,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Heavy Hammer': {
       type: 'Heavy',
+      icon: '🔨',
       baseApCost: 28,
       damageMultiplier: 2.2,
       critChance: 0.15,
@@ -581,6 +595,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Echo Bow': {
       type: 'Light/Spec',
+      icon: '🏹',
       baseApCost: 18,
       damageMultiplier: 1.0,
       critChance: 0.1,
@@ -590,6 +605,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Aegis': {
       type: 'Shield/Leg',
+      icon: '🛡️',
       baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
@@ -672,7 +688,23 @@ const DEFAULT_GAME_CONFIG = {
     Catalyzer: '🧬',
     Prayer: '🙏',
     Rift: '🕳️',
-    Echo: '🔁'
+    Echo: '🔁',
+    'Rusty Sword': '🗡️',
+    'Great Hammer': '🔨',
+    Dagger: '🗡️',
+    Bomb: '💣',
+    Buckler: '🛡️',
+    Grimoire: '📖',
+    'Vampire Dagger': '🧛',
+    Bazooka: '🚀',
+    Uzi: '🔫',
+    'Thunder Hammer': '⚡',
+    Lazer: '🔴',
+    'Vine Spell': '🌿',
+    'Death Spell': '💀',
+    'Heavy Hammer': '🔨',
+    'Echo Bow': '🏹',
+    Aegis: '🛡️'
   },
   
   // ============================================================

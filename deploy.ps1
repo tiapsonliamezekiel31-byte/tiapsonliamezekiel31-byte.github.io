@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: focus timer stop button, reopening bug, and state rehydration/persistence on reload"
+$commitMsg = "feat: add weapon icons to HUD selection chips and fix shop column scrolling layout"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

@@ -6513,10 +6513,12 @@ class UIManager {
     html += (state.playerState.weapons || []).map((weaponName, index) => {
       const activeClass = (index === state.playerState.activeWeapon) ? 'active' : '';
       const weaponElement = state.playerState.weaponElements?.[index] || '';
-      const weaponLabel = weaponElement ? `${weaponName} · ${weaponElement}` : weaponName;
       if (!weaponName) {
         return `<div class="weapon-chip-wrap"><button class="weapon-chip empty" disabled>—</button></div>`;
       }
+      const weaponCfg = state.config?.weapons?.[weaponName];
+      const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weaponName] || '⚔️';
+      const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} · ${weaponElement}` : `${weaponIcon} ${weaponName}`;
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
     }).join('');

@@ -843,14 +843,23 @@ class PopupsManager {
     const popup = document.createElement('div');
     popup.className = 'popup discard-popup';
 
-    let html = `<h2>Replace a Weapon to buy ${newWeaponName}</h2><button class="btn-close">✕</button>`;
+    const newCfg = state.config.weapons?.[newWeaponName];
+    const newIcon = newCfg?.icon || state.config.shopItemIcons?.[newWeaponName] || '⚔️';
+
+    let html = `<h2>Replace a Weapon to buy ${newIcon} ${newWeaponName}</h2><button class="btn-close">✕</button>`;
     html += '<div class="weapon-replace-list">';
 
     const weapons = state.playerState.weapons || [];
     weapons.forEach((w, idx) => {
+      let disp = 'Empty';
+      if (w) {
+        const weaponCfg = state.config.weapons?.[w];
+        const weaponIcon = weaponCfg?.icon || state.config.shopItemIcons?.[w] || '⚔️';
+        disp = `${weaponIcon} ${w}`;
+      }
       html += `
         <div class="replace-row" data-index="${idx}">
-          <div class="replace-name">Slot ${idx + 1}: ${w || 'Empty'}</div>
+          <div class="replace-name">Slot ${idx + 1}: ${disp}</div>
           <div class="replace-actions">
             <button class="btn-replace" data-index="${idx}">Replace</button>
           </div>
@@ -3180,12 +3189,14 @@ class PopupsManager {
 
           if (winner.type === 'weapon') {
             const emptySlotIndex = state.playerState.weapons.findIndex(w => !w);
+            const wCfg = state.config.weapons?.[winner.value];
+            const wIcon = wCfg?.icon || state.config.shopItemIcons?.[winner.value] || '⚔️';
             if (emptySlotIndex !== -1) {
               PlayerManager.addWeapon(winner.value);
               weaponAddedDirectly = true;
               resultHtml = `
                 <div class="lootbox-reward-item weapon" style="justify-content: center;">
-                  ⚔️ +1 ${winner.value} (New Weapon!)
+                  ${wIcon} +1 ${winner.value} (New Weapon!)
                 </div>
                 <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
               `;
@@ -3193,14 +3204,20 @@ class PopupsManager {
               // Weapon swap needed
               resultHtml = `
                 <div class="lootbox-reward-item weapon-alert" style="justify-content: center;">⚠️ Weapon Slots Full!</div>
-                <div class="lootbox-reward-item weapon" style="justify-content: center; margin-bottom: 12px;">🎁 Won: ${winner.value}</div>
+                <div class="lootbox-reward-item weapon" style="justify-content: center; margin-bottom: 12px;">🎁 Won: ${wIcon} ${winner.value}</div>
                 <div class="lootbox-weapon-swap-panel">
                   <p>Select an equipped weapon to replace for free, or discard it:</p>
                   <div class="lootbox-swap-buttons">
               `;
               state.playerState.weapons.forEach((w, idx) => {
+                let disp = 'Empty';
+                if (w) {
+                  const currentCfg = state.config.weapons?.[w];
+                  const currentIcon = currentCfg?.icon || state.config.shopItemIcons?.[w] || '⚔️';
+                  disp = `${currentIcon} ${w}`;
+                }
                 resultHtml += `
-                  <button class="btn-swap-weapon" data-index="${idx}">Replace Slot ${idx + 1} (${w || 'Empty'})</button>
+                  <button class="btn-swap-weapon" data-index="${idx}">Replace Slot ${idx + 1} (${disp})</button>
                 `;
               });
               resultHtml += `
