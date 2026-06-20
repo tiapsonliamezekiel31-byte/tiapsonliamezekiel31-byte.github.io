@@ -284,7 +284,6 @@
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            const clickedFarmer = this.findFarmerAt(touch.clientX, touch.clientY); // fallback coord mapping handled by findFarmer
             const tileCoords = this.screenToWorldCoords(touch.clientX, touch.clientY);
             const clickedFarmerMapped = this.findFarmerAt(tileCoords.x, tileCoords.y);
             if (clickedFarmerMapped) {
@@ -1571,6 +1570,7 @@
           break;
         }
       }
+    }
 
     // Save state
     saveState() {
