@@ -398,7 +398,6 @@ class UIManager {
             <line id="aimingLine" x1="0" y1="0" x2="0" y2="0" stroke-width="4" stroke-linecap="round" />
           </svg>
         </div>
-          <button id="centerAttrBtn" class="center-attr-btn" title="Attributes">📋</button>
           <button id="focusTimerBtn" class="btn-focus-timer" title="Focus Timer">⏱️ FOCUS</button>
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
@@ -985,6 +984,13 @@ class UIManager {
     shopBtn.className = 'floating-shop-btn';
     shopBtn.innerHTML = '🛒 SHOP';
     bottomBar.appendChild(shopBtn);
+
+    const centerAttrBtn = document.createElement('button');
+    centerAttrBtn.id = 'centerAttrBtn';
+    centerAttrBtn.className = 'floating-attr-btn';
+    centerAttrBtn.title = 'Attributes';
+    centerAttrBtn.innerHTML = '📋 ATTR';
+    bottomBar.appendChild(centerAttrBtn);
 
     const lootboxBtn = document.createElement('button');
     lootboxBtn.id = 'lootboxBtn';

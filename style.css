@@ -22,6 +22,19 @@
 @media (max-width: 600px) {
   .bottom-buttons-container {
     bottom: 76px;
+    gap: 8px;
+    width: 95%;
+    justify-content: space-evenly;
+  }
+  .floating-shop-btn,
+  .floating-attr-btn,
+  .floating-lootbox-btn {
+    padding: 8px 10px !important;
+    font-size: 8px !important;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -1548,14 +1561,36 @@ body::before {
 /* Mobile responsive collapse */
 @media (max-width: 600px) {
   .tab-handles-dock {
-    bottom: 60px;
-    gap: 6px;
+    bottom: 140px; /* Raise to not conflict with bottom action buttons */
+    gap: 12px;     /* Give them more vertical spacing to avoid accidental touches */
   }
   .tab-handle {
-    padding: 8px !important;
+    width: 46px !important;
+    height: 46px !important;
+    padding: 0 !important; /* Reset padding to allow perfect centering */
+    justify-content: center !important;
+    font-size: 18px !important; /* Make the emoji bigger */
+    position: relative !important;
   }
   .tab-handle .label {
     display: none !important;
+  }
+  .tab-handle .badge {
+    position: absolute !important;
+    top: -4px !important;
+    right: -4px !important;
+    z-index: 10 !important;
+    margin: 0 !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    font-size: 8px !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .tab-handle .badge.active {
+    display: flex !important;
   }
 }
 
@@ -3012,21 +3047,25 @@ body::before {
   z-index: 2;
 }
 
-/* Center attributes button */
-.center-attr-btn {
-  position: absolute;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%);
-  z-index: 35;
-  padding: 6px 10px;
-  border: 2px solid var(--accent-gold);
-  background: var(--primary-dark2);
-  color: var(--accent-gold);
+/* Bottom Attributes button */
+.floating-attr-btn {
+  position: relative;
+  background: linear-gradient(180deg, rgba(18, 30, 35, 0.98), rgba(9, 15, 20, 0.98));
+  border: 2px solid rgba(63, 200, 255, 0.72);
+  color: var(--text-white, #fff);
+  padding: 12px 18px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-  pointer-events: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.floating-attr-btn:hover {
+  background: linear-gradient(180deg, rgba(63, 200, 255, 0.95), rgba(35, 140, 193, 0.95));
+  box-shadow: 0 0 20px rgba(63, 200, 255, 0.5);
+  transform: scale(1.05) !important;
 }
 
 .subtasks {
