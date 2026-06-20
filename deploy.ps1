@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add weapon icons to HUD selection chips and fix shop column scrolling layout"
+$commitMsg = "feat: sync attack button icon with weapon, clamp notes positions safely, and fix shop panel sizing"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

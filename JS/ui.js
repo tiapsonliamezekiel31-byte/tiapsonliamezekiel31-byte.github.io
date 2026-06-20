@@ -4955,6 +4955,7 @@ class UIManager {
     if (!board) return null;
 
     const rect = board.getBoundingClientRect();
+    if (rect.width < 50 || rect.height < 50) return null;
     return {
       board,
       rect,
@@ -4984,9 +4985,13 @@ class UIManager {
   static clampDailyLayout(layout, metrics, tileSize) {
     const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
     const maxY = Math.max(0, 100 - ((tileSize.height / metrics.height) * 100));
+    let x = Number(layout?.x);
+    let y = Number(layout?.y);
+    if (isNaN(x) || !isFinite(x) || x < 0 || x > 100) x = 0;
+    if (isNaN(y) || !isFinite(y) || y < 0 || y > 100) y = 0;
     return {
-      x: Math.max(0, Math.min(maxX, Number(layout?.x) || 0)),
-      y: Math.max(0, Math.min(maxY, Number(layout?.y) || 0))
+      x: Math.max(0, Math.min(maxX, x)),
+      y: Math.max(0, Math.min(maxY, y))
     };
   }
 
@@ -5619,6 +5624,7 @@ class UIManager {
     if (!board) return null;
 
     const rect = board.getBoundingClientRect();
+    if (rect.width < 50 || rect.height < 50) return null;
     return {
       board,
       rect,
@@ -5644,9 +5650,13 @@ class UIManager {
     const minY = (minYPx / metrics.height) * 100;
     const maxX = Math.max(minX, 100 - ((tileSize.width / metrics.width) * 100));
     const maxY = Math.max(minY, 100 - ((tileSize.height / metrics.height) * 100));
+    let x = Number(layout?.x);
+    let y = Number(layout?.y);
+    if (isNaN(x) || !isFinite(x) || x < 0 || x > 100) x = 0;
+    if (isNaN(y) || !isFinite(y) || y < 0 || y > 100) y = 0;
     return {
-      x: Math.max(minX, Math.min(maxX, Number(layout?.x) || 0)),
-      y: Math.max(minY, Math.min(maxY, Number(layout?.y) || 0))
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y))
     };
   }
 
@@ -6667,6 +6677,16 @@ class UIManager {
     const dodgeText = document.getElementById('dodgeCostText');
     if (attackText) attackText.textContent = attackCost ? `(${attackCost} AP)` : '';
     if (dodgeText) dodgeText.textContent = `(${dodgeCost} AP)`;
+
+    const attackBtn = document.getElementById('attackBtn');
+    if (attackBtn) {
+      const weaponCfg = weapon ? state.config?.weapons?.[weapon.name] : null;
+      const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weapon?.name] || '⚔️';
+      const firstChild = attackBtn.firstChild;
+      if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
+        firstChild.nodeValue = weaponIcon;
+      }
+    }
   }
 
   static updateDateDisplay() {
