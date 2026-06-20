@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: move minimized stage notes button directly next to the focus timer"
+$commitMsg = "fix: focus timer stop button, reopening bug, and state rehydration/persistence on reload"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

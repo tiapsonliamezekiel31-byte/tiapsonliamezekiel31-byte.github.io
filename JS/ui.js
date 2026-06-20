@@ -1623,6 +1623,21 @@ class UIManager {
       updateHands(totalSecs, secondsLeft);
     };
 
+    const syncPopupUI = () => {
+      if (state.systemState.focusTimerActive) {
+        if (isTimerPaused) {
+          startBtn.textContent = 'RESUME';
+        } else {
+          startBtn.textContent = 'PAUSE';
+        }
+        if (stopBtn) stopBtn.style.display = 'block';
+      } else {
+        startBtn.textContent = 'START';
+        if (stopBtn) stopBtn.style.display = 'none';
+      }
+      updateDisplay();
+    };
+
     durationBtns.forEach(dBtn => {
       dBtn.addEventListener('click', () => {
         if (state.systemState.focusTimerActive) return;
@@ -1680,7 +1695,7 @@ class UIManager {
     });
 
     btn.addEventListener('click', () => {
-      if (miniWidget.style.display === 'flex' || popup.style.display === 'block') {
+      if (popup.style.display === 'block') {
         hidePopup();
       } else {
         popup.style.display = 'block';
@@ -1689,7 +1704,7 @@ class UIManager {
         popup.style.top = '50%';
         popup.style.transform = 'translate(-50%, -50%)';
         miniWidget.style.display = 'none';
-        updateDisplay();
+        syncPopupUI();
       }
     });
 
@@ -1700,6 +1715,7 @@ class UIManager {
       popup.style.left = '50%';
       popup.style.top = '50%';
       popup.style.transform = 'translate(-50%, -50%)';
+      syncPopupUI();
     });
 
     const resetTimer = () => {
@@ -1707,6 +1723,9 @@ class UIManager {
       timerInterval = null;
       isTimerPaused = false;
       state.systemState.focusTimerActive = false;
+      state.systemState.focusTimerEndTimestamp = 0;
+      state.systemState.focusTimerSecondsLeft = 0;
+      state.save();
       btn.classList.remove('active');
       startBtn.textContent = 'START';
       if (stopBtn) stopBtn.style.display = 'none';
@@ -1718,15 +1737,26 @@ class UIManager {
     };
 
     const startTimerCountdown = () => {
+      if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         if (state.systemState.isPaused) return;
         secondsLeft--;
+
+        // periodically update seconds left in state so it doesn't drift too much on tab close/crash
+        if (secondsLeft % 5 === 0) {
+          state.systemState.focusTimerSecondsLeft = secondsLeft;
+          state.save();
+        }
+
         updateDisplay();
 
         if (secondsLeft <= 0) {
           clearInterval(timerInterval);
           timerInterval = null;
           state.systemState.focusTimerActive = false;
+          state.systemState.focusTimerEndTimestamp = 0;
+          state.systemState.focusTimerSecondsLeft = 0;
+          state.save();
           btn.classList.remove('active');
           try {
             if (window.SoundManager) SoundManager.play('heal');
@@ -1741,11 +1771,47 @@ class UIManager {
       }, 1000);
     };
 
+    // Rehydrate/resume timer if it is active on page load/re-init
+    if (state.systemState.focusTimerActive) {
+      const now = Date.now();
+      const end = Number(state.systemState.focusTimerEndTimestamp) || 0;
+      const savedLeft = Number(state.systemState.focusTimerSecondsLeft) || 0;
+      const originalDurationMins = Number(state.systemState.focusTimerDurationMins) || 25;
+      
+      selectedMinutes = originalDurationMins;
+
+      // Detect if it was paused when saved
+      const wasPaused = savedLeft > 0 && !end;
+
+      if (wasPaused) {
+        isTimerPaused = true;
+        secondsLeft = savedLeft;
+        btn.classList.add('active');
+        syncPopupUI();
+      } else if (end > now) {
+        isTimerPaused = false;
+        secondsLeft = Math.ceil((end - now) / 1000);
+        btn.classList.add('active');
+        syncPopupUI();
+        startTimerCountdown();
+      } else {
+        // Completed while away
+        state.systemState.focusTimerActive = false;
+        state.systemState.focusTimerEndTimestamp = 0;
+        state.systemState.focusTimerSecondsLeft = 0;
+        state.save();
+        resetTimer();
+      }
+    }
+
     startBtn.addEventListener('click', () => {
       if (state.systemState.focusTimerActive) {
         if (isTimerPaused) {
           isTimerPaused = false;
           startBtn.textContent = 'PAUSE';
+          state.systemState.focusTimerEndTimestamp = Date.now() + secondsLeft * 1000;
+          state.systemState.focusTimerSecondsLeft = secondsLeft;
+          state.save();
           startTimerCountdown();
           const sandStream = document.getElementById('sandStream');
           if (sandStream) sandStream.style.display = 'block';
@@ -1754,6 +1820,9 @@ class UIManager {
           startBtn.textContent = 'RESUME';
           clearInterval(timerInterval);
           timerInterval = null;
+          state.systemState.focusTimerEndTimestamp = 0; // 0 denotes paused
+          state.systemState.focusTimerSecondsLeft = secondsLeft;
+          state.save();
           const sandStream = document.getElementById('sandStream');
           if (sandStream) sandStream.style.display = 'none';
         }
@@ -1767,6 +1836,11 @@ class UIManager {
 
         state.drainMana(30);
         state.systemState.focusTimerActive = true;
+        state.systemState.focusTimerDurationMins = selectedMinutes;
+        state.systemState.focusTimerEndTimestamp = Date.now() + selectedMinutes * 60 * 1000;
+        state.systemState.focusTimerSecondsLeft = selectedMinutes * 60;
+        state.save();
+
         isTimerPaused = false;
         btn.classList.add('active');
         
