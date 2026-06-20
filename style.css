@@ -6427,10 +6427,10 @@ button:hover,
 
 /* ACHIEVEMENTS & PET EVOLUTION TAB HANDLE POSITIONS */
 .tab-handle-left-achievements {
-  bottom: 124px !important;
+  bottom: auto !important;
 }
 .tab-handle-right-pet {
-  bottom: 124px !important;
+  bottom: auto !important;
 }
 
 /* PET EVOLUTION EMOJI GRID & CARD INTERACTIVE STATES */
@@ -6612,7 +6612,7 @@ button:hover,
    ============================================================ */
 
 .tab-handle-left-cosmetics {
-  bottom: 168px !important;
+  bottom: auto !important;
 }
 
 .cosmetics-board {
