@@ -486,6 +486,18 @@ class UIManager {
         <div class="mini-widget-pulse-dot"></div>
         <span id="focusMiniTime">25:00</span>
       </div>
+      
+      <!-- Stage Notes Widget -->
+      <div id="stageNotesWidget" class="stage-notes-widget" style="display: none;">
+        <div class="stage-notes-header" id="stageNotesHeader">
+          <span class="stage-notes-title">📜 STAGE NOTES</span>
+          <button class="stage-notes-collapse-btn" id="stageNotesCollapseBtn">✕</button>
+        </div>
+        <div class="stage-notes-body">
+          <textarea id="stageNotesTextarea" class="stage-notes-textarea" placeholder="Write stage notes here..."></textarea>
+        </div>
+      </div>
+      <button id="stageNotesMinimized" class="stage-notes-minimized" style="display: none;" title="Open Stage Notes">📜</button>
     `;
     document.body.appendChild(gameArea);
 
@@ -732,6 +744,144 @@ class UIManager {
       };
       resizeHandle.addEventListener('pointerup', onResizeEnd);
       resizeHandle.addEventListener('pointercancel', onResizeEnd);
+    }
+
+    // === Initialize Stage Notes Widget ===
+    const notesWidget = gameArea.querySelector('#stageNotesWidget');
+    const notesMinimized = gameArea.querySelector('#stageNotesMinimized');
+    const notesTextarea = gameArea.querySelector('#stageNotesTextarea');
+    const notesCollapseBtn = gameArea.querySelector('#stageNotesCollapseBtn');
+
+    // Load saved text
+    if (notesTextarea) {
+      notesTextarea.value = localStorage.getItem('nemesis_stage_notes_text') || '';
+      notesTextarea.addEventListener('input', () => {
+        localStorage.setItem('nemesis_stage_notes_text', notesTextarea.value);
+      });
+    }
+
+    // Load collapsed state
+    const isCollapsed = localStorage.getItem('nemesis_stage_notes_collapsed') === 'true';
+    if (isCollapsed) {
+      if (notesWidget) notesWidget.style.display = 'none';
+      if (notesMinimized) notesMinimized.style.display = 'flex';
+    } else {
+      if (notesWidget) notesWidget.style.display = 'flex';
+      if (notesMinimized) notesMinimized.style.display = 'none';
+    }
+
+    // Toggle minimize/collapse
+    if (notesCollapseBtn) {
+      notesCollapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (notesWidget) notesWidget.style.display = 'none';
+        if (notesMinimized) notesMinimized.style.display = 'flex';
+        localStorage.setItem('nemesis_stage_notes_collapsed', 'true');
+        
+        if (notesWidget && notesMinimized) {
+          const rect = notesWidget.getBoundingClientRect();
+          const areaRect = gameArea.getBoundingClientRect();
+          const left = rect.left - areaRect.left;
+          const top = rect.top - areaRect.top;
+          notesMinimized.style.left = left + 'px';
+          notesMinimized.style.top = top + 'px';
+          localStorage.setItem('nemesis_stage_notes_minimized_pos', JSON.stringify({ left, top }));
+        }
+      });
+    }
+
+    if (notesMinimized) {
+      notesMinimized.addEventListener('click', (e) => {
+        if (notesWidget) notesWidget.style.display = 'flex';
+        notesMinimized.style.display = 'none';
+        localStorage.setItem('nemesis_stage_notes_collapsed', 'false');
+        
+        const savedPos = localStorage.getItem('nemesis_stage_notes_pos');
+        if (savedPos && notesWidget) {
+          try {
+            const { left, top } = JSON.parse(savedPos);
+            notesWidget.style.left = left + 'px';
+            notesWidget.style.top = top + 'px';
+          } catch(err){}
+        }
+      });
+    }
+
+    // Load positions
+    const savedWidgetPos = localStorage.getItem('nemesis_stage_notes_pos');
+    if (savedWidgetPos && notesWidget) {
+      try {
+        const { left, top } = JSON.parse(savedWidgetPos);
+        notesWidget.style.left = left + 'px';
+        notesWidget.style.top = top + 'px';
+      } catch(err){}
+    }
+
+    const savedMinPos = localStorage.getItem('nemesis_stage_notes_minimized_pos');
+    if (savedMinPos && notesMinimized) {
+      try {
+        const { left, top } = JSON.parse(savedMinPos);
+        notesMinimized.style.left = left + 'px';
+        notesMinimized.style.top = top + 'px';
+      } catch(err){}
+    }
+
+    // Draggability helper
+    const setupDraggableNotes = (element, handleElement, storageKey) => {
+      let isDragging = false;
+      let startX = 0, startY = 0;
+      let initialLeft = 0, initialTop = 0;
+
+      const onPointerDown = (e) => {
+        if (e.target.closest('textarea, button, input')) return; // Avoid drag when interacting with text area or buttons
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = element.getBoundingClientRect();
+        const areaRect = gameArea.getBoundingClientRect();
+        initialLeft = rect.left - areaRect.left;
+        initialTop = rect.top - areaRect.top;
+        try { handleElement.setPointerCapture(e.pointerId); } catch(err){}
+      };
+
+      const onPointerMove = (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+
+        const maxLeft = gameArea.clientWidth - element.offsetWidth;
+        const maxTop = gameArea.clientHeight - element.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+
+        element.style.left = newLeft + 'px';
+        element.style.top = newTop + 'px';
+      };
+
+      const onPointerUp = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try { handleElement.releasePointerCapture(e.pointerId); } catch(err){}
+        localStorage.setItem(storageKey, JSON.stringify({
+          left: parseInt(element.style.left, 10) || 0,
+          top: parseInt(element.style.top, 10) || 0
+        }));
+      };
+
+      handleElement.addEventListener('pointerdown', onPointerDown);
+      handleElement.addEventListener('pointermove', onPointerMove);
+      handleElement.addEventListener('pointerup', onPointerUp);
+      handleElement.addEventListener('pointercancel', onPointerUp);
+    };
+
+    if (notesWidget) {
+      const header = notesWidget.querySelector('#stageNotesHeader');
+      setupDraggableNotes(notesWidget, header, 'nemesis_stage_notes_pos');
+    }
+    if (notesMinimized) {
+      setupDraggableNotes(notesMinimized, notesMinimized, 'nemesis_stage_notes_minimized_pos');
     }
 
     this.updateStageBackdrop();
@@ -1596,11 +1746,7 @@ class UIManager {
       }, 1000);
     };
 
-    startBtn.addEventListener('click', (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+    startBtn.addEventListener('click', () => {
       if (state.systemState.focusTimerActive) {
         if (isTimerPaused) {
           isTimerPaused = false;
@@ -1642,9 +1788,7 @@ class UIManager {
     });
 
     if (stopBtn) {
-      stopBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      stopBtn.addEventListener('click', () => {
         if (confirm('Cancel focus timer? Doubled rewards will end immediately.')) {
           resetTimer();
         }

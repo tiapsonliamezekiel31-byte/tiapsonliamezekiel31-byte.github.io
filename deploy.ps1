@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: tycoon tabs visible, live completion rate drives production, reset farm command"
+$commitMsg = "feat: add draggable floating stage notes widget to main stage"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
