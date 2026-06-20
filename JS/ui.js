@@ -421,16 +421,48 @@ class UIManager {
       <div class="focus-overlay" id="focusOverlay"></div>
       <div id="focus-clock-popup">
         <div class="focus-popup-header">
-          <span class="focus-popup-title">⏱️ FOCUS TIMER</span>
+          <span class="focus-popup-title">⏱️ FOCUS HOURGLASS</span>
           <button class="focus-popup-close" id="focusPopupClose">✕</button>
         </div>
         <div class="analog-clock-container">
-          <div class="analog-clock">
-            <div class="clock-hand hour-hand" id="hourHand"></div>
-            <div class="clock-hand minute-hand" id="minuteHand"></div>
-            <div class="clock-hand second-hand" id="secondHand"></div>
-            <div class="clock-center-pin"></div>
-          </div>
+          <svg class="hourglass-svg" viewBox="0 0 120 120" width="130" height="130" aria-label="Hourglass of Focus">
+            <!-- Runic progress ring track -->
+            <circle cx="60" cy="60" r="50" class="rune-ring-track" stroke="rgba(168, 85, 247, 0.15)" stroke-width="4" fill="none" />
+            <!-- Runic progress ring -->
+            <circle cx="60" cy="60" r="50" id="runicProgressRing" class="rune-ring-fill" stroke="var(--accent-purple, #a855f7)" stroke-width="4" stroke-linecap="round" fill="none" transform="rotate(-90 60 60)" stroke-dasharray="314.16" stroke-dashoffset="0" />
+            
+            <!-- Rune Symbols -->
+            <text x="60" y="18" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᛉ</text>
+            <text x="105" y="63" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚦ</text>
+            <text x="60" y="110" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚫ</text>
+            <text x="15" y="63" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚲ</text>
+
+            <g class="hourglass-graphic">
+              <!-- Metallic Plates -->
+              <path d="M35 22h50v6H35z" fill="#ffb33f" />
+              <path d="M35 92h50v6H35z" fill="#ffb33f" />
+              <!-- Bulbs -->
+              <path d="M42 28 C42 45, 52 56, 57 60 C52 64, 42 75, 42 92 L78 92 C78 75, 68 64, 63 60 C68 56, 78 45, 78 28 Z" fill="none" stroke="rgba(255, 255, 255, 0.25)" stroke-width="2" />
+              
+              <clipPath id="topBulbClip">
+                <path d="M42 28 C42 45, 52 56, 57 60 C68 56, 78 45, 78 28 Z" />
+              </clipPath>
+              <clipPath id="bottomBulbClip">
+                <path d="M57 60 C52 64, 42 75, 42 92 L78 92 C78 75, 68 64, 63 60 Z" />
+              </clipPath>
+              
+              <rect id="topSand" x="40" y="28" width="40" height="32" fill="url(#sandGradient)" clip-path="url(#topBulbClip)" />
+              <rect id="bottomSand" x="40" y="60" width="40" height="32" fill="url(#sandGradient)" clip-path="url(#bottomBulbClip)" />
+              <line id="sandStream" x1="60" y1="56" x2="60" y2="92" stroke="#d1b3ff" stroke-width="2.5" stroke-dasharray="5 5" class="sand-stream-flow" style="display: none;" />
+            </g>
+            <defs>
+              <linearGradient id="sandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#8b5cf6" />
+                <stop offset="50%" stop-color="#d8b4fe" />
+                <stop offset="100%" stop-color="#6d28d9" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
         <div class="digital-clock-readout" id="digitalClock">25:00</div>
         <div class="focus-timer-options">
@@ -1395,14 +1427,34 @@ class UIManager {
     popup.addEventListener('pointercancel', stopDragging);
 
     const updateHands = (totalSecs, currentSecs) => {
-      const elapsed = totalSecs - currentSecs;
-      const sDeg = (elapsed * 6) % 360;
-      const mDeg = (elapsed / totalSecs) * 360;
-      const hDeg = (elapsed / (totalSecs * 12)) * 360;
+      const elapsedRatio = (totalSecs - currentSecs) / totalSecs;
 
-      if (sHand) sHand.style.transform = `rotate(${sDeg}deg)`;
-      if (mHand) mHand.style.transform = `rotate(${mDeg}deg)`;
-      if (hHand) hHand.style.transform = `rotate(${hDeg}deg)`;
+      const topSand = document.getElementById('topSand');
+      const bottomSand = document.getElementById('bottomSand');
+      const sandStream = document.getElementById('sandStream');
+      const runicProgress = document.getElementById('runicProgressRing');
+
+      const isActive = state.systemState.focusTimerActive;
+
+      if (topSand) {
+        const topY = 28 + (32 * elapsedRatio);
+        const topHeight = Math.max(0, 32 * (1 - elapsedRatio));
+        topSand.setAttribute('y', topY);
+        topSand.setAttribute('height', topHeight);
+      }
+      if (bottomSand) {
+        const bottomY = 92 - (32 * elapsedRatio);
+        const bottomHeight = Math.max(0, 32 * elapsedRatio);
+        bottomSand.setAttribute('y', bottomY);
+        bottomSand.setAttribute('height', bottomHeight);
+      }
+      if (sandStream) {
+        sandStream.style.display = (isActive && currentSecs > 0) ? 'block' : 'none';
+      }
+      if (runicProgress) {
+        const offset = 314.16 * elapsedRatio;
+        runicProgress.style.strokeDashoffset = offset;
+      }
     };
 
     const updateDisplay = () => {

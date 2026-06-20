@@ -7097,8 +7097,8 @@ button:hover,
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(5, 3, 10, 0.85);
+  backdrop-filter: blur(5px);
   z-index: 19999;
   display: none;
   pointer-events: auto;
@@ -7111,12 +7111,15 @@ button:hover,
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: linear-gradient(180deg, #1b0a2e, #0c0316);
-  border: 3px solid var(--accent-purple, #a855f7);
-  box-shadow: 0 0 30px rgba(168, 85, 247, 0.8), inset 0 0 15px rgba(168, 85, 247, 0.3);
+  background: radial-gradient(circle at center, #1b122c 0%, #0a0514 100%);
+  border: 2px solid #ffb33f;
+  outline: 4px solid #0d0716;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85), 0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15);
   padding: 20px;
-  border-radius: 16px;
-  width: 290px;
+  border-radius: 8px;
+  width: 300px;
+  max-width: 90vw;
+  box-sizing: border-box;
   text-align: center;
   font-family: 'Press Start 2P', monospace;
   color: #f5f5f7;
@@ -7133,155 +7136,158 @@ button:hover,
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  border-bottom: 1px dashed rgba(168, 85, 247, 0.3);
-  padding-bottom: 6px;
+  margin-bottom: 14px;
+  border-bottom: 2px solid rgba(255, 179, 63, 0.3);
+  padding-bottom: 8px;
 }
 
 .focus-popup-title {
-  font-size: 10px;
-  color: var(--accent-gold, #ffb33f);
-  text-shadow: 0 0 4px rgba(255, 179, 63, 0.4);
+  font-size: 8px;
+  color: #ffb33f;
+  text-shadow: 0 0 6px rgba(255, 179, 63, 0.5);
+  letter-spacing: 0.5px;
 }
 
 .focus-popup-close {
   background: none;
   border: none;
-  color: #ef4444;
+  color: #f87171;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-family: inherit;
   padding: 0 4px;
+  transition: color 0.15s;
 }
 
-/* Analog Clock face style */
+.focus-popup-close:hover {
+  color: #ef4444;
+}
+
+/* Hourglass and Runic Ring */
 .analog-clock-container {
   display: flex;
   justify-content: center;
-  margin: 12px 0;
+  margin: 14px 0;
 }
 
-.analog-clock {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  border: 3px solid var(--accent-purple, #a855f7);
-  background: rgba(0, 0, 0, 0.6);
-  position: relative;
-  box-shadow: inset 0 0 10px rgba(168, 85, 247, 0.4);
+.hourglass-svg {
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.3));
 }
 
-.clock-hand {
-  position: absolute;
-  bottom: 50%;
-  left: 50%;
-  transform-origin: bottom center;
-  background: #fff;
-  border-radius: 4px;
+.rune-ring-track {
+  stroke: rgba(168, 85, 247, 0.12);
 }
 
-.hour-hand {
-  width: 4px;
-  height: 35px;
-  margin-left: -2px;
-  background: #a855f7;
+.rune-ring-fill {
+  transition: stroke-dashoffset 0.3s ease;
+  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.6));
 }
 
-.minute-hand {
-  width: 3px;
-  height: 48px;
-  margin-left: -1.5px;
-  background: #38bdf8;
+.hourglass-graphic {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
 }
 
-.second-hand {
-  width: 1.5px;
-  height: 52px;
-  margin-left: -0.75px;
-  background: #ef4444;
+@keyframes sandFlow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -10;
+  }
 }
 
-.clock-center-pin {
-  width: 8px;
-  height: 8px;
-  background: #ffb33f;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 10;
+.sand-stream-flow {
+  animation: sandFlow 0.5s linear infinite;
 }
 
 /* Digital clock readout */
 .digital-clock-readout {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   color: #fff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 8px rgba(168, 85, 247, 0.6), 0 0 2px #fff;
   margin: 12px 0;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
 }
 
 /* Settings, sliders, controls */
 .focus-timer-options {
   display: flex;
-  justify-content: space-around;
-  gap: 4px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
 .focus-duration-btn {
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  color: #fff;
+  flex: 1;
+  background: rgba(15, 8, 25, 0.85);
+  border: 1px solid rgba(255, 179, 63, 0.25);
+  color: #c0a8e8;
   font-family: inherit;
   font-size: 7px;
-  padding: 6px 4px;
+  padding: 8px 2px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
+  transition: all 0.15s ease;
 }
 
-.focus-duration-btn.active, .focus-duration-btn:hover {
-  background: var(--accent-purple, #a855f7);
-  border-color: #fff;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+.focus-duration-btn:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: #ffb33f;
+  color: #fff;
+}
+
+.focus-duration-btn.active {
+  background: rgba(168, 85, 247, 0.3);
+  border-color: #ffb33f;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4), inset 0 0 4px rgba(255, 179, 63, 0.2);
 }
 
 .focus-action-btn {
   width: 100%;
-  padding: 10px;
+  padding: 11px;
   font-family: inherit;
   font-size: 9px;
   font-weight: bold;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  border: 2px solid #fff;
+  border: 2px solid #ffb33f;
   transition: all 0.2s;
+  letter-spacing: 1px;
 }
 
 .focus-start-btn {
-  background: linear-gradient(180deg, #10b981, #047857);
+  background: linear-gradient(180deg, #059669, #047857);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
 }
+
 .focus-start-btn:hover {
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(5, 150, 105, 0.5);
 }
 
 .focus-cancel-btn {
-  background: linear-gradient(180deg, #ef4444, #b91c1c);
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
 }
+
 .focus-cancel-btn:hover {
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(220, 38, 38, 0.5);
 }
 
 .focus-cost-warning {
   font-size: 6.5px;
-  color: var(--text-muted, #7a7a7a);
-  margin-top: 6px;
-  line-height: 1.3;
+  color: #a0aec0;
+  margin-top: 8px;
+  line-height: 1.4;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 /* Minimized widget styles */
@@ -7289,11 +7295,11 @@ button:hover,
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: rgba(27, 10, 46, 0.95);
-  border: 2px solid var(--accent-purple, #a855f7);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-  border-radius: 8px;
-  padding: 8px 12px;
+  background: radial-gradient(circle at center, #1b0a2e 0%, #0c0316 100%);
+  border: 1.5px solid #ffb33f;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 12px rgba(168, 85, 247, 0.4);
+  border-radius: 30px;
+  padding: 8px 14px;
   font-family: 'Press Start 2P', monospace;
   font-size: 7px;
   color: #fff;
@@ -7314,7 +7320,7 @@ button:hover,
 .mini-widget-pulse-dot {
   width: 6px;
   height: 6px;
-  background-color: #ef4444;
+  background-color: #f87171;
   border-radius: 50%;
   animation: pulseMiniDot 1s infinite alternate;
 }
@@ -7330,8 +7336,8 @@ button:hover,
   top: 16px;
   right: 16px;
   z-index: 10000;
-  background: rgba(168, 85, 247, 0.25);
-  border: 2px solid var(--accent-purple, #a855f7);
+  background: radial-gradient(circle at center, #2c164d 0%, #150529 100%);
+  border: 2px solid #ffb33f;
   color: #fff;
   font-family: 'Press Start 2P', monospace;
   font-size: 8px;
@@ -7342,20 +7348,21 @@ button:hover,
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 8px rgba(168, 85, 247, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 8px rgba(168, 85, 247, 0.3);
   pointer-events: auto;
 }
 
 .btn-focus-timer:hover {
-  background: var(--accent-purple, #a855f7);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+  background: radial-gradient(circle at center, #3c2069 0%, #1c0836 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 179, 63, 0.5);
   transform: scale(1.05);
 }
+
 .btn-focus-timer.active {
   animation: timerGlowPulse 1.5s infinite alternate;
 }
 
 @keyframes timerGlowPulse {
-  from { box-shadow: 0 0 4px rgba(168, 85, 247, 0.3); }
-  to { box-shadow: 0 0 16px rgba(168, 85, 247, 0.8); }
+  from { box-shadow: 0 0 6px rgba(255, 179, 63, 0.3); }
+  to { box-shadow: 0 0 18px rgba(255, 179, 63, 0.8); }
 }
