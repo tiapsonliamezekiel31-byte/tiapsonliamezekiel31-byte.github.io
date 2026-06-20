@@ -1596,7 +1596,11 @@ class UIManager {
       }, 1000);
     };
 
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (state.systemState.focusTimerActive) {
         if (isTimerPaused) {
           isTimerPaused = false;
@@ -1638,7 +1642,9 @@ class UIManager {
     });
 
     if (stopBtn) {
-      stopBtn.addEventListener('click', () => {
+      stopBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (confirm('Cancel focus timer? Doubled rewards will end immediately.')) {
           resetTimer();
         }
