@@ -1389,22 +1389,18 @@ class RetroTaskCompleteAnimation {
       }
     }
 
-    // Play radial shockwave ring from element center (Larger and bolder!)
-    if (rect && rect.width > 0 && rect.height > 0) {
-      const shockwave = document.createElement('div');
-      const isHard = (difficulty === 'Hard' || difficulty === 'Ultra');
-      shockwave.className = isHard ? 'task-complete-shockwave rainbow active' : 'task-complete-shockwave active';
-      shockwave.style.left = `${cx}px`;
-      shockwave.style.top = `${cy}px`;
-      shockwave.style.width = `${rect.width * 1.5}px`;
-      shockwave.style.height = `${rect.height * 1.5}px`;
-      shockwave.style.borderWidth = '4px';
-      shockwave.style.boxShadow = '0 0 30px currentColor';
-      document.body.appendChild(shockwave);
-
-      setTimeout(() => {
-        try { shockwave.remove(); } catch (e) { }
-      }, 950);
+    // Play intersecting diagonal cross slashes across the card (100x bolder!)
+    if (element) {
+      const slashColor = (difficulty === 'Hard' || difficulty === 'Ultra') ? '#FF3366' : '#FFD700';
+      if (typeof RetroCritSlashAnimation !== 'undefined') {
+        RetroCritSlashAnimation.play(element, slashColor);
+        // Play a secondary offset slash for Medium, Hard, and Ultra to make it even bolder!
+        if (difficulty !== 'Easy') {
+          setTimeout(() => {
+            try { RetroCritSlashAnimation.play(element, '#ffffff'); } catch (e) {}
+          }, 120);
+        }
+      }
     }
 
     // Play screen flash & shake (juicy feedback)
