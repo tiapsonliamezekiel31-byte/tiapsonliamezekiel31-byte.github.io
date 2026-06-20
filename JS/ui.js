@@ -491,7 +491,7 @@ class UIManager {
       <div id="stageNotesWidget" class="stage-notes-widget" style="display: none;">
         <div class="stage-notes-header" id="stageNotesHeader">
           <span class="stage-notes-title">📜 STAGE NOTES</span>
-          <button class="stage-notes-collapse-btn" id="stageNotesCollapseBtn">✕</button>
+          <button class="stage-notes-collapse-btn" id="stageNotesCollapseBtn">－</button>
         </div>
         <div class="stage-notes-body">
           <textarea id="stageNotesTextarea" class="stage-notes-textarea" placeholder="Write stage notes here..."></textarea>
@@ -752,12 +752,28 @@ class UIManager {
     const notesTextarea = gameArea.querySelector('#stageNotesTextarea');
     const notesCollapseBtn = gameArea.querySelector('#stageNotesCollapseBtn');
 
-    // Load saved text
+    // Load saved text and handle auto-resizing
+    const resizeTextarea = () => {
+      if (notesTextarea) {
+        notesTextarea.style.height = 'auto';
+        const scrollHeight = notesTextarea.scrollHeight;
+        if (scrollHeight > 250) {
+          notesTextarea.style.height = '250px';
+          notesTextarea.style.overflowY = 'auto';
+        } else {
+          notesTextarea.style.height = (scrollHeight > 50 ? scrollHeight : 50) + 'px';
+          notesTextarea.style.overflowY = 'hidden';
+        }
+      }
+    };
+
     if (notesTextarea) {
       notesTextarea.value = localStorage.getItem('nemesis_stage_notes_text') || '';
       notesTextarea.addEventListener('input', () => {
         localStorage.setItem('nemesis_stage_notes_text', notesTextarea.value);
+        resizeTextarea();
       });
+      setTimeout(resizeTextarea, 0);
     }
 
     // Load collapsed state
@@ -804,6 +820,7 @@ class UIManager {
             notesWidget.style.top = top + 'px';
           } catch(err){}
         }
+        setTimeout(resizeTextarea, 0);
       });
     }
 
