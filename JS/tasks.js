@@ -185,6 +185,14 @@ class TaskManager {
       goldReward *= (1 + greedBonus);
     }
 
+    // Apply Focus Timer doubling multiplier
+    if (state.systemState && state.systemState.focusTimerActive) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
     // Round values to prevent floating point issues
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
@@ -399,6 +407,14 @@ class TaskManager {
     if (state.hasBuff('Greed')) {
       const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
       goldReward *= (1 + greedBonus);
+    }
+
+    // Apply Focus Timer doubling multiplier
+    if (state.systemState && state.systemState.focusTimerActive) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
     }
 
     apReward = this.roundValue(apReward, 1);

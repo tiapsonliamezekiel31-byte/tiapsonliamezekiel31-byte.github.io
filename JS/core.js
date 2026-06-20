@@ -964,6 +964,184 @@ class GameState {
       }
     }
   }
+
+  static getBossRolledAttacks(W, bossName) {
+    const state = getGameState();
+    if (!state.stageState.bossRolledAttacks || state.stageState.bossRolledAttacks.length !== W) {
+      const rolled = [];
+      for (let i = 0; i < W; i++) {
+        rolled.push(rollBossAttack(bossName, state.config));
+      }
+      rolled.sort(() => Math.random() - 0.5);
+      state.stageState.bossRolledAttacks = rolled;
+    }
+    return state.stageState.bossRolledAttacks;
+  }
+
+  static calculateExactPendingDamage() {
+    const state = getGameState();
+    if (!state.stageState || !state.stageState.enemies) return 0;
+    const aliveEnemies = (state.stageState.enemies || []).filter(e => e && !e.isDead);
+    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb);
+    const bossEnemy = aliveEnemies.find(e => e?.isBoss);
+    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
+    const passive = PlayerManager.getClassPassive();
+
+    if (state.stageState.stageClearedToday) {
+      return 0;
+    }
+
+    const D = TaskManager.calculateMissedDailyDamage();
+    const N = D * 5;
+
+    let totalDamage = 0;
+
+    if (bossEnemy && !bossEnemy.isDead) {
+      const missedDailies = TaskManager.getMissedDailies();
+      const bossData = state.stageState.bossData || {};
+      const isPhase2 = (bossData.phase === 2) || (bossEnemy.hp / bossEnemy.maxHp <= 0.4);
+      let W = 0;
+      missedDailies.forEach(daily => {
+        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 }[daily.difficulty] || 1;
+        W += baseWeight + (isPhase2 ? 1 : 0);
+      });
+
+      const rolledAttacks = GameState.getBossRolledAttacks(W, bossEnemy.name);
+
+      const dodgeTarget = state.combatState?.dodgeTarget;
+      const dodgeTargets = Array.isArray(dodgeTarget) ? [...dodgeTarget] : (dodgeTarget ? [dodgeTarget] : []);
+      let dodgeCharges = dodgeTargets.filter(id => id === bossEnemy.id).length;
+
+      let reductionFactor = 1.0;
+      if (state.playerState.className === 'Knight') reductionFactor -= 0.10;
+      if (state.hasBuff('Iron Skin')) reductionFactor -= 0.10;
+      if (state.playerState.talismans?.includes("Titan's Mantle")) {
+        const baseReduction = 1.0 - reductionFactor;
+        reductionFactor = Math.max(0, 1.0 - baseReduction * 2);
+      }
+      if (state.playerState.className === 'Juggernaut') reductionFactor *= 0.85;
+      if (state.playerState.className === 'Brute' && state.combatState?.skillEffects?.wrathUnleashed) reductionFactor *= 1.4;
+
+      const skillFx = state.combatState?.skillEffects || {};
+      let tempShieldCharges = skillFx.shieldCharges || 0;
+      let tempFortressCharges = skillFx.fortressCharges || 0;
+
+      rolledAttacks.forEach(attackType => {
+        if (attackType === 'null') return;
+        if (dodgeCharges > 0) {
+          dodgeCharges--;
+          return;
+        }
+
+        if (attackType === 'regular') {
+          let damage = 10;
+          damage = Math.max(1, Math.round(damage * reductionFactor));
+          let shieldMultiplier = 1.0;
+          if (tempShieldCharges > 0) {
+            shieldMultiplier *= 0.4;
+            tempShieldCharges--;
+          }
+          if (tempFortressCharges > 0) {
+            shieldMultiplier = 0.0;
+            tempFortressCharges--;
+          }
+          let shieldAbsorption = 1.0 - shieldMultiplier;
+          shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
+          shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
+          damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          totalDamage += damage;
+        } else if (attackType === 'crit') {
+          totalDamage += 15;
+        } else if (attackType === 'heavy') {
+          let damage = 12;
+          damage = Math.max(1, Math.round(damage * reductionFactor));
+          let shieldMultiplier = 1.0;
+          if (tempShieldCharges > 0) {
+            shieldMultiplier *= 0.4;
+            tempShieldCharges--;
+          }
+          if (tempFortressCharges > 0) {
+            shieldMultiplier = 0.0;
+            tempFortressCharges--;
+          }
+          let shieldAbsorption = 1.0 - shieldMultiplier;
+          shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
+          shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
+          damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          totalDamage += damage;
+        }
+      });
+    } else {
+      const dodgeTarget = state.combatState?.dodgeTarget;
+      const dodgeTargets = Array.isArray(dodgeTarget) ? [...dodgeTarget] : (dodgeTarget ? [dodgeTarget] : []);
+
+      const skillFx = state.combatState?.skillEffects || {};
+      let tempShieldCharges = skillFx.shieldCharges || 0;
+      let tempFortressCharges = skillFx.fortressCharges || 0;
+
+      aliveNormalEnemies.forEach(enemy => {
+        if (enemy.statusEffects?.stunned) return;
+
+        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal);
+        const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;
+        damage *= incantMult;
+
+        const currentConsecutive = enemy.consecutiveAttackDays || 0;
+        const simulatedBruteMult = enemy.archetype === 'Brute' ? Math.pow(1 + state.stageState.stage / 10, Math.min(currentConsecutive, 5)) : 1.0;
+        damage *= simulatedBruteMult;
+
+        if (enemy.statusEffects?.freeze) {
+          damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
+        }
+
+        if (dodgeTargets.includes(enemy.id)) {
+          const idx = dodgeTargets.indexOf(enemy.id);
+          if (idx > -1) dodgeTargets.splice(idx, 1);
+          return;
+        }
+
+        if (passive && typeof passive.damageTaken === 'number') {
+          damage *= passive.damageTaken;
+        }
+
+        if (tempShieldCharges > 0) {
+          damage *= (typeof skillFx.shieldDamageMultiplier === 'number' ? skillFx.shieldDamageMultiplier : 0.4);
+          tempShieldCharges--;
+        }
+
+        if (tempFortressCharges > 0) {
+          damage = 0;
+          tempFortressCharges--;
+        }
+
+        let totalReduction = 0;
+        if (passive && typeof passive.damageReduction === 'number') {
+          totalReduction += passive.damageReduction;
+        }
+        if (state.hasBuff('Iron Skin')) {
+          const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
+          if (typeof reduction === 'number') {
+            totalReduction += reduction;
+          }
+        }
+        if (totalReduction > 0) {
+          if (state.playerState.talismans?.includes("Titan's Mantle")) {
+            totalReduction *= 2;
+          }
+          damage = Math.max(0, damage - totalReduction);
+        }
+
+        const reactiveWeapon = enemy.statusEffects?.reactiveWeapon;
+        if (reactiveWeapon && reactiveWeapon.pending) {
+          damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+        }
+
+        totalDamage += damage;
+      });
+    }
+
+    return Math.ceil(totalDamage);
+  }
 }
 
 // Global instance
@@ -1191,7 +1369,7 @@ function performCheckIn() {
     const aliveEnemies = StageManager.getAliveEnemies();
     const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb);
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
-    const totalNormal = aliveNormalEnemies.length || 1;
+    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
     const passive = PlayerManager.getClassPassive();
 
     if (state.stageState.stageClearedToday) {
@@ -1235,13 +1413,8 @@ function performCheckIn() {
         W += baseWeight + (isPhase2 ? 1 : 0);
       });
 
-      // Roll W times from attack pool
-      let rolledAttacks = [];
-      for (let i = 0; i < W; i++) {
-        rolledAttacks.push(rollBossAttack(bossEnemy.name, state.config));
-      }
-      // Shuffle the rolled attacks
-      rolledAttacks.sort(() => Math.random() - 0.5);
+      // Retrieve rolled attacks from GameState
+      const rolledAttacks = [...GameState.getBossRolledAttacks(W, bossEnemy.name)];
 
       // Determine dodge charges for the boss
       const dodgeTarget = state.combatState?.dodgeTarget;
@@ -2013,6 +2186,7 @@ function performCheckIn() {
       }
 
       // Clear check-in running state, persist and reload UI
+      state.stageState.bossRolledAttacks = null;
       clearCheckInRunning();
       state.save();
       if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
