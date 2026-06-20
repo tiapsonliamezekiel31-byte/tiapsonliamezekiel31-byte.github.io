@@ -3028,8 +3028,13 @@ class UIManager {
             // Immediate visual feedback on the card
             try {
               card.classList.add('just-completed');
-              card.style.transition = 'transform 220ms ease, opacity 400ms ease';
+              card.style.transition = 'transform 220ms ease, filter 150ms ease, opacity 400ms ease';
               card.style.transform = 'scale(1.04)';
+
+              // Flash white right before disappearing (around 180ms)
+              setTimeout(() => {
+                card.style.filter = 'brightness(10) contrast(1.5)';
+              }, 160);
 
               // Show reward popup numbers
               if (res.rewards && res.rewards.ap) {
@@ -3053,18 +3058,27 @@ class UIManager {
               PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
                 if (!TaskManager.completeTodo(taskId)) return;
 
+                card.style.transition = 'filter 150ms ease, opacity 400ms ease';
+                card.style.filter = 'brightness(10) contrast(1.5)';
+
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                   RetroTaskCompleteAnimation.play(card);
                 }
 
-                this.updateTodosList();
+                setTimeout(() => {
+                  this.updateTodosList();
+                }, 200);
                 try { state.save(); } catch (e) { }
                 this.renderEnemies();
               });
             } catch (e) {
               // Fallback to immediate complete if PopupsManager unavailable
               if (!TaskManager.completeTodo(taskId)) return;
-              this.updateTodosList();
+              card.style.transition = 'filter 150ms ease, opacity 400ms ease';
+              card.style.filter = 'brightness(10) contrast(1.5)';
+              setTimeout(() => {
+                this.updateTodosList();
+              }, 200);
             }
           }
           state.save();
