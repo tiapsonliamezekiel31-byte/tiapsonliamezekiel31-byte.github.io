@@ -7480,7 +7480,7 @@ button:hover,
 .stage-notes-minimized {
   position: fixed;
   top: 16px;
-  right: 128px;
+  right: 124px;
   width: 38px;
   height: 38px;
   background: radial-gradient(circle at center, #2c164d 0%, #150529 100%);
