@@ -69,6 +69,11 @@
       this.terrainBrushSize = 1; // 1 (1x1), 3 (3x3), 5 (5x5)
       this.isPainting = false;
       this.hoverTile = null;
+      this.draggedObject = null;
+      this.isDraggingObject = false;
+      this.potentialDraggedObject = null;
+      this.interactionStartTile = null;
+      this.interactionStartPos = null;
       
       // Path drawing state
       this.isDrawingPath = false;
@@ -182,6 +187,14 @@
               <div class="tycoon-dialog-buttons" id="farmer-detail-buttons"></div>
             </div>
           </div>
+
+          <div class="tycoon-overlay" id="tycoon-object-dialog">
+            <div class="tycoon-dialog">
+              <h3 id="object-detail-title">🧱 Object Info</h3>
+              <div class="tycoon-dialog-body" id="object-detail-body"></div>
+              <div class="tycoon-dialog-buttons" id="object-detail-buttons"></div>
+            </div>
+          </div>
         `;
         document.body.appendChild(container);
       }
@@ -196,7 +209,7 @@
     setupInputHandlers() {
       const wrapper = document.getElementById('tycoon-viewport-wrapper');
 
-      // Mouse drag panning and terrain painting
+      // Mouse drag panning, painting and potential drag relocation
       wrapper.addEventListener('mousedown', (e) => {
         if (e.button === 0) { // Left click
           const tile = this.screenToWorldCoords(e.clientX, e.clientY);
@@ -213,16 +226,25 @@
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            // Normal click: select farmer or inspect buildings
-            const clickedFarmer = this.findFarmerAt(tile.x, tile.y);
-            if (clickedFarmer) {
-              this.showFarmerDetails(clickedFarmer);
+            // Check if clicked an object center/footprint
+            const obj = this.findObjectCenterAt(tile.x, tile.y);
+            if (obj) {
+              this.potentialDraggedObject = obj;
+              this.interactionStartTile = tile;
+              this.interactionStartPos = { x: e.clientX, y: e.clientY };
+              this.isDraggingObject = false;
             } else {
-              this.isPanning = true;
-              this.dragStart.x = e.clientX;
-              this.dragStart.y = e.clientY;
-              this.cameraStart.x = this.camera.x;
-              this.cameraStart.y = this.camera.y;
+              // Click farmer or pan camera
+              const clickedFarmer = this.findFarmerAt(tile.x, tile.y);
+              if (clickedFarmer) {
+                this.showFarmerDetails(clickedFarmer);
+              } else {
+                this.isPanning = true;
+                this.dragStart.x = e.clientX;
+                this.dragStart.y = e.clientY;
+                this.cameraStart.x = this.camera.x;
+                this.cameraStart.y = this.camera.y;
+              }
             }
           }
         }
@@ -234,6 +256,17 @@
 
         if (this.isPainting && this.activeTool) {
           this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
+        } else if (this.potentialDraggedObject) {
+          if (!this.isDraggingObject) {
+            const dist = Math.hypot(e.clientX - this.interactionStartPos.x, e.clientY - this.interactionStartPos.y);
+            if (dist > 8) {
+              this.isDraggingObject = true;
+              // Lift the object - temporarily set to GRASS and update worker
+              this.setTileTypeAt(this.potentialDraggedObject.x, this.potentialDraggedObject.y, TILE_TYPES.GRASS);
+              this.postTileUpdateToWorker(this.potentialDraggedObject.x, this.potentialDraggedObject.y, TILE_TYPES.GRASS);
+              this.draggedObject = this.potentialDraggedObject;
+            }
+          }
         } else if (this.isPanning) {
           const dx = (e.clientX - this.dragStart.x) / this.camera.zoom;
           const dy = (e.clientY - this.dragStart.y) / this.camera.zoom;
@@ -242,12 +275,43 @@
         }
       });
 
-      window.addEventListener('mouseup', () => {
+      window.addEventListener('mouseup', (e) => {
+        if (this.isDraggingObject && this.draggedObject) {
+          const dropTile = this.hoverTile || this.screenToWorldCoords(e.clientX, e.clientY);
+          if (this.canPlaceObjectAt(dropTile.x, dropTile.y)) {
+            // Drop successfully
+            this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Moved! 🚚", "#4ade80");
+          } else {
+            // Snap back
+            this.setTileTypeAt(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+            this.postTileUpdateToWorker(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Invalid space!", "#f87171");
+          }
+          this.draggedObject = null;
+          this.isDraggingObject = false;
+          this.potentialDraggedObject = null;
+        } else if (this.potentialDraggedObject) {
+          // Quick tap / click inspect
+          this.showObjectDetails(this.potentialDraggedObject);
+          this.potentialDraggedObject = null;
+        }
+        
         this.isPanning = false;
         this.isPainting = false;
       });
 
       wrapper.addEventListener('mouseleave', () => {
+        if (this.isDraggingObject && this.draggedObject) {
+          // Snap back if mouse leaves screen
+          this.setTileTypeAt(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+          this.postTileUpdateToWorker(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Cancelled", "#f87171");
+          this.draggedObject = null;
+          this.isDraggingObject = false;
+          this.potentialDraggedObject = null;
+        }
         this.hoverTile = null;
         this.isPainting = false;
       });
@@ -265,7 +329,7 @@
         this.camera.zoom = Math.max(this.camera.minZoom, Math.min(this.camera.maxZoom, newZoom));
       }, { passive: false });
 
-      // Mobile Touch Handling (Multi-touch pan/zoom/paint)
+      // Mobile Touch Handling (Multi-touch pan/zoom/paint/drag)
       wrapper.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
           const touch = e.touches[0];
@@ -284,14 +348,23 @@
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            const tileCoords = this.screenToWorldCoords(touch.clientX, touch.clientY);
-            const clickedFarmerMapped = this.findFarmerAt(tileCoords.x, tileCoords.y);
-            if (clickedFarmerMapped) {
-              this.showFarmerDetails(clickedFarmerMapped);
+            // Check if clicked an object center/footprint
+            const obj = this.findObjectCenterAt(tile.x, tile.y);
+            if (obj) {
+              this.potentialDraggedObject = obj;
+              this.interactionStartTile = tile;
+              this.interactionStartPos = { x: touch.clientX, y: touch.clientY };
+              this.isDraggingObject = false;
             } else {
-              this.isPanning = true;
-              this.lastTouchPos.x = touch.clientX;
-              this.lastTouchPos.y = touch.clientY;
+              const tileCoords = this.screenToWorldCoords(touch.clientX, touch.clientY);
+              const clickedFarmerMapped = this.findFarmerAt(tileCoords.x, tileCoords.y);
+              if (clickedFarmerMapped) {
+                this.showFarmerDetails(clickedFarmerMapped);
+              } else {
+                this.isPanning = true;
+                this.lastTouchPos.x = touch.clientX;
+                this.lastTouchPos.y = touch.clientY;
+              }
             }
           }
         } else if (e.touches.length === 2) {
@@ -317,6 +390,16 @@
           
           if (this.isPainting && this.activeTool) {
             this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
+          } else if (this.potentialDraggedObject) {
+            if (!this.isDraggingObject) {
+              const dist = Math.hypot(touch.clientX - this.interactionStartPos.x, touch.clientY - this.interactionStartPos.y);
+              if (dist > 8) {
+                this.isDraggingObject = true;
+                this.setTileTypeAt(this.potentialDraggedObject.x, this.potentialDraggedObject.y, TILE_TYPES.GRASS);
+                this.postTileUpdateToWorker(this.potentialDraggedObject.x, this.potentialDraggedObject.y, TILE_TYPES.GRASS);
+                this.draggedObject = this.potentialDraggedObject;
+              }
+            }
           } else if (this.isPanning) {
             const dx = (touch.clientX - this.lastTouchPos.x) / this.camera.zoom;
             const dy = (touch.clientY - this.lastTouchPos.y) / this.camera.zoom;
@@ -337,11 +420,33 @@
       }, { passive: true });
 
       wrapper.addEventListener('touchend', () => {
+        if (this.isDraggingObject && this.draggedObject) {
+          const dropTile = this.hoverTile;
+          if (dropTile && this.canPlaceObjectAt(dropTile.x, dropTile.y)) {
+            // Drop successfully
+            this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Moved! 🚚", "#4ade80");
+          } else {
+            // Snap back
+            this.setTileTypeAt(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+            this.postTileUpdateToWorker(this.draggedObject.x, this.draggedObject.y, this.draggedObject.tileVal);
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Invalid space!", "#f87171");
+          }
+          this.draggedObject = null;
+          this.isDraggingObject = false;
+          this.potentialDraggedObject = null;
+        } else if (this.potentialDraggedObject) {
+          // Quick tap / click inspect
+          this.showObjectDetails(this.potentialDraggedObject);
+          this.potentialDraggedObject = null;
+        }
         this.isTouchPinching = false;
         this.isPanning = false;
         this.isPainting = false;
         this.hoverTile = null;
       });
+    }
     }
 
     setupUIHandlers() {
@@ -1395,6 +1500,47 @@
           ctx.restore();
         }
       }
+
+      // Step 5: Render dragged object overlay during relocation
+      if (this.isDraggingObject && this.draggedObject && this.hoverTile) {
+        const tx = this.hoverTile.x;
+        const ty = this.hoverTile.y;
+        const hx = tx * tw;
+        const hy = ty * tw;
+        
+        const type = this.draggedObject.tileVal & 0xFF;
+        const subType = (this.draggedObject.tileVal >> 24) & 0xFF;
+        
+        const isValid = this.canPlaceObjectAt(tx, ty);
+        ctx.fillStyle = isValid ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)";
+        ctx.strokeStyle = isValid ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
+        ctx.lineWidth = 2;
+        ctx.fillRect(hx - tw, hy - tw, tw * 3, tw * 3);
+        ctx.strokeRect(hx - tw, hy - tw, tw * 3, tw * 3);
+        
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.font = "42px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        
+        let emoji = "🧱";
+        if (type === TILE_TYPES.PRODUCER) {
+          emoji = "🌲";
+          if (subType === PRODUCER_SUBS.TOMATO) emoji = "🍅";
+          else if (subType === PRODUCER_SUBS.APPLE) emoji = "🍎";
+        } else if (type === TILE_TYPES.INCREASER) {
+          emoji = "🧪";
+        } else if (type === TILE_TYPES.MAINTENANCE) {
+          emoji = "🚿";
+        } else if (type === TILE_TYPES.COSMETIC) {
+          const noise = (this.draggedObject.x * 17 + this.draggedObject.y * 31) % 100;
+          emoji = noise < 33 ? "🪨" : noise < 66 ? "🍄" : "🌸";
+        }
+        
+        ctx.fillText(emoji, hx + tw / 2, hy + tw / 2);
+        ctx.restore();
+      }
       
       ctx.restore();
     }
@@ -1641,6 +1787,132 @@
       // Center camera
       this.camera.x = 0;
       this.camera.y = 0;
+    }
+
+    findObjectCenterAt(cx, cy) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const tx = cx + dx;
+          const ty = cy + dy;
+          const tileVal = this.getTileTypeAt(tx, ty);
+          const type = tileVal & 0xFF;
+          if (type === TILE_TYPES.PRODUCER || type === TILE_TYPES.INCREASER || 
+              type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.COSMETIC) {
+            return { x: tx, y: ty, tileVal: tileVal };
+          }
+        }
+      }
+      return null;
+    }
+
+    showObjectDetails(obj) {
+      const title = document.getElementById('object-detail-title');
+      const body = document.getElementById('object-detail-body');
+      const footer = document.getElementById('object-detail-buttons');
+      
+      const type = obj.tileVal & 0xFF;
+      const charge = (obj.tileVal >> 8) & 0xFF;
+      const subType = (obj.tileVal >> 24) & 0xFF;
+      
+      let name = "Object";
+      let emoji = "🧱";
+      let cost = 10;
+      let infoHtml = "";
+      
+      if (type === TILE_TYPES.PRODUCER) {
+        if (subType === PRODUCER_SUBS.TREE) {
+          name = "AP Tree";
+          emoji = "🌲";
+          cost = 20;
+          infoHtml = `
+            <div><strong>Type:</strong> AP Crop</div>
+            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
+            <div><strong>Yields:</strong> 🪙 2 Gold & ⚡ 1 AP per second (when watered)</div>
+          `;
+        } else if (subType === PRODUCER_SUBS.TOMATO) {
+          name = "Tomato Crop";
+          emoji = "🍅";
+          cost = 30;
+          infoHtml = `
+            <div><strong>Type:</strong> Gold Crop</div>
+            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
+            <div><strong>Yields:</strong> 🪙 1 Gold & ⚡ 3 AP per second, 5% chance of Food (when watered)</div>
+          `;
+        } else if (subType === PRODUCER_SUBS.APPLE) {
+          name = "Apple Tree";
+          emoji = "🍎";
+          cost = 50;
+          infoHtml = `
+            <div><strong>Type:</strong> Premium Crop</div>
+            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
+            <div><strong>Yields:</strong> 🪙 3 Gold & ⚡ 5 AP per second, 10% chance of Food (when watered)</div>
+          `;
+        }
+      } else if (type === TILE_TYPES.INCREASER) {
+        name = "Fertilizer (+20%)";
+        emoji = "🧪";
+        cost = 40;
+        infoHtml = `
+          <div><strong>Type:</strong> Utility Booster</div>
+          <div><strong>Effect:</strong> Boosts production of crops in surrounding 3x3 footprint by +20%</div>
+        `;
+      } else if (type === TILE_TYPES.MAINTENANCE) {
+        name = "Sprinkler";
+        emoji = "🚿";
+        cost = 60;
+        infoHtml = `
+          <div><strong>Type:</strong> Utility Care</div>
+          <div><strong>Water Charge:</strong> ${Math.round(charge / 255 * 100)}%</div>
+          <div><strong>Effect:</strong> Prevents decay of crops in surrounding 3x3 footprint (recharges at daily check-in)</div>
+        `;
+      } else if (type === TILE_TYPES.COSMETIC) {
+        const noise = (obj.x * 17 + obj.y * 31) % 100;
+        if (noise < 33) {
+          name = "Decorative Rock";
+          emoji = "🪨";
+          cost = 10;
+        } else if (noise < 66) {
+          name = "Magic Mushroom";
+          emoji = "🍄";
+          cost = 15;
+        } else {
+          name = "Flower Pot";
+          emoji = "🌸";
+          cost = 10;
+        }
+        infoHtml = `
+          <div><strong>Type:</strong> Cosmetic Decoration</div>
+          <div><strong>Effect:</strong> Looks outstanding!</div>
+        `;
+      }
+      
+      const refund = Math.floor(cost * 0.7);
+      
+      title.innerHTML = `${emoji} ${name}`;
+      body.innerHTML = `
+        ${infoHtml}
+        <div style="margin-top: 12px; font-weight: bold; color: #ffd700;">Sell Refund: 🪙 ${refund} (70%)</div>
+      `;
+      
+      footer.innerHTML = `
+        <button class="tycoon-btn exit-btn" id="object-sell-btn">🪙 Sell (${refund})</button>
+        <button class="tycoon-btn" id="object-close-btn">Close</button>
+      `;
+      
+      document.getElementById('object-sell-btn').addEventListener('click', () => {
+        this.resources.gold += refund;
+        this.setTileTypeAt(obj.x, obj.y, TILE_TYPES.GRASS);
+        this.postTileUpdateToWorker(obj.x, obj.y, TILE_TYPES.GRASS);
+        this.updateHUD();
+        this.addNotification(`🪙 Sold ${name} for ${refund} gold!`);
+        document.getElementById('tycoon-object-dialog').style.display = 'none';
+      });
+      
+      document.getElementById('object-close-btn').addEventListener('click', () => {
+        document.getElementById('tycoon-object-dialog').style.display = 'none';
+      });
+      
+      document.getElementById('tycoon-object-dialog').style.display = 'flex';
     }
   }
 
