@@ -964,16 +964,15 @@ class UIManager {
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
 
+    const bottomBar = document.createElement('div');
+    bottomBar.id = 'bottomButtonsContainer';
+    bottomBar.className = 'bottom-buttons-container';
+
     const shopBtn = document.createElement('button');
     shopBtn.id = 'shopBtn';
     shopBtn.className = 'floating-shop-btn';
     shopBtn.innerHTML = '🛒 SHOP';
-    document.body.appendChild(shopBtn);
-
-    const stageInd = document.createElement('div');
-    stageInd.id = 'stageIndicator';
-    stageInd.className = 'floating-stage-indicator';
-    document.body.appendChild(stageInd);
+    bottomBar.appendChild(shopBtn);
 
     const lootboxBtn = document.createElement('button');
     lootboxBtn.id = 'lootboxBtn';
@@ -981,7 +980,9 @@ class UIManager {
     const state = getGameState();
     const keys = state?.playerState?.lootboxKeys || 0;
     lootboxBtn.innerHTML = `🎁 LOOTBOX (${keys})`;
-    document.body.appendChild(lootboxBtn);
+    bottomBar.appendChild(lootboxBtn);
+
+    document.body.appendChild(bottomBar);
 
     panel.querySelector('.shop-close').addEventListener('click', () => this.closeShop());
     // close when clicking overlay outside the panel
@@ -6321,12 +6322,7 @@ class UIManager {
   }
 
   static updateStageIndicator() {
-    const el = document.getElementById('stageIndicator');
-    if (!el) return;
-    const state = getGameState();
-    const stage = Math.max(1, Number(state?.stageState?.stage) || 1);
-    const variation = String(state?.stageState?.stageVariation || 'A').toUpperCase();
-    el.textContent = `STAGE ${stage}-${variation}`;
+    // Stage indicator removed from UI
   }
 
   static refreshGameUI() {
