@@ -1022,15 +1022,27 @@ class UIManager {
     cosmeticsTab.id = 'cosmeticsPanel';
     cosmeticsTab.className = 'pull-tab left-tab';
     cosmeticsTab.innerHTML = `
-      <div class="tab-header">
-        <h3>✨ COSMETICS</h3>
-        <div>
+      <div class="tab-header" style="flex-direction: column; align-items: stretch; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <h3>✨ COSMETICS</h3>
           <button class="tab-close">✕</button>
+        </div>
+        <div class="cosmetics-tabs">
+          <button class="cosmetics-tab-btn active" data-subtab="death">DEATH EFFECTS</button>
+          <button class="cosmetics-tab-btn" data-subtab="completion">COMPLETION</button>
         </div>
       </div>
       <div class="tab-content cosmetics-board" id="cosmeticsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
     `;
     document.body.appendChild(cosmeticsTab);
+
+    // Bind sub-tabs event listeners
+    cosmeticsTab.querySelectorAll('.cosmetics-tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        UIManager.activeCosmeticsSubtab = e.currentTarget.dataset.subtab;
+        UIManager.updateCosmeticsList();
+      });
+    });
 
     // Right tab - To-Dos
     const rightTab = document.createElement('div');
@@ -2441,102 +2453,240 @@ class UIManager {
     const container = document.getElementById('cosmeticsList');
     if (!container) return;
 
-    if (!Array.isArray(state.playerState.unlockedDeathEffects)) {
-      state.playerState.unlockedDeathEffects = ['Default'];
+    if (!UIManager.activeCosmeticsSubtab) {
+      UIManager.activeCosmeticsSubtab = 'death';
     }
-    if (!state.playerState.equippedDeathEffect) {
-      state.playerState.equippedDeathEffect = 'Default';
+    const subtab = UIManager.activeCosmeticsSubtab;
+
+    // Highlight active subtab buttons
+    const panel = document.getElementById('cosmeticsPanel');
+    if (panel) {
+      panel.querySelectorAll('.cosmetics-tab-btn').forEach(btn => {
+        if (btn.dataset.subtab === subtab) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
     }
 
-    const effects = state.config.deathEffects || {};
-    const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
-      ? TaskManager.getMaxPotentialDiamonds()
-      : 0;
-
-    let html = '';
-    Object.entries(effects).forEach(([id, info]) => {
-      const isUnlocked = state.playerState.unlockedDeathEffects.includes(id);
-      const isEquipped = state.playerState.equippedDeathEffect === id;
-
-      const priceMultiplier = info.tier === 'premium' ? 3.0 : 2.0;
-      const minPrice = info.tier === 'premium' ? 15 : 10;
-      const cost = Math.max(minPrice, Math.ceil(maxDiamonds * priceMultiplier));
-
-      let btnHtml = '';
-      if (isEquipped) {
-        btnHtml = `<button class="btn-cosmetic-action btn-equipped-cosmetic" disabled>EQUIPPED</button>`;
-      } else if (isUnlocked) {
-        btnHtml = `<button class="btn-cosmetic-action btn-equip-cosmetic" data-id="${id}">EQUIP</button>`;
-      } else {
-        const canAfford = (state.playerState.diamonds || 0) >= cost;
-        btnHtml = `<button class="btn-cosmetic-action btn-buy-cosmetic" data-id="${id}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>BUY (${cost} 💎)</button>`;
+    if (subtab === 'death') {
+      if (!Array.isArray(state.playerState.unlockedDeathEffects)) {
+        state.playerState.unlockedDeathEffects = ['Default'];
+      }
+      if (!state.playerState.equippedDeathEffect) {
+        state.playerState.equippedDeathEffect = 'Default';
       }
 
-      html += `
-        <div class="cosmetic-card ${info.tier}">
-          <div class="cosmetic-card-info">
-            <span class="cosmetic-name">${info.previewIcon} ${info.name}</span>
-            <span class="cosmetic-desc">${info.desc}</span>
-            <span class="cosmetic-tier">${info.tier.toUpperCase()}</span>
-          </div>
-          <div class="cosmetic-card-actions" style="display: flex; flex-direction: column; gap: 4px;">
-            ${btnHtml}
-            <button class="btn-cosmetic-action btn-preview-cosmetic" data-id="${id}">PREVIEW</button>
-          </div>
-        </div>
-      `;
-    });
+      const effects = state.config.deathEffects || {};
+      const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
+        ? TaskManager.getMaxPotentialDiamonds()
+        : 0;
 
-    container.innerHTML = html;
+      let html = '';
+      Object.entries(effects).forEach(([id, info]) => {
+        const isUnlocked = state.playerState.unlockedDeathEffects.includes(id);
+        const isEquipped = state.playerState.equippedDeathEffect === id;
 
-    container.querySelectorAll('.btn-cosmetic-action').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.dataset.id;
-        if (btn.classList.contains('btn-buy-cosmetic')) {
-          const cost = Number(e.currentTarget.dataset.cost);
-          if ((state.playerState.diamonds || 0) >= cost) {
-            state.spendDiamonds(cost);
-            state.unlockDeathEffect(id);
+        const priceMultiplier = info.tier === 'premium' ? 3.0 : 2.0;
+        const minPrice = info.tier === 'premium' ? 15 : 10;
+        const cost = Math.max(minPrice, Math.ceil(maxDiamonds * priceMultiplier));
+
+        let btnHtml = '';
+        if (isEquipped) {
+          btnHtml = `<button class="btn-cosmetic-action btn-equipped-cosmetic" disabled>EQUIPPED</button>`;
+        } else if (isUnlocked) {
+          btnHtml = `<button class="btn-cosmetic-action btn-equip-cosmetic" data-id="${id}">EQUIP</button>`;
+        } else {
+          const canAfford = (state.playerState.diamonds || 0) >= cost;
+          btnHtml = `<button class="btn-cosmetic-action btn-buy-cosmetic" data-id="${id}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>BUY (${cost} 💎)</button>`;
+        }
+
+        html += `
+          <div class="cosmetic-card ${info.tier}">
+            <div class="cosmetic-card-info">
+              <span class="cosmetic-name">${info.previewIcon} ${info.name}</span>
+              <span class="cosmetic-desc">${info.desc}</span>
+              <span class="cosmetic-tier">${info.tier.toUpperCase()}</span>
+            </div>
+            <div class="cosmetic-card-actions" style="display: flex; flex-direction: column; gap: 4px;">
+              ${btnHtml}
+              <button class="btn-cosmetic-action btn-preview-cosmetic" data-id="${id}">PREVIEW</button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.btn-cosmetic-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (btn.classList.contains('btn-buy-cosmetic')) {
+            const cost = Number(e.currentTarget.dataset.cost);
+            if ((state.playerState.diamonds || 0) >= cost) {
+              state.spendDiamonds(cost);
+              state.unlockDeathEffect(id);
+              state.save();
+              this.updateCosmeticsList();
+              try { SoundManager.play('coin'); } catch (err) { }
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Unlocked ${id}!`, {
+                color: UIManager.themeColor('--accent-gold', '#FFB33F')
+              });
+            }
+          } else if (btn.classList.contains('btn-equip-cosmetic')) {
+            state.equipDeathEffect(id);
             state.save();
             this.updateCosmeticsList();
-            try { SoundManager.play('coin'); } catch (err) { }
-            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Unlocked ${id}!`, {
-              color: UIManager.themeColor('--accent-gold', '#FFB33F')
-            });
-          }
-        } else if (btn.classList.contains('btn-equip-cosmetic')) {
-          state.equipDeathEffect(id);
-          state.save();
-          this.updateCosmeticsList();
-          try { SoundManager.play('lootbox_open'); } catch (err) { }
-        } else if (btn.classList.contains('btn-preview-cosmetic')) {
-          const prevEquipped = state.playerState.equippedDeathEffect;
-          state.playerState.equippedDeathEffect = id;
+            try { SoundManager.play('lootbox_open'); } catch (err) { }
+          } else if (btn.classList.contains('btn-preview-cosmetic')) {
+            const prevEquipped = state.playerState.equippedDeathEffect;
+            state.playerState.equippedDeathEffect = id;
 
-          const panel = document.getElementById('cosmeticsPanel');
-          if (panel) {
-            panel.classList.add('preview-hiding');
-          }
+            const panel = document.getElementById('cosmeticsPanel');
+            if (panel) {
+              panel.classList.add('preview-hiding');
+            }
 
-          try {
-            EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2 - 100, false);
-            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Previewing ${id}`, {
-              color: '#ffd700',
-              duration: 1000
-            });
-          } catch (err) {
-            console.warn(err);
-          } finally {
-            state.playerState.equippedDeathEffect = prevEquipped;
+            try {
+              EnemyDeathAnimation.burst(window.innerWidth / 2, window.innerHeight / 2 - 100, false);
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Previewing ${id}`, {
+                color: '#ffd700',
+                duration: 1000
+              });
+            } catch (err) {
+              console.warn(err);
+            } finally {
+              state.playerState.equippedDeathEffect = prevEquipped;
+              setTimeout(() => {
+                if (panel) {
+                  panel.classList.remove('preview-hiding');
+                }
+              }, 1200);
+            }
+          }
+        });
+      });
+    } else {
+      // Completion sub-tab!
+      if (!Array.isArray(state.playerState.unlockedCompletionAnimations)) {
+        state.playerState.unlockedCompletionAnimations = ['Default'];
+      }
+      if (!state.playerState.equippedCompletionAnimation) {
+        state.playerState.equippedCompletionAnimation = 'Default';
+      }
+
+      const anims = state.config.completionAnimations || {};
+      const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
+        ? TaskManager.getMaxPotentialDiamonds()
+        : 0;
+
+      let html = '';
+      Object.entries(anims).forEach(([id, info]) => {
+        const isUnlocked = state.playerState.unlockedCompletionAnimations.includes(id);
+        const isEquipped = state.playerState.equippedCompletionAnimation === id;
+
+        const priceMultiplier = info.tier === 'premium' ? 3.0 : 2.0;
+        const minPrice = info.tier === 'premium' ? 15 : 10;
+        const cost = Math.max(minPrice, Math.ceil(maxDiamonds * priceMultiplier));
+
+        let btnHtml = '';
+        if (isEquipped) {
+          btnHtml = `<button class="btn-cosmetic-action btn-equipped-cosmetic" disabled>EQUIPPED</button>`;
+        } else if (isUnlocked) {
+          btnHtml = `<button class="btn-cosmetic-action btn-equip-cosmetic" data-id="${id}">EQUIP</button>`;
+        } else {
+          const canAfford = (state.playerState.diamonds || 0) >= cost;
+          btnHtml = `<button class="btn-cosmetic-action btn-buy-cosmetic" data-id="${id}" data-cost="${cost}" ${canAfford ? '' : 'disabled'}>BUY (${cost} 💎)</button>`;
+        }
+
+        html += `
+          <div class="cosmetic-card ${info.tier}">
+            <div class="cosmetic-card-info">
+              <span class="cosmetic-name">${info.previewIcon} ${info.name}</span>
+              <span class="cosmetic-desc">${info.desc}</span>
+              <span class="cosmetic-tier">${info.tier.toUpperCase()}</span>
+            </div>
+            <div class="cosmetic-card-actions" style="display: flex; flex-direction: column; gap: 4px;">
+              ${btnHtml}
+              <button class="btn-cosmetic-action btn-preview-cosmetic" data-id="${id}">PREVIEW</button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      container.querySelectorAll('.btn-cosmetic-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (btn.classList.contains('btn-buy-cosmetic')) {
+            const cost = Number(e.currentTarget.dataset.cost);
+            if ((state.playerState.diamonds || 0) >= cost) {
+              state.spendDiamonds(cost);
+              state.unlockCompletionAnimation(id);
+              state.save();
+              this.updateCosmeticsList();
+              try { SoundManager.play('coin'); } catch (err) { }
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Unlocked ${id}!`, {
+                color: UIManager.themeColor('--accent-gold', '#FFB33F')
+              });
+            }
+          } else if (btn.classList.contains('btn-equip-cosmetic')) {
+            state.equipCompletionAnimation(id);
+            state.save();
+            this.updateCosmeticsList();
+            try { SoundManager.play('lootbox_open'); } catch (err) { }
+          } else if (btn.classList.contains('btn-preview-cosmetic')) {
+            const panel = document.getElementById('cosmeticsPanel');
+            if (panel) {
+              panel.classList.add('preview-hiding');
+            }
+
+            // Create temporary dummy element in screen center for preview
+            const dummyCard = document.createElement('div');
+            dummyCard.className = 'task-card';
+            dummyCard.style.cssText = `
+              position: fixed;
+              left: 50%;
+              top: 50%;
+              transform: translate(-50%, -50%);
+              width: 200px;
+              height: 100px;
+              background: linear-gradient(135deg, #1e1e2f, #2d2d44);
+              border: 1px solid var(--accent-gold, #ffd700);
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-family: 'Press Start 2P', monospace;
+              font-size: 8px;
+              color: #fff;
+              box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+              z-index: 99999;
+              pointer-events: none;
+            `;
+            dummyCard.textContent = 'TASK COMPLETED!';
+            document.body.appendChild(dummyCard);
+
+            try {
+              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                RetroTaskCompleteAnimation.play(dummyCard, id);
+              }
+            } catch (err) {
+              console.warn(err);
+            }
+
             setTimeout(() => {
+              try { dummyCard.remove(); } catch (e) {}
               if (panel) {
                 panel.classList.remove('preview-hiding');
               }
             }, 1200);
           }
-        }
+        });
       });
-    });
+    }
   }
 
   static updatePetUI() {
@@ -4954,8 +5104,10 @@ class UIManager {
     const board = document.getElementById('dailiesList');
     if (!board) return null;
 
+    const panel = document.getElementById('dailiesPanel');
+    if (!panel || !panel.classList.contains('open')) return null;
+
     const rect = board.getBoundingClientRect();
-    if (rect.width < 50 || rect.height < 50) return null;
     return {
       board,
       rect,
@@ -5623,8 +5775,10 @@ class UIManager {
     const board = document.getElementById('todosList');
     if (!board) return null;
 
+    const panel = document.getElementById('todosPanel');
+    if (!panel || !panel.classList.contains('open')) return null;
+
     const rect = board.getBoundingClientRect();
-    if (rect.width < 50 || rect.height < 50) return null;
     return {
       board,
       rect,

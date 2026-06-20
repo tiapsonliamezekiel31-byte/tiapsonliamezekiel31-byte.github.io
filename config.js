@@ -819,6 +819,15 @@ const DEFAULT_GAME_CONFIG = {
     'Glitch Matrix': { name: 'Glitch Matrix', desc: 'Matrix digital falling code grid dissolving', tier: 'premium', previewIcon: '📟' },
     'Holy Beam': { name: 'Holy Beam', desc: 'Pillar of divine golden light striking from above', tier: 'premium', previewIcon: '✨' },
     'Rainbow Pixel': { name: 'Rainbow Pixel', desc: 'Enhanced rapid pixel burst shifting neon hues', tier: 'premium', previewIcon: '👾' }
+  },
+  completionAnimations: {
+    'Default': { name: 'Default Sparkle', desc: 'Standard pixelated sparks', tier: 'regular', previewIcon: '✨' },
+    'Confetti': { name: 'Confetti Popper', desc: 'Festive colored paper explosion', tier: 'regular', previewIcon: '🎉' },
+    'Gold Rush': { name: 'Gold Rush', desc: 'Rain of shiny gold coins', tier: 'regular', previewIcon: '🪙' },
+    'Firework': { name: 'Firework Show', desc: 'Radial fireworks color bursts', tier: 'regular', previewIcon: '🎆' },
+    'Cosmic': { name: 'Cosmic Twinkle', desc: 'Shimmering stars rising upwards', tier: 'premium', previewIcon: '⭐' },
+    'Matrix': { name: 'Glitch Matrix', desc: 'Matrix falling digital green code', tier: 'premium', previewIcon: '📟' },
+    'Holy Beam': { name: 'Holy Beam', desc: 'Pillar of divine golden light striking down', tier: 'premium', previewIcon: '⚡' }
   }
 };
 

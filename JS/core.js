@@ -181,7 +181,9 @@ class GameState {
       unlockedPetAnimations: ['Default'],
       equippedPetAnimation: 'Default',
       unlockedDeathEffects: ['Default'],
-      equippedDeathEffect: 'Default'
+      equippedDeathEffect: 'Default',
+      unlockedCompletionAnimations: ['Default'],
+      equippedCompletionAnimation: 'Default'
     };
     
     this.dailiesState = {
@@ -307,6 +309,8 @@ class GameState {
     this.playerState.equippedPetAnimation = 'Default';
     this.playerState.unlockedDeathEffects = ['Default'];
     this.playerState.equippedDeathEffect = 'Default';
+    this.playerState.unlockedCompletionAnimations = ['Default'];
+    this.playerState.equippedCompletionAnimation = 'Default';
 
     // Reset Nemesis attributes
     this.nemesisState.attributes = {
@@ -508,6 +512,19 @@ class GameState {
 
   equipDeathEffect(effectId) {
     this.playerState.equippedDeathEffect = effectId;
+  }
+
+  unlockCompletionAnimation(animId) {
+    if (!this.playerState.unlockedCompletionAnimations) {
+      this.playerState.unlockedCompletionAnimations = ['Default'];
+    }
+    if (!this.playerState.unlockedCompletionAnimations.includes(animId)) {
+      this.playerState.unlockedCompletionAnimations.push(animId);
+    }
+  }
+
+  equipCompletionAnimation(animId) {
+    this.playerState.equippedCompletionAnimation = animId;
   }
 
   setLootboxKeys(newVal) {
@@ -790,6 +807,8 @@ class GameState {
       if (this.playerState.equippedPetAnimation === undefined) this.playerState.equippedPetAnimation = 'Default';
       if (this.playerState.unlockedDeathEffects === undefined) this.playerState.unlockedDeathEffects = ['Default'];
       if (this.playerState.equippedDeathEffect === undefined) this.playerState.equippedDeathEffect = 'Default';
+      if (this.playerState.unlockedCompletionAnimations === undefined) this.playerState.unlockedCompletionAnimations = ['Default'];
+      if (this.playerState.equippedCompletionAnimation === undefined) this.playerState.equippedCompletionAnimation = 'Default';
       const weaponSlots = Array.isArray(this.playerState.weapons) ? this.playerState.weapons.length : 0;
       if (!Array.isArray(this.playerState.weaponElements)) {
         this.playerState.weaponElements = Array(weaponSlots).fill(null);

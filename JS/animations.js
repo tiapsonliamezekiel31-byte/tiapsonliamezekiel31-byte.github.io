@@ -1327,7 +1327,7 @@ class RetroDodgeAnimation {
 }
 
 class RetroTaskCompleteAnimation {
-  static play(element) {
+  static play(element, forceAnimId = null) {
     console.log('RetroTaskCompleteAnimation.play', element);
     const activePanel = element ? (element.closest('.pull-tab') || element.closest('.popup-container') || element.closest('.shop-overlay')) : null;
     const container = activePanel || document.body;
@@ -1339,13 +1339,43 @@ class RetroTaskCompleteAnimation {
     const taskId = element?.dataset?.id;
     const task = (taskId && typeof TaskManager !== 'undefined') ? TaskManager.getTaskById(taskId) : null;
     const difficulty = task ? task.difficulty : 'Easy';
-    const isHard = (difficulty === 'Hard' || difficulty === 'Ultra');
 
-    // Scale options by difficulty
-    const burstCount = isHard ? (lowPower ? 30 : 60) : (lowPower ? 15 : 30);
-    const colors = isHard
-      ? ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF']
-      : ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
+    // Equipped animation ID
+    let animId = forceAnimId;
+    if (!animId) {
+      try {
+        const state = getGameState();
+        animId = state.playerState.equippedCompletionAnimation || 'Default';
+      } catch (e) {
+        animId = 'Default';
+      }
+    }
+
+    // Set intensity parameters based on difficulty (100x bolder!)
+    let difficultyMultiplier = 1.0;
+    let shakeAmt = 12;
+    let shakeDur = 250;
+    let flashColor = 'rgba(255, 215, 0, 0.2)';
+    let flashDur = 300;
+
+    if (difficulty === 'Medium') {
+      difficultyMultiplier = 1.6;
+      shakeAmt = 18;
+      shakeDur = 300;
+      flashColor = 'rgba(255, 215, 0, 0.28)';
+    } else if (difficulty === 'Hard') {
+      difficultyMultiplier = 2.5;
+      shakeAmt = 26;
+      shakeDur = 400;
+      flashColor = 'rgba(255, 51, 102, 0.35)';
+      flashDur = 400;
+    } else if (difficulty === 'Ultra') {
+      difficultyMultiplier = 4.0;
+      shakeAmt = 35;
+      shakeDur = 500;
+      flashColor = 'rgba(255, 51, 102, 0.5)';
+      flashDur = 500;
+    }
 
     // Determine center; fallback to screen center if no rect
     let cx = window.innerWidth / 2;
@@ -1359,80 +1389,405 @@ class RetroTaskCompleteAnimation {
       }
     }
 
-    // Play radial shockwave ring from element center
+    // Play radial shockwave ring from element center (Larger and bolder!)
     if (rect && rect.width > 0 && rect.height > 0) {
       const shockwave = document.createElement('div');
-      shockwave.className = isHard ? 'task-complete-shockwave rainbow' : 'task-complete-shockwave';
+      const isHard = (difficulty === 'Hard' || difficulty === 'Ultra');
+      shockwave.className = isHard ? 'task-complete-shockwave rainbow active' : 'task-complete-shockwave active';
       shockwave.style.left = `${cx}px`;
       shockwave.style.top = `${cy}px`;
-      shockwave.style.width = `${rect.width}px`;
-      shockwave.style.height = `${rect.height}px`;
+      shockwave.style.width = `${rect.width * 1.5}px`;
+      shockwave.style.height = `${rect.height * 1.5}px`;
+      shockwave.style.borderWidth = '4px';
+      shockwave.style.boxShadow = '0 0 30px currentColor';
       document.body.appendChild(shockwave);
-
-      requestAnimationFrame(() => {
-        shockwave.classList.add('active');
-      });
 
       setTimeout(() => {
         try { shockwave.remove(); } catch (e) { }
-      }, 850);
+      }, 950);
     }
 
     // Play screen flash & shake (juicy feedback)
     if (typeof ScreenEffects !== 'undefined') {
       if (ScreenEffects.flash) {
-        ScreenEffects.flash(isHard ? 'rgba(255, 51, 102, 0.16)' : 'rgba(255, 215, 0, 0.12)', 200);
+        ScreenEffects.flash(flashColor, flashDur);
       }
       if (ScreenEffects.shake) {
-        ScreenEffects.shake(isHard ? 14 : 6, isHard ? 250 : 160);
+        ScreenEffects.shake(shakeAmt, shakeDur);
       }
     }
 
-    // Spawn traveling particles
-    for (let i = 0; i < burstCount; i++) {
-      const square = document.createElement('div');
-      const size = (8 + Math.random() * 15) * scaleFactor;
-      const color = colors[Math.floor(Math.random() * colors.length)];
+    // Spawn traveling particles based on type (increased counts and sizes!)
+    const burstCount = Math.round((lowPower ? 25 : 55) * difficultyMultiplier * scaleFactor);
 
-      square.style.cssText = `
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: ${size}px;
-        height: ${size}px;
-        background: ${color};
-        pointer-events: none;
-        z-index: 999998;
-        box-shadow: 0 0 8px ${color};
-        will-change: transform, opacity;
-      `;
-      container.appendChild(square);
+    if (animId === 'Confetti') {
+      const colors = ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF'];
+      for (let i = 0; i < burstCount; i++) {
+        const conf = document.createElement('div');
+        const sizeW = (8 + Math.random() * 16) * scaleFactor;
+        const sizeH = (16 + Math.random() * 24) * scaleFactor;
+        const color = colors[Math.floor(Math.random() * colors.length)];
 
-      const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.4 - 0.2);
-      const velocity = 5 + Math.random() * 8;
-      let vx = Math.cos(angle) * velocity;
-      let vy = Math.sin(angle) * velocity - 4; // upward bias
+        conf.style.cssText = `
+          position: fixed; left: 0; top: 0;
+          width: ${sizeW}px; height: ${sizeH}px;
+          background: ${color}; pointer-events: none;
+          z-index: 999998; will-change: transform, opacity;
+          box-shadow: 0 0 10px ${color};
+        `;
+        container.appendChild(conf);
 
-      let x = cx;
-      let y = cy;
-      let life = 1.0;
-      const decay = 0.005 + Math.random() * 0.004;
-      const gravity = 0.2;
+        const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.4 - 0.2);
+        const velocity = (6 + Math.random() * 9) * (difficultyMultiplier * 0.6 + 0.4);
+        let vx = Math.cos(angle) * velocity;
+        let vy = Math.sin(angle) * velocity - 7;
 
-      const animateParticle = () => {
-        vy += gravity;
-        x += vx;
-        y += vy;
-        life -= decay;
+        let x = cx;
+        let y = cy;
+        let life = 1.0;
+        const decay = 0.004 + Math.random() * 0.003;
+        const gravity = 0.18;
+        let rot = Math.random() * 360;
+        let rotSpeed = -15 + Math.random() * 30;
 
-        if (life > 0) {
-          square.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0) scale(${life})`;
-          requestAnimationFrame(animateParticle);
-        } else {
-          try { square.remove(); } catch (e) { }
-        }
-      };
-      requestAnimationFrame(animateParticle);
+        const animateConfetti = () => {
+          vy += gravity;
+          x += vx;
+          y += vy;
+          rot += rotSpeed;
+          life -= decay;
+
+          if (life > 0) {
+            conf.style.transform = `translate3d(${x - sizeW / 2}px, ${y - sizeH / 2}px, 0) rotate(${rot}deg) scale(${life * 1.5})`;
+            conf.style.opacity = life;
+            requestAnimationFrame(animateConfetti);
+          } else {
+            try { conf.remove(); } catch (e) {}
+          }
+        };
+        requestAnimationFrame(animateConfetti);
+      }
+    } 
+    else if (animId === 'Gold Rush') {
+      for (let i = 0; i < burstCount; i++) {
+        const coin = document.createElement('div');
+        coin.textContent = '🪙';
+        coin.style.cssText = `
+          position: fixed; left: 0; top: 0;
+          font-size: ${Math.round((20 + Math.random() * 20) * scaleFactor)}px;
+          pointer-events: none; z-index: 999998;
+          will-change: transform, opacity;
+          text-shadow: 0 0 10px #ffb300, 0 0 20px #ffea00;
+        `;
+        container.appendChild(coin);
+
+        const angle = -Math.PI * 0.05 - (Math.PI * 0.9 * i) / burstCount + (Math.random() * 0.2 - 0.1);
+        const velocity = (7 + Math.random() * 10) * (difficultyMultiplier * 0.6 + 0.4);
+        let vx = Math.cos(angle) * velocity;
+        let vy = Math.sin(angle) * velocity - 8;
+
+        let x = cx;
+        let y = cy;
+        let life = 1.0;
+        const decay = 0.003 + Math.random() * 0.003;
+        const gravity = 0.25;
+
+        const animateCoin = () => {
+          vy += gravity;
+          x += vx;
+          y += vy;
+          life -= decay;
+
+          if (life > 0) {
+            coin.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${life * 1.4})`;
+            coin.style.opacity = life;
+            requestAnimationFrame(animateCoin);
+          } else {
+            try { coin.remove(); } catch (e) {}
+          }
+        };
+        requestAnimationFrame(animateCoin);
+      }
+    }
+    else if (animId === 'Firework') {
+      const colors = ['#FF1493', '#00FFFF', '#FFD700', '#7FFF00', '#FF4500', '#9400D3'];
+      const miniBursts = Math.min(8, Math.ceil(difficultyMultiplier * 1.5));
+      
+      for (let b = 0; b < miniBursts; b++) {
+        const fireworkColor = colors[Math.floor(Math.random() * colors.length)];
+        const delay = b * 120;
+        const offsetRange = b === 0 ? 0 : 80 + Math.random() * 100;
+        const offsetAngle = Math.random() * Math.PI * 2;
+        const bcx = cx + Math.cos(offsetAngle) * offsetRange;
+        const bcy = cy + Math.sin(offsetAngle) * offsetRange;
+
+        setTimeout(() => {
+          const particlesPerFirework = Math.round(burstCount / 1.5);
+          for (let i = 0; i < particlesPerFirework; i++) {
+            const part = document.createElement('div');
+            const size = (10 + Math.random() * 16) * scaleFactor;
+            part.style.cssText = `
+              position: fixed; left: 0; top: 0;
+              width: ${size}px; height: ${size}px;
+              border-radius: 50%;
+              background: ${fireworkColor}; pointer-events: none;
+              z-index: 999998; box-shadow: 0 0 15px ${fireworkColor}, 0 0 30px ${fireworkColor};
+              will-change: transform, opacity;
+            `;
+            container.appendChild(part);
+
+            const angle = (Math.PI * 2 * i) / particlesPerFirework;
+            const velocity = (4 + Math.random() * 8);
+            const vx = Math.cos(angle) * velocity;
+            const vy = Math.sin(angle) * velocity;
+
+            let px = bcx;
+            let py = bcy;
+            let life = 1.0;
+            const decay = 0.01 + Math.random() * 0.008;
+
+            const animateFirework = () => {
+              px += vx;
+              py += vy;
+              life -= decay;
+
+              if (life > 0) {
+                part.style.transform = `translate3d(${px - size / 2}px, ${py - size / 2}px, 0) scale(${life * 1.6})`;
+                part.style.opacity = life;
+                requestAnimationFrame(animateFirework);
+              } else {
+                try { part.remove(); } catch (e) {}
+              }
+            };
+            requestAnimationFrame(animateFirework);
+          }
+        }, delay);
+      }
+    }
+    else if (animId === 'Cosmic') {
+      for (let i = 0; i < burstCount; i++) {
+        const star = document.createElement('div');
+        star.textContent = '⭐';
+        star.style.cssText = `
+          position: fixed; left: 0; top: 0;
+          font-size: ${Math.round((16 + Math.random() * 20) * scaleFactor)}px;
+          pointer-events: none; z-index: 999998;
+          will-change: transform, opacity;
+          text-shadow: 0 0 15px #fff, 0 0 30px var(--accent-gold, #ffd700);
+        `;
+        container.appendChild(star);
+
+        const delay = Math.random() * 400;
+        const speedY = -(3 + Math.random() * 5) * (difficultyMultiplier * 0.5 + 0.5);
+
+        const startX = cx - 80 + Math.random() * 160;
+        const startY = cy + 30 - Math.random() * 60;
+
+        setTimeout(() => {
+          let px = startX;
+          let py = startY;
+          let life = 1.0;
+          const decay = 0.008 + Math.random() * 0.006;
+
+          const animateStar = () => {
+            py += speedY;
+            px += Math.sin(py * 0.04) * 2.5;
+            life -= decay;
+
+            if (life > 0) {
+              star.style.transform = `translate3d(${px}px, ${py}px, 0) scale(${life * (1.2 + 0.6 * Math.sin(py * 0.08))})`;
+              star.style.opacity = life;
+              requestAnimationFrame(animateStar);
+            } else {
+              try { star.remove(); } catch (e) {}
+            }
+          };
+          requestAnimationFrame(animateStar);
+        }, delay);
+      }
+    }
+    else if (animId === 'Matrix') {
+      const columns = Math.round(9 * difficultyMultiplier);
+      const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$#@%&';
+
+      for (let c = 0; c < columns; c++) {
+        const delay = Math.random() * 300;
+        const offset = rect ? (rect.left + (rect.width * c) / columns) : (cx - 200 + (400 * c) / columns);
+
+        setTimeout(() => {
+          const colLength = 6 + Math.floor(Math.random() * 8);
+          const charsList = [];
+          
+          for (let charIdx = 0; charIdx < colLength; charIdx++) {
+            const charDiv = document.createElement('div');
+            charDiv.className = 'matrix-char';
+            charDiv.style.cssText = `
+              position: fixed;
+              left: ${offset}px;
+              color: ${charIdx === 0 ? '#ffffff' : '#39FF14'};
+              font-family: monospace;
+              font-size: ${Math.round((14 + Math.random() * 6) * scaleFactor)}px;
+              font-weight: bold;
+              text-shadow: 0 0 8px #39FF14, 0 0 15px #39FF14;
+              pointer-events: none;
+              z-index: 999998;
+              will-change: transform, opacity;
+            `;
+            charDiv.textContent = characters[Math.floor(Math.random() * characters.length)];
+            container.appendChild(charDiv);
+            charsList.push(charDiv);
+          }
+
+          let px = offset;
+          let py = rect ? rect.top - 30 : cy - 120;
+          const dropSpeed = (4 + Math.random() * 7) * (difficultyMultiplier * 0.4 + 0.6);
+          let duration = 800 + Math.random() * 400;
+          const start = performance.now();
+
+          const animateMatrix = () => {
+            const elapsed = performance.now() - start;
+            const progress = elapsed / duration;
+
+            if (progress < 1) {
+              py += dropSpeed;
+              charsList.forEach((charDiv, index) => {
+                const charY = py - (index * 16 * scaleFactor);
+                charDiv.style.transform = `translate3d(0, ${charY}px, 0)`;
+                charDiv.style.opacity = Math.max(0, 1.2 - progress - (index / colLength) * 0.4);
+                if (Math.random() < 0.2) {
+                  charDiv.textContent = characters[Math.floor(Math.random() * characters.length)];
+                }
+              });
+              requestAnimationFrame(animateMatrix);
+            } else {
+              charsList.forEach(c => { try { c.remove(); } catch (err) {} });
+            }
+          };
+          requestAnimationFrame(animateMatrix);
+        }, delay);
+      }
+    }
+    else if (animId === 'Holy Beam') {
+      const beamCount = Math.min(4, Math.ceil(difficultyMultiplier * 1.2));
+      for (let b = 0; b < beamCount; b++) {
+        const delay = b * 180;
+        const bOffset = (b - (beamCount - 1) / 2) * 80;
+
+        setTimeout(() => {
+          const holyBeam = document.createElement('div');
+          holyBeam.className = 'holy-light-beam';
+          holyBeam.style.left = `${cx + bOffset - 90}px`;
+          holyBeam.style.top = '0px';
+          holyBeam.style.width = '180px';
+          holyBeam.style.height = '100vh';
+          holyBeam.style.height = '100dvh';
+          holyBeam.style.background = 'linear-gradient(90deg, transparent, rgba(255, 230, 100, 0.5) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 230, 100, 0.5) 75%, transparent)';
+          holyBeam.style.boxShadow = '0 0 100px rgba(255, 215, 106, 0.8), 0 0 200px rgba(255, 215, 106, 0.6)';
+          
+          if (difficulty === 'Hard' || difficulty === 'Ultra') {
+            holyBeam.style.background = 'linear-gradient(90deg, transparent, rgba(255, 100, 200, 0.6) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 100, 200, 0.6) 75%, transparent)';
+            holyBeam.style.boxShadow = '0 0 120px rgba(255, 100, 200, 0.9), 0 0 240px rgba(255, 100, 200, 0.7)';
+          }
+          document.body.appendChild(holyBeam);
+
+          // Spawn ground sparks
+          const sparkCount = Math.round(18 * difficultyMultiplier);
+          for (let s = 0; s < sparkCount; s++) {
+            const spark = document.createElement('div');
+            const size = (8 + Math.random() * 12) * scaleFactor;
+            const sparkColor = (difficulty === 'Hard' || difficulty === 'Ultra') ? '#ff66cc' : '#FFE664';
+            spark.style.cssText = `
+              position: fixed;
+              left: ${cx + bOffset - 50 + Math.random() * 100}px;
+              top: ${cy + 20}px;
+              width: ${size}px; height: ${size}px;
+              background: ${sparkColor};
+              box-shadow: 0 0 15px ${sparkColor}, 0 0 30px ${sparkColor};
+              pointer-events: none; z-index: 999999;
+              will-change: transform, opacity;
+            `;
+            container.appendChild(spark);
+
+            const speedY = -(2 + Math.random() * 6);
+            const speedX = -4 + Math.random() * 8;
+            let sx = parseFloat(spark.style.left);
+            let sy = parseFloat(spark.style.top);
+            let life = 1.0;
+            const decay = 0.015 + Math.random() * 0.01;
+
+            const animateSpark = () => {
+              sy += speedY;
+              sx += speedX;
+              life -= decay;
+              if (life > 0) {
+                spark.style.transform = `translate3d(${sx - parseFloat(spark.style.left)}px, ${sy - parseFloat(spark.style.top)}px, 0) scale(${life * 1.5})`;
+                spark.style.opacity = life;
+                requestAnimationFrame(animateSpark);
+              } else {
+                try { spark.remove(); } catch (e) {}
+              }
+            };
+            requestAnimationFrame(animateSpark);
+          }
+
+          setTimeout(() => {
+            try { holyBeam.remove(); } catch (e) {}
+          }, 800);
+        }, delay);
+      }
+    }
+    else {
+      // Default sparkle (Standard Sparkle) - 100x bolder!
+      const colors = (difficulty === 'Hard' || difficulty === 'Ultra')
+        ? ['#FF3366', '#FF9933', '#FFFF33', '#33CCFF', '#33FF99', '#9933FF']
+        : ['#FFD700', '#FFA500', '#FFF8DC', '#FFB33F'];
+
+      for (let i = 0; i < burstCount; i++) {
+        const square = document.createElement('div');
+        const size = (16 + Math.random() * 24) * scaleFactor;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        square.style.cssText = `
+          position: fixed;
+          left: 0;
+          top: 0;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          pointer-events: none;
+          z-index: 999998;
+          box-shadow: 0 0 15px ${color}, 0 0 30px ${color};
+          will-change: transform, opacity;
+        `;
+        container.appendChild(square);
+
+        const angle = (Math.PI * 2 * i) / burstCount + (Math.random() * 0.4 - 0.2);
+        const velocity = (7 + Math.random() * 11) * (difficultyMultiplier * 0.5 + 0.5);
+        let vx = Math.cos(angle) * velocity;
+        let vy = Math.sin(angle) * velocity - 6;
+
+        let x = cx;
+        let y = cy;
+        let life = 1.0;
+        const decay = 0.004 + Math.random() * 0.003;
+        const gravity = 0.22;
+
+        const animateParticle = () => {
+          vy += gravity;
+          x += vx;
+          y += vy;
+          life -= decay;
+
+          if (life > 0) {
+            square.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0) scale(${life * 1.5})`;
+            square.style.opacity = life;
+            requestAnimationFrame(animateParticle);
+          } else {
+            try { square.remove(); } catch (e) { }
+          }
+        };
+        requestAnimationFrame(animateParticle);
+      }
     }
   }
 }

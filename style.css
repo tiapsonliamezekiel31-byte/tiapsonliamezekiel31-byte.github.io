@@ -6625,6 +6625,38 @@ button:hover,
   bottom: auto !important;
 }
 
+.cosmetics-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px 10px 8px 10px;
+}
+
+.cosmetics-tab-btn {
+  flex: 1;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 10px 4px;
+  min-height: 44px; /* Touch-friendly size */
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.3);
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.cosmetics-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.cosmetics-tab-btn.active {
+  background: rgba(161, 92, 255, 0.15);
+  border-color: var(--accent-gold, #ffd700);
+  color: #fff !important;
+  box-shadow: 0 0 8px rgba(255, 215, 106, 0.2);
+}
+
 .cosmetics-board {
   padding: 10px;
 }
