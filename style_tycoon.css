@@ -237,21 +237,47 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   top: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(245, 158, 11, 0.2);
+  background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(245, 158, 11, 0.4);
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
   font-size: 9px;
   color: #fbbf24;
   z-index: 10000;
-  pointer-events: none;
+  pointer-events: auto;
   display: none;
-  animation: pulse 2s infinite ease-in-out;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
+.tycoon-brush-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.tycoon-brush-controls .brush-size-btn {
+  padding: 6px 12px;
+  font-size: 9px;
+  min-height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tycoon-brush-controls .brush-size-btn.active {
+  background: rgba(245, 158, 11, 0.4);
+  border-color: #fbbf24;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.3);
+}
+
+.tycoon-brush-controls .brush-size-btn:hover {
+  border-color: #fbbf24;
+  color: #fff;
 }
 
 /* Settings panel / Farmer details Popup overlays */
@@ -504,7 +530,21 @@ body.tycoon-active #petTabHandle {
   
   .tycoon-active-tool-banner {
     top: 75px;
-    padding: 6px 12px;
+    padding: 10px 16px;
     font-size: 8px;
   }
+  .tycoon-brush-controls {
+    margin-top: 6px;
+    gap: 6px;
+  }
+  .tycoon-brush-controls .brush-size-btn {
+    padding: 6px 12px;
+    font-size: 8px;
+    min-height: 38px;
+  }
+}
+
+body.tycoon-active #dailiesPanel,
+body.tycoon-active #todosPanel {
+  z-index: 12000 !important;
 }

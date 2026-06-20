@@ -66,6 +66,9 @@
       // Tool selection
       this.activeTool = null; // { type: TILE_TYPES, subType: number, name: string, emoji: string, cost: number }
       this.selectedFarmerId = null;
+      this.terrainBrushSize = 1; // 1 (1x1), 3 (3x3), 5 (5x5)
+      this.isPainting = false;
+      this.hoverTile = null;
       
       // Path drawing state
       this.isDrawingPath = false;
@@ -106,12 +109,13 @@
             <div class="tycoon-hud-panel">
               <div class="tycoon-stat gold">🪙 <span id="tycoon-gold-val">100</span></div>
               <div class="tycoon-stat ap">⚡ <span id="tycoon-ap-val">0</span></div>
-              <div class="tycoon-stat food">🍎 <span id="tycoon-food-val">0</span></div>
+              <div class="tycoon-stat food" style="display: none;">🍎 <span id="tycoon-food-val">0</span></div>
               <div class="tycoon-stat rate">📈 <span id="tycoon-rate-val">1g/s</span></div>
             </div>
             <div class="tycoon-hud-panel" style="gap: 8px;">
               <button class="tycoon-btn" id="tycoon-checkin-btn" style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4);">🌅 Check In</button>
-              <button class="tycoon-btn" id="tycoon-tasks-btn">📋 Tasks</button>
+              <button class="tycoon-btn" id="tycoon-dailies-btn">📅 Dailies</button>
+              <button class="tycoon-btn" id="tycoon-todos-btn">📋 To-Dos</button>
               <button class="tycoon-btn" id="tycoon-settings-btn">⚙️ Settings</button>
               <button class="tycoon-btn exit-btn" id="tycoon-exit-btn">🚪 Back</button>
             </div>
@@ -169,59 +173,7 @@
             </div>
           </div>
  
-          <div class="tycoon-overlay" id="tycoon-tasks-dialog">
-            <div class="tycoon-dialog" style="width: min(520px, 94vw); max-height: 85vh; overflow-y: auto;">
-              <h3>🌾 FARM TASKS</h3>
-              <!-- Tycoon Farm Stats + Read-only Main Game Snapshot -->
-              <div id="tycoon-character-panel" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; display: flex; flex-direction: column; gap: 6px; pointer-events: auto;">
-                <!-- Tycoon-native stats -->
-                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; font-weight: bold;">
-                  <span style="color: #4ade80;">🌾 FARM PROGRESS</span>
-                  <span id="tycoon-prestige-days" style="color: #fbbf24; font-size: 7px;">Day -</span>
-                </div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; color: #cbd5e1;">
-                  <div>🪙 Farm Gold: <span id="tycoon-farm-gold" style="color: #ffd700; font-weight: bold;">-</span></div>
-                  <div>🧑‍🌾 Farmers: <span id="tycoon-farm-farmers" style="color: #4ade80; font-weight: bold;">-</span></div>
-                  <div>🌲 Tiles: <span id="tycoon-farm-tiles" style="color: #38bdf8; font-weight: bold;">-</span></div>
-                </div>
-                <!-- Read-only main-game snapshot -->
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; margin-top: 2px;">
-                  <div style="font-size: 7px; color: #64748b; margin-bottom: 4px; letter-spacing: 0.5px;">⚔️ MAIN GAME SNAPSHOT (read-only)</div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span id="tycoon-char-class" style="color: #ffd700; font-size: 7px;">Class: -</span>
-                    <span id="tycoon-char-level" style="color: #4ade80; font-size: 7px;">Level: -</span>
-                  </div>
-                  <div style="margin-top: 4px;">
-                    <div style="font-size: 7px; color: #64748b; margin-bottom: 2px;">Today's task completion:</div>
-                    <div style="background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden; height: 6px;">
-                      <div id="tycoon-completion-bar" style="height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); width: 0%; transition: width 0.4s ease; border-radius: 4px;"></div>
-                    </div>
-                    <div id="tycoon-completion-label" style="font-size: 6px; color: #94a3b8; margin-top: 2px; text-align: right;">0%</div>
-                  </div>
-                </div>
-              </div>
-              <div class="tycoon-dialog-body" style="display: flex; flex-direction: column; gap: 14px;">
-                <!-- Dailies Section -->
-                <div>
-                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">📅 DAILIES</h4>
-                  <div id="tycoon-dailies-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
-                </div>
-                <!-- Todos Section -->
-                <div>
-                  <h4 style="margin: 0 0 6px 0; color: #ffd700; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;"> To-Dos</h4>
-                  <div id="tycoon-todos-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;"></div>
-                </div>
-                <!-- Add Task Panel -->
-                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; display: flex; gap: 8px; width: 100%;">
-                  <button class="tycoon-btn" id="tycoon-add-daily-popup-btn" style="flex: 1; min-height: 38px; justify-content: center; font-size: 8px; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4); pointer-events: auto;">➕ Add Daily</button>
-                  <button class="tycoon-btn" id="tycoon-add-todo-popup-btn" style="flex: 1; min-height: 38px; justify-content: center; font-size: 8px; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); pointer-events: auto;">➕ Add To-Do</button>
-                </div>
-              </div>
-              <div class="tycoon-dialog-buttons">
-                <button class="tycoon-btn exit-btn" id="tycoon-tasks-close-btn">Close</button>
-              </div>
-            </div>
-          </div>
+          <!-- tycoon-tasks-dialog removed -->
  
           <div class="tycoon-overlay" id="tycoon-farmer-dialog">
             <div class="tycoon-dialog">
@@ -244,18 +196,19 @@
     setupInputHandlers() {
       const wrapper = document.getElementById('tycoon-viewport-wrapper');
 
-      // Mouse drag panning
+      // Mouse drag panning and terrain painting
       wrapper.addEventListener('mousedown', (e) => {
         if (e.button === 0) { // Left click
           const tile = this.screenToWorldCoords(e.clientX, e.clientY);
           
           if (this.activeTool) {
-            // Place tile or draw path
-            if (this.activeTool.type === TILE_TYPES.PATH) {
-              if (this.selectedFarmerId) {
-                this.isDrawingPath = true;
-                this.drawnPath = [{ x: tile.x, y: tile.y }];
-              }
+            const isTerrain = (this.activeTool.type === TILE_TYPES.GRASS ||
+                               this.activeTool.type === TILE_TYPES.SAND ||
+                               this.activeTool.type === TILE_TYPES.STONE ||
+                               this.activeTool.type === TILE_TYPES.WATER);
+            if (isTerrain) {
+              this.isPainting = true;
+              this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
             } else {
               this.applyPlacementTool(tile.x, tile.y);
             }
@@ -277,31 +230,10 @@
 
       wrapper.addEventListener('mousemove', (e) => {
         const tile = this.screenToWorldCoords(e.clientX, e.clientY);
-        
-        if (this.isDrawingPath && this.isDrawingPathActive()) {
-          const last = this.drawnPath[this.drawnPath.length - 1];
-          if (last && (last.x !== tile.x || last.y !== tile.y)) {
-            // Ensure adjacent tile movement
-            const dist = Math.max(Math.abs(last.x - tile.x), Math.abs(last.y - tile.y));
-            if (dist === 1) {
-              // Check path tiles are valid land tiles
-              const tileType = this.getTileTypeAt(tile.x, tile.y);
-              if (tileType !== TILE_TYPES.WATER) {
-                // Limit check based on farmer capacity
-                const farm = this.farmers.find(f => f.id === this.selectedFarmerId);
-                const limit = farm ? (farm.maxPathLength || 10) : 10;
-                
-                if (this.drawnPath.length < limit) {
-                  this.drawnPath.push({ x: tile.x, y: tile.y });
-                  // Temporarily paint local paths (visual helper)
-                  this.setTileTypeAt(tile.x, tile.y, TILE_TYPES.PATH);
-                  this.postTileUpdateToWorker(tile.x, tile.y, TILE_TYPES.PATH);
-                } else {
-                  this.addFloatingText(e.clientX, e.clientY, "Path limit reached!", "#f87171");
-                }
-              }
-            }
-          }
+        this.hoverTile = tile;
+
+        if (this.isPainting && this.activeTool) {
+          this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
         } else if (this.isPanning) {
           const dx = (e.clientX - this.dragStart.x) / this.camera.zoom;
           const dy = (e.clientY - this.dragStart.y) / this.camera.zoom;
@@ -312,17 +244,12 @@
 
       window.addEventListener('mouseup', () => {
         this.isPanning = false;
-        if (this.isDrawingPath) {
-          this.isDrawingPath = false;
-          if (this.drawnPath.length > 0 && this.selectedFarmerId) {
-            this.worker.postMessage({
-              type: 'update_farmer_path',
-              farmerId: this.selectedFarmerId,
-              path: this.drawnPath
-            });
-            this.clearBanner();
-          }
-        }
+        this.isPainting = false;
+      });
+
+      wrapper.addEventListener('mouseleave', () => {
+        this.hoverTile = null;
+        this.isPainting = false;
       });
 
       // Zoom Wheel
@@ -338,25 +265,30 @@
         this.camera.zoom = Math.max(this.camera.minZoom, Math.min(this.camera.maxZoom, newZoom));
       }, { passive: false });
 
-      // Mobile Touch Handling (Multi-touch pan/zoom)
+      // Mobile Touch Handling (Multi-touch pan/zoom/paint)
       wrapper.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
           const touch = e.touches[0];
           const tile = this.screenToWorldCoords(touch.clientX, touch.clientY);
+          this.hoverTile = tile;
           
           if (this.activeTool) {
-            if (this.activeTool.type === TILE_TYPES.PATH) {
-              if (this.selectedFarmerId) {
-                this.isDrawingPath = true;
-                this.drawnPath = [{ x: tile.x, y: tile.y }];
-              }
+            const isTerrain = (this.activeTool.type === TILE_TYPES.GRASS ||
+                               this.activeTool.type === TILE_TYPES.SAND ||
+                               this.activeTool.type === TILE_TYPES.STONE ||
+                               this.activeTool.type === TILE_TYPES.WATER);
+            if (isTerrain) {
+              this.isPainting = true;
+              this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
             } else {
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            const clickedFarmer = this.findFarmerAt(tile.x, tile.y);
-            if (clickedFarmer) {
-              this.showFarmerDetails(clickedFarmer);
+            const clickedFarmer = this.findFarmerAt(touch.clientX, touch.clientY); // fallback coord mapping handled by findFarmer
+            const tileCoords = this.screenToWorldCoords(touch.clientX, touch.clientY);
+            const clickedFarmerMapped = this.findFarmerAt(tileCoords.x, tileCoords.y);
+            if (clickedFarmerMapped) {
+              this.showFarmerDetails(clickedFarmerMapped);
             } else {
               this.isPanning = true;
               this.lastTouchPos.x = touch.clientX;
@@ -365,6 +297,7 @@
           }
         } else if (e.touches.length === 2) {
           this.isPanning = false;
+          this.isPainting = false;
           this.isTouchPinching = true;
           const touch1 = e.touches[0];
           const touch2 = e.touches[1];
@@ -381,25 +314,10 @@
         if (e.touches.length === 1) {
           const touch = e.touches[0];
           const tile = this.screenToWorldCoords(touch.clientX, touch.clientY);
+          this.hoverTile = tile;
           
-          if (this.isDrawingPath && this.isDrawingPathActive()) {
-            const last = this.drawnPath[this.drawnPath.length - 1];
-            if (last && (last.x !== tile.x || last.y !== tile.y)) {
-              const dist = Math.max(Math.abs(last.x - tile.x), Math.abs(last.y - tile.y));
-              if (dist === 1) {
-                const tileType = this.getTileTypeAt(tile.x, tile.y);
-                if (tileType !== TILE_TYPES.WATER) {
-                  const farm = this.farmers.find(f => f.id === this.selectedFarmerId);
-                  const limit = farm ? (farm.maxPathLength || 10) : 10;
-                  
-                  if (this.drawnPath.length < limit) {
-                    this.drawnPath.push({ x: tile.x, y: tile.y });
-                    this.setTileTypeAt(tile.x, tile.y, TILE_TYPES.PATH);
-                    this.postTileUpdateToWorker(tile.x, tile.y, TILE_TYPES.PATH);
-                  }
-                }
-              }
-            }
+          if (this.isPainting && this.activeTool) {
+            this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
           } else if (this.isPanning) {
             const dx = (touch.clientX - this.lastTouchPos.x) / this.camera.zoom;
             const dy = (touch.clientY - this.lastTouchPos.y) / this.camera.zoom;
@@ -422,17 +340,8 @@
       wrapper.addEventListener('touchend', () => {
         this.isTouchPinching = false;
         this.isPanning = false;
-        if (this.isDrawingPath) {
-          this.isDrawingPath = false;
-          if (this.drawnPath.length > 0 && this.selectedFarmerId) {
-            this.worker.postMessage({
-              type: 'update_farmer_path',
-              farmerId: this.selectedFarmerId,
-              path: this.drawnPath
-            });
-            this.clearBanner();
-          }
-        }
+        this.isPainting = false;
+        this.hoverTile = null;
       });
     }
 
@@ -503,7 +412,7 @@
             localStorage.removeItem('nemesis_tycoon_data');
             this.loadState();
             this.addNotification("State cleared!");
-          } else if (cheatVal === 'reset farm') {
+          } else if (cheatVal === 'reset farm' || cheatVal === 'reset tycoon') {
             // Reset tycoon game progress (map, farmers, resources) only.
             // Preserves checkInHour, completionRatePrevDay, and ALL main-game task/streak data.
             const savedHour = this.config.checkInHour || 10;
@@ -608,28 +517,16 @@
         }
       });
 
-      // Tasks Dialog Toggles
-      document.getElementById('tycoon-tasks-btn').addEventListener('click', () => {
-        this.renderTasksList();
-        document.getElementById('tycoon-tasks-dialog').style.display = 'flex';
-      });
-
-      document.getElementById('tycoon-tasks-close-btn').addEventListener('click', () => {
-        document.getElementById('tycoon-tasks-dialog').style.display = 'none';
-      });
-
-      // Add Task Action via PopupsManager Wizards
-      document.getElementById('tycoon-add-daily-popup-btn').addEventListener('click', () => {
-        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showAddDailyPopup === 'function') {
-          document.getElementById('tycoon-tasks-dialog').style.display = 'none';
-          PopupsManager.showAddDailyPopup();
+      // Dailies and To-Dos buttons toggle their respective main game sliding panels
+      document.getElementById('tycoon-dailies-btn').addEventListener('click', () => {
+        if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') {
+          UIManager.toggleTaskPanel('dailies');
         }
       });
 
-      document.getElementById('tycoon-add-todo-popup-btn').addEventListener('click', () => {
-        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showAddTodoWizard === 'function') {
-          document.getElementById('tycoon-tasks-dialog').style.display = 'none';
-          PopupsManager.showAddTodoWizard(50, 50, window.innerWidth / 2, window.innerHeight / 2);
+      document.getElementById('tycoon-todos-btn').addEventListener('click', () => {
+        if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') {
+          UIManager.toggleTaskPanel('todos');
         }
       });
     }
@@ -662,172 +559,7 @@
       return completionRate;
     }
 
-    renderTasksList() {
-      // --- Tycoon-native farm stats ---
-      try {
-        document.getElementById('tycoon-farm-gold').textContent = Math.floor(this.resources.gold);
-        document.getElementById('tycoon-farm-farmers').textContent = this.farmers.length;
-        // Count placed producer/increaser/maintenance/cosmetic tiles
-        let tileCnt = 0;
-        for (const key in this.chunks) {
-          const arr = this.chunks[key];
-          for (let i = 0; i < 1024; i++) {
-            const t = arr[i] & 0xFF;
-            if (t >= TILE_TYPES.PRODUCER && t <= TILE_TYPES.COSMETIC) tileCnt++;
-          }
-        }
-        document.getElementById('tycoon-farm-tiles').textContent = tileCnt;
-        // Day counter approximation from lastSaveTime
-        const daysSince = Math.max(1, Math.floor((Date.now() - (this.config.lastSaveTime || Date.now())) / 86400000) + 1);
-        const prestige = document.getElementById('tycoon-prestige-days');
-        if (prestige) prestige.textContent = `Day ${daysSince}`;
-      } catch (e) {
-        console.warn('Failed to render tycoon farm stats', e);
-      }
-
-      // --- Read-only main-game snapshot ---
-      try {
-        const state = getGameState();
-        if (state) {
-          const charClass = state.playerState.className || 'None';
-          const charLevel = state.playerState.level || 1;
-          const streak = state.dailiesState.streakCompletion || 0;
-          const streakHtml = streak > 0 ? ` <span style="color:#ef4444;margin-left:4px;">🔥${streak}d</span>` : '';
-
-          const classEl = document.getElementById('tycoon-char-class');
-          const levelEl = document.getElementById('tycoon-char-level');
-          if (classEl) classEl.innerHTML = `Class: ${charClass}${streakHtml}`;
-          if (levelEl) levelEl.textContent = `Lv.${charLevel}`;
-
-          // Completion bar
-          const pct = Math.round(this.calculateCurrentCompletionRate() * 100);
-          const barEl = document.getElementById('tycoon-completion-bar');
-          const labelEl = document.getElementById('tycoon-completion-label');
-          if (barEl) barEl.style.width = `${pct}%`;
-          if (labelEl) labelEl.textContent = `${pct}%`;
-          if (barEl) {
-            barEl.style.background = pct >= 80
-              ? 'linear-gradient(90deg, #22c55e, #4ade80)'
-              : pct >= 40
-                ? 'linear-gradient(90deg, #d97706, #fbbf24)'
-                : 'linear-gradient(90deg, #dc2626, #f87171)';
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to render main-game snapshot in tycoon tasks', e);
-      }
-
-      // Sync completion rate to worker
-      const currentRate = this.calculateCurrentCompletionRate();
-      if (this.worker) {
-        this.worker.postMessage({
-          type: 'update_completion_rate',
-          completionRate: currentRate
-        });
-      }
-
-
-      const dailiesList = document.getElementById('tycoon-dailies-list');
-      const todosList = document.getElementById('tycoon-todos-list');
-      if (!dailiesList || !todosList) return;
-
-      const dailies = TaskManager.getAllDailies() || [];
-      const todos = TaskManager.getAllTodos() || [];
-
-      // Render Dailies
-      if (dailies.length === 0) {
-        dailiesList.innerHTML = '<div style="font-size: 8px; color: #94a3b8; padding: 4px;">No Dailies configured.</div>';
-      } else {
-        dailiesList.innerHTML = dailies.map(d => {
-          const isDone = d.completed;
-          const streak = TaskManager.computeDailyStreak ? TaskManager.computeDailyStreak(d.id) : 0;
-          const streakIcon = streak > 0 ? `🔥${streak}` : '';
-          const checkbox = isDone 
-            ? '✅' 
-            : `<button class="tycoon-btn d-complete-btn" data-id="${d.id}" style="min-height: 24px; padding: 2px 6px; font-size: 8px; background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4); pointer-events: auto;">DONE</button>`;
-          
-          return `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08); ${isDone ? 'opacity: 0.6;' : ''}">
-              <div class="tycoon-task-info-click d-edit-clickable" data-id="${d.id}" style="cursor: pointer; flex: 1; text-align: left; pointer-events: auto;">
-                <span style="font-weight: bold; color: ${isDone ? '#94a3b8' : '#ffd700'}; pointer-events: none;">${d.name}</span>
-                <span style="color: #64748b; margin-left: 4px; pointer-events: none;">[${d.difficulty}] [${d.attribute}] ${streakIcon}</span>
-              </div>
-              <div style="pointer-events: auto; margin-left: 6px;">${checkbox}</div>
-            </div>
-          `;
-        }).join('');
-
-        // Bind daily complete clicks
-        dailiesList.querySelectorAll('.d-complete-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const id = e.target.dataset.id;
-            const res = TaskManager.completeDaily(id);
-            if (res && res.success) {
-              const rewards = res.rewards;
-              this.addNotification(`✅ Completed daily! +${rewards.ap} AP, +${rewards.gold} Gold, +${rewards.diamonds} Diamonds`);
-              try {
-                getGameState().save();
-              } catch(err) {}
-              this.renderTasksList();
-            }
-          });
-        });
-
-        // Bind daily edit clicks
-        dailiesList.querySelectorAll('.d-edit-clickable').forEach(el => {
-          el.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showEditDaily === 'function') {
-              document.getElementById('tycoon-tasks-dialog').style.display = 'none';
-              PopupsManager.showEditDaily(id);
-            }
-          });
-        });
-      }
-
-      // Render Todos
-      const activeTodos = todos.filter(t => !t.completed);
-      if (activeTodos.length === 0) {
-        todosList.innerHTML = '<div style="font-size: 8px; color: #94a3b8; padding: 4px;">No active To-Dos.</div>';
-      } else {
-        todosList.innerHTML = activeTodos.map(t => `
-          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; font-size: 8px; border: 1px solid rgba(255,255,255,0.08);">
-            <div class="tycoon-task-info-click t-edit-clickable" data-id="${t.id}" style="cursor: pointer; flex: 1; text-align: left; pointer-events: auto;">
-              <span style="font-weight: bold; color: #38bdf8; pointer-events: none;">${t.name}</span>
-              <span style="color: #64748b; margin-left: 4px; pointer-events: none;">[${t.difficulty}] [${t.attribute}]</span>
-            </div>
-            <div style="pointer-events: auto; margin-left: 6px;">
-              <button class="tycoon-btn t-complete-btn" data-id="${t.id}" style="min-height: 24px; padding: 2px 6px; font-size: 8px; background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.4); pointer-events: auto;">DONE</button>
-            </div>
-          </div>
-        `).join('');
-
-        // Bind todo complete clicks
-        todosList.querySelectorAll('.t-complete-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const id = e.target.dataset.id;
-            if (TaskManager.completeTodo(id)) {
-              this.addNotification(`✅ Completed To-Do!`);
-              try {
-                getGameState().save();
-              } catch(err) {}
-              this.renderTasksList();
-            }
-          });
-        });
-
-        // Bind todo edit clicks
-        todosList.querySelectorAll('.t-edit-clickable').forEach(el => {
-          el.addEventListener('click', (e) => {
-            const id = e.currentTarget.dataset.id;
-            if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showEditTodo === 'function') {
-              document.getElementById('tycoon-tasks-dialog').style.display = 'none';
-              PopupsManager.showEditTodo(id);
-            }
-          });
-        });
-      }
-    }
+    // renderTasksList removed - now using UIManager toggleTaskPanel
 
     isDrawingPathActive() {
       return this.activeTool && this.activeTool.type === TILE_TYPES.PATH && this.selectedFarmerId;
@@ -856,11 +588,8 @@
       const isLand = (currentTileType === TILE_TYPES.GRASS || currentTileType === TILE_TYPES.SAND || currentTileType === TILE_TYPES.STONE);
 
       if (this.activeTool.type === TILE_TYPES.GRASS || this.activeTool.type === TILE_TYPES.SAND || this.activeTool.type === TILE_TYPES.STONE || this.activeTool.type === TILE_TYPES.WATER) {
-        // Terrain paint
-        this.resources.gold -= cost;
-        this.setTileTypeAt(tx, ty, this.activeTool.type);
-        this.postTileUpdateToWorker(tx, ty, this.activeTool.type);
-        this.updateHUD();
+        // Terrain paint is handled via continuous drag painting, fallback to painting circle
+        this.paintTerrainCircle(tx, ty, this.activeTool.type);
       } else if (this.activeTool.type === TILE_TYPES.FARMER) {
         // Placement of Farmer NPC
         if (!isLand) {
@@ -875,14 +604,7 @@
           x: tx,
           y: ty,
           speed: this.activeTool.speed,
-          consumeRate: this.activeTool.consumeRate,
-          maxPathLength: 10,
-          path: [],
-          pathIndex: 0,
-          isPathReversing: false,
-          currentAction: "Idle 💤",
-          feedMultiplierTimer: 0,
-          currentMultiplier: 1.0
+          currentAction: "Idle 💤"
         };
         this.farmers.push(newFarmer);
         this.worker.postMessage({
@@ -894,9 +616,9 @@
         this.activeTool = null;
         this.renderShopGrid("farmers");
       } else {
-        // Crop / Increaser / Sprinkler / Cosmetic placements
-        if (!isLand) {
-          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Must place on land!", "#f87171");
+        // Crop / Increaser / Sprinkler / Cosmetic placements - all take up 3x3 space
+        if (!this.canPlaceObjectAt(tx, ty)) {
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Placement blocked! Need 3x3 clear land.", "#f87171");
           return;
         }
 
@@ -917,6 +639,72 @@
 
         this.setTileTypeAt(tx, ty, tileVal);
         this.postTileUpdateToWorker(tx, ty, tileVal);
+        this.updateHUD();
+      }
+    }
+
+    canPlaceObjectAt(tx, ty) {
+      // 1. Check that the entire 3x3 area is solid plain terrain (Grass, Sand, Stone)
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const tileVal = this.getTileTypeAt(tx + dx, ty + dy);
+          const tType = tileVal & 0xFF;
+          if (tType !== TILE_TYPES.GRASS && tType !== TILE_TYPES.SAND && tType !== TILE_TYPES.STONE) {
+            return false;
+          }
+        }
+      }
+      
+      // 2. Check that no other object center is within Chebyshev distance <= 2
+      // (This prevents their 3x3 footprints from overlapping)
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const tileVal = this.getTileTypeAt(tx + dx, ty + dy);
+          const tType = tileVal & 0xFF;
+          if (tType === TILE_TYPES.PRODUCER || tType === TILE_TYPES.INCREASER || 
+              tType === TILE_TYPES.MAINTENANCE || tType === TILE_TYPES.COSMETIC) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    }
+
+    paintTerrainCircle(cx, cy, type) {
+      const size = this.terrainBrushSize || 1;
+      const radius = size / 2;
+      const radiusSq = radius * radius;
+      const half = Math.floor(size / 2);
+      let updated = false;
+      const cost = this.activeTool.cost || 0;
+      
+      for (let dy = -half; dy <= half; dy++) {
+        for (let dx = -half; dx <= half; dx++) {
+          if (dx * dx + dy * dy <= radiusSq) {
+            const tx = cx + dx;
+            const ty = cy + dy;
+            
+            const currentTileVal = this.getTileTypeAt(tx, ty);
+            const currentType = currentTileVal & 0xFF;
+            
+            if (currentType !== type) {
+              if (this.resources.gold >= cost) {
+                this.resources.gold -= cost;
+                this.setTileTypeAt(tx, ty, type);
+                this.postTileUpdateToWorker(tx, ty, type);
+                updated = true;
+              } else {
+                this.isPainting = false;
+                this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Need Gold!", "#f87171");
+                break;
+              }
+            }
+          }
+        }
+      }
+      
+      if (updated) {
         this.updateHUD();
       }
     }
@@ -1035,13 +823,48 @@
 
     setBanner(text) {
       const banner = document.getElementById('tycoon-active-banner');
-      banner.textContent = text;
+      banner.innerHTML = '';
+      
+      const textEl = document.createElement('div');
+      textEl.textContent = text;
+      banner.appendChild(textEl);
+      
+      if (this.activeTool && 
+          (this.activeTool.type === TILE_TYPES.GRASS || 
+           this.activeTool.type === TILE_TYPES.SAND || 
+           this.activeTool.type === TILE_TYPES.STONE || 
+           this.activeTool.type === TILE_TYPES.WATER)) {
+        
+        const controls = document.createElement('div');
+        controls.className = 'tycoon-brush-controls';
+        
+        const sizes = [1, 3, 5];
+        sizes.forEach(size => {
+          const btn = document.createElement('button');
+          btn.className = 'tycoon-btn brush-size-btn';
+          if (this.terrainBrushSize === size) {
+            btn.classList.add('active');
+          }
+          btn.textContent = `${size}x${size}`;
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Avoid painting trigger on canvas
+            e.preventDefault();
+            this.terrainBrushSize = size;
+            controls.querySelectorAll('.brush-size-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          });
+          controls.appendChild(btn);
+        });
+        
+        banner.appendChild(controls);
+      }
       banner.style.display = 'block';
     }
 
     clearBanner() {
       const banner = document.getElementById('tycoon-active-banner');
       banner.style.display = 'none';
+      banner.innerHTML = '';
     }
 
     showFarmerDetails(farmer) {
@@ -1052,62 +875,19 @@
       
       title.innerHTML = `${farmer.emoji} ${farmer.name}`;
       
-      const multiplierText = farmer.currentMultiplier > 1.0 ? ` (+${Math.round((farmer.currentMultiplier-1)*100)}% Boost)` : '';
-      
       body.innerHTML = `
         <div><strong>Status:</strong> ${farmer.currentAction}</div>
         <div><strong>Speed:</strong> ${farmer.speed} tiles/s</div>
-        <div><strong>Food Consumption:</strong> ${farmer.consumeRate} food/s</div>
-        <div><strong>Max Path Length:</strong> ${farmer.path.length} / ${farmer.maxPathLength || 10} blocks</div>
-        ${farmer.feedMultiplierTimer > 0 ? `<div><strong>Feed Boost Time:</strong> ${farmer.feedMultiplierTimer}s</div>` : ''}
+        <div><strong>Passive Boost:</strong> Boosts nearby crop production rate by +25% in a 3x3 area</div>
       `;
       
-      // Actions: Feed crop, Upgrade path limit, Paint path pathing
-      const canFeed = this.resources.food > 0;
-      const upgradeCost = Math.round(50 * ((farmer.maxPathLength || 10) / 10));
-      const canUpgrade = this.resources.gold >= upgradeCost;
-
       footer.innerHTML = `
-        <button class="tycoon-btn" id="farmer-feed-btn" ${canFeed ? '' : 'disabled'}>🍎 Feed crop (Boost)</button>
-        <button class="tycoon-btn" id="farmer-upgrade-btn" ${canUpgrade ? '' : 'disabled'}>🪙 Upgrade Path Limit (${upgradeCost}g)</button>
-        <button class="tycoon-btn" id="farmer-paint-path-btn">🖌️ Draw Path</button>
         <button class="tycoon-btn exit-btn" id="farmer-close-btn">Close</button>
       `;
 
       document.getElementById('farmer-close-btn').addEventListener('click', () => {
         document.getElementById('tycoon-farmer-dialog').style.display = 'none';
         this.selectedFarmerId = null;
-      });
-
-      document.getElementById('farmer-feed-btn').addEventListener('click', () => {
-        this.worker.postMessage({
-          type: 'feed_farmer',
-          farmerId: farmer.id
-        });
-        document.getElementById('tycoon-farmer-dialog').style.display = 'none';
-        this.selectedFarmerId = null;
-      });
-
-      document.getElementById('farmer-upgrade-btn').addEventListener('click', () => {
-        this.resources.gold -= upgradeCost;
-        this.worker.postMessage({
-          type: 'upgrade_farmer_path',
-          farmerId: farmer.id
-        });
-        document.getElementById('tycoon-farmer-dialog').style.display = 'none';
-        this.selectedFarmerId = null;
-        this.updateHUD();
-      });
-
-      document.getElementById('farmer-paint-path-btn').addEventListener('click', () => {
-        document.getElementById('tycoon-farmer-dialog').style.display = 'none';
-        this.activeTool = {
-          type: TILE_TYPES.PATH,
-          name: "Path painter for " + farmer.name,
-          emoji: "🖌️",
-          cost: 0
-        };
-        this.setBanner(`Draw Path: Drag on Grass/Sand/Stone for ${farmer.emoji}`);
       });
 
       document.getElementById('tycoon-farmer-dialog').style.display = 'flex';
@@ -1159,14 +939,9 @@
           }
         }
       }
-      // Subtract farmer eating cost
-      this.farmers.forEach(f => {
-        if (!f.isSleeping) {
-          totalRate -= (f.consumeRate || 1);
-        }
-      });
-      totalRate = Math.max(1, Math.round(totalRate));
-      document.getElementById('tycoon-rate-val').textContent = `${totalRate}g/s`;
+      // Farmers no longer consume food or rate
+      const formattedRate = totalRate % 1 === 0 ? totalRate.toFixed(0) : totalRate.toFixed(1);
+      document.getElementById('tycoon-rate-val').textContent = `${formattedRate}g/s`;
 
       // Read-only task completion indicator on HUD
       const rate = this.calculateCurrentCompletionRate();
@@ -1181,6 +956,11 @@
 
     // Entering Tycoon Mode
     enterTycoonMode(completionRate = null) {
+      // Ensure main game UI is initialized so task panels and handle containers exist in the DOM
+      if (typeof UIManager !== 'undefined' && !document.getElementById('dailiesPanel')) {
+        UIManager.initializeUI();
+      }
+
       // Safety: Re-initialize DOM if body reset wiped the tycoon-container
       const container = document.getElementById('tycoon-container');
       if (!container) {
@@ -1229,7 +1009,7 @@
       
       // Explicitly hide all other direct children of body in JS
       // Skip the dailies/todos panels & handles — their visibility is managed by CSS in tycoon mode
-      const TYCOON_PANEL_IDS = new Set(['dailiesPanel','dailiesTabHandle','todosPanel','todosTabHandle']);
+      const TYCOON_PANEL_IDS = new Set(['dailiesPanel', 'leftTabHandlesContainer', 'todosPanel', 'rightTabHandlesContainer']);
       Array.from(document.body.children).forEach(el => {
         if (el.id !== 'tycoon-container' && el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE' && !TYCOON_PANEL_IDS.has(el.id)) {
           if (el.classList.contains('popup-overlay')) {
@@ -1475,17 +1255,17 @@
       ctx.scale(zoom, zoom);
       ctx.translate(-this.camera.x, -this.camera.y);
       
-      // Frustum culling dimensions
+      // Frustum culling dimensions (expanded to prevent clipping 3x3 object boundaries)
       const tw = this.tileWidth;
       const worldLeft = this.camera.x - (w / 2) / zoom;
       const worldTop = this.camera.y - (h / 2) / zoom;
       const worldRight = this.camera.x + (w / 2) / zoom;
       const worldBottom = this.camera.y + (h / 2) / zoom;
       
-      const minTileX = Math.floor(worldLeft / tw);
-      const minTileY = Math.floor(worldTop / tw);
-      const maxTileX = Math.ceil(worldRight / tw);
-      const maxTileY = Math.ceil(worldBottom / tw);
+      const minTileX = Math.floor(worldLeft / tw) - 2;
+      const minTileY = Math.floor(worldTop / tw) - 2;
+      const maxTileX = Math.ceil(worldRight / tw) + 2;
+      const maxTileY = Math.ceil(worldBottom / tw) + 2;
       
       // Step 1: Render visible tiles
       for (let ty = minTileY; ty <= maxTileY; ty++) {
@@ -1534,6 +1314,68 @@
           ctx.fillText("⚡", fx - 8, fy - 8);
         }
       });
+
+      // Step 4: Render active placement tool hover preview
+      if (this.activeTool && this.hoverTile) {
+        const tx = this.hoverTile.x;
+        const ty = this.hoverTile.y;
+        const hx = tx * tw;
+        const hy = ty * tw;
+        
+        const isTerrain = (this.activeTool.type === TILE_TYPES.GRASS ||
+                           this.activeTool.type === TILE_TYPES.SAND ||
+                           this.activeTool.type === TILE_TYPES.STONE ||
+                           this.activeTool.type === TILE_TYPES.WATER);
+        
+        if (isTerrain) {
+          // Draw circle terrain painting brush preview
+          const size = this.terrainBrushSize || 1;
+          const radius = size / 2;
+          const radiusSq = radius * radius;
+          const half = Math.floor(size / 2);
+          
+          ctx.fillStyle = "rgba(255, 255, 255, 0.15)";
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
+          ctx.lineWidth = 1;
+          
+          for (let dy = -half; dy <= half; dy++) {
+            for (let dx = -half; dx <= half; dx++) {
+              if (dx * dx + dy * dy <= radiusSq) {
+                ctx.fillRect((tx + dx) * tw, (ty + dy) * tw, tw, tw);
+                ctx.strokeRect((tx + dx) * tw, (ty + dy) * tw, tw, tw);
+              }
+            }
+          }
+        } else if (this.activeTool.type === TILE_TYPES.FARMER) {
+          // Farmer is a 1x1 placement entity
+          const isLand = (this.getTileTypeAt(tx, ty) === TILE_TYPES.GRASS || 
+                          this.getTileTypeAt(tx, ty) === TILE_TYPES.SAND || 
+                          this.getTileTypeAt(tx, ty) === TILE_TYPES.STONE);
+          ctx.fillStyle = isLand ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)";
+          ctx.strokeStyle = isLand ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
+          ctx.lineWidth = 2;
+          ctx.fillRect(hx, hy, tw, tw);
+          ctx.strokeRect(hx, hy, tw, tw);
+        } else {
+          // Object: 3x3 footprint placement
+          const isValid = this.canPlaceObjectAt(tx, ty);
+          ctx.fillStyle = isValid ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)";
+          ctx.strokeStyle = isValid ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
+          ctx.lineWidth = 2;
+          ctx.fillRect(hx - tw, hy - tw, tw * 3, tw * 3);
+          ctx.strokeRect(hx - tw, hy - tw, tw * 3, tw * 3);
+          
+          // Draw the emoji preview in center at 50% opacity
+          ctx.save();
+          ctx.globalAlpha = 0.5;
+          ctx.font = "42px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          let previewEmoji = this.activeTool.emoji;
+          ctx.fillText(previewEmoji, hx + tw / 2, hy + tw / 2);
+          ctx.restore();
+        }
+      }
       
       ctx.restore();
     }
@@ -1572,72 +1414,95 @@
           ctx.fillRect(x, y, tw, tw);
           break;
           
-        case TILE_TYPES.PRODUCER:
-          // Draw standard grass underneath first
-          ctx.fillStyle = "#166534";
-          ctx.fillRect(x, y, tw, tw);
+        case TILE_TYPES.PRODUCER: {
+          // Warm brown soil overlay on the 3x3 footprint
+          ctx.fillStyle = "rgba(120, 53, 15, 0.25)";
+          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
+          ctx.strokeStyle = "rgba(120, 53, 15, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
           
-          // Draw the emoji depending on subType
           let emoji = "🌲";
           if (subType === PRODUCER_SUBS.TOMATO) emoji = "🍅";
           else if (subType === PRODUCER_SUBS.APPLE) emoji = "🍎";
           
-          ctx.font = "16px Arial";
+          ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(emoji, x + tw / 2, y + tw / 2);
           
-          // Draw charge status bar (durability indicator)
-          ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-          ctx.fillRect(x + 2, y + tw - 5, tw - 4, 3);
+          // Draw charge status bar (durability indicator) - scaled to 3x3 bottom
+          const barWidth = tw * 2;
+          const barHeight = 4;
+          const barX = x + tw / 2 - barWidth / 2;
+          const barY = y + tw * 2 - 8;
+          ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+          ctx.fillRect(barX, barY, barWidth, barHeight);
           
           const chargePct = charge / 255;
           ctx.fillStyle = chargePct > 0.3 ? "#22c55e" : "#ef4444";
-          ctx.fillRect(x + 2, y + tw - 5, (tw - 4) * chargePct, 3);
+          ctx.fillRect(barX, barY, barWidth * chargePct, barHeight);
           break;
+        }
           
-        case TILE_TYPES.INCREASER:
-          // Land terrain underneath
-          ctx.fillStyle = "#166534";
-          ctx.fillRect(x, y, tw, tw);
+        case TILE_TYPES.INCREASER: {
+          // Light purple chemical/fertilizer field
+          ctx.fillStyle = "rgba(147, 51, 234, 0.15)";
+          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
+          ctx.strokeStyle = "rgba(147, 51, 234, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
           
-          ctx.font = "16px Arial";
+          ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🧪", x + tw / 2, y + tw / 2);
           break;
+        }
           
-        case TILE_TYPES.MAINTENANCE:
-          // Land terrain underneath
-          ctx.fillStyle = "#166534";
-          ctx.fillRect(x, y, tw, tw);
+        case TILE_TYPES.MAINTENANCE: {
+          // Light blue sprinkler watering field
+          ctx.fillStyle = "rgba(14, 165, 233, 0.15)";
+          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
+          ctx.strokeStyle = "rgba(14, 165, 233, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
           
-          ctx.font = "16px Arial";
+          ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🚿", x + tw / 2, y + tw / 2);
           
-          // Sprinkler Charge indicator
-          ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-          ctx.fillRect(x + 2, y + tw - 5, tw - 4, 3);
+          // Sprinkler Charge indicator - scaled to 3x3 bottom
+          const barWidth = tw * 2;
+          const barHeight = 4;
+          const barX = x + tw / 2 - barWidth / 2;
+          const barY = y + tw * 2 - 8;
+          ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+          ctx.fillRect(barX, barY, barWidth, barHeight);
           ctx.fillStyle = "#38bdf8";
-          ctx.fillRect(x + 2, y + tw - 5, (tw - 4) * (charge / 255), 3);
+          ctx.fillRect(barX, barY, barWidth * (charge / 255), barHeight);
           break;
+        }
           
-        case TILE_TYPES.COSMETIC:
-          // Land terrain underneath
-          ctx.fillStyle = "#166534";
-          ctx.fillRect(x, y, tw, tw);
+        case TILE_TYPES.COSMETIC: {
+          // Light gold decorative field
+          ctx.fillStyle = "rgba(251, 191, 36, 0.08)";
+          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
+          ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
           
           let cosEmoji = "🌸";
           if (noise < 33) cosEmoji = "🪨";
           else if (noise < 66) cosEmoji = "🍄";
           
-          ctx.font = "16px Arial";
+          ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(cosEmoji, x + tw / 2, y + tw / 2);
           break;
+        }
       }
       
       // Draw light border grid lines to make it look premium and organized

@@ -149,10 +149,7 @@ function tickSimulation(timestamp) {
         const tx = idx % 32;
         const gx = cx * 32 + tx;
         const gy = cy * 32 + ty;
-        const charge = (tile >> 8) & 0xFF;
-        if (charge > 0) {
-          sprinklers.push({ x: gx, y: gy, charge });
-        }
+        sprinklers.push({ x: gx, y: gy, charge: 255 });
       } else if (type === TILE_TYPES.INCREASER) {
         const ty = Math.floor(idx / 32);
         const tx = idx % 32;
@@ -188,10 +185,10 @@ function tickSimulation(timestamp) {
         const gx = cx * 32 + tx;
         const gy = cy * 32 + ty;
         
-        // Check if serviced by any active sprinkler (Maintenance) in Chebyshev 3x3 radius
+        // Check if serviced by any active sprinkler (Maintenance) in Chebyshev 3x3 footprint adjacent range
         let isSprinklered = false;
         for (const s of sprinklers) {
-          if (getChebyshevDistance(gx, gy, s.x, s.y) <= 1) { // 3x3 radius
+          if (getChebyshevDistance(gx, gy, s.x, s.y) <= 3) {
             isSprinklered = true;
             break;
           }
@@ -222,14 +219,23 @@ function tickSimulation(timestamp) {
             foodChance = 0.10; // 10% chance per second
           }
           
-          // Apply Increasers (Fertilizers) multiplier: +20% production rate per Increaser in 3x3 range
+          // Apply Increasers (Fertilizers) multiplier: +20% production rate per Increaser in adjacent range
           let increaserCount = 0;
           for (const f of fertilizers) {
-            if (getChebyshevDistance(gx, gy, f.x, f.y) <= 1) {
+            if (getChebyshevDistance(gx, gy, f.x, f.y) <= 3) {
               increaserCount++;
             }
           }
           let multiplier = 1.0 + (increaserCount * 0.20);
+ 
+          // Apply Farmer boost: +25% productivity per awake farmer standing on/adjacent to 3x3 footprint
+          let farmerCount = 0;
+          farmers.forEach(farmer => {
+            if (!farmer.isSleeping && getChebyshevDistance(gx, gy, farmer.x, farmer.y) <= 2) {
+              farmerCount++;
+            }
+          });
+          multiplier += (farmerCount * 0.25);
           
           // Apply live task completion rate: current-day rate drives production in real time.
           // Falls back to previous day's rate if current day hasn't been tracked yet.
@@ -238,31 +244,21 @@ function tickSimulation(timestamp) {
             : config.completionRatePrevDay;
           multiplier *= Math.max(0.1, liveRate); // Floor at 10% so farm never goes dead
           
-          // Calculate gains
-          goldProducedThisSecond += Math.round(goldBase * multiplier);
-          apProducedThisSecond += Math.round(apBase * multiplier);
-          
-          if (foodChance > 0 && Math.random() < foodChance) {
-            foodProducedThisSecond += 1;
-          }
+          // Calculate gains (using exact floats instead of Math.round)
+          goldProducedThisSecond += goldBase * multiplier;
+          apProducedThisSecond += apBase * multiplier;
         }
         
         // Write updated charge back to tile
         tile = (tile & 0xFF00FFFF) | (charge << 8);
         arr[idx] = tile;
       } else if (type === TILE_TYPES.MAINTENANCE) {
-        // Maintenance decay: sprinklers decay automatically (e.g. 1 point per tick)
-        let charge = (tile >> 8) & 0xFF;
-        if (charge > 0) {
-          charge = Math.max(0, charge - 1);
-          tile = (tile & 0xFF00FFFF) | (charge << 8);
-          arr[idx] = tile;
-        }
+        // Sprinklers no longer decay
       }
     }
   }
 
-  // 3. Simulate NPC Farmers
+  // 3. Simulate NPC Farmers (random roaming)
   let farmerConsumptionTotal = 0;
   
   farmers.forEach(farmer => {
@@ -274,66 +270,35 @@ function tickSimulation(timestamp) {
       return;
     }
     
-    // Awake: Roam and consume produce
-    // Feeding boost decay (if any)
-    if (farmer.feedMultiplierTimer > 0) {
-      farmer.feedMultiplierTimer--;
-      if (farmer.feedMultiplierTimer === 0) {
-        farmer.currentMultiplier = 1.0;
-      }
-    }
-    
-    // Farmer consumes food
-    // Consumes a fraction of gold per tick as part of the produce
-    const consumeAmount = farmer.consumeRate || 1;
-    farmerConsumptionTotal += consumeAmount;
-    
-    // Roam along path
-    if (farmer.path && farmer.path.length > 1) {
-      // Advance step counter based on speed
-      farmer.moveTickAccumulator = (farmer.moveTickAccumulator || 0) + (farmer.speed || 1);
+    // Roam randomly to adjacent non-water tile
+    farmer.moveTickAccumulator = (farmer.moveTickAccumulator || 0) + (farmer.speed || 1);
+    if (farmer.moveTickAccumulator >= 10) {
+      farmer.moveTickAccumulator -= 10;
       
-      // Move 1 block if accumulator exceeds threshold
-      if (farmer.moveTickAccumulator >= 10) {
-        farmer.moveTickAccumulator -= 10;
-        
-        // Move along path: ping-pong or cycle
-        if (farmer.isPathReversing) {
-          farmer.pathIndex--;
-          if (farmer.pathIndex <= 0) {
-            farmer.pathIndex = 0;
-            farmer.isPathReversing = false;
+      const moves = [];
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = farmer.x + dx;
+          const ny = farmer.y + dy;
+          const tileVal = getTile(nx, ny);
+          const tType = tileVal & 0xFF;
+          if (tType !== TILE_TYPES.WATER) {
+            moves.push({ x: nx, y: ny });
           }
-        } else {
-          farmer.pathIndex++;
-          if (farmer.pathIndex >= farmer.path.length) {
-            // Check path length limit
-            const maxPathLength = farmer.maxPathLength || 10;
-            const targetLength = Math.min(farmer.path.length, maxPathLength);
-            
-            if (farmer.pathIndex >= targetLength) {
-              farmer.pathIndex = Math.max(0, targetLength - 1);
-              farmer.isPathReversing = true;
-            }
-          }
-        }
-        
-        // Set coordinates to current path step
-        const step = farmer.path[farmer.pathIndex];
-        if (step) {
-          farmer.x = step.x;
-          farmer.y = step.y;
         }
       }
-      farmer.currentAction = "Working 🧑‍🌾";
-    } else {
-      farmer.currentAction = "Idle 💤";
+      if (moves.length > 0) {
+        const nextMove = moves[Math.floor(Math.random() * moves.length)];
+        farmer.x = nextMove.x;
+        farmer.y = nextMove.y;
+      }
     }
+    farmer.currentAction = "Working 🧑‍🌾";
   });
 
-  // Calculate final resource changes (ensure 1 gold minimum a second)
+  // Calculate final resource changes (using exact floats with no minimum limit)
   let netGold = goldProducedThisSecond - farmerConsumptionTotal;
-  if (netGold < 1) netGold = 1; // 1 Gold min per second
+  if (netGold < 0) netGold = 0;
   
   resources.gold += netGold;
   resources.ap += apProducedThisSecond;
@@ -479,31 +444,7 @@ self.onmessage = function(e) {
       farmers.push(msg.farmer);
       break;
       
-    case "feed_farmer":
-      const f = farmers.find(farm => farm.id === msg.farmerId);
-      if (f && resources.food > 0) {
-        resources.food--;
-        f.feedMultiplierTimer = 3600; // 1 hour boost (3600 seconds)
-        f.currentMultiplier = 1.5; // +50% productivity
-        self.postMessage({ type: "notification", text: f.emoji + " Farmer fed!" });
-      }
-      break;
-      
-    case "upgrade_farmer_path":
-      const farm = farmers.find(farm => farm.id === msg.farmerId);
-      if (farm) {
-        farm.maxPathLength = (farm.maxPathLength || 10) + 5;
-      }
-      break;
-      
-    case "update_farmer_path":
-      const fa = farmers.find(farm => farm.id === msg.farmerId);
-      if (fa) {
-        fa.path = msg.path;
-        fa.pathIndex = 0;
-        fa.isPathReversing = false;
-      }
-      break;
+    // Removed feed_farmer, upgrade_farmer_path, and update_farmer_path handlers
       
     case "checkin":
       handleDailyCheckin(msg.completionRate || 0);
