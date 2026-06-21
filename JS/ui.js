@@ -5692,18 +5692,18 @@ class UIManager {
       }
       card.dataset.lastTapTime = String(now);
 
-      // Start hold-to-complete timer (600ms hold)
-      clearTimeout(this.dailyHoldTimer);
-      const overlay = card.querySelector('.hold-progress-overlay');
-      if (overlay) {
-        overlay.style.transition = 'width 600ms linear';
-        overlay.style.width = '100%';
-      }
-      this.dailyHoldTimer = setTimeout(() => {
-        const dragState = this.dailyDragState;
-        if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
-          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-          if (!editModeDailies) {
+      const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+      if (!editModeDailies) {
+        // Start hold-to-complete timer (600ms hold)
+        clearTimeout(this.dailyHoldTimer);
+        const overlay = card.querySelector('.hold-progress-overlay');
+        if (overlay) {
+          overlay.style.transition = 'width 600ms linear';
+          overlay.style.width = '100%';
+        }
+        this.dailyHoldTimer = setTimeout(() => {
+          const dragState = this.dailyDragState;
+          if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
             const res = TaskManager.completeDaily(dailyId);
             if (res && res.success) {
               try {
@@ -5726,10 +5726,10 @@ class UIManager {
               try { getGameState().save(); } catch (saveError) { }
               this.renderEnemies();
             }
+            card.dataset.holdCompleted = '1';
           }
-          card.dataset.holdCompleted = '1';
-        }
-      }, 600);
+        }, 600);
+      }
     });
 
     const onMove = (event) => {
