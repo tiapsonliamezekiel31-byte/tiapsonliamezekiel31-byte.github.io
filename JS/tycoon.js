@@ -2467,9 +2467,6 @@
             const cellH = 1308 / 6;
             
             ctx.save();
-            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetY = 2;
             ctx.globalAlpha = 0.6 + 0.4 * (charge / 255);
             ctx.drawImage(
               this.cropsImage,
@@ -2484,9 +2481,6 @@
             const crop = CROP_TEMPLATES[subType - 1] || CROP_TEMPLATES[0];
             ctx.save();
             ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetY = 2;
             ctx.font = "42px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -2510,9 +2504,6 @@
         case TILE_TYPES.INCREASER: {
           ctx.save();
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -2534,9 +2525,6 @@
         case TILE_TYPES.MAINTENANCE: {
           ctx.save();
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -2571,9 +2559,6 @@
           
           ctx.save();
           ctx.fillStyle = "#ffffff";
-          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-          ctx.shadowBlur = 4;
-          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
