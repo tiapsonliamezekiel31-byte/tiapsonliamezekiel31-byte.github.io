@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: multiplayer tile sync - write full chunk to prevent tile loss on other devices"
+$commitMsg = "feat: sync tycoon cheat commands to multiplayer Firebase world"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

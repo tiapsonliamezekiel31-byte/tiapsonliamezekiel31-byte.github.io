@@ -619,6 +619,12 @@
           if (cmd === 'gold' || cmd === 'ap' || cmd === 'food') {
             this.resources[cmd] += amt;
             this.addNotification(`Cheat: Added ${amt} ${cmd}!`);
+            // Sync to multiplayer world if connected
+            if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+              const gain = { gold: 0, ap: 0, food: 0 };
+              gain[cmd] = amt;
+              window.MultiplayerManager.gainResources(gain.gold, gain.ap, gain.food, `used cheat: +${amt} ${cmd}`);
+            }
           } else if (cmd === 'combat' || cmd === 'exit') {
             document.getElementById('tycoon-settings-dialog').style.display = 'none';
             this.exitTycoonMode();
@@ -656,6 +662,16 @@
                 farmers: this.farmers,
                 resources: this.resources,
                 config: this.config
+              });
+            }
+            // Sync reset to multiplayer world if connected
+            if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+              const serialChunks = this.getSerializableState().chunks;
+              const worldRef = window.MultiplayerManager.db.ref(`worlds/${window.MultiplayerManager.worldName}`);
+              worldRef.update({
+                resources: { gold: this.resources.gold, ap: this.resources.ap, food: this.resources.food, lastTickTime: Date.now() },
+                farmers: [],
+                chunks: serialChunks
               });
             }
             this.updateHUD();
