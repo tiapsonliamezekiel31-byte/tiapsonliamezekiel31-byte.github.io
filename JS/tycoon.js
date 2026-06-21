@@ -965,6 +965,7 @@
           id: 'farmer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           name: this.activeTool.name,
           emoji: this.activeTool.emoji,
+          subType: this.activeTool.subType || 1,
           x: tx,
           y: ty,
           speed: this.activeTool.speed,
@@ -1147,9 +1148,16 @@
         ];
       } else if (tab === "farmers") {
         items = [
-          { type: TILE_TYPES.FARMER, name: "Basic Roamer", emoji: "🧑‍🌾", cost: 50000, speed: 2, consumeRate: 1 },
-          { type: TILE_TYPES.FARMER, name: "Fast Roamer", emoji: "🏃‍♂️", cost: 90000, speed: 4, consumeRate: 2 },
-          { type: TILE_TYPES.FARMER, name: "AP Collector", emoji: "🧙‍♂️", cost: 125000, speed: 3, consumeRate: 1 }
+          { type: TILE_TYPES.FARMER, subType: 1, name: "Loyal Dog", emoji: "🐶", cost: 40000, speed: 3, description: "Barks to wake up nearby animals. Boosts crop rate by +25%." },
+          { type: TILE_TYPES.FARMER, subType: 2, name: "Lucky Cat", emoji: "🐱", cost: 60000, speed: 2, description: "Purrs and randomly generates extra gold (+50g)." },
+          { type: TILE_TYPES.FARMER, subType: 3, name: "Rain Frog", emoji: "🐸", cost: 75000, speed: 1, description: "Splashes and recharges adjacent crop/sprinkler water levels." },
+          { type: TILE_TYPES.FARMER, subType: 4, name: "Speedy Bunny", emoji: "🐰", cost: 90000, speed: 5, description: "Hops around quickly. Boosts adjacent crops by +30%." },
+          { type: TILE_TYPES.FARMER, subType: 5, name: "Clever Fox", emoji: "🦊", cost: 100000, speed: 4, description: "Sneaks around and gathers bonus AP near trees." },
+          { type: TILE_TYPES.FARMER, subType: 6, name: "Trash Raccoon", emoji: "🦝", cost: 85000, speed: 3, description: "Scavenges and slows down sprinkler water decay." },
+          { type: TILE_TYPES.FARMER, subType: 7, name: "Truffle Pig", emoji: "🐷", cost: 110000, speed: 2, description: "Digs up truffles for massive bonus gold (+150g)." },
+          { type: TILE_TYPES.FARMER, subType: 8, name: "Night Owl", emoji: "🦉", cost: 120000, speed: 2, description: "Awake only at night, granting a massive +50% crop boost." },
+          { type: TILE_TYPES.FARMER, subType: 9, name: "Gentle Cow", emoji: "🐮", cost: 130000, speed: 1, description: "Grazes and generates passive +0.05 food/second." },
+          { type: TILE_TYPES.FARMER, subType: 10, name: "Royal Lion", emoji: "🦁", cost: 200000, speed: 3, description: "Roars to boost all nearby crops by +40%." }
         ];
       } else if (tab === "cosmetics") {
         items = [
@@ -1249,15 +1257,108 @@
       
       title.innerHTML = `${farmer.emoji} ${farmer.name}`;
       
+      const subType = farmer.subType || 1;
+      let desc = "A specialized animal worker that helps tend your farm.";
+      let boostDesc = "Boosts nearby crops by +25% in a 3x3 area.";
+      let actionBtnText = "💖 Pet";
+      
+      switch (subType) {
+        case 1:
+          desc = "A loyal companion who loves chasing balls and waking up friends.";
+          boostDesc = "Boosts nearby crops by +25% in a 3x3 area. Can wake up sleeping farmers.";
+          actionBtnText = "🥎 Play Fetch!";
+          break;
+        case 2:
+          desc = "A feline of good fortune who purrs and uncovers hidden gold.";
+          boostDesc = "Boosts nearby crops by +25% in a 3x3 area and periodically spawns +50g.";
+          actionBtnText = "🐈 Pet Cat";
+          break;
+        case 3:
+          desc = "A tiny amphibian that moisturizes soil with fresh morning dew.";
+          boostDesc = "Boosts nearby crops by +25% and periodically waters adjacent crop tiles.";
+          actionBtnText = "💧 Spray Water";
+          break;
+        case 4:
+          desc = "A hyperactive rabbit that hops from patch to patch.";
+          boostDesc = "Boosts nearby crops by +30% in a 3x3 area due to high agility.";
+          actionBtnText = "🥕 Give Carrot";
+          break;
+        case 5:
+          desc = "A cunning fox who finds secrets in the forest.";
+          boostDesc = "Boosts nearby crops by +25% and occasionally gathers AP near trees.";
+          actionBtnText = "🦊 Play Riddle";
+          break;
+        case 6:
+          desc = "A masked creature that hoards shiny items and maintains tools.";
+          boostDesc = "Boosts nearby crops by +25% and slows down nearby sprinkler/fertilizer decay.";
+          actionBtnText = "✨ Give Shiny";
+          break;
+        case 7:
+          desc = "A snorting explorer that smells truffles under rich grass.";
+          boostDesc = "Boosts nearby crops by +25% and digs up +150g truffles.";
+          actionBtnText = "🍎 Feed Apple";
+          break;
+        case 8:
+          desc = "A wise bird of the night who works when others sleep.";
+          boostDesc = "Active only at night, boosting crop production rate by +50%. Sleeps during day.";
+          actionBtnText = "🦉 Hoot";
+          break;
+        case 9:
+          desc = "A peaceful herbivore that produces premium quality milk.";
+          boostDesc = "Boosts nearby crops by +25% and generates +0.05 food/second.";
+          actionBtnText = "🥛 Milk Cow";
+          break;
+        case 10:
+          desc = "A majestic beast whose presence inspires maximum production.";
+          boostDesc = "A massive +40% crop rate boost. Roars to wake up sleeping farmers.";
+          actionBtnText = "🦁 Hear Roar";
+          break;
+      }
+      
       body.innerHTML = `
-        <div><strong>Status:</strong> ${farmer.currentAction}</div>
-        <div><strong>Speed:</strong> ${farmer.speed} tiles/s</div>
-        <div><strong>Passive Boost:</strong> Boosts nearby crop production rate by +25% in a 3x3 area</div>
+        <div style="margin-bottom: 8px;"><strong>Status:</strong> ${farmer.currentAction || "Working 🧑‍🌾"}</div>
+        <div style="margin-bottom: 8px;"><strong>Speed:</strong> ${farmer.speed} tiles/s</div>
+        <div style="margin-bottom: 8px;"><strong>Description:</strong> ${desc}</div>
+        <div style="margin-bottom: 8px; color: #4ade80;"><strong>Special Effect:</strong> ${boostDesc}</div>
       `;
       
       footer.innerHTML = `
+        <button class="tycoon-btn" id="farmer-action-btn" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); margin-right: auto;">${actionBtnText}</button>
         <button class="tycoon-btn exit-btn" id="farmer-close-btn">Close</button>
       `;
+
+      // Wire Action Button
+      document.getElementById('farmer-action-btn').addEventListener('click', () => {
+        // Set interaction effect on canvas
+        farmer.interactTime = Date.now();
+        
+        // Audio playback
+        let soundKey = 'pet';
+        switch (subType) {
+          case 1: soundKey = 'dog_bark'; break;
+          case 2: soundKey = 'cat_meow'; break;
+          case 3: soundKey = 'frog_croak'; break;
+          case 4: soundKey = 'bunny_squeak'; break;
+          case 5: soundKey = 'fox_bark'; break;
+          case 6: soundKey = 'raccoon_chirp'; break;
+          case 7: soundKey = 'pig_grunt'; break;
+          case 8: soundKey = 'owl_hoot'; break;
+          case 9: soundKey = 'cow_moo'; break;
+          case 10: soundKey = 'lion_roar'; break;
+        }
+        if (window.SoundManager) {
+          window.SoundManager.play(soundKey);
+        }
+
+        // Apply visual and functional interaction benefits
+        this.applyFarmerInteractionBenefit(farmer, subType);
+        
+        // Update details dialog body status text in real time
+        const statusDiv = body.querySelector('div');
+        if (statusDiv) {
+          statusDiv.innerHTML = `<strong>Status:</strong> ${farmer.currentAction || "Working 🧑‍🌾"}`;
+        }
+      });
 
       document.getElementById('farmer-close-btn').addEventListener('click', () => {
         document.getElementById('tycoon-farmer-dialog').style.display = 'none';
@@ -1265,6 +1366,162 @@
       });
 
       document.getElementById('tycoon-farmer-dialog').style.display = 'flex';
+    }
+
+    applyFarmerInteractionBenefit(farmer, subType) {
+      const tx = farmer.x;
+      const ty = farmer.y;
+
+      switch (subType) {
+        case 1: // Loyal Dog: wake up sleeping animals
+          this.farmers.forEach(f => {
+            if (f.isSleeping) {
+              f.isSleeping = false;
+              f.currentAction = "Working 🧑‍🌾";
+            }
+          });
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Everyone woke up! 🌅", "#34d399");
+          this.worker.postMessage({
+            type: 'sync_state',
+            farmers: this.farmers
+          });
+          break;
+
+        case 2: // Lucky Cat: finds +50g
+          this.resources.gold += 50;
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+50 Gold! 🪙", "#fbbf24");
+          this.updateHUD();
+          this.worker.postMessage({
+            type: 'sync_state',
+            resources: this.resources
+          });
+          break;
+
+        case 3: // Rain Frog: waters adjacent crops
+          let wateredCount = 0;
+          for (let dy = -3; dy <= 3; dy++) {
+            for (let dx = -3; dx <= 3; dx++) {
+              const nx = tx + dx;
+              const ny = ty + dy;
+              const tileVal = this.getTileTypeAt(nx, ny);
+              const type = tileVal & 0xFF;
+              if (type === TILE_TYPES.PRODUCER) {
+                let charge = (tileVal >> 8) & 0xFF;
+                charge = Math.min(255, charge + 25);
+                const sub = (tileVal >> 24) & 0xFF;
+                let newVal = type | (charge << 8) | (sub << 24);
+                this.setTileTypeAt(nx, ny, newVal);
+                this.postTileUpdateToWorker(nx, ny, newVal);
+                wateredCount++;
+              }
+            }
+          }
+          if (wateredCount > 0) {
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, `Watered ${wateredCount} crops! 💧`, "#38bdf8");
+          }
+          break;
+
+        case 4: // Speedy Bunny: double speed for 15s
+          farmer.speed = 8;
+          farmer.currentAction = "Super Speed! ⚡";
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Bunny Zoom! 🥕", "#fb7185");
+          this.worker.postMessage({
+            type: 'sync_state',
+            farmers: this.farmers
+          });
+          setTimeout(() => {
+            const currentBunny = this.farmers.find(f => f.id === farmer.id);
+            if (currentBunny) {
+              currentBunny.speed = 5;
+              if (currentBunny.currentAction === "Super Speed! ⚡") {
+                currentBunny.currentAction = "Working 🧑‍🌾";
+              }
+              this.worker.postMessage({
+                type: 'sync_state',
+                farmers: this.farmers
+              });
+            }
+          }, 15000);
+          break;
+
+        case 5: // Clever Fox: generates +3 AP
+          this.resources.ap += 3;
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+3 AP! ⚡", "#38bdf8");
+          this.updateHUD();
+          this.worker.postMessage({
+            type: 'sync_state',
+            resources: this.resources
+          });
+          break;
+
+        case 6: // Trash Raccoon: recharge adjacent sprinklers
+          let sprinklerCount = 0;
+          for (let dy = -3; dy <= 3; dy++) {
+            for (let dx = -3; dx <= 3; dx++) {
+              const nx = tx + dx;
+              const ny = ty + dy;
+              const tileVal = this.getTileTypeAt(nx, ny);
+              const type = tileVal & 0xFF;
+              if (type === TILE_TYPES.MAINTENANCE) {
+                let charge = (tileVal >> 8) & 0xFF;
+                charge = 255;
+                const sub = (tileVal >> 24) & 0xFF;
+                let newVal = type | (charge << 8) | (sub << 24);
+                this.setTileTypeAt(nx, ny, newVal);
+                this.postTileUpdateToWorker(nx, ny, newVal);
+                sprinklerCount++;
+              }
+            }
+          }
+          if (sprinklerCount > 0) {
+            this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, `Recharged ${sprinklerCount} Sprinklers! 🚿`, "#60a5fa");
+          }
+          break;
+
+        case 7: // Truffle Pig: digs +150g truffle
+          this.resources.gold += 150;
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Found Truffle! +150g 🍄", "#f59e0b");
+          this.updateHUD();
+          this.worker.postMessage({
+            type: 'sync_state',
+            resources: this.resources
+          });
+          break;
+
+        case 8: // Night Owl: hoot and generate small gold
+          this.resources.gold += 10;
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+10 Gold! 🦉", "#fbbf24");
+          this.updateHUD();
+          this.worker.postMessage({
+            type: 'sync_state',
+            resources: this.resources
+          });
+          break;
+
+        case 9: // Gentle Cow: milk cow for +1 food
+          this.resources.food += 1;
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+1 Food! 🥛", "#a7f3d0");
+          this.updateHUD();
+          this.worker.postMessage({
+            type: 'sync_state',
+            resources: this.resources
+          });
+          break;
+
+        case 10: // Royal Lion: wake up sleeping animals and roar
+          this.farmers.forEach(f => {
+            if (f.isSleeping) {
+              f.isSleeping = false;
+              f.currentAction = "Working 🧑‍🌾";
+            }
+          });
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "LION ROAR! Boost active! 🦁", "#fb923c");
+          this.worker.postMessage({
+            type: 'sync_state',
+            farmers: this.farmers
+          });
+          break;
+      }
     }
 
     addNotification(text) {
@@ -1693,6 +1950,7 @@
 
     drawCanvas() {
       const ctx = this.ctx;
+      ctx.globalAlpha = 1.0;
       const w = this.canvas.width;
       const h = this.canvas.height;
       const zoom = this.camera.zoom;
@@ -1772,25 +2030,78 @@
         const fx = farmer.visualX * tw + tw / 2;
         const fy = farmer.visualY * tw + tw / 2;
         
+        ctx.save();
+        ctx.globalAlpha = 1.0;
+        ctx.translate(fx, fy);
+
+        // Click interaction bounce & spin effects
+        let scale = 1.0;
+        let rotation = 0;
+        if (farmer.interactTime && Date.now() - farmer.interactTime < 800) {
+          const t = (Date.now() - farmer.interactTime) / 800;
+          scale += 0.4 * Math.sin(t * Math.PI);
+          if (farmer.subType === 2) {
+            rotation = t * Math.PI * 2;
+          } else if (farmer.subType === 10) {
+            rotation = 0.15 * Math.sin(t * Math.PI * 10);
+          } else {
+            rotation = 0.25 * Math.sin(t * Math.PI * 4);
+          }
+        }
+
+        // Animal-specific constants and passive animations
+        let yOffset = 0;
+        if (!farmer.isSleeping) {
+          const isMoving = Math.hypot(farmer.x - farmer.visualX, farmer.y - farmer.visualY) > 0.02;
+          if (farmer.subType === 4) {
+            yOffset = -Math.abs(Math.sin(Date.now() / 120)) * 8;
+          } else if (farmer.subType === 3) {
+            yOffset = -Math.abs(Math.sin(Date.now() / 250)) * 5;
+          } else if (isMoving) {
+            yOffset = -Math.abs(Math.sin(Date.now() / 150)) * 2;
+            rotation += 0.08 * Math.sin(Date.now() / 100);
+          }
+        }
+
+        ctx.scale(scale, scale);
+        ctx.rotate(rotation);
+
         // Soft farmer shadow under emoji
         ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
         ctx.beginPath();
-        ctx.ellipse(fx, fy + 8, 8, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(0, 8 - yOffset, 8, 4, 0, 0, Math.PI * 2);
         ctx.fill();
         
+        ctx.fillStyle = "#ffffff";
         ctx.font = "18px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(farmer.emoji, fx, fy);
+        ctx.fillText(farmer.emoji, 0, yOffset);
         
         // Action indicators
         if (farmer.isSleeping) {
           ctx.font = "8px Arial";
-          ctx.fillText("💤", fx + 8, fy - 8);
+          ctx.fillText("💤", 8, yOffset - 8);
         } else if (farmer.feedMultiplierTimer > 0) {
           ctx.font = "8px Arial";
-          ctx.fillText("⚡", fx - 8, fy - 8);
+          ctx.fillText("⚡", -8, yOffset - 8);
         }
+
+        // Floating particle emoji
+        if (farmer.interactTime && Date.now() - farmer.interactTime < 800) {
+          const t = (Date.now() - farmer.interactTime) / 800;
+          ctx.font = "8px Arial";
+          ctx.globalAlpha = 1 - t;
+          let interactEmoji = "❤️";
+          if (farmer.subType === 1) interactEmoji = "🥎";
+          else if (farmer.subType === 3) interactEmoji = "💧";
+          else if (farmer.subType === 6) interactEmoji = "✨";
+          else if (farmer.subType === 7) interactEmoji = "🍄";
+          else if (farmer.subType === 9) interactEmoji = "🥛";
+          ctx.fillText(interactEmoji, -10 + Math.sin(t * 10) * 5, yOffset - 15 - t * 20);
+        }
+
+        ctx.restore();
       });
 
       // Step 4: Render active placement tool hover preview
@@ -2120,16 +2431,13 @@
     }
 
     drawTileObject(ctx, tx, ty, type, charge, subType) {
+      ctx.globalAlpha = 1.0;
       const tw = this.tileWidth;
       const x = tx * tw;
       const y = ty * tw;
       const noise = (tx * 17 + ty * 31) % 100;
       
-      // Flat shadow layer under building
-      ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
-      ctx.beginPath();
-      ctx.arc(x + tw / 2, y + tw / 2, tw * 1.2, 0, Math.PI * 2);
-      ctx.fill();
+
 
       // Radial light glow at night
       const lighting = this.getLightingState();
@@ -2175,6 +2483,7 @@
           if (!drawn) {
             const crop = CROP_TEMPLATES[subType - 1] || CROP_TEMPLATES[0];
             ctx.save();
+            ctx.fillStyle = "#ffffff";
             ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
             ctx.shadowBlur = 4;
             ctx.shadowOffsetY = 2;
@@ -2200,6 +2509,7 @@
           
         case TILE_TYPES.INCREASER: {
           ctx.save();
+          ctx.fillStyle = "#ffffff";
           ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 2;
@@ -2208,11 +2518,22 @@
           ctx.textBaseline = "middle";
           ctx.fillText("🧪", x + tw / 2, y + tw / 2);
           ctx.restore();
+
+          // Thin purple dashed radius circle
+          ctx.save();
+          ctx.strokeStyle = "rgba(168, 85, 247, 0.4)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(x + tw / 2, y + tw / 2, 112, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
           break;
         }
           
         case TILE_TYPES.MAINTENANCE: {
           ctx.save();
+          ctx.fillStyle = "#ffffff";
           ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 2;
@@ -2220,6 +2541,16 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🚿", x + tw / 2, y + tw / 2);
+          ctx.restore();
+
+          // Thin blue dashed radius circle
+          ctx.save();
+          ctx.strokeStyle = "rgba(56, 189, 248, 0.4)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.arc(x + tw / 2, y + tw / 2, 112, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.restore();
           
           const barWidth = tw * 2;
@@ -2239,6 +2570,7 @@
           else if (noise < 66) cosEmoji = "🍄";
           
           ctx.save();
+          ctx.fillStyle = "#ffffff";
           ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 2;

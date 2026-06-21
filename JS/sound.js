@@ -58,6 +58,16 @@ class SoundManager {
         case 'death': this._playSequence([200,160,120], [0.12,0.12,0.18], 'sine', 0.18); break;
         case 'lootbox_drop': this._playSequence([300, 450, 600], [0.08, 0.08, 0.12], 'sine', 0.15); break;
         case 'lootbox_open': this._playSequence([500, 650, 800, 950, 1100], [0.06, 0.06, 0.06, 0.08, 0.15], 'triangle', 0.2); break;
+        case 'dog_bark': this._playSequence([380, 280, 380], [0.07, 0.03, 0.09], 'sawtooth', 0.12); break;
+        case 'cat_meow': this._playSequence([580, 880], [0.08, 0.14], 'triangle', 0.12); break;
+        case 'frog_croak': this._playSequence([110, 90, 110], [0.11, 0.04, 0.11], 'square', 0.16); break;
+        case 'bunny_squeak': this._playTone(1450, 0.07, 'sine', 0.08); break;
+        case 'fox_bark': this._playSequence([780, 680], [0.05, 0.08], 'triangle', 0.1); break;
+        case 'raccoon_chirp': this._playSequence([980, 1180, 980, 1180], [0.03, 0.03, 0.03, 0.03], 'sine', 0.09); break;
+        case 'pig_grunt': this._playSequence([95, 75], [0.14, 0.14], 'square', 0.18); break;
+        case 'owl_hoot': this._playSequence([340, 340, 440, 440], [0.09, 0.09, 0.09, 0.14], 'sine', 0.13); break;
+        case 'cow_moo': this._playSequence([170, 140, 110], [0.18, 0.28, 0.38], 'sine', 0.15); break;
+        case 'lion_roar': this._playSequence([100, 80, 60, 40], [0.18, 0.18, 0.28, 0.38], 'sawtooth', 0.22); break;
         default: this._playTone(600, 0.05, 'sine', 0.08); break;
       }
     } catch (e) { console.warn('Sound play failed', e); }

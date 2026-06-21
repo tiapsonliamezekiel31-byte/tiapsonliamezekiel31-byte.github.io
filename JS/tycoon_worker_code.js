@@ -230,14 +230,23 @@ function tickSimulation(timestamp) {
           }
           let multiplier = 1.0 + (increaserCount * 0.20);
  
-          // Apply Farmer boost: +25% productivity per awake farmer standing on/adjacent to 3x3 footprint
-          let farmerCount = 0;
+          // Apply Farmer boosts according to animal subType
+          let farmerMultiplierAdd = 0;
           farmers.forEach(farmer => {
             if (!farmer.isSleeping && getChebyshevDistance(gx, gy, farmer.x, farmer.y) <= 2) {
-              farmerCount++;
+              const sub = farmer.subType || 1;
+              if (sub === 4) { // Speedy Bunny
+                farmerMultiplierAdd += 0.30;
+              } else if (sub === 8) { // Night Owl
+                farmerMultiplierAdd += 0.50;
+              } else if (sub === 10) { // Royal Lion
+                farmerMultiplierAdd += 0.40;
+              } else {
+                farmerMultiplierAdd += 0.25;
+              }
             }
           });
-          multiplier += (farmerCount * 0.25);
+          multiplier += farmerMultiplierAdd;
           
           // Apply live task completion rate: current-day rate drives production in real time.
           // Falls back to previous day's rate if current day hasn't been tracked yet.
@@ -261,18 +270,25 @@ function tickSimulation(timestamp) {
     }
   }
 
-  // 3. Simulate NPC Farmers (random roaming)
+  // 3. Simulate NPC Farmers (random roaming and special animal actions)
   let farmerConsumptionTotal = 0;
   
   farmers.forEach(farmer => {
-    // Shift state: Sleep during Night hours
-    farmer.isSleeping = isNight;
+    const sub = farmer.subType || 1;
+    
+    // Shift state: Night Owl sleeps during day; other animals sleep during night
+    if (sub === 8) { // Night Owl
+      farmer.isSleeping = !isNight;
+    } else {
+      farmer.isSleeping = isNight;
+    }
     
     if (farmer.isSleeping) {
       farmer.currentAction = "Sleeping 💤";
       return;
     }
     
+    // Movement simulation
     farmer.moveTickAccumulator = (farmer.moveTickAccumulator || 0) + (farmer.speed || 1);
     if (farmer.moveTickAccumulator >= 3) {
       farmer.moveTickAccumulator -= 3;
@@ -295,7 +311,91 @@ function tickSimulation(timestamp) {
         farmer.y = nextMove.y;
       }
     }
+    
+    // Custom Actions / Working status
     farmer.currentAction = "Working 🧑‍🌾";
+    
+    // Periodic random triggers (1Hz tick rate)
+    if (sub === 2 && Math.random() < 0.02) { // Lucky Cat: finds +50g
+      resources.gold += 50;
+      resources.accumulatedGoldToday += 50;
+      self.postMessage({ type: "notification", text: "🐈 Lucky Cat purred and found +50 gold!" });
+    }
+    
+    if (sub === 3 && Math.random() < 0.03) { // Rain Frog: waters adjacent crops
+      let wateredAny = false;
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const nx = farmer.x + dx;
+          const ny = farmer.y + dy;
+          const tileVal = getTile(nx, ny);
+          const type = tileVal & 0xFF;
+          if (type === TILE_TYPES.PRODUCER) {
+            let charge = (tileVal >> 8) & 0xFF;
+            charge = Math.min(255, charge + 10);
+            const subType = (tileVal >> 24) & 0xFF;
+            setTile(nx, ny, type | (charge << 8) | (subType << 24));
+            wateredAny = true;
+          }
+        }
+      }
+      if (wateredAny) {
+        self.postMessage({ type: "notification", text: "🐸 Rain Frog splashed and watered crops!" });
+      }
+    }
+    
+    if (sub === 5 && Math.random() < 0.02) { // Clever Fox: gathers AP near trees
+      let nearTree = false;
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const nx = farmer.x + dx;
+          const ny = farmer.y + dy;
+          const tileVal = getTile(nx, ny);
+          if ((tileVal & 0xFF) === TILE_TYPES.PRODUCER && ((tileVal >> 24) & 0xFF) === 1) { // Tree
+            nearTree = true;
+            break;
+          }
+        }
+      }
+      if (nearTree) {
+        resources.ap += 1;
+        resources.accumulatedApToday += 1;
+        self.postMessage({ type: "notification", text: "🦊 Clever Fox gathered +1 AP near trees!" });
+      }
+    }
+    
+    if (sub === 6 && Math.random() < 0.02) { // Trash Raccoon: recharges adjacent sprinklers
+      let rechargedAny = false;
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const nx = farmer.x + dx;
+          const ny = farmer.y + dy;
+          const tileVal = getTile(nx, ny);
+          if ((tileVal & 0xFF) === TILE_TYPES.MAINTENANCE) { // Sprinkler
+            let charge = (tileVal >> 8) & 0xFF;
+            charge = Math.min(255, charge + 20);
+            setTile(nx, ny, (tileVal & 0xFF00FFFF) | (charge << 8));
+            rechargedAny = true;
+          }
+        }
+      }
+      if (rechargedAny) {
+        self.postMessage({ type: "notification", text: "🦝 Trash Raccoon polished and recharged adjacent sprinklers!" });
+      }
+    }
+    
+    if (sub === 7 && Math.random() < 0.01) { // Truffle Pig: digs +150g truffle on grass
+      const currentTile = getTile(farmer.x, farmer.y);
+      if ((currentTile & 0xFF) === TILE_TYPES.GRASS) {
+        resources.gold += 150;
+        resources.accumulatedGoldToday += 150;
+        self.postMessage({ type: "notification", text: "🐷 Truffle Pig dug up a truffle! (+150g)" });
+      }
+    }
+    
+    if (sub === 9) { // Gentle Cow: passive food generation (+0.05/sec)
+      resources.food += 0.05;
+    }
   });
 
   // Calculate final resource changes (using exact floats with no minimum limit)
