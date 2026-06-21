@@ -4,7 +4,7 @@
   const DEFAULT_FIREBASE_CONFIG = {
     apiKey: "AIzaSyDHX4LlEMhZz_7E5VoNEozVJru2-vFlts8",
     authDomain: "nemesis-tycoon.firebaseapp.com",
-    databaseURL: "https://nemesis-tycoon-default-rtdb.firebaseio.com",
+    databaseURL: "https://nemesis-tycoon-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "nemesis-tycoon",
     storageBucket: "nemesis-tycoon.firebasestorage.app",
     messagingSenderId: "229716400752",

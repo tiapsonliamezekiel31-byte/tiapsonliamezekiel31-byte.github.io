@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: hardcode real Firebase config into multiplayer.js"
+$commitMsg = "fix: correct Firebase databaseURL to asia-southeast1 regional endpoint"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
@@ -20,6 +20,16 @@ function Get-RepoInfo {
         exit 1
     }
     return @($owner, $repo)
+}
+
+function Get-CacheTag {
+    param([string]$content, [string]$source)
+    if ($content -match "const CACHE_NAME = '([^']+)'") {
+        return $matches[1]
+    } else {
+        Write-Warning "CACHE_NAME not found in $source"
+        return $null
+    }
 }
 
 # Show current branch and status
@@ -87,37 +97,43 @@ $rawUrl = "https://raw.githubusercontent.com/$owner/$repo/$branch/sw.js"
 $liveUrl = if ($repo -eq "$owner.github.io") { "https://$owner.github.io/sw.js" } else { "https://$owner.github.io/$repo/sw.js" }
 Write-Host "Fetching raw sw.js from $rawUrl"
 $rawContent = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing | Select-Object -ExpandProperty Content
-Write-Host "RAW CACHE_NAME:"
-($rawContent -match "const CACHE_NAME = '([^']+)'") | Out-Null
-$repoTag = $matches[1]
-Write-Host $repoTag
+$repoTag = Get-CacheTag $rawContent "raw sw.js"
+Write-Host "RAW CACHE_NAME: $repoTag"
 Write-Host "Fetching live sw.js from $liveUrl"
 $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing | Select-Object -ExpandProperty Content
-($liveContent -match "const CACHE_NAME = '([^']+)'") | Out-Null
-Write-Host $matches[1]
+$liveTag0 = Get-CacheTag $liveContent "live sw.js"
+Write-Host "LIVE CACHE_NAME: $liveTag0"
 
 # Poll if requested
 if ($pollLiveSwSecs -gt 0) {
-    $maxAttempts = [Math]::Ceiling(300 / $pollLiveSwSecs)
-    $attempt = 0
-    $liveTag = ""
-    while ($attempt -lt $maxAttempts) {
-        Write-Host "Polling attempt $($attempt + 1) of $maxAttempts..."
-        Start-Sleep -Seconds $pollLiveSwSecs
-        try {
-            $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing -ErrorAction Stop | Select-Object -ExpandProperty Content
-            if ($liveContent -match "const CACHE_NAME = '([^']+)'") {
-                $liveTag = $matches[1]
-                Write-Host "Live tag is: $liveTag"
-                if ($liveTag -eq $repoTag) { break }
+    if (-not $repoTag) {
+        Write-Warning "Repo CACHE_NAME not found; skipping live polling."
+    } else {
+        $maxAttempts = [Math]::Ceiling(300 / $pollLiveSwSecs)
+        $attempt = 0
+        $liveTag = $null
+        while ($attempt -lt $maxAttempts) {
+            Write-Host "Polling attempt $($attempt + 1) of $maxAttempts..."
+            Start-Sleep -Seconds $pollLiveSwSecs
+            try {
+                $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing -ErrorAction Stop | Select-Object -ExpandProperty Content
+                $liveTag = Get-CacheTag $liveContent "live sw.js"
+                if ($liveTag) {
+                    Write-Host "Live tag is: $liveTag"
+                    if ($liveTag -eq $repoTag) { break }
+                }
             }
+            catch {
+                Write-Warning "Failed to fetch live sw.js: $_"
+            }
+            $attempt++
         }
-        catch {
-            Write-Warning "Failed to fetch live sw.js: $_"
+        if ($liveTag -and $liveTag -eq $repoTag) {
+            Write-Host "Live service worker matches repo tag ($repoTag)."
+        } else {
+            Write-Warning "Live service worker did not update within timeout (current: $liveTag, expected: $repoTag)."
         }
-        $attempt++
     }
-    if ($liveTag -eq $repoTag) { Write-Host "Live service worker matches repo tag ($repoTag)." } else { Write-Warning "Live service worker did not update within timeout (current: $liveTag, expected: $repoTag)." }
 }
 
 Write-Host "Deployment script completed."
