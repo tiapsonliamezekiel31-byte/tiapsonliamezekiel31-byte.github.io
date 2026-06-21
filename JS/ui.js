@@ -5076,10 +5076,14 @@ class UIManager {
       const attributeColor = getAttributeColor(daily.attribute);
       const textColor = getTextColorForHex(attributeColor);
       const streakClass = streak > 0 ? 'is-positive' : streak < 0 ? 'is-negative' : 'is-neutral';
-      const strokeWidth = Math.min(6, 1 + Math.abs(streak));
       const progressText = `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
+      // Streak saturation: positive boosts colour, negative washes it out, capped at |streak|=20
+      let streakSat = 1;
+      if (streak > 0) streakSat = +(1 + (Math.min(streak, 20) / 20) * 2.0).toFixed(3);
+      if (streak < 0) streakSat = +(1 - (Math.min(Math.abs(streak), 20) / 20) * 0.9).toFixed(3);
+      const particleCount = streak > 0 ? Math.min(streak, 10) : 0;
 
       // Check for surplus multiplier indicator
       let surplusIndicator = '';
@@ -5098,13 +5102,19 @@ class UIManager {
       }
 
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';opacity:' + opacity + ';border-width:' + strokeWidth + 'px;transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
       html += '<div class="hold-progress-overlay"></div>';
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
       html += '<div class="task-shape-progress">' + progressText + '</div>';
       if (surplusIndicator) html += surplusIndicator;
+      // Streak particles: count scales with positive streak (deterministic positions, no Math.random)
+      for (let _pi = 0; _pi < particleCount; _pi++) {
+        const pDelay = (_pi * 0.22 + (_pi * 17 % 7) * 0.07).toFixed(2);
+        const pX = (12 + (_pi * 31 + 11) % 76).toFixed(1);
+        html += '<span class="streak-particle" style="--p-delay:' + pDelay + 's;--p-x:' + pX + '%;"></span>';
+      }
       html += '</div>';
     });
     container.innerHTML = html;

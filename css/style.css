@@ -2012,17 +2012,22 @@ body::before {
   box-shadow: 0 0 10px rgba(139, 164, 255, 0.6);
 }
 
+/* Blood Oath: filter drop-shadow works outside clip-path on all shapes */
 .task-card-daily.blood-oath-active {
-  box-shadow: 0 0 20px rgba(255, 0, 0, 0.9), 0 0 35px rgba(255, 0, 0, 0.4) !important;
-  animation: blood-glow 1.5s infinite alternate;
+  animation: blood-glow-filter 1.1s ease-in-out infinite alternate;
 }
 
-@keyframes blood-glow {
+@keyframes blood-glow-filter {
   from {
-    box-shadow: 0 0 12px rgba(255, 0, 0, 0.65), 0 0 22px rgba(255, 0, 0, 0.3) !important;
+    filter: saturate(var(--streak-sat, 1))
+            drop-shadow(0 0 5px rgba(255, 0, 0, 0.75))
+            drop-shadow(0 0 12px rgba(255, 0, 0, 0.4));
   }
   to {
-    box-shadow: 0 0 25px rgba(255, 0, 0, 1), 0 0 45px rgba(255, 0, 0, 0.6) !important;
+    filter: saturate(var(--streak-sat, 1))
+            drop-shadow(0 0 14px rgba(255, 30, 0, 1))
+            drop-shadow(0 0 28px rgba(255, 0, 0, 0.7))
+            drop-shadow(0 0 44px rgba(220, 0, 0, 0.35));
   }
 }
 
@@ -2191,6 +2196,7 @@ body::before {
   --task-accent: #7a7a7a;
   --task-accent-strong: #585858;
   --task-ink: #ffffff;
+  --streak-sat: 1;
   padding: 12px 12px 10px;
   gap: 4px;
   border-left-width: 0;
@@ -2201,6 +2207,8 @@ body::before {
   background: linear-gradient(180deg, var(--task-accent), var(--task-accent-strong));
   border: 2px solid color-mix(in srgb, var(--task-accent) 72%, white 28%);
   color: var(--task-ink);
+  filter: saturate(var(--streak-sat, 1));
+  overflow: visible;
 }
 
 .task-card-daily {
@@ -2265,14 +2273,13 @@ body::before {
   transform: translateX(-50%);
 }
 
+/* Badge is now neutral — saturation on the card body carries the streak signal */
 .task-daily-streak-badge.is-positive {
-  background: rgba(35, 27, 8, 0.9);
-  border-color: rgba(255, 215, 106, 0.36);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .task-daily-streak-badge.is-negative {
-  background: rgba(52, 14, 18, 0.9);
-  border-color: rgba(255, 90, 90, 0.36);
+  color: rgba(200, 200, 200, 0.8);
 }
 
 .task-card-daily.shape-task .task-shape-name {
@@ -2326,6 +2333,33 @@ body::before {
 .task-card-daily.shape-task.shape-ultra {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
   border-radius: 0;
+}
+
+/* =========================================================================
+   STREAK PARTICLES
+   Tiny dots that float up from positive-streak cards using CSS animation.
+   Count scales with streak (injected as <span class="streak-particle">) in JS.
+   ========================================================================= */
+.streak-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--task-accent, #ffd700);
+  box-shadow: 0 0 5px 1px var(--task-accent, #ffd700);
+  left: var(--p-x, 50%);
+  bottom: 8%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+  animation: particle-rise 1.7s ease-out var(--p-delay, 0s) infinite;
+}
+
+@keyframes particle-rise {
+  0%   { transform: translateX(-50%) translateY(0)     scale(1);    opacity: 0.95; }
+  55%  { transform: translateX(-50%) translateY(-32px) scale(0.65); opacity: 0.6; }
+  100% { transform: translateX(-50%) translateY(-62px) scale(0.1);  opacity: 0; }
 }
 
 .task-card-todo {
@@ -3412,10 +3446,31 @@ body::before {
   box-shadow: inset 0 0 8px rgba(150, 50, 255, 0.2);
 }
 
-.task-event-target {
-  box-shadow: 0 0 12px 2px rgba(255, 215, 0, 0.7) !important;
-  border-color: #ffd700 !important;
-  animation: pulse-glow 2s infinite alternate;
+/* Event target: rainbow filter drop-shadow works outside clip-path on all shapes */
+.task-card-daily.task-event-target {
+  animation: rainbow-glow-filter 3s linear infinite;
+}
+
+/* When blood oath AND event target are both active, blend both */
+.task-card-daily.blood-oath-active.task-event-target {
+  animation: blood-rainbow-filter 3s linear infinite;
+}
+
+@keyframes rainbow-glow-filter {
+  0%   { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(0,   100%, 60%)) drop-shadow(0 0 20px hsl(0,   100%, 50%)); }
+  17%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(60,  100%, 58%)) drop-shadow(0 0 20px hsl(60,  100%, 48%)); }
+  33%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(120, 100%, 48%)) drop-shadow(0 0 20px hsl(120, 100%, 38%)); }
+  50%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(180, 100%, 52%)) drop-shadow(0 0 20px hsl(180, 100%, 42%)); }
+  67%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(240, 100%, 62%)) drop-shadow(0 0 20px hsl(240, 100%, 52%)); }
+  83%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(300, 100%, 58%)) drop-shadow(0 0 20px hsl(300, 100%, 48%)); }
+  100% { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px hsl(360, 100%, 60%)) drop-shadow(0 0 20px hsl(360, 100%, 50%)); }
+}
+
+@keyframes blood-rainbow-filter {
+  0%   { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 12px rgba(255,0,0,0.85)) drop-shadow(0 0 18px hsl(0,   100%, 55%)); }
+  33%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 16px rgba(255,0,0,1))    drop-shadow(0 0 22px hsl(120, 100%, 45%)); }
+  67%  { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 10px rgba(200,0,0,0.7))  drop-shadow(0 0 18px hsl(240, 100%, 58%)); }
+  100% { filter: saturate(var(--streak-sat, 1)) drop-shadow(0 0 14px rgba(255,0,0,0.9))  drop-shadow(0 0 24px hsl(360, 100%, 55%)); }
 }
 
 /* ============================================================
