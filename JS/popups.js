@@ -2079,7 +2079,20 @@ class PopupsManager {
         return { ok: true, message: `Set event to ${eventType}` };
       }
 
-      if (lower === 'reset nemesis attributes to mine' || lower === 'reset nemesis attributes to yours' || lower === 'reset nemesis to mine' || lower === 'reset nemesis to yours' || lower === 'nemesis attributes to mine' || lower === 'nemesis attributes to yours') {
+      if (
+        lower === 'reset nemesis' ||
+        lower === 'reset enemy' ||
+        lower === 'reset nemesis attributes' ||
+        lower === 'reset nemesis attrs' ||
+        lower === 'reset enemy attributes' ||
+        lower === 'reset enemy attrs' ||
+        lower === 'reset nemesis attributes to mine' ||
+        lower === 'reset nemesis attributes to yours' ||
+        lower === 'reset nemesis to mine' ||
+        lower === 'reset nemesis to yours' ||
+        lower === 'nemesis attributes to mine' ||
+        lower === 'nemesis attributes to yours'
+      ) {
         state.config.attributes.forEach(attr => {
           const data = state.playerState.attributes[attr] || { points: 0, level: 1 };
           state.nemesisState.attributes[attr] = {
@@ -2087,22 +2100,9 @@ class PopupsManager {
             level: data.level
           };
         });
+        state.save();
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'Nemesis attributes reset to yours' };
-      }
-
-      if (lower === 'reset enemy attributes' || lower === 'reset nemesis attributes' || lower === 'reset enemy attrs' || lower === 'reset nemesis attrs') {
-        state.nemesisState.attributes = {
-          STR: { points: 0, level: 1 },
-          INT: { points: 0, level: 1 },
-          DISC: { points: 0, level: 1 },
-          CREA: { points: 0, level: 1 },
-          SOC: { points: 0, level: 1 },
-          CAP: { points: 0, level: 1 },
-          RESP: { points: 0, level: 1 }
-        };
-        try { UIManager.refreshGameUI?.(); } catch (e) {}
-        return { ok: true, message: 'Nemesis attributes reset' };
       }
 
       if (lower === 'resume' || lower === 'close') {
