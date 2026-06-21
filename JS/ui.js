@@ -5999,14 +5999,15 @@ class UIManager {
         const lastTap = Number(card.dataset.lastTapTime || 0);
         if (now - lastTap < 300) {
           // Double tap: toggle Blood Oath
-          clearTimeout(timer);
+          clearTimeout(this.todoHoldTimer);
           TaskManager.toggleBloodOathTodo(todoId);
           card.dataset.lastTapTime = '0';
           return;
         }
         card.dataset.lastTapTime = String(now);
 
-        const timer = setTimeout(() => {
+        clearTimeout(this.todoHoldTimer);
+        this.todoHoldTimer = setTimeout(() => {
           isLongPressed = true;
 
           const todo = TaskManager.getTaskById(todoId);
@@ -6106,7 +6107,7 @@ class UIManager {
           if (!isLongPressed) {
             const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
             if (dist > 10) {
-              clearTimeout(timer);
+              clearTimeout(this.todoHoldTimer);
               cleanup();
             }
           }
@@ -6114,7 +6115,7 @@ class UIManager {
 
         const onUp = (upEvent) => {
           if (upEvent.pointerId !== event.pointerId) return;
-          clearTimeout(timer);
+          clearTimeout(this.todoHoldTimer);
           cleanup();
 
           if (!isLongPressed) {
@@ -6128,15 +6129,15 @@ class UIManager {
                   RetroTaskCompleteAnimation.play(card);
                 }
 
-                this.updateTodosList();
+                UIManager.updateTodosList();
                 try { state.save(); } catch (e) { }
-                this.renderEnemies();
+                UIManager.renderEnemies();
               });
             } catch (e) {
               if (TaskManager.completeTodo(todoId)) {
-                this.updateTodosList();
+                UIManager.updateTodosList();
                 try { state.save(); } catch (err) { }
-                this.renderEnemies();
+                UIManager.renderEnemies();
               }
             }
           }
