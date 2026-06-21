@@ -1815,7 +1815,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, diamonds N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none)' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, diamonds N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none), reset nemesis attributes to yours' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -2077,6 +2077,18 @@ class PopupsManager {
         state.save();
         try { UIManager.refreshEventBanner?.(); UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: `Set event to ${eventType}` };
+      }
+
+      if (lower === 'reset nemesis attributes to mine' || lower === 'reset nemesis attributes to yours' || lower === 'reset nemesis to mine' || lower === 'reset nemesis to yours' || lower === 'nemesis attributes to mine' || lower === 'nemesis attributes to yours') {
+        state.config.attributes.forEach(attr => {
+          const data = state.playerState.attributes[attr] || { points: 0, level: 1 };
+          state.nemesisState.attributes[attr] = {
+            points: data.points,
+            level: data.level
+          };
+        });
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Nemesis attributes reset to yours' };
       }
 
       if (lower === 'reset enemy attributes' || lower === 'reset nemesis attributes' || lower === 'reset enemy attrs' || lower === 'reset nemesis attrs') {
