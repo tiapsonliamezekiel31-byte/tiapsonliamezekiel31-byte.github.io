@@ -2074,9 +2074,13 @@
       `;
       
       document.getElementById('tycoon-container').appendChild(overlay);
-      document.getElementById('offline-ok-btn').addEventListener('click', () => {
+      const okBtn = overlay.querySelector('#offline-ok-btn');
+      const handleClose = (e) => {
+        e.preventDefault();
         overlay.remove();
-      });
+      };
+      okBtn.addEventListener('click', handleClose);
+      okBtn.addEventListener('touchstart', handleClose, { passive: false });
     }
 
     showDailySummary(summary) {
@@ -2107,9 +2111,13 @@
       `;
       
       document.getElementById('tycoon-container').appendChild(overlay);
-      document.getElementById('daily-ok-btn').addEventListener('click', () => {
+      const okBtn = overlay.querySelector('#daily-ok-btn');
+      const handleClose = (e) => {
+        e.preventDefault();
         overlay.remove();
-      });
+      };
+      okBtn.addEventListener('click', handleClose);
+      okBtn.addEventListener('touchstart', handleClose, { passive: false });
     }
 
     formatTime(seconds) {
