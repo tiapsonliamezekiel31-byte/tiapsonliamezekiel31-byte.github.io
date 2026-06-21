@@ -582,3 +582,83 @@ body.tycoon-active #dailiesPanel,
 body.tycoon-active #todosPanel {
   z-index: 12000 !important;
 }
+
+/* Multiplayer Log Panel */
+.tycoon-mp-log-panel {
+  position: absolute;
+  bottom: 280px; /* Above the shop drawer */
+  right: 16px;
+  width: min(320px, 90vw);
+  max-height: 200px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  z-index: 10000;
+  pointer-events: auto;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.tycoon-mp-log-panel.collapsed {
+  max-height: 40px;
+}
+
+.tycoon-mp-log-header {
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8px;
+  font-weight: bold;
+  color: #ffd700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tycoon-mp-log-toggle {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0;
+  min-height: auto;
+}
+
+.tycoon-mp-log-body {
+  padding: 8px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 8px;
+  line-height: 1.3;
+}
+
+.tycoon-mp-log-item {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 4px;
+}
+
+.tycoon-mp-log-item .log-time {
+  color: #64748b;
+}
+
+/* Adjustments for mobile to ensure logs look good */
+@media (max-width: 600px) {
+  .tycoon-mp-log-panel {
+    bottom: 210px; /* Closer to shop drawer */
+    right: 8px;
+    width: min(240px, 90vw);
+    max-height: 150px;
+  }
+}
+

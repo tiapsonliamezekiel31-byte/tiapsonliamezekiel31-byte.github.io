@@ -17,6 +17,7 @@ let config = {
   lastSaveTime: Date.now()
 };
 let isRunning = false;
+let isMultiplayerMode = false;
 let simulationInterval = null;
 let lastTickTime = null;
 
@@ -123,12 +124,59 @@ function isNightTime(timestamp) {
 function tickSimulation(timestamp) {
   if (lastTickTime !== null) {
     if (crossedCheckinTime(lastTickTime, timestamp)) {
-      const compRate = config.completionRateCurrentDay !== undefined ? config.completionRateCurrentDay : 0.0;
-      handleDailyCheckin(compRate);
-      config.completionRateCurrentDay = 0.0; // reset for subsequent days
+      if (!isMultiplayerMode) {
+        const compRate = config.completionRateCurrentDay !== undefined ? config.completionRateCurrentDay : 0.0;
+        handleDailyCheckin(compRate);
+        config.completionRateCurrentDay = 0.0; // reset for subsequent days
+      }
     }
   }
   lastTickTime = timestamp;
+
+  if (isMultiplayerMode) {
+    farmers.forEach(farmer => {
+      const sub = farmer.subType || 1;
+      const endHour = config.checkInHour;
+      const startHour = (endHour - 8 + 24) % 24;
+      const date = new Date(timestamp);
+      const currentHour = date.getHours();
+      const isNight = startHour < endHour ? (currentHour >= startHour && currentHour < endHour) : (currentHour >= startHour || currentHour < endHour);
+      
+      if (sub === 8) {
+        farmer.isSleeping = !isNight;
+      } else {
+        farmer.isSleeping = isNight;
+      }
+      if (farmer.isSleeping) {
+        farmer.currentAction = "Sleeping 💤";
+        return;
+      }
+
+      farmer.moveTickAccumulator = (farmer.moveTickAccumulator || 0) + (farmer.speed || 1);
+      if (farmer.moveTickAccumulator >= 3) {
+        farmer.moveTickAccumulator -= 3;
+        const moves = [];
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = farmer.x + dx;
+            const ny = farmer.y + dy;
+            const tileVal = getTile(nx, ny);
+            const tType = tileVal & 0xFF;
+            if (tType !== TILE_TYPES.WATER) {
+              moves.push({ x: nx, y: ny });
+            }
+          }
+        }
+        if (moves.length > 0) {
+          const nextMove = moves[Math.floor(Math.random() * moves.length)];
+          farmer.x = nextMove.x;
+          farmer.y = nextMove.y;
+        }
+      }
+      farmer.currentAction = "Working 🧑‍🌾";
+    });
+    return;
+  }
 
   const isNight = isNightTime(timestamp);
   
@@ -213,9 +261,9 @@ function tickSimulation(timestamp) {
           let foodChance = 0;
           
           const cropIdx = (subType >= 1 && subType <= 18) ? (subType - 1) : 0;
-          const goldLookup = [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 12];
-          const apLookup = [1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10];
-          const foodLookup = [0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22];
+          const goldLookup = [0.02, 0.02, 0.03, 0.03, 0.04, 0.04, 0.05, 0.05, 0.06, 0.06, 0.07, 0.07, 0.08, 0.08, 0.09, 0.09, 0.10, 0.12];
+          const apLookup = [0.01, 0.02, 0.01, 0.03, 0.02, 0.04, 0.03, 0.05, 0.04, 0.06, 0.05, 0.07, 0.06, 0.08, 0.07, 0.09, 0.08, 0.10];
+          const foodLookup = [0.0005, 0.0006, 0.0007, 0.0008, 0.0009, 0.0010, 0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018, 0.0019, 0.0020, 0.0021, 0.0022];
           
           goldBase = goldLookup[cropIdx];
           apBase = apLookup[cropIdx];
@@ -316,10 +364,10 @@ function tickSimulation(timestamp) {
     farmer.currentAction = "Working 🧑‍🌾";
     
     // Periodic random triggers (1Hz tick rate)
-    if (sub === 2 && Math.random() < 0.02) { // Lucky Cat: finds +50g
-      resources.gold += 50;
-      resources.accumulatedGoldToday += 50;
-      self.postMessage({ type: "notification", text: "🐈 Lucky Cat purred and found +50 gold!" });
+    if (sub === 2 && Math.random() < 0.02) { // Lucky Cat: finds +0.5g
+      resources.gold += 0.5;
+      resources.accumulatedGoldToday += 0.5;
+      self.postMessage({ type: "notification", text: "🐈 Lucky Cat purred and found +0.5 gold!" });
     }
     
     if (sub === 3 && Math.random() < 0.03) { // Rain Frog: waters adjacent crops
@@ -384,17 +432,17 @@ function tickSimulation(timestamp) {
       }
     }
     
-    if (sub === 7 && Math.random() < 0.01) { // Truffle Pig: digs +150g truffle on grass
+    if (sub === 7 && Math.random() < 0.01) { // Truffle Pig: digs +1.5g truffle on grass
       const currentTile = getTile(farmer.x, farmer.y);
       if ((currentTile & 0xFF) === TILE_TYPES.GRASS) {
-        resources.gold += 150;
-        resources.accumulatedGoldToday += 150;
-        self.postMessage({ type: "notification", text: "🐷 Truffle Pig dug up a truffle! (+150g)" });
+        resources.gold += 1.5;
+        resources.accumulatedGoldToday += 1.5;
+        self.postMessage({ type: "notification", text: "🐷 Truffle Pig dug up a truffle! (+1.5g)" });
       }
     }
     
-    if (sub === 9) { // Gentle Cow: passive food generation (+0.05/sec)
-      resources.food += 0.05;
+    if (sub === 9) { // Gentle Cow: passive food generation (+0.0005/sec)
+      resources.food += 0.0005;
     }
   });
 
@@ -412,6 +460,7 @@ function tickSimulation(timestamp) {
 
 // Simulates offline progress in a fast-forward loop on loading
 function simulateOfflineProgress(now) {
+  if (isMultiplayerMode) return;
   const elapsedSeconds = Math.floor((now - config.lastSaveTime) / 1000);
   if (elapsedSeconds <= 0) return;
   
@@ -571,6 +620,10 @@ self.onmessage = function(e) {
       if (msg.farmers) farmers = msg.farmers;
       if (msg.resources) resources = msg.resources;
       if (msg.config) config = msg.config;
+      break;
+      
+    case "set_multiplayer_mode":
+      isMultiplayerMode = msg.isMultiplayer;
       break;
       
     case "sync_request":

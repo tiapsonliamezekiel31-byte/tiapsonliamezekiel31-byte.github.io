@@ -35,24 +35,24 @@
   };
 
   const CROP_TEMPLATES = [
-    { name: "Pink Peonies", cost: 10000, gold: 2, ap: 1, food: 0.05, emoji: "🌸" },
-    { name: "Blue Hydrangea", cost: 12000, gold: 2, ap: 2, food: 0.06, emoji: "💠" },
-    { name: "Sunflowers", cost: 15000, gold: 3, ap: 1, food: 0.07, emoji: "🌻" },
-    { name: "Lavender Bush", cost: 18000, gold: 3, ap: 3, food: 0.08, emoji: "🪻" },
-    { name: "Bluebells", cost: 20000, gold: 4, ap: 2, food: 0.09, emoji: "🔔" },
-    { name: "Orange Wildflowers", cost: 22000, gold: 4, ap: 4, food: 0.10, emoji: "🌼" },
-    { name: "Butterfly Shrub", cost: 25000, gold: 5, ap: 3, food: 0.11, emoji: "🦋" },
-    { name: "Coral Azalea", cost: 28000, gold: 5, ap: 5, food: 0.12, emoji: "🌺" },
-    { name: "Pink Petunias", cost: 32000, gold: 6, ap: 4, food: 0.13, emoji: "🌸" },
-    { name: "Crimson Roses", cost: 36000, gold: 6, ap: 6, food: 0.14, emoji: "🌹" },
-    { name: "Fern Shrub", cost: 40000, gold: 7, ap: 5, food: 0.15, emoji: "🌿" },
-    { name: "Tulip Bed", cost: 45000, gold: 7, ap: 7, food: 0.16, emoji: "🌷" },
-    { name: "Rock Daisy", cost: 50000, gold: 8, ap: 6, food: 0.17, emoji: "🌼" },
-    { name: "Orange Lilies", cost: 55000, gold: 8, ap: 8, food: 0.18, emoji: "⚜️" },
-    { name: "Rockery Garden", cost: 62000, gold: 9, ap: 7, food: 0.19, emoji: "🪨" },
-    { name: "Red-Stem Shrub", cost: 70000, gold: 9, ap: 9, food: 0.20, emoji: "🍒" },
-    { name: "Rose Trellis", cost: 80000, gold: 10, ap: 8, food: 0.21, emoji: "🌹" },
-    { name: "Stone Path Flowers", cost: 95000, gold: 12, ap: 10, food: 0.22, emoji: "🪨" }
+    { name: "Pink Peonies", cost: 100, gold: 0.02, ap: 0.01, food: 0.0005, emoji: "🌸" },
+    { name: "Blue Hydrangea", cost: 120, gold: 0.02, ap: 0.02, food: 0.0006, emoji: "💠" },
+    { name: "Sunflowers", cost: 150, gold: 0.03, ap: 0.01, food: 0.0007, emoji: "🌻" },
+    { name: "Lavender Bush", cost: 180, gold: 0.03, ap: 0.03, food: 0.0008, emoji: "🪻" },
+    { name: "Bluebells", cost: 200, gold: 0.04, ap: 0.02, food: 0.0009, emoji: "🔔" },
+    { name: "Orange Wildflowers", cost: 220, gold: 0.04, ap: 0.04, food: 0.0010, emoji: "🌼" },
+    { name: "Butterfly Shrub", cost: 250, gold: 0.05, ap: 0.03, food: 0.0011, emoji: "🦋" },
+    { name: "Coral Azalea", cost: 280, gold: 0.05, ap: 0.05, food: 0.0012, emoji: "🌺" },
+    { name: "Pink Petunias", cost: 320, gold: 0.06, ap: 0.04, food: 0.0013, emoji: "🌸" },
+    { name: "Crimson Roses", cost: 360, gold: 0.06, ap: 0.06, food: 0.0014, emoji: "🌹" },
+    { name: "Fern Shrub", cost: 400, gold: 0.07, ap: 0.05, food: 0.0015, emoji: "🌿" },
+    { name: "Tulip Bed", cost: 450, gold: 0.07, ap: 0.07, food: 0.0016, emoji: "🌷" },
+    { name: "Rock Daisy", cost: 500, gold: 0.08, ap: 0.06, food: 0.0017, emoji: "🌼" },
+    { name: "Orange Lilies", cost: 550, gold: 0.08, ap: 0.08, food: 0.0018, emoji: "⚜️" },
+    { name: "Rockery Garden", cost: 620, gold: 0.09, ap: 0.07, food: 0.0019, emoji: "🪨" },
+    { name: "Red-Stem Shrub", cost: 700, gold: 0.09, ap: 0.09, food: 0.0020, emoji: "🍒" },
+    { name: "Rose Trellis", cost: 800, gold: 0.10, ap: 0.08, food: 0.0021, emoji: "🌹" },
+    { name: "Stone Path Flowers", cost: 950, gold: 0.12, ap: 0.10, food: 0.0022, emoji: "🪨" }
   ];
 
   class TycoonEngine {
@@ -155,6 +155,7 @@
             </div>
             <div class="tycoon-hud-panel" style="gap: 8px;">
               <button class="tycoon-btn" id="tycoon-checkin-btn" style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4);">🌅 Check In</button>
+              <button class="tycoon-btn" id="tycoon-mp-toggle-btn">🌐 Multiplayer</button>
               <button class="tycoon-btn" id="tycoon-dailies-btn">📅 Dailies</button>
               <button class="tycoon-btn" id="tycoon-todos-btn">📋 To-Dos</button>
               <button class="tycoon-btn" id="tycoon-settings-btn">⚙️ Settings</button>
@@ -166,6 +167,14 @@
           
           <div id="tycoon-viewport-wrapper">
             <canvas id="tycoon-canvas"></canvas>
+          </div>
+
+          <div id="tycoon-mp-log-container" class="tycoon-mp-log-panel" style="display: none;">
+            <div class="tycoon-mp-log-header" id="tycoon-mp-log-header">
+              <span>📋 World Log</span>
+              <button class="tycoon-mp-log-toggle" id="tycoon-mp-log-toggle-btn">▼</button>
+            </div>
+            <div class="tycoon-mp-log-body" id="tycoon-mp-log-body"></div>
           </div>
           
           <div class="tycoon-shop-drawer" id="tycoon-shop">
@@ -218,8 +227,42 @@
               </div>
             </div>
           </div>
- 
-          <!-- tycoon-tasks-dialog removed -->
+
+          <div class="tycoon-overlay" id="tycoon-mp-dialog" style="display: none;">
+            <div class="tycoon-dialog">
+              <h3>🌐 MULTIPLAYER CO-OP</h3>
+              <div class="tycoon-dialog-body">
+                <div class="tycoon-form-row">
+                  <label for="mp-player-name">Your Name:</label>
+                  <input type="text" id="mp-player-name" placeholder="Username..." style="width: 150px !important;">
+                </div>
+                <div class="tycoon-form-row">
+                  <label for="mp-world-name">World Name:</label>
+                  <input type="text" id="mp-world-name" placeholder="e.g. DreamFarm" style="width: 150px !important;">
+                </div>
+                <div class="tycoon-form-row">
+                  <label for="mp-password">Password:</label>
+                  <input type="password" id="mp-password" placeholder="Room password..." style="width: 150px !important;">
+                </div>
+                <div style="font-size: 8px; color: #94a3b8; line-height: 1.4; margin-top: 6px;">
+                  * Enter a unique world name and password. If the world doesn't exist yet, it will be created for you with that password.
+                </div>
+                <div class="tycoon-form-row" style="flex-direction: column; align-items: flex-start; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; width: 100%;">
+                  <label for="mp-custom-firebase" style="margin-bottom: 4px;">Custom Firebase Credentials (Optional):</label>
+                  <textarea id="mp-custom-firebase" placeholder='{"apiKey": "...", "databaseURL": "...", "projectId": "..."}' style="width: 100%; height: 50px; background: #0f172a; color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 6px; font-family: monospace; font-size: 8px; resize: vertical; box-sizing: border-box;"></textarea>
+                  <div style="display: flex; gap: 8px; margin-top: 6px; width: 100%;">
+                    <button class="tycoon-btn" id="mp-save-config-btn" style="flex: 1; min-height: 28px; font-size: 8px; padding: 4px;">Save Config</button>
+                    <button class="tycoon-btn" id="mp-reset-config-btn" style="flex: 1; min-height: 28px; font-size: 8px; padding: 4px; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">Reset Config</button>
+                  </div>
+                </div>
+              </div>
+              <div class="tycoon-dialog-buttons">
+                <button class="tycoon-btn" id="mp-connect-btn" style="background: rgba(34, 197, 94, 0.2); border-color: rgba(34, 197, 94, 0.4);">Connect</button>
+                <button class="tycoon-btn exit-btn" id="mp-disconnect-btn" style="display: none; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.4);">Disconnect</button>
+                <button class="tycoon-btn" id="mp-close-btn">Close</button>
+              </div>
+            </div>
+          </div>
  
           <div class="tycoon-overlay" id="tycoon-farmer-dialog">
             <div class="tycoon-dialog">
@@ -236,7 +279,7 @@
               <div class="tycoon-dialog-buttons" id="object-detail-buttons"></div>
             </div>
           </div>
-
+ 
           <div class="tycoon-overlay" id="tycoon-stats-dialog">
             <div class="tycoon-dialog" style="width: min(480px, 94vw);">
               <h3 id="stats-detail-title">📊 Production Summary</h3>
@@ -333,8 +376,14 @@
           const dropTile = this.hoverTile || this.screenToWorldCoords(e.clientX, e.clientY);
           if (this.canPlaceObjectAt(dropTile.x, dropTile.y)) {
             // Drop successfully
-            this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
-            this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            if (window.MultiplayerManager.isConnected) {
+              window.MultiplayerManager.broadcastTileUpdate(this.draggedObject.x, this.draggedObject.y, 1); // 1 is GRASS
+              window.MultiplayerManager.broadcastTileUpdate(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+              window.MultiplayerManager.addLogEntry(`moved building to (${dropTile.x}, ${dropTile.y})`);
+            } else {
+              this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+              this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            }
             this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Moved! 🚚", "#4ade80");
           } else {
             // Snap back
@@ -479,8 +528,14 @@
           const dropTile = this.hoverTile;
           if (dropTile && this.canPlaceObjectAt(dropTile.x, dropTile.y)) {
             // Drop successfully
-            this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
-            this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            if (window.MultiplayerManager.isConnected) {
+              window.MultiplayerManager.broadcastTileUpdate(this.draggedObject.x, this.draggedObject.y, 1); // 1 is GRASS
+              window.MultiplayerManager.broadcastTileUpdate(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+              window.MultiplayerManager.addLogEntry(`moved building to (${dropTile.x}, ${dropTile.y})`);
+            } else {
+              this.setTileTypeAt(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+              this.postTileUpdateToWorker(dropTile.x, dropTile.y, this.draggedObject.tileVal);
+            }
             this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Moved! 🚚", "#4ade80");
           } else {
             // Snap back
@@ -895,6 +950,107 @@
           document.getElementById('tycoon-stats-dialog').style.display = 'none';
         });
       }
+
+      // Multiplayer UI handlers
+      const mpToggleBtn = document.getElementById('tycoon-mp-toggle-btn');
+      if (mpToggleBtn) {
+        mpToggleBtn.addEventListener('click', () => {
+          document.getElementById('mp-player-name').value = window.MultiplayerManager.playerName || '';
+          document.getElementById('mp-world-name').value = window.MultiplayerManager.worldName || localStorage.getItem('nemesis_multiplayer_active_world') || '';
+          document.getElementById('mp-password').value = '';
+          
+          const customConfig = localStorage.getItem('nemesis_firebase_config');
+          document.getElementById('mp-custom-firebase').value = customConfig ? customConfig : '';
+
+          if (window.MultiplayerManager.isConnected) {
+            document.getElementById('mp-connect-btn').style.display = 'none';
+            document.getElementById('mp-disconnect-btn').style.display = 'block';
+          } else {
+            document.getElementById('mp-connect-btn').style.display = 'block';
+            document.getElementById('mp-disconnect-btn').style.display = 'none';
+          }
+
+          document.getElementById('tycoon-mp-dialog').style.display = 'flex';
+        });
+      }
+
+      document.getElementById('mp-close-btn').addEventListener('click', () => {
+        document.getElementById('tycoon-mp-dialog').style.display = 'none';
+      });
+
+      document.getElementById('mp-connect-btn').addEventListener('click', async () => {
+        const playerName = document.getElementById('mp-player-name').value.trim();
+        const worldName = document.getElementById('mp-world-name').value.trim();
+        const password = document.getElementById('mp-password').value;
+
+        if (!playerName || !worldName || !password) {
+          alert("All fields are required to connect!");
+          return;
+        }
+
+        const connectBtn = document.getElementById('mp-connect-btn');
+        connectBtn.disabled = true;
+        connectBtn.textContent = "Connecting...";
+
+        try {
+          await window.MultiplayerManager.joinWorld(worldName, password, playerName);
+          document.getElementById('tycoon-mp-dialog').style.display = 'none';
+          window.MultiplayerManager.updateMultiplayerUI();
+        } catch(e) {
+          alert("Connection failed: " + e.message);
+        } finally {
+          connectBtn.disabled = false;
+          connectBtn.textContent = "Connect";
+        }
+      });
+
+      document.getElementById('mp-disconnect-btn').addEventListener('click', () => {
+        window.MultiplayerManager.disconnect();
+        document.getElementById('tycoon-mp-dialog').style.display = 'none';
+      });
+
+      document.getElementById('mp-save-config-btn').addEventListener('click', () => {
+        const val = document.getElementById('mp-custom-firebase').value.trim();
+        if (!val) {
+          alert("Configuration JSON cannot be empty!");
+          return;
+        }
+        try {
+          const parsed = JSON.parse(val);
+          if (!parsed.apiKey || !parsed.databaseURL || !parsed.projectId) {
+            throw new Error("Missing key fields (apiKey, databaseURL, projectId)");
+          }
+          localStorage.setItem('nemesis_firebase_config', JSON.stringify(parsed));
+          window.MultiplayerManager.firebaseConfig = parsed;
+          alert("Custom Firebase configuration saved! Please reconnect.");
+        } catch(e) {
+          alert("Invalid JSON configuration: " + e.message);
+        }
+      });
+
+      document.getElementById('mp-reset-config-btn').addEventListener('click', () => {
+        localStorage.removeItem('nemesis_firebase_config');
+        window.MultiplayerManager.firebaseConfig = null;
+        document.getElementById('mp-custom-firebase').value = '';
+        alert("Firebase config reset to default demo credentials.");
+      });
+
+      const logToggleBtn = document.getElementById('tycoon-mp-log-toggle-btn');
+      if (logToggleBtn) {
+        logToggleBtn.addEventListener('click', () => {
+          const panel = document.getElementById('tycoon-mp-log-container');
+          panel.classList.toggle('collapsed');
+          logToggleBtn.textContent = panel.classList.contains('collapsed') ? '▲' : '▼';
+        });
+      }
+      const logHeader = document.getElementById('tycoon-mp-log-header');
+      if (logHeader) {
+        logHeader.addEventListener('click', (e) => {
+          if (e.target !== logToggleBtn) {
+            logToggleBtn.click();
+          }
+        });
+      }
     }
 
     getSerializableState() {
@@ -960,7 +1116,7 @@
           this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Must spawn on land!", "#f87171");
           return;
         }
-        this.resources.gold -= cost;
+
         const newFarmer = {
           id: 'farmer_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           name: this.activeTool.name,
@@ -971,15 +1127,26 @@
           speed: this.activeTool.speed,
           currentAction: "Idle 💤"
         };
-        this.farmers.push(newFarmer);
-        this.worker.postMessage({
-          type: 'buy_farmer',
-          farmer: newFarmer
-        });
-        this.updateHUD();
-        this.clearBanner();
-        this.activeTool = null;
-        this.renderShopGrid("farmers");
+
+        if (window.MultiplayerManager.isConnected) {
+          window.MultiplayerManager.buyObject(cost, `hired ${newFarmer.name} (${newFarmer.emoji})`, () => {
+            window.MultiplayerManager.broadcastFarmerBuy(newFarmer);
+            this.clearBanner();
+            this.activeTool = null;
+            this.renderShopGrid("farmers");
+          });
+        } else {
+          this.resources.gold -= cost;
+          this.farmers.push(newFarmer);
+          this.worker.postMessage({
+            type: 'buy_farmer',
+            farmer: newFarmer
+          });
+          this.updateHUD();
+          this.clearBanner();
+          this.activeTool = null;
+          this.renderShopGrid("farmers");
+        }
       } else {
         // Crop / Increaser / Sprinkler / Cosmetic placements - all take up 3x3 space
         if (!this.canPlaceObjectAt(tx, ty)) {
@@ -987,13 +1154,7 @@
           return;
         }
 
-        this.resources.gold -= cost;
-
         // Encode Tile Attributes
-        // Bits 0-7: TileType
-        // Bits 8-15: Initial Durability/Charge (e.g. 100 max)
-        // Bits 16-23: Special / Radius status flags (starts empty)
-        // Bits 24-31: Subtype metadata (if crop)
         let tileVal = this.activeTool.type;
         const baseCharge = this.activeTool.charge || 100;
         tileVal |= (baseCharge << 8);
@@ -1002,9 +1163,18 @@
           tileVal |= (this.activeTool.subType << 24);
         }
 
-        this.setTileTypeAt(tx, ty, tileVal);
-        this.postTileUpdateToWorker(tx, ty, tileVal);
-        this.updateHUD();
+        if (window.MultiplayerManager.isConnected) {
+          window.MultiplayerManager.buyObject(cost, `placed ${this.activeTool.name} at (${tx}, ${ty})`, () => {
+            window.MultiplayerManager.broadcastTileUpdate(tx, ty, tileVal);
+            this.clearBanner();
+            this.activeTool = null;
+          });
+        } else {
+          this.resources.gold -= cost;
+          this.setTileTypeAt(tx, ty, tileVal);
+          this.postTileUpdateToWorker(tx, ty, tileVal);
+          this.updateHUD();
+        }
       }
     }
 
@@ -1020,15 +1190,15 @@
       const radius = size / 2;
       const radiusSq = radius * radius;
       const half = Math.floor(size / 2);
-      let updated = false;
       const cost = this.activeTool.cost || 0;
-      
+
+      // First pass: Find all coordinates that will change
+      const tilesToChange = [];
       for (let dy = -half; dy <= half; dy++) {
         for (let dx = -half; dx <= half; dx++) {
           if (dx * dx + dy * dy <= radiusSq) {
             const tx = cx + dx;
             const ty = cy + dy;
-            
             const currentTileVal = this.getTileTypeAt(tx, ty);
             const currentType = currentTileVal & 0xFF;
             
@@ -1036,27 +1206,36 @@
                               currentType === TILE_TYPES.INCREASER ||
                               currentType === TILE_TYPES.MAINTENANCE ||
                               currentType === TILE_TYPES.COSMETIC);
-            if (isObject) {
-              continue;
-            }
-            
-            if (currentType !== type) {
-              if (this.resources.gold >= cost) {
-                this.resources.gold -= cost;
-                this.setTileTypeAt(tx, ty, type);
-                this.postTileUpdateToWorker(tx, ty, type);
-                updated = true;
-              } else {
-                this.isPainting = false;
-                this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Need Gold!", "#f87171");
-                break;
-              }
+            if (!isObject && currentType !== type) {
+              tilesToChange.push({ x: tx, y: ty });
             }
           }
         }
       }
-      
-      if (updated) {
+
+      if (tilesToChange.length === 0) return;
+
+      const totalCost = tilesToChange.length * cost;
+      if (this.resources.gold < totalCost) {
+        this.isPainting = false;
+        this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Need Gold!", "#f87171");
+        return;
+      }
+
+      if (window.MultiplayerManager.isConnected) {
+        const typeNames = { 0: "Water", 1: "Grass", 2: "Sand", 3: "Stone" };
+        const name = typeNames[type] || "terrain";
+        window.MultiplayerManager.buyObject(totalCost, `painted ${tilesToChange.length} tiles with ${name}`, () => {
+          tilesToChange.forEach(tile => {
+            window.MultiplayerManager.broadcastTileUpdate(tile.x, tile.y, type);
+          });
+        });
+      } else {
+        this.resources.gold -= totalCost;
+        tilesToChange.forEach(tile => {
+          this.setTileTypeAt(tile.x, tile.y, type);
+          this.postTileUpdateToWorker(tile.x, tile.y, type);
+        });
         this.updateHUD();
       }
     }
@@ -1127,10 +1306,10 @@
       let items = [];
       if (tab === "terrain") {
         items = [
-          { type: TILE_TYPES.GRASS, name: "Grass land", emoji: "🟩", cost: 2500 },
-          { type: TILE_TYPES.SAND, name: "Sand land", emoji: "🟨", cost: 2500 },
-          { type: TILE_TYPES.STONE, name: "Stone land", emoji: "⬜", cost: 4000 },
-          { type: TILE_TYPES.WATER, name: "Water tile", emoji: "🟦", cost: 2500 }
+          { type: TILE_TYPES.GRASS, name: "Grass land", emoji: "🟩", cost: 25 },
+          { type: TILE_TYPES.SAND, name: "Sand land", emoji: "🟨", cost: 25 },
+          { type: TILE_TYPES.STONE, name: "Stone land", emoji: "⬜", cost: 40 },
+          { type: TILE_TYPES.WATER, name: "Water tile", emoji: "🟦", cost: 25 }
         ];
       } else if (tab === "producers") {
         items = CROP_TEMPLATES.map((c, idx) => ({
@@ -1143,27 +1322,27 @@
         }));
       } else if (tab === "tech") {
         items = [
-          { type: TILE_TYPES.INCREASER, name: "Fertilizer (+20%)", emoji: "🧪", cost: 20000 },
-          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 30000, charge: 200 }
+          { type: TILE_TYPES.INCREASER, name: "Fertilizer (+20%)", emoji: "🧪", cost: 200 },
+          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 300, charge: 200 }
         ];
       } else if (tab === "farmers") {
         items = [
-          { type: TILE_TYPES.FARMER, subType: 1, name: "Loyal Dog", emoji: "🐶", cost: 40000, speed: 3, description: "Barks to wake up nearby animals. Boosts crop rate by +25%." },
-          { type: TILE_TYPES.FARMER, subType: 2, name: "Lucky Cat", emoji: "🐱", cost: 60000, speed: 2, description: "Purrs and randomly generates extra gold (+50g)." },
-          { type: TILE_TYPES.FARMER, subType: 3, name: "Rain Frog", emoji: "🐸", cost: 75000, speed: 1, description: "Splashes and recharges adjacent crop/sprinkler water levels." },
-          { type: TILE_TYPES.FARMER, subType: 4, name: "Speedy Bunny", emoji: "🐰", cost: 90000, speed: 5, description: "Hops around quickly. Boosts adjacent crops by +30%." },
-          { type: TILE_TYPES.FARMER, subType: 5, name: "Clever Fox", emoji: "🦊", cost: 100000, speed: 4, description: "Sneaks around and gathers bonus AP near trees." },
-          { type: TILE_TYPES.FARMER, subType: 6, name: "Trash Raccoon", emoji: "🦝", cost: 85000, speed: 3, description: "Scavenges and slows down sprinkler water decay." },
-          { type: TILE_TYPES.FARMER, subType: 7, name: "Truffle Pig", emoji: "🐷", cost: 110000, speed: 2, description: "Digs up truffles for massive bonus gold (+150g)." },
-          { type: TILE_TYPES.FARMER, subType: 8, name: "Night Owl", emoji: "🦉", cost: 120000, speed: 2, description: "Awake only at night, granting a massive +50% crop boost." },
-          { type: TILE_TYPES.FARMER, subType: 9, name: "Gentle Cow", emoji: "🐮", cost: 130000, speed: 1, description: "Grazes and generates passive +0.05 food/second." },
-          { type: TILE_TYPES.FARMER, subType: 10, name: "Royal Lion", emoji: "🦁", cost: 200000, speed: 3, description: "Roars to boost all nearby crops by +40%." }
+          { type: TILE_TYPES.FARMER, subType: 1, name: "Loyal Dog", emoji: "🐶", cost: 400, speed: 3, description: "Barks to wake up nearby animals. Boosts crop rate by +25%." },
+          { type: TILE_TYPES.FARMER, subType: 2, name: "Lucky Cat", emoji: "🐱", cost: 600, speed: 2, description: "Purrs and randomly generates extra gold (+0.5g)." },
+          { type: TILE_TYPES.FARMER, subType: 3, name: "Rain Frog", emoji: "🐸", cost: 750, speed: 1, description: "Splashes and recharges adjacent crop/sprinkler water levels." },
+          { type: TILE_TYPES.FARMER, subType: 4, name: "Speedy Bunny", emoji: "🐰", cost: 900, speed: 5, description: "Hops around quickly. Boosts adjacent crops by +30%." },
+          { type: TILE_TYPES.FARMER, subType: 5, name: "Clever Fox", emoji: "🦊", cost: 1000, speed: 4, description: "Sneaks around and gathers bonus AP near trees." },
+          { type: TILE_TYPES.FARMER, subType: 6, name: "Trash Raccoon", emoji: "🦝", cost: 850, speed: 3, description: "Scavenges and slows down sprinkler water decay." },
+          { type: TILE_TYPES.FARMER, subType: 7, name: "Truffle Pig", emoji: "🐷", cost: 1100, speed: 2, description: "Digs up truffles for massive bonus gold (+1.5g)." },
+          { type: TILE_TYPES.FARMER, subType: 8, name: "Night Owl", emoji: "🦉", cost: 1200, speed: 2, description: "Awake only at night, granting a massive +50% crop boost." },
+          { type: TILE_TYPES.FARMER, subType: 9, name: "Gentle Cow", emoji: "🐮", cost: 1300, speed: 1, description: "Grazes and generates passive +0.0005 food/second." },
+          { type: TILE_TYPES.FARMER, subType: 10, name: "Royal Lion", emoji: "🦁", cost: 2000, speed: 3, description: "Roars to boost all nearby crops by +40%." }
         ];
       } else if (tab === "cosmetics") {
         items = [
-          { type: TILE_TYPES.COSMETIC, name: "Flower Pot", emoji: "🌸", cost: 5000 },
-          { type: TILE_TYPES.COSMETIC, name: "Decorative Rock", emoji: "🪨", cost: 5000 },
-          { type: TILE_TYPES.COSMETIC, name: "Magic Mushroom", emoji: "🍄", cost: 7500 }
+          { type: TILE_TYPES.COSMETIC, name: "Flower Pot", emoji: "🌸", cost: 50 },
+          { type: TILE_TYPES.COSMETIC, name: "Decorative Rock", emoji: "🪨", cost: 50 },
+          { type: TILE_TYPES.COSMETIC, name: "Magic Mushroom", emoji: "🍄", cost: 75 }
         ];
       }
 
@@ -1270,7 +1449,7 @@
           break;
         case 2:
           desc = "A feline of good fortune who purrs and uncovers hidden gold.";
-          boostDesc = "Boosts nearby crops by +25% in a 3x3 area and periodically spawns +50g.";
+          boostDesc = "Boosts nearby crops by +25% in a 3x3 area and periodically spawns +0.5g.";
           actionBtnText = "🐈 Pet Cat";
           break;
         case 3:
@@ -1295,7 +1474,7 @@
           break;
         case 7:
           desc = "A snorting explorer that smells truffles under rich grass.";
-          boostDesc = "Boosts nearby crops by +25% and digs up +150g truffles.";
+          boostDesc = "Boosts nearby crops by +25% and digs up +1.5g truffles.";
           actionBtnText = "🍎 Feed Apple";
           break;
         case 8:
@@ -1305,7 +1484,7 @@
           break;
         case 9:
           desc = "A peaceful herbivore that produces premium quality milk.";
-          boostDesc = "Boosts nearby crops by +25% and generates +0.05 food/second.";
+          boostDesc = "Boosts nearby crops by +25% and generates +0.0005 food/second.";
           actionBtnText = "🥛 Milk Cow";
           break;
         case 10:
@@ -1362,15 +1541,14 @@
 
       document.getElementById('farmer-close-btn').addEventListener('click', () => {
         document.getElementById('tycoon-farmer-dialog').style.display = 'none';
-        this.selectedFarmerId = null;
       });
-
-      document.getElementById('tycoon-farmer-dialog').style.display = 'flex';
     }
 
     applyFarmerInteractionBenefit(farmer, subType) {
       const tx = farmer.x;
       const ty = farmer.y;
+
+      const isMP = window.MultiplayerManager.isConnected;
 
       switch (subType) {
         case 1: // Loyal Dog: wake up sleeping animals
@@ -1381,20 +1559,29 @@
             }
           });
           this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Everyone woke up! 🌅", "#34d399");
-          this.worker.postMessage({
-            type: 'sync_state',
-            farmers: this.farmers
-          });
+          if (isMP) {
+            window.MultiplayerManager.broadcastFarmersState(this.farmers);
+            window.MultiplayerManager.addLogEntry("woke up sleeping farmers with Loyal Dog.");
+          } else {
+            this.worker.postMessage({
+              type: 'sync_state',
+              farmers: this.farmers
+            });
+          }
           break;
 
-        case 2: // Lucky Cat: finds +50g
-          this.resources.gold += 50;
-          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+50 Gold! 🪙", "#fbbf24");
-          this.updateHUD();
-          this.worker.postMessage({
-            type: 'sync_state',
-            resources: this.resources
-          });
+        case 2: // Lucky Cat: finds +0.5g
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+0.5 Gold! 🪙", "#fbbf24");
+          if (isMP) {
+            window.MultiplayerManager.gainResources(0.5, 0, 0, "found 0.5 gold petting Lucky Cat.");
+          } else {
+            this.resources.gold += 0.5;
+            this.updateHUD();
+            this.worker.postMessage({
+              type: 'sync_state',
+              resources: this.resources
+            });
+          }
           break;
 
         case 3: // Rain Frog: waters adjacent crops
@@ -1410,14 +1597,21 @@
                 charge = Math.min(255, charge + 25);
                 const sub = (tileVal >> 24) & 0xFF;
                 let newVal = type | (charge << 8) | (sub << 24);
-                this.setTileTypeAt(nx, ny, newVal);
-                this.postTileUpdateToWorker(nx, ny, newVal);
+                if (isMP) {
+                  window.MultiplayerManager.broadcastTileUpdate(nx, ny, newVal);
+                } else {
+                  this.setTileTypeAt(nx, ny, newVal);
+                  this.postTileUpdateToWorker(nx, ny, newVal);
+                }
                 wateredCount++;
               }
             }
           }
           if (wateredCount > 0) {
             this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, `Watered ${wateredCount} crops! 💧`, "#38bdf8");
+            if (isMP) {
+              window.MultiplayerManager.addLogEntry(`watered crops using Rain Frog.`);
+            }
           }
           break;
 
@@ -1425,10 +1619,14 @@
           farmer.speed = 8;
           farmer.currentAction = "Super Speed! ⚡";
           this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Bunny Zoom! 🥕", "#fb7185");
-          this.worker.postMessage({
-            type: 'sync_state',
-            farmers: this.farmers
-          });
+          if (isMP) {
+            window.MultiplayerManager.broadcastFarmersState(this.farmers);
+          } else {
+            this.worker.postMessage({
+              type: 'sync_state',
+              farmers: this.farmers
+            });
+          }
           setTimeout(() => {
             const currentBunny = this.farmers.find(f => f.id === farmer.id);
             if (currentBunny) {
@@ -1436,22 +1634,30 @@
               if (currentBunny.currentAction === "Super Speed! ⚡") {
                 currentBunny.currentAction = "Working 🧑‍🌾";
               }
-              this.worker.postMessage({
-                type: 'sync_state',
-                farmers: this.farmers
-              });
+              if (isMP) {
+                window.MultiplayerManager.broadcastFarmersState(this.farmers);
+              } else {
+                this.worker.postMessage({
+                  type: 'sync_state',
+                  farmers: this.farmers
+                });
+              }
             }
           }, 15000);
           break;
 
         case 5: // Clever Fox: generates +3 AP
-          this.resources.ap += 3;
           this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+3 AP! ⚡", "#38bdf8");
-          this.updateHUD();
-          this.worker.postMessage({
-            type: 'sync_state',
-            resources: this.resources
-          });
+          if (isMP) {
+            window.MultiplayerManager.gainResources(0, 3, 0, "gathered 3 AP from Clever Fox.");
+          } else {
+            this.resources.ap += 3;
+            this.updateHUD();
+            this.worker.postMessage({
+              type: 'sync_state',
+              resources: this.resources
+            });
+          }
           break;
 
         case 6: // Trash Raccoon: recharge adjacent sprinklers
@@ -1467,45 +1673,64 @@
                 charge = 255;
                 const sub = (tileVal >> 24) & 0xFF;
                 let newVal = type | (charge << 8) | (sub << 24);
-                this.setTileTypeAt(nx, ny, newVal);
-                this.postTileUpdateToWorker(nx, ny, newVal);
+                if (isMP) {
+                  window.MultiplayerManager.broadcastTileUpdate(nx, ny, newVal);
+                } else {
+                  this.setTileTypeAt(nx, ny, newVal);
+                  this.postTileUpdateToWorker(nx, ny, newVal);
+                }
                 sprinklerCount++;
               }
             }
           }
           if (sprinklerCount > 0) {
             this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, `Recharged ${sprinklerCount} Sprinklers! 🚿`, "#60a5fa");
+            if (isMP) {
+              window.MultiplayerManager.addLogEntry(`recharged sprinklers with Trash Raccoon.`);
+            }
           }
           break;
 
-        case 7: // Truffle Pig: digs +150g truffle
-          this.resources.gold += 150;
-          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Found Truffle! +150g 🍄", "#f59e0b");
-          this.updateHUD();
-          this.worker.postMessage({
-            type: 'sync_state',
-            resources: this.resources
-          });
+        case 7: // Truffle Pig: digs +1.5g truffle
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "Found Truffle! +1.5g 🍄", "#f59e0b");
+          if (isMP) {
+            window.MultiplayerManager.gainResources(1.5, 0, 0, "dug up +1.5g truffle with Truffle Pig.");
+          } else {
+            this.resources.gold += 1.5;
+            this.updateHUD();
+            this.worker.postMessage({
+              type: 'sync_state',
+              resources: this.resources
+            });
+          }
           break;
 
         case 8: // Night Owl: hoot and generate small gold
-          this.resources.gold += 10;
-          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+10 Gold! 🦉", "#fbbf24");
-          this.updateHUD();
-          this.worker.postMessage({
-            type: 'sync_state',
-            resources: this.resources
-          });
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+0.1 Gold! 🦉", "#fbbf24");
+          if (isMP) {
+            window.MultiplayerManager.gainResources(0.1, 0, 0, "petted Night Owl (+0.1 gold).");
+          } else {
+            this.resources.gold += 0.1;
+            this.updateHUD();
+            this.worker.postMessage({
+              type: 'sync_state',
+              resources: this.resources
+            });
+          }
           break;
 
-        case 9: // Gentle Cow: milk cow for +1 food
-          this.resources.food += 1;
-          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+1 Food! 🥛", "#a7f3d0");
-          this.updateHUD();
-          this.worker.postMessage({
-            type: 'sync_state',
-            resources: this.resources
-          });
+        case 9: // Gentle Cow: milk cow for +0.01 food
+          this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "+0.01 Food! 🥛", "#a7f3d0");
+          if (isMP) {
+            window.MultiplayerManager.gainResources(0, 0, 0.01, "milked Gentle Cow (+0.01 food).");
+          } else {
+            this.resources.food += 0.01;
+            this.updateHUD();
+            this.worker.postMessage({
+              type: 'sync_state',
+              resources: this.resources
+            });
+          }
           break;
 
         case 10: // Royal Lion: wake up sleeping animals and roar
@@ -1516,10 +1741,15 @@
             }
           });
           this.addFloatingText(window.innerWidth / 2, window.innerHeight / 2, "LION ROAR! Boost active! 🦁", "#fb923c");
-          this.worker.postMessage({
-            type: 'sync_state',
-            farmers: this.farmers
-          });
+          if (isMP) {
+            window.MultiplayerManager.broadcastFarmersState(this.farmers);
+            window.MultiplayerManager.addLogEntry("lion roared! Woke up sleeping farmers.");
+          } else {
+            this.worker.postMessage({
+              type: 'sync_state',
+              farmers: this.farmers
+            });
+          }
           break;
       }
     }
@@ -1546,9 +1776,9 @@
     }
 
     updateHUD() {
-      document.getElementById('tycoon-gold-val').textContent = Math.floor(this.resources.gold);
-      document.getElementById('tycoon-ap-val').textContent = Math.floor(this.resources.ap);
-      document.getElementById('tycoon-food-val').textContent = Math.floor(this.resources.food);
+      document.getElementById('tycoon-gold-val').textContent = this.resources.gold.toFixed(2);
+      document.getElementById('tycoon-ap-val').textContent = this.resources.ap.toFixed(2);
+      document.getElementById('tycoon-food-val').textContent = this.resources.food.toFixed(2);
       
       // Calculate rate estimation
       let totalRate = 0;
@@ -2571,6 +2801,9 @@
 
     // Save state
     saveState() {
+      if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+        return;
+      }
       const data = {
         chunks: this.chunks,
         farmers: this.farmers,
@@ -2735,10 +2968,14 @@
       `;
       
       document.getElementById('object-sell-btn').addEventListener('click', () => {
-        this.resources.gold += refund;
-        this.setTileTypeAt(obj.x, obj.y, TILE_TYPES.GRASS);
-        this.postTileUpdateToWorker(obj.x, obj.y, TILE_TYPES.GRASS);
-        this.updateHUD();
+        if (window.MultiplayerManager.isConnected) {
+          window.MultiplayerManager.sellObject(refund, name, obj.x, obj.y);
+        } else {
+          this.resources.gold += refund;
+          this.setTileTypeAt(obj.x, obj.y, TILE_TYPES.GRASS);
+          this.postTileUpdateToWorker(obj.x, obj.y, TILE_TYPES.GRASS);
+          this.updateHUD();
+        }
         this.addNotification(`🪙 Sold ${name} for ${refund} gold!`);
         document.getElementById('tycoon-object-dialog').style.display = 'none';
       });
