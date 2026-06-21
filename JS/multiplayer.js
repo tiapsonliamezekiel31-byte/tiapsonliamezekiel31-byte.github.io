@@ -62,6 +62,13 @@
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
+    promiseWithTimeout(promise, ms, errorMsg) {
+      const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(errorMsg || "Operation timed out.")), ms);
+      });
+      return Promise.race([promise, timeout]);
+    }
+
     async joinWorld(worldName, password, playerName) {
       if (!worldName || !password || !playerName) {
         throw new Error("World Name, Password, and Player Name are required.");
@@ -80,8 +87,12 @@
       this.passwordHash = passHash;
       this.worldName = worldName;
 
-      // Check if world already exists
-      const snapshot = await worldRef.child('passwordHash').once('value');
+      // Check if world already exists with a 5-second timeout
+      const snapshot = await this.promiseWithTimeout(
+        worldRef.child('passwordHash').once('value'),
+        5000,
+        "Connection timed out. Check your Internet connection or Firebase credentials."
+      );
       const existingHash = snapshot.val();
 
       if (existingHash === null) {
@@ -103,7 +114,11 @@
           initialData.chunks[k] = Array.from(window.TycoonManager.chunks[k]);
         }
 
-        await worldRef.set(initialData);
+        await this.promiseWithTimeout(
+          worldRef.set(initialData),
+          5000,
+          "Failed to create world. Connection timed out."
+        );
         this.addLogEntry(`${playerName} created the world.`);
       } else {
         // Verify password
