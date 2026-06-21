@@ -11,6 +11,20 @@
     appId: "1:229716400752:web:9cecdb3acc9ae69d9332b5"
   };
 
+  // Helper: Firebase may return arrays as sparse plain objects {"0":v,"512":v,...}
+  // Int32Array() only accepts array-likes, not plain objects, so we convert manually.
+  function fbToInt32Array(val, size) {
+    size = size || 1024;
+    const arr = new Int32Array(size);
+    if (!val) return arr;
+    if (Array.isArray(val)) {
+      for (let i = 0; i < Math.min(val.length, size); i++) arr[i] = val[i] | 0;
+    } else {
+      for (const k in val) { const i = parseInt(k); if (i >= 0 && i < size) arr[i] = val[k] | 0; }
+    }
+    return arr;
+  }
+
   class MultiplayerManager {
     constructor() {
       this.db = null;
@@ -201,7 +215,7 @@
         
         // Load chunks
         for (const k in dbChunks) {
-          window.TycoonManager.chunks[k] = new Int32Array(dbChunks[k]);
+          window.TycoonManager.chunks[k] = fbToInt32Array(dbChunks[k]);
         }
         
         // Remove chunks that no longer exist
@@ -434,8 +448,17 @@
       const tx = ((x % 32) + 32) % 32;
       const ty = ((y % 32) + 32) % 32;
       const idx = ty * 32 + tx;
-      
-      await this.db.ref(`worlds/${this.worldName}/chunks/${cx},${cy}/${idx}`).set(value);
+      const chunkKey = `${cx},${cy}`;
+
+      // Update local chunk first
+      if (!window.TycoonManager.chunks[chunkKey]) {
+        window.TycoonManager.chunks[chunkKey] = new Int32Array(1024);
+      }
+      window.TycoonManager.chunks[chunkKey][idx] = value;
+
+      // Write full chunk to Firebase so no other tiles are lost on receiving devices
+      const fullChunk = Array.from(window.TycoonManager.chunks[chunkKey]);
+      await this.db.ref(`worlds/${this.worldName}/chunks/${chunkKey}`).set(fullChunk);
     }
 
     async broadcastFarmerBuy(farmer) {
