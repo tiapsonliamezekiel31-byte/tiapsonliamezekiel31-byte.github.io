@@ -406,9 +406,11 @@ class UIManager {
       <div id="runCompletionPanel" class="run-completion-panel" aria-label="Run completion graph">
         <div class="run-completion-head">
           <span>RUN COMPLETION</span>
+          <button id="runCompletionToggle" title="Compare vs Nemesis" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 4px;opacity:0.75;line-height:1;">⚔️</button>
           <span id="runCompletionRate">0%</span>
         </div>
         <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div id="runCompletionAttrsContainer" style="display:none;"></div>
       </div>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
         <div class="event-banner-content">
@@ -549,6 +551,17 @@ class UIManager {
     }
 
     const rcPanel = gameArea.querySelector('#runCompletionPanel');
+    if (rcPanel) {
+      rcPanel.addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('#runCompletionToggle');
+        if (toggleBtn) {
+          const state = getGameState();
+          if (!state.systemState) state.systemState = {};
+          state.systemState.showAttrsInCompletionPanel = !state.systemState.showAttrsInCompletionPanel;
+          UIManager.updateRunCompletionGraph();
+        }
+      });
+    }
     let isRcDragging = false;
     let rcStartX = 0, rcStartY = 0, rcInitialLeft = 0, rcInitialTop = 0;
 
@@ -7104,7 +7117,58 @@ class UIManager {
     const panel = document.getElementById('runCompletionPanel');
     const graph = document.getElementById('runCompletionGraph');
     const rateEl = document.getElementById('runCompletionRate');
+    const attrsContainer = document.getElementById('runCompletionAttrsContainer');
     if (!panel || !graph || !rateEl) return;
+
+    const state = getGameState();
+    const showAttrs = !!(state?.systemState?.showAttrsInCompletionPanel);
+    const toggleBtn = document.getElementById('runCompletionToggle');
+    if (toggleBtn) toggleBtn.style.opacity = showAttrs ? '1' : '0.75';
+
+    if (showAttrs) {
+      // Hide graph, show attribute comparison
+      graph.style.display = 'none';
+      rateEl.textContent = 'VS';
+      if (attrsContainer) {
+        attrsContainer.style.display = 'block';
+        const attrs = state?.config?.attributes || [];
+        const playerAttrs = state?.playerState?.attributes || {};
+        const nemesisAttrs = state?.nemesisState?.attributes || {};
+        const attrColors = state?.config?.attributeColors || {};
+        attrsContainer.innerHTML = attrs.map(attr => {
+          const pPts = playerAttrs[attr]?.points ?? 0;
+          const nPts = nemesisAttrs[attr]?.points ?? 0;
+          const pLvl = playerAttrs[attr]?.level ?? 1;
+          const nLvl = nemesisAttrs[attr]?.level ?? 1;
+          const maxPts = Math.max(pPts, nPts, 1);
+          const pPct = Math.min(100, Math.round((pPts / maxPts) * 100));
+          const nPct = Math.min(100, Math.round((nPts / maxPts) * 100));
+          const color = attrColors[attr] || '#f1de97';
+          const ahead = pPts >= nPts;
+          return `<div style="margin-bottom:5px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;font-family:monospace;margin-bottom:2px;">
+              <span style="color:${color};font-weight:bold;">${attr}</span>
+              <span style="color:#aaa;font-size:7px;">Lv${pLvl}<span style="color:#555;"> / </span><span style="color:#c56;">Lv${nLvl}</span></span>
+            </div>
+            <div style="position:relative;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;">
+              <div style="position:absolute;left:0;top:0;height:100%;width:${pPct}%;background:${color};border-radius:3px;opacity:0.9;"></div>
+            </div>
+            <div style="position:relative;height:4px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;margin-top:1px;">
+              <div style="position:absolute;left:0;top:0;height:100%;width:${nPct}%;background:#c55;border-radius:3px;opacity:0.8;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:7px;color:#777;font-family:monospace;margin-top:1px;">
+              <span style="color:${color};">${Math.round(pPts)}</span>
+              <span style="color:#c55;">${Math.round(nPts)}</span>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      return;
+    }
+
+    // Graph mode
+    graph.style.display = '';
+    if (attrsContainer) attrsContainer.style.display = 'none';
 
     const entries = this.getRunCompletionEntries();
     if (!entries.length) {

@@ -2235,8 +2235,12 @@ class PopupsManager {
                 </div>
               </div>
               <div class="wizard-deadline-col">
-                <label class="clear-label">Deadline</label>
+                <label class="clear-label">Deadline Date</label>
                 <input type="date" class="clear-input wizard-deadline-input" id="wizardTodoDeadline" value="${tomorrowStr}" />
+              </div>
+              <div class="wizard-deadline-col">
+                <label class="clear-label">Deadline Time</label>
+                <input type="time" class="clear-input wizard-deadline-time-input" id="wizardTodoDeadlineTime" value="23:59" />
               </div>
             </div>
             <button class="btn-small mt-8" id="wizardStep3Next">NEXT</button>
@@ -2253,7 +2257,12 @@ class PopupsManager {
 
         popup.querySelector('#wizardStep3Next').addEventListener('click', () => {
           const dlInput = popup.querySelector('#wizardTodoDeadline').value;
-          if (dlInput) wizardData.deadline = new Date(dlInput).getTime();
+          const timeInput = popup.querySelector('#wizardTodoDeadlineTime').value || '23:59';
+          if (dlInput) {
+            const [year, month, day] = dlInput.split('-').map(Number);
+            const [hours, minutes] = timeInput.split(':').map(Number);
+            wizardData.deadline = new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
+          }
           currentStep = 4;
           renderStep();
         });
@@ -2522,7 +2531,8 @@ class PopupsManager {
     popup.className = 'popup edit-todo-popup';
 
     const attrs = state.config.attributes.map(a => `<option value="${a}" ${a===todo.attribute? 'selected':''}>${a}</option>`).join('');
-    const deadlineVal = todo.deadline ? new Date(todo.deadline).toISOString().slice(0,10) : '';
+    const deadlineDate = todo.deadline ? (() => { const d = new Date(todo.deadline); const y = d.getFullYear(); const mo = String(d.getMonth()+1).padStart(2,'0'); const dy = String(d.getDate()).padStart(2,'0'); return `${y}-${mo}-${dy}`; })() : '';
+    const deadlineTime = todo.deadline ? (() => { const d = new Date(todo.deadline); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; })() : '23:59';
     popup.innerHTML = `
       <h2>EDIT TO-DO</h2>
       <button class="btn-close">✕</button>
@@ -2539,7 +2549,10 @@ class PopupsManager {
           <option ${todo.difficulty==='Ultra'?'selected':''}>Ultra</option>
         </select>
         <label>Deadline</label>
-        <input id="editDeadline" type="date" value="${deadlineVal}" />
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="editDeadline" type="date" value="${deadlineDate}" style="flex:1;min-width:0;" />
+          <input id="editDeadlineTime" type="time" value="${deadlineTime}" style="width:80px;" />
+        </div>
         <div class="edit-subtasks-panel">
           <h3>Subtasks</h3>
           <div class="edit-subtasks-list" id="editSubtasksList"></div>
@@ -2613,11 +2626,18 @@ class PopupsManager {
 
     popup.querySelector('#saveTodo').addEventListener('click', () => {
       const deadlineInput = popup.querySelector('#editDeadline').value;
+      const deadlineTimeInput = popup.querySelector('#editDeadlineTime').value || '23:59';
+      let deadlineTs = null;
+      if (deadlineInput) {
+        const [ey, em, ed] = deadlineInput.split('-').map(Number);
+        const [eh, emin] = deadlineTimeInput.split(':').map(Number);
+        deadlineTs = new Date(ey, em - 1, ed, eh, emin, 0, 0).getTime();
+      }
       const updates = {
         name: popup.querySelector('#editName').value,
         attribute: popup.querySelector('#editAttr').value,
         difficulty: popup.querySelector('#editDiff').value,
-        deadline: deadlineInput ? new Date(deadlineInput).getTime() : null
+        deadline: deadlineTs
       };
       TaskManager.editTodo(todoId, updates);
       this.closeAllPopups();
@@ -2775,7 +2795,10 @@ class PopupsManager {
           
           <div class="bulk-setting-col" style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px;">
             <label style="font-size: 9px; color: #f1de97;">Deadline</label>
-            <input id="bulkTodoDeadline" type="date" value="${deadlineVal}" style="width: 100%; box-sizing: border-box;" />
+            <div style="display:flex;gap:4px;align-items:center;">
+              <input id="bulkTodoDeadline" type="date" value="${deadlineVal}" style="flex:1;min-width:0;box-sizing:border-box;" />
+              <input id="bulkTodoDeadlineTime" type="time" value="23:59" style="width:72px;box-sizing:border-box;" />
+            </div>
           </div>
         </div>
 
@@ -2928,7 +2951,13 @@ class PopupsManager {
       
       const difficulty = popup.querySelector('#bulkTodoDiff').value;
       const deadlineInput = popup.querySelector('#bulkTodoDeadline').value;
-      const deadline = deadlineInput ? new Date(deadlineInput).getTime() : null;
+      const deadlineTimeInput = popup.querySelector('#bulkTodoDeadlineTime').value || '23:59';
+      let deadline = null;
+      if (deadlineInput) {
+        const [dy, dm, dd] = deadlineInput.split('-').map(Number);
+        const [dh, dmin] = deadlineTimeInput.split(':').map(Number);
+        deadline = new Date(dy, dm - 1, dd, dh, dmin, 0, 0).getTime();
+      }
       
       let addedCount = 0;
       validNames.forEach((name, i) => {

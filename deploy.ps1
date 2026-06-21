@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: flash completed cards white right before disappearing"
+$commitMsg = "feat: nemesis attr gains, time deadlines, run completion vs-nemesis toggle, cheat reset nemesis attrs to yours"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

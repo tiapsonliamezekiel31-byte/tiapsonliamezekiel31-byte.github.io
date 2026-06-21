@@ -569,9 +569,12 @@ class GameState {
   }
 
   addNemesisAttributePoints(attrName, amount) {
-    const attr = this.nemesisState?.attributes?.[attrName];
-    if (!attr) return;
-
+    if (!this.nemesisState) this.nemesisState = { attributes: {} };
+    if (!this.nemesisState.attributes) this.nemesisState.attributes = {};
+    if (!this.nemesisState.attributes[attrName]) {
+      this.nemesisState.attributes[attrName] = { points: 0, level: 1 };
+    }
+    const attr = this.nemesisState.attributes[attrName];
     attr.points += amount;
 
     const thresholds = typeof this.config.attributeLevelThresholds === 'function'
@@ -821,6 +824,19 @@ class GameState {
         this.playerState.weaponRunes = {};
       }
       this.dailiesState = data.dailiesState;
+      if (this.dailiesState && Array.isArray(this.dailiesState.todos)) {
+        this.dailiesState.todos.forEach(todo => {
+          if (todo.deadline) {
+            const parsed = Number(todo.deadline);
+            if (!isNaN(parsed)) {
+              todo.deadline = parsed;
+            } else {
+              const dt = new Date(todo.deadline).getTime();
+              todo.deadline = isNaN(dt) ? null : dt;
+            }
+          }
+        });
+      }
       this.stageState = data.stageState;
       this.combatState = data.combatState;
       this.buffs = data.buffs;
@@ -2179,26 +2195,35 @@ function performCheckIn() {
         console.warn('Regenerator mutator heal failed', e);
       }
 
-      // Nemesis gains attribute points (70% of total possible daily attr + pending todo gains)
+      // Nemesis gains attribute points
       try {
-        const baneFactor = state.hasBuff('Nemesis Bane')
-          ? (state.config.buffs?.['Nemesis Bane']?.effect?.nemesisAttrReduction ?? 0.5)
-          : 1;
-        const gainFactor = 0.7 * (typeof baneFactor === 'number' ? baneFactor : 1);
-
+        // Daily Dailies: Nemesis gets 70% of max possible attribute gain
+        const dailyGainFactor = 0.7;
         (state.dailiesState.dailies || []).forEach(daily => {
           const reward = state.config.taskRewards?.[daily.difficulty];
-          const pts = (reward?.attributePoints ?? 0) * gainFactor;
+          const pts = (reward?.attributePoints ?? 0) * dailyGainFactor;
           if (pts > 0) state.addNemesisAttributePoints(daily.attribute, pts);
         });
 
-        const nearTodos = TaskManager.getUncompletedTodosNearDeadline(state.config.nemesisTodoGainHours || 24);
-        (nearTodos || []).forEach(todo => {
-          if (todo.nemesisGained) return;
-          const reward = state.config.taskRewards?.[todo.difficulty];
-          const pts = (reward?.attributePoints ?? 0) * gainFactor;
-          if (pts > 0) state.addNemesisAttributePoints(todo.attribute, pts);
-          todo.nemesisGained = true;
+        // Todos: Nemesis gets the full attributes of a todo at its deadline (if uncompleted and deadline passed)
+        (state.dailiesState.todos || []).forEach(todo => {
+          if (todo.completed) return;
+          if (todo.deadline && todo.deadline <= nowMs) {
+            if (todo.nemesisGained) return; // already gained
+            const reward = state.config.taskRewards?.[todo.difficulty];
+            const basePts = reward?.attributePoints ?? 0;
+            if (basePts > 0) {
+              if (todo.clusterAttributes) {
+                for (const attr in todo.clusterAttributes) {
+                  const ratio = todo.clusterAttributes[attr] || 0;
+                  state.addNemesisAttributePoints(attr, basePts * ratio);
+                }
+              } else {
+                state.addNemesisAttributePoints(todo.attribute, basePts);
+              }
+            }
+            todo.nemesisGained = true;
+          }
         });
       } catch (e) {
         console.warn('Nemesis attribute gain failed during check-in', e);

@@ -429,11 +429,6 @@ const DEFAULT_GAME_CONFIG = {
       icon: '🔥',
       description: 'revive 50% HP once/run',
       effect: { phoenixRevive: true }
-    },
-    'Nemesis Bane': {
-      icon: '☠️',
-      description: 'Nemesis gains 50% attr',
-      effect: { nemesisAttrReduction: 0.5 }
     }
   },
   
