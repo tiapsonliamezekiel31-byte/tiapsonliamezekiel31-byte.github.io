@@ -195,6 +195,10 @@
                 <div style="font-size: 8px; color: #94a3b8; line-height: 1.4; margin-bottom: 12px;">
                   * Sleep cycle ends at this hour. Night begins 8 hours prior.
                 </div>
+                <div class="tycoon-form-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <label for="settings-snap-grid" style="flex: 1;">Snap Items to Grid:</label>
+                  <input type="checkbox" id="settings-snap-grid" style="width: auto !important; height: auto; transform: scale(1.2); margin-right: 8px;">
+                </div>
                 <div class="tycoon-form-row" style="flex-direction: column; align-items: flex-start; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
                   <label for="tycoon-cheat-input" style="margin-bottom: 4px;">Cheat Console:</label>
                   <input type="text" id="tycoon-cheat-input" placeholder="e.g. gold 9999" style="width: 100% !important;">
@@ -260,6 +264,7 @@
       wrapper.addEventListener('mousedown', (e) => {
         if (e.button === 0) { // Left click
           const tile = this.screenToWorldCoords(e.clientX, e.clientY);
+          this.hoverWorldPos = this.screenToWorldPreciseCoords(e.clientX, e.clientY);
           
           if (this.activeTool) {
             const isTerrain = (this.activeTool.type === TILE_TYPES.GRASS ||
@@ -300,6 +305,7 @@
       wrapper.addEventListener('mousemove', (e) => {
         const tile = this.screenToWorldCoords(e.clientX, e.clientY);
         this.hoverTile = tile;
+        this.hoverWorldPos = this.screenToWorldPreciseCoords(e.clientX, e.clientY);
 
         if (this.isPainting && this.activeTool) {
           this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
@@ -382,6 +388,7 @@
           const touch = e.touches[0];
           const tile = this.screenToWorldCoords(touch.clientX, touch.clientY);
           this.hoverTile = tile;
+          this.hoverWorldPos = this.screenToWorldPreciseCoords(touch.clientX, touch.clientY);
           
           if (this.activeTool) {
             const isTerrain = (this.activeTool.type === TILE_TYPES.GRASS ||
@@ -434,6 +441,7 @@
           const touch = e.touches[0];
           const tile = this.screenToWorldCoords(touch.clientX, touch.clientY);
           this.hoverTile = tile;
+          this.hoverWorldPos = this.screenToWorldPreciseCoords(touch.clientX, touch.clientY);
           
           if (this.isPainting && this.activeTool) {
             this.paintTerrainCircle(tile.x, tile.y, this.activeTool.type);
@@ -531,6 +539,7 @@
       // Settings Modals
       document.getElementById('tycoon-settings-btn').addEventListener('click', () => {
         document.getElementById('settings-checkin-hour').value = this.config.checkInHour;
+        document.getElementById('settings-snap-grid').checked = this.config.snapToGrid !== false;
         document.getElementById('tycoon-import-export').value = JSON.stringify(this.getSerializableState());
         document.getElementById('tycoon-settings-dialog').style.display = 'flex';
       });
@@ -543,6 +552,7 @@
       document.getElementById('settings-save-btn').addEventListener('click', () => {
         const hour = Math.max(0, Math.min(23, Number(document.getElementById('settings-checkin-hour').value) || 10));
         this.config.checkInHour = hour;
+        this.config.snapToGrid = document.getElementById('settings-snap-grid').checked;
         
         // Process cheat inside settings dialog
         const cheatInput = document.getElementById('tycoon-cheat-input');
@@ -998,31 +1008,10 @@
     }
 
     canPlaceObjectAt(tx, ty) {
-      // 1. Check that the entire 3x3 area is solid plain terrain (Grass, Sand, Stone)
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const tileVal = this.getTileTypeAt(tx + dx, ty + dy);
-          const tType = tileVal & 0xFF;
-          if (tType !== TILE_TYPES.GRASS && tType !== TILE_TYPES.SAND && tType !== TILE_TYPES.STONE) {
-            return false;
-          }
-        }
-      }
-      
-      // 2. Check that no other object center is within Chebyshev distance <= 2
-      // (This prevents their 3x3 footprints from overlapping)
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          const tileVal = this.getTileTypeAt(tx + dx, ty + dy);
-          const tType = tileVal & 0xFF;
-          if (tType === TILE_TYPES.PRODUCER || tType === TILE_TYPES.INCREASER || 
-              tType === TILE_TYPES.MAINTENANCE || tType === TILE_TYPES.COSMETIC) {
-            return false;
-          }
-        }
-      }
-      
-      return true;
+      // Check that the center tile itself is solid plain terrain (Grass, Sand, Stone) and has no existing object
+      const tileVal = this.getTileTypeAt(tx, ty);
+      const tType = tileVal & 0xFF;
+      return (tType === TILE_TYPES.GRASS || tType === TILE_TYPES.SAND || tType === TILE_TYPES.STONE);
     }
 
     paintTerrainCircle(cx, cy, type) {
@@ -1041,6 +1030,14 @@
             
             const currentTileVal = this.getTileTypeAt(tx, ty);
             const currentType = currentTileVal & 0xFF;
+            
+            const isObject = (currentType === TILE_TYPES.PRODUCER ||
+                              currentType === TILE_TYPES.INCREASER ||
+                              currentType === TILE_TYPES.MAINTENANCE ||
+                              currentType === TILE_TYPES.COSMETIC);
+            if (isObject) {
+              continue;
+            }
             
             if (currentType !== type) {
               if (this.resources.gold >= cost) {
@@ -1078,6 +1075,19 @@
         x: Math.floor(worldX / this.tileWidth),
         y: Math.floor(worldY / this.tileWidth)
       };
+    }
+
+    screenToWorldPreciseCoords(sx, sy) {
+      const wrapper = document.getElementById('tycoon-viewport-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      
+      const rx = sx - rect.left - rect.width / 2;
+      const ry = sy - rect.top - rect.height / 2;
+      
+      const worldX = this.camera.x + rx / this.camera.zoom;
+      const worldY = this.camera.y + ry / this.camera.zoom;
+      
+      return { x: worldX, y: worldY };
     }
 
     findFarmerAt(tx, ty) {
@@ -1491,10 +1501,31 @@
         const msg = e.data;
         switch (msg.type) {
           case 'state_update':
+            // Preserve visual coordinates for smooth movement interpolation
+            const oldFarmersMap = new Map();
+            if (this.farmers) {
+              this.farmers.forEach(f => {
+                if (f.visualX !== undefined && f.visualY !== undefined) {
+                  oldFarmersMap.set(f.id, { visualX: f.visualX, visualY: f.visualY });
+                }
+              });
+            }
+
             // Merge spatial hash and other variables smoothly
             this.chunks = msg.chunks;
             this.farmers = msg.farmers;
             this.resources = msg.resources;
+
+            if (this.farmers) {
+              this.farmers.forEach(f => {
+                const old = oldFarmersMap.get(f.id);
+                if (old) {
+                  f.visualX = old.visualX;
+                  f.visualY = old.visualY;
+                }
+              });
+            }
+
             this.updateHUD();
 
             // Throttled autosave every 5 seconds
@@ -1723,8 +1754,23 @@
 
       // Step 3: Draw active NPC Farmers
       this.farmers.forEach(farmer => {
-        const fx = farmer.x * tw + tw / 2;
-        const fy = farmer.y * tw + tw / 2;
+        if (farmer.visualX === undefined || farmer.visualY === undefined) {
+          farmer.visualX = farmer.x;
+          farmer.visualY = farmer.y;
+        } else {
+          const dx = farmer.x - farmer.visualX;
+          const dy = farmer.y - farmer.visualY;
+          if (Math.hypot(dx, dy) > 3) {
+            farmer.visualX = farmer.x;
+            farmer.visualY = farmer.y;
+          } else {
+            farmer.visualX += dx * 0.08;
+            farmer.visualY += dy * 0.08;
+          }
+        }
+
+        const fx = farmer.visualX * tw + tw / 2;
+        const fy = farmer.visualY * tw + tw / 2;
         
         // Soft farmer shadow under emoji
         ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
@@ -1784,15 +1830,35 @@
           ctx.fillStyle = isLand ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)";
           ctx.strokeStyle = isLand ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
           ctx.lineWidth = 2;
-          ctx.fillRect(hx, hy, tw, tw);
-          ctx.strokeRect(hx, hy, tw, tw);
+          
+          let px, py;
+          if (this.config.snapToGrid !== false) {
+            px = tx * tw + tw / 2;
+            py = ty * tw + tw / 2;
+          } else {
+            px = this.hoverWorldPos ? this.hoverWorldPos.x : (tx * tw + tw / 2);
+            py = this.hoverWorldPos ? this.hoverWorldPos.y : (ty * tw + tw / 2);
+          }
+          
+          ctx.fillRect(px - tw / 2, py - tw / 2, tw, tw);
+          ctx.strokeRect(px - tw / 2, py - tw / 2, tw, tw);
         } else {
           const isValid = this.canPlaceObjectAt(tx, ty);
           ctx.fillStyle = isValid ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)";
           ctx.strokeStyle = isValid ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
           ctx.lineWidth = 2;
-          ctx.fillRect(hx - tw, hy - tw, tw * 3, tw * 3);
-          ctx.strokeRect(hx - tw, hy - tw, tw * 3, tw * 3);
+          
+          let px, py;
+          if (this.config.snapToGrid !== false) {
+            px = tx * tw + tw / 2;
+            py = ty * tw + tw / 2;
+          } else {
+            px = this.hoverWorldPos ? this.hoverWorldPos.x : (tx * tw + tw / 2);
+            py = this.hoverWorldPos ? this.hoverWorldPos.y : (ty * tw + tw / 2);
+          }
+          
+          ctx.fillRect(px - tw * 1.5, py - tw * 1.5, tw * 3, tw * 3);
+          ctx.strokeRect(px - tw * 1.5, py - tw * 1.5, tw * 3, tw * 3);
           
           ctx.save();
           ctx.globalAlpha = 0.5;
@@ -1800,7 +1866,7 @@
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           let previewEmoji = this.activeTool.emoji;
-          ctx.fillText(previewEmoji, hx + tw / 2, hy + tw / 2);
+          ctx.fillText(previewEmoji, px, py);
           ctx.restore();
         }
       }
@@ -1809,8 +1875,15 @@
       if (this.isDraggingObject && this.draggedObject && this.hoverTile) {
         const tx = this.hoverTile.x;
         const ty = this.hoverTile.y;
-        const hx = tx * tw;
-        const hy = ty * tw;
+        
+        let px, py;
+        if (this.config.snapToGrid !== false) {
+          px = tx * tw + tw / 2;
+          py = ty * tw + tw / 2;
+        } else {
+          px = this.hoverWorldPos ? this.hoverWorldPos.x : (tx * tw + tw / 2);
+          py = this.hoverWorldPos ? this.hoverWorldPos.y : (ty * tw + tw / 2);
+        }
         
         const type = this.draggedObject.tileVal & 0xFF;
         const subType = (this.draggedObject.tileVal >> 24) & 0xFF;
@@ -1819,8 +1892,8 @@
         ctx.fillStyle = isValid ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)";
         ctx.strokeStyle = isValid ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
         ctx.lineWidth = 2;
-        ctx.fillRect(hx - tw, hy - tw, tw * 3, tw * 3);
-        ctx.strokeRect(hx - tw, hy - tw, tw * 3, tw * 3);
+        ctx.fillRect(px - tw * 1.5, py - tw * 1.5, tw * 3, tw * 3);
+        ctx.strokeRect(px - tw * 1.5, py - tw * 1.5, tw * 3, tw * 3);
         
         ctx.save();
         ctx.globalAlpha = 0.55;
@@ -1842,7 +1915,7 @@
           emoji = noise < 33 ? "🪨" : noise < 66 ? "🍄" : "🌸";
         }
         
-        ctx.fillText(emoji, hx + tw / 2, hy + tw / 2);
+        ctx.fillText(emoji, px, py);
         ctx.restore();
       }
 
@@ -2208,6 +2281,9 @@
           this.resources = data.resources || { gold: 100, ap: 0, food: 0 };
           this.farmers = data.farmers || [];
           this.config = data.config || { checkInHour: 10, completionRatePrevDay: 1.0, lastSaveTime: Date.now() };
+          if (this.config.snapToGrid === undefined) {
+            this.config.snapToGrid = true;
+          }
           
           // Re-instantiate TypedArrays
           this.chunks = {};

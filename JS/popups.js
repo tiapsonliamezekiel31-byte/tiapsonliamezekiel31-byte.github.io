@@ -3769,4 +3769,253 @@ class PopupsManager {
       PopupAnimation.scale(popup);
     }
   }
+
+  // ============================================================
+  // BESTIARY / ENEMY CATALOG
+  // ============================================================
+
+  static showBestiary() {
+    const state = getGameState();
+    this.closeAllPopups();
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup bestiary-popup';
+
+    const seenEnemies = state.systemState.runSeenEnemies || {};
+    const enemyDb = typeof ENEMY_DATABASE !== 'undefined' ? ENEMY_DATABASE : {};
+    const bossesDb = state.config.bosses || {};
+
+    // Grouping by stage
+    const stages = {
+      1: { name: "Stage 1: Forest & Desert", enemies: [] },
+      2: { name: "Stage 2: Caves & Swamps", enemies: [] },
+      3: { name: "Stage 3: Glaciers & Ruins", enemies: [] },
+      4: { name: "Stage 4: Graveyards & Castles", enemies: [] },
+      5: { name: "Stage 5: Volcanoes & Isles", enemies: [] },
+      6: { name: "Stage 6: Mountains & Seas", enemies: [] },
+      7: { name: "Stage 7: The Void", enemies: [] },
+      'bosses': { name: "Bosses", enemies: [] }
+    };
+
+    // Collate standard enemies
+    Object.entries(enemyDb).forEach(([name, data]) => {
+      const stageId = data.stage;
+      if (stages[stageId]) {
+        stages[stageId].enemies.push({
+          name,
+          stage: stageId,
+          archetype: data.archetype,
+          resist: data.resist,
+          weak: data.weak,
+          isBoss: false
+        });
+      }
+    });
+
+    // Collate bosses
+    Object.entries(bossesDb).forEach(([name, data]) => {
+      stages['bosses'].enemies.push({
+        name,
+        stage: 'Boss',
+        archetype: 'Boss',
+        resist: data.resist,
+        weak: data.weak,
+        isBoss: true
+      });
+    });
+
+    let html = '<h2>📖 BESTIARY</h2><button class="btn-close">✕</button>';
+    html += '<div class="popup-scrollable-body" style="max-height: 65vh; overflow-y: auto;">';
+
+    Object.entries(stages).forEach(([id, stageData]) => {
+      if (stageData.enemies.length === 0) return;
+
+      // Count encountered
+      const totalCount = stageData.enemies.length;
+      const discoveredCount = stageData.enemies.filter(e => seenEnemies[e.name]).length;
+
+      html += `
+        <div class="bestiary-accordion" data-stage="${id}">
+          <div class="accordion-title-wrap">
+            <span>${stageData.name}</span>
+            <span style="font-size: 7px; color: var(--accent-gold);">(${discoveredCount}/${totalCount})</span>
+          </div>
+          <span class="accordion-arrow">▶</span>
+        </div>
+        <div class="bestiary-panel" id="panel-${id}">
+          <div class="bestiary-grid">
+      `;
+
+      stageData.enemies.forEach(enemy => {
+        const isSeen = !!seenEnemies[enemy.name];
+        const emoji = isSeen ? (typeof UIManager !== 'undefined' ? UIManager.getEnemyEmoji(enemy) : '👾') : '❓';
+        const cardClass = isSeen ? (enemy.isBoss ? 'bestiary-card boss' : 'bestiary-card') : 'bestiary-card locked';
+        const displayName = isSeen ? enemy.name : '???';
+        const metaText = isSeen ? (enemy.isBoss ? 'Boss' : enemy.archetype) : 'Undiscovered';
+
+        html += `
+            <div class="${cardClass}" data-enemy-name="${enemy.name}" data-seen="${isSeen}">
+              <div class="bestiary-card-icon">${emoji}</div>
+              <div class="bestiary-card-name">${displayName}</div>
+              <div class="bestiary-card-meta">${metaText}</div>
+            </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+
+    // Add Mutator Glossary footer
+    html += `
+      <div style="margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; font-size: 7px; color: var(--text-muted); line-height: 1.4;">
+        <span style="font-weight: bold; color: var(--accent-gold); display: block; margin-bottom: 4px; font-size: 8px;">MUTATOR REFERENCE:</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px;">
+          <span>🩸 Vampiric: Heals on hit</span>
+          <span>🌿 Regenerator: Heals daily</span>
+          <span>📣 Rallyist: Boosts ally dmg</span>
+          <span>🔫 Turret: Backlash dmg</span>
+          <span>⚡ Swift: Bypasses shields</span>
+          <span>☠️ Necromancer: Revives dead</span>
+        </div>
+      </div>
+    `;
+
+    popup.innerHTML = html;
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+
+    // Accordion expand/collapse behavior
+    popup.querySelectorAll('.bestiary-accordion').forEach(header => {
+      header.addEventListener('click', () => {
+        const stageId = header.dataset.stage;
+        const panel = popup.querySelector(`#panel-${stageId}`);
+        const isActive = header.classList.contains('active');
+
+        // Close others
+        popup.querySelectorAll('.bestiary-accordion').forEach(h => {
+          if (h !== header) {
+            h.classList.remove('active');
+            const pId = h.dataset.stage;
+            const p = popup.querySelector(`#panel-${pId}`);
+            if (p) p.classList.remove('active');
+          }
+        });
+
+        // Toggle current
+        if (isActive) {
+          header.classList.remove('active');
+          if (panel) panel.classList.remove('active');
+        } else {
+          header.classList.add('active');
+          if (panel) panel.classList.add('active');
+        }
+      });
+    });
+
+    // Enemy card click behavior
+    popup.querySelectorAll('.bestiary-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const isSeen = card.dataset.seen === 'true';
+        if (!isSeen) {
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch(e) {}
+          return;
+        }
+        const name = card.dataset.enemyName;
+        this.showBestiaryDetail(name);
+      });
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
+
+  static showBestiaryDetail(enemyName) {
+    const state = getGameState();
+    const enemyDb = typeof ENEMY_DATABASE !== 'undefined' ? ENEMY_DATABASE : {};
+    const bossesDb = state.config.bosses || {};
+
+    let enemyData = enemyDb[enemyName];
+    let isBoss = false;
+    if (!enemyData && bossesDb[enemyName]) {
+      enemyData = bossesDb[enemyName];
+      isBoss = true;
+    }
+
+    if (!enemyData) return;
+
+    // Create a wrapper overlay for detail to overlay the bestiary popup
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay bestiary-detail-overlay';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+
+    const popup = document.createElement('div');
+    popup.className = 'popup bestiary-detail-popup';
+
+    const emoji = typeof UIManager !== 'undefined' ? UIManager.getEnemyEmoji({ name: enemyName }) : '👾';
+    const archetypeDesc = isBoss 
+      ? "Bosses are powerful enemies encountered at the end of runs. They possess unique attack patterns, transition into Phase 2, and are immune to instant-kill effects."
+      : (state.config.enemyArchetypes[enemyData.archetype] || { description: "A standard enemy." }).description;
+
+    const resist = enemyData.resist || '-';
+    const weak = enemyData.weak || '-';
+
+    const resistColor = typeof UIManager !== 'undefined' ? UIManager.getEnemyElementColor(resist) : '#fff';
+    const weakColor = typeof UIManager !== 'undefined' ? UIManager.getEnemyElementColor(weak) : '#fff';
+
+    let html = `<h2>ENEMY PROFILE</h2><button class="btn-close">✕</button>`;
+    html += `
+      <div class="bestiary-detail-content">
+        <div class="bestiary-detail-icon">${emoji}</div>
+        <div class="bestiary-detail-title">${enemyName}</div>
+        <div style="font-size: 8px; color: var(--accent-gold); text-transform: uppercase;">
+          ${isBoss ? 'STAGE BOSS' : `Stage ${enemyData.stage} | ${enemyData.archetype}`}
+        </div>
+
+        <div class="bestiary-detail-section">
+          <div class="bestiary-detail-section-title">ELEMENTAL INFO</div>
+          <div class="bestiary-detail-elements">
+            <div class="bestiary-element-badge" style="border-color: ${resistColor};">
+              <span style="color: var(--text-muted); display: block; font-size: 6px;">RESISTANT TO</span>
+              <span style="font-weight: bold; color: ${resistColor};">${resist}</span>
+            </div>
+            <div class="bestiary-element-badge" style="border-color: ${weakColor};">
+              <span style="color: var(--text-muted); display: block; font-size: 6px;">VULNERABLE TO</span>
+              <span style="font-weight: bold; color: ${weakColor};">${weak}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bestiary-detail-section">
+          <div class="bestiary-detail-section-title">BEHAVIOR & ARCHETYPE</div>
+          <p style="margin: 0; color: #fff; font-size: 8px; line-height: 1.4;">${archetypeDesc}</p>
+        </div>
+        
+        <button class="btn-large btn-ok" style="margin-top: 8px; width: 100%;">CLOSE</button>
+      </div>
+    `;
+
+    popup.innerHTML = html;
+
+    const closeDetail = () => overlay.remove();
+    popup.querySelector('.btn-close').addEventListener('click', closeDetail);
+    popup.querySelector('.btn-ok').addEventListener('click', closeDetail);
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
 }

@@ -332,6 +332,7 @@ class UIManager {
       <div id="deathDefianceBadge" class="death-defiance-badge" style="margin-bottom: 4px;">DEFIANCE READY</div>
       <button id="homeBtn" class="btn-nav-item">🏠 Home</button>
       <button id="plannerBtn" class="btn-nav-item">📅 Planner</button>
+      <button id="bestiaryBtn" class="btn-nav-item">📖 Bestiary</button>
       <button id="diamondRewardsBtn" class="btn-nav-item diamond-rewards-btn">💎 Rewards</button>
       <button id="checkInBtn" class="btn-nav-item">✅ Check In</button>
       <button id="pauseBtn" class="btn-nav-item" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 4px;">⏸️ Pause</button>
@@ -2064,6 +2065,14 @@ class UIManager {
     // pause, planner, shop buttons
     document.getElementById('pauseBtn').addEventListener('click', () => this.handlePauseClick());
     document.getElementById('plannerBtn').addEventListener('click', () => window.location.href = 'planner.html');
+    const bestiaryBtn = document.getElementById('bestiaryBtn');
+    if (bestiaryBtn) {
+      bestiaryBtn.addEventListener('click', () => {
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBestiary === 'function') {
+          PopupsManager.showBestiary();
+        }
+      });
+    }
     document.getElementById('shopBtn').addEventListener('click', () => this.toggleShopPanel());
     const lootboxBtnEl = document.getElementById('lootboxBtn');
     if (lootboxBtnEl) {
