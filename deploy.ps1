@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: correct Firebase databaseURL to asia-southeast1 regional endpoint"
+$commitMsg = "feat: add proper service worker with CACHE_NAME for PWA caching"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
