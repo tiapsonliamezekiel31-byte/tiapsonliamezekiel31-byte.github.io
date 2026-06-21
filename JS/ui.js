@@ -3504,6 +3504,7 @@ class UIManager {
   }
 
   static async playCheckInSequence(detail) {
+    const state = getGameState();
     const steps = Array.isArray(detail?.retaliationSteps) ? detail.retaliationSteps : [];
     const token = ++this.checkInSequenceToken;
     const circle = document.querySelector('.enemy-circle-container');

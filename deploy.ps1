@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "style: update run completion attributes comparison layout to match attributes tab"
+$commitMsg = "fix: define state in UIManager.playCheckInSequence to resolve ReferenceError on check-in and fix Nemesis attributes gain"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
