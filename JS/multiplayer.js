@@ -1,14 +1,14 @@
 // multiplayer.js - Firebase Realtime Database Integration for Tycoon Mode Multiplayer
 (function() {
-  // Default Demo Firebase credentials
+  // Default Firebase credentials (nemesis-tycoon project)
   const DEFAULT_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAs-DemoApiKeyForNemesisUltimateRoguelike",
-    authDomain: "nemesis-multiplayer-demo.firebaseapp.com",
-    databaseURL: "https://nemesis-multiplayer-demo-default-rtdb.firebaseio.com",
-    projectId: "nemesis-multiplayer-demo",
-    storageBucket: "nemesis-multiplayer-demo.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef123456"
+    apiKey: "AIzaSyDHX4LlEMhZz_7E5VoNEozVJru2-vFlts8",
+    authDomain: "nemesis-tycoon.firebaseapp.com",
+    databaseURL: "https://nemesis-tycoon-default-rtdb.firebaseio.com",
+    projectId: "nemesis-tycoon",
+    storageBucket: "nemesis-tycoon.firebasestorage.app",
+    messagingSenderId: "229716400752",
+    appId: "1:229716400752:web:9cecdb3acc9ae69d9332b5"
   };
 
   class MultiplayerManager {
