@@ -2160,18 +2160,6 @@ function performCheckIn() {
     console.warn('Failed to reset dailies during check-in', e);
   }
 
-  // 9) Emit CHECK_IN_COMPLETE with the calculated pet attacks
-  state.eventBus.emit(EVENTS.CHECK_IN_COMPLETE, {
-    missedDailyDamage: D,
-    scaledN: N,
-    lateTodoDamage,
-    plannerClaim,
-    incantations,
-    retaliationSteps,
-    petAttacks,
-    mutatorGains: state._lastCheckinMutatorGains || []
-  });
-
   // 10) Delayed regeneration & final UI updates (registered to run after animation)
   const doDailyRegenAndSave = async () => {
     try {
@@ -2277,6 +2265,18 @@ function performCheckIn() {
   // Run daily regeneration sequentially after check-in animation completes
   state.eventBus.once(EVENTS.CHECK_IN_ANIMATION_COMPLETE, () => {
     setTimeout(doDailyRegenAndSave, 300);
+  });
+
+  // 9) Emit CHECK_IN_COMPLETE with the calculated pet attacks
+  state.eventBus.emit(EVENTS.CHECK_IN_COMPLETE, {
+    missedDailyDamage: D,
+    scaledN: N,
+    lateTodoDamage,
+    plannerClaim,
+    incantations,
+    retaliationSteps,
+    petAttacks,
+    mutatorGains: state._lastCheckinMutatorGains || []
   });
 
   return true;
