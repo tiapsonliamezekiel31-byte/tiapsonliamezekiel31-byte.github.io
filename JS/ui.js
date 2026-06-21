@@ -7138,27 +7138,16 @@ class UIManager {
         attrsContainer.innerHTML = attrs.map(attr => {
           const pPts = playerAttrs[attr]?.points ?? 0;
           const nPts = nemesisAttrs[attr]?.points ?? 0;
-          const pLvl = playerAttrs[attr]?.level ?? 1;
-          const nLvl = nemesisAttrs[attr]?.level ?? 1;
-          const maxPts = Math.max(pPts, nPts, 1);
-          const pPct = Math.min(100, Math.round((pPts / maxPts) * 100));
-          const nPct = Math.min(100, Math.round((nPts / maxPts) * 100));
+          const total = pPts + nPts;
+          const playerPercent = total > 0 ? (pPts / total) * 100 : 50;
           const color = attrColors[attr] || '#f1de97';
-          const ahead = pPts >= nPts;
-          return `<div style="margin-bottom:5px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;font-family:monospace;margin-bottom:2px;">
+          return `<div style="margin-bottom:3px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;font-family:monospace;margin-bottom:1px;">
               <span style="color:${color};font-weight:bold;">${attr}</span>
-              <span style="color:#aaa;font-size:7px;">Lv${pLvl}<span style="color:#555;"> / </span><span style="color:#c56;">Lv${nLvl}</span></span>
+              <span style="font-size:7px;"><span style="color:#a15cff;font-weight:bold;">${Math.round(pPts)}</span><span style="color:#555;">/</span><span style="color:#ff4444;font-weight:bold;">${Math.round(nPts)}</span></span>
             </div>
-            <div style="position:relative;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;">
-              <div style="position:absolute;left:0;top:0;height:100%;width:${pPct}%;background:${color};border-radius:3px;opacity:0.9;"></div>
-            </div>
-            <div style="position:relative;height:4px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;margin-top:1px;">
-              <div style="position:absolute;left:0;top:0;height:100%;width:${nPct}%;background:#c55;border-radius:3px;opacity:0.8;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:7px;color:#777;font-family:monospace;margin-top:1px;">
-              <span style="color:${color};">${Math.round(pPts)}</span>
-              <span style="color:#c55;">${Math.round(nPts)}</span>
+            <div class="attr-bar-container" style="height:4px;border-radius:2px;">
+              <div class="attr-bar-player" style="width:${playerPercent}%;border-radius:2px;"></div>
             </div>
           </div>`;
         }).join('');
