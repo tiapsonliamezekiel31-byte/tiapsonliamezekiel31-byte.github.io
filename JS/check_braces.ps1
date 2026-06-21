@@ -1,4 +1,4 @@
-$content = [System.IO.File]::ReadAllText("c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\style.css")
+$content = [System.IO.File]::ReadAllText("c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\css\style.css")
 $stack = New-Object System.Collections.ArrayList
 $lines = $content -split "`r?`n"
 $lineNum = 0

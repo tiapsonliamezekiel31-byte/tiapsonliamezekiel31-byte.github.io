@@ -1,4 +1,4 @@
-with open(r"c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\style.css", "r", encoding="utf-8") as f:
+with open(r"c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\css\style.css", "r", encoding="utf-8") as f:
     content = f.read()
 
 # Check curly braces

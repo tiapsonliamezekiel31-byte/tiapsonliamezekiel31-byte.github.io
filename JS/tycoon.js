@@ -16,14 +16,52 @@
   const PRODUCER_SUBS = {
     TREE: 1,
     TOMATO: 2,
-    APPLE: 3
+    APPLE: 3,
+    CORN: 4,
+    CARROT: 5,
+    MUSHROOM: 6,
+    CROP7: 7,
+    CROP8: 8,
+    CROP9: 9,
+    CROP10: 10,
+    CROP11: 11,
+    CROP12: 12,
+    CROP13: 13,
+    CROP14: 14,
+    CROP15: 15,
+    CROP16: 16,
+    CROP17: 17,
+    CROP18: 18
   };
+
+  const CROP_TEMPLATES = [
+    { name: "Pink Peonies", cost: 10000, gold: 2, ap: 1, food: 0.05, emoji: "🌸" },
+    { name: "Blue Hydrangea", cost: 12000, gold: 2, ap: 2, food: 0.06, emoji: "💠" },
+    { name: "Sunflowers", cost: 15000, gold: 3, ap: 1, food: 0.07, emoji: "🌻" },
+    { name: "Lavender Bush", cost: 18000, gold: 3, ap: 3, food: 0.08, emoji: "🪻" },
+    { name: "Bluebells", cost: 20000, gold: 4, ap: 2, food: 0.09, emoji: "🔔" },
+    { name: "Orange Wildflowers", cost: 22000, gold: 4, ap: 4, food: 0.10, emoji: "🌼" },
+    { name: "Butterfly Shrub", cost: 25000, gold: 5, ap: 3, food: 0.11, emoji: "🦋" },
+    { name: "Coral Azalea", cost: 28000, gold: 5, ap: 5, food: 0.12, emoji: "🌺" },
+    { name: "Pink Petunias", cost: 32000, gold: 6, ap: 4, food: 0.13, emoji: "🌸" },
+    { name: "Crimson Roses", cost: 36000, gold: 6, ap: 6, food: 0.14, emoji: "🌹" },
+    { name: "Fern Shrub", cost: 40000, gold: 7, ap: 5, food: 0.15, emoji: "🌿" },
+    { name: "Tulip Bed", cost: 45000, gold: 7, ap: 7, food: 0.16, emoji: "🌷" },
+    { name: "Rock Daisy", cost: 50000, gold: 8, ap: 6, food: 0.17, emoji: "🌼" },
+    { name: "Orange Lilies", cost: 55000, gold: 8, ap: 8, food: 0.18, emoji: "⚜️" },
+    { name: "Rockery Garden", cost: 62000, gold: 9, ap: 7, food: 0.19, emoji: "🪨" },
+    { name: "Red-Stem Shrub", cost: 70000, gold: 9, ap: 9, food: 0.20, emoji: "🍒" },
+    { name: "Rose Trellis", cost: 80000, gold: 10, ap: 8, food: 0.21, emoji: "🌹" },
+    { name: "Stone Path Flowers", cost: 95000, gold: 12, ap: 10, food: 0.22, emoji: "🪨" }
+  ];
 
   class TycoonEngine {
     constructor() {
       this.canvas = null;
       this.ctx = null;
       this.worker = null;
+      this.cropsImage = new Image();
+      this.cropsImage.src = 'cropsstylesheet.png';
       
       // Camera state
       this.camera = {
@@ -75,9 +113,7 @@
       this.interactionStartTile = null;
       this.interactionStartPos = null;
       
-      // Path drawing state
-      this.isDrawingPath = false;
-      this.drawnPath = [];
+
       
       // Floating text pool
       this.floatingTexts = [];
@@ -111,7 +147,7 @@
         container.id = 'tycoon-container';
         container.innerHTML = `
           <div class="tycoon-header">
-            <div class="tycoon-hud-panel">
+            <div class="tycoon-hud-panel stats-trigger" id="tycoon-hud-stats-panel" title="Click to view detailed daily production statistics">
               <div class="tycoon-stat gold">🪙 <span id="tycoon-gold-val">100</span></div>
               <div class="tycoon-stat ap">⚡ <span id="tycoon-ap-val">0</span></div>
               <div class="tycoon-stat food" style="display: none;">🍎 <span id="tycoon-food-val">0</span></div>
@@ -133,6 +169,7 @@
           </div>
           
           <div class="tycoon-shop-drawer" id="tycoon-shop">
+            <div class="tycoon-shop-handle" id="tycoon-shop-handle"></div>
             <div class="tycoon-shop-header">
               <div class="tycoon-shop-title">🧱 BUILD MENU</div>
               <div class="tycoon-shop-tabs" id="tycoon-tabs">
@@ -187,12 +224,22 @@
               <div class="tycoon-dialog-buttons" id="farmer-detail-buttons"></div>
             </div>
           </div>
-
+ 
           <div class="tycoon-overlay" id="tycoon-object-dialog">
             <div class="tycoon-dialog">
               <h3 id="object-detail-title">🧱 Object Info</h3>
               <div class="tycoon-dialog-body" id="object-detail-body"></div>
               <div class="tycoon-dialog-buttons" id="object-detail-buttons"></div>
+            </div>
+          </div>
+
+          <div class="tycoon-overlay" id="tycoon-stats-dialog">
+            <div class="tycoon-dialog" style="width: min(480px, 94vw);">
+              <h3 id="stats-detail-title">📊 Production Summary</h3>
+              <div class="tycoon-dialog-body" id="stats-detail-body"></div>
+              <div class="tycoon-dialog-buttons">
+                <button class="tycoon-btn" id="stats-close-btn" style="width: 100%;">Close</button>
+              </div>
             </div>
           </div>
         `;
@@ -632,6 +679,212 @@
           UIManager.toggleTaskPanel('todos');
         }
       });
+
+      // Draggable Build Menu Shop Drawer
+      const shopDrawer = document.getElementById('tycoon-shop');
+      const shopHandle = document.getElementById('tycoon-shop-handle');
+      
+      let isDraggingDrawer = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      const onDragStart = (e) => {
+        // If clicking on a tab button or nested button, don't drag
+        if (e.target.closest('button') || e.target.closest('.tycoon-shop-tabs')) return;
+        
+        isDraggingDrawer = true;
+        startY = e.clientY || (e.touches && e.touches[0].clientY);
+        startHeight = parseInt(window.getComputedStyle(shopDrawer).height, 10) || 260;
+        shopDrawer.style.transition = 'none'; // Disable transition during drag for smoothness
+      };
+
+      const onDragMove = (e) => {
+        if (!isDraggingDrawer) return;
+        const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+        const dy = currentY - startY; // Dragging down increases Y (dy > 0), dragging up decreases Y (dy < 0)
+        
+        // Height increases as we drag up (negative dy)
+        const newHeight = Math.max(60, Math.min(window.innerHeight * 0.8, startHeight - dy));
+        shopDrawer.style.height = `${newHeight}px`;
+      };
+
+      const onDragEnd = () => {
+        if (!isDraggingDrawer) return;
+        isDraggingDrawer = false;
+        shopDrawer.style.transition = 'height 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+      };
+
+      // Mouse drag handlers
+      shopHandle.addEventListener('mousedown', onDragStart);
+      window.addEventListener('mousemove', onDragMove);
+      window.addEventListener('mouseup', onDragEnd);
+
+      // Touch drag handlers
+      shopHandle.addEventListener('touchstart', onDragStart, { passive: true });
+      window.addEventListener('touchmove', onDragMove, { passive: true });
+      window.addEventListener('touchend', onDragEnd);
+
+      // Header drag handlers
+      const shopHeader = shopDrawer.querySelector('.tycoon-shop-header');
+      if (shopHeader) {
+        shopHeader.addEventListener('mousedown', onDragStart);
+        shopHeader.addEventListener('touchstart', onDragStart, { passive: true });
+      }
+
+      // Click HUD panel to view stats dialog
+      const statsPanel = document.getElementById('tycoon-hud-stats-panel');
+      if (statsPanel) {
+        statsPanel.addEventListener('click', () => {
+          // Calculate exact current production rates
+          let goldRateSec = 0;
+          let apRateSec = 0;
+          let cropCount = 0;
+          let sprinklerCount = 0;
+          let fertilizerCount = 0;
+          let cosmeticCount = 0;
+
+          for (const key in this.chunks) {
+            const arr = this.chunks[key];
+            for (let i = 0; i < 1024; i++) {
+              const tile = arr[i];
+              const type = tile & 0xFF;
+              const charge = (tile >> 8) & 0xFF;
+              const subType = (tile >> 24) & 0xFF;
+
+              if (type === TILE_TYPES.PRODUCER) {
+                cropCount++;
+                if (charge > 0) {
+                  const cropIdx = (subType >= 1 && subType <= 18) ? (subType - 1) : 0;
+                  const crop = CROP_TEMPLATES[cropIdx];
+                  
+                  // Calculate local multipliers (Fertilizers & Farmers)
+                  const tx = i % 32;
+                  const ty = Math.floor(i / 32);
+                  const coords = key.split(",");
+                  const cx = parseInt(coords[0]);
+                  const cy = parseInt(coords[1]);
+                  const gx = cx * 32 + tx;
+                  const gy = cy * 32 + ty;
+
+                  // Increaser count
+                  let localFertilizers = 0;
+                  for (const key2 in this.chunks) {
+                    const arr2 = this.chunks[key2];
+                    const coords2 = key2.split(",");
+                    const cx2 = parseInt(coords2[0]);
+                    const cy2 = parseInt(coords2[1]);
+                    for (let idx2 = 0; idx2 < 1024; idx2++) {
+                      if ((arr2[idx2] & 0xFF) === TILE_TYPES.INCREASER) {
+                        const tx2 = idx2 % 32;
+                        const ty2 = Math.floor(idx2 / 32);
+                        const gx2 = cx2 * 32 + tx2;
+                        const gy2 = cy2 * 32 + ty2;
+                        if (Math.max(Math.abs(gx - gx2), Math.abs(gy - gy2)) <= 3) {
+                          localFertilizers++;
+                        }
+                      }
+                    }
+                  }
+
+                  // Farmer count
+                  let localFarmers = 0;
+                  this.farmers.forEach(farmer => {
+                    if (!farmer.isSleeping && Math.max(Math.abs(gx - farmer.x), Math.abs(gy - farmer.y)) <= 2) {
+                      localFarmers++;
+                    }
+                  });
+
+                  let multiplier = 1.0 + (localFertilizers * 0.20) + (localFarmers * 0.25);
+                  multiplier *= Math.max(0.1, this.config.completionRatePrevDay);
+
+                  goldRateSec += (crop ? crop.gold : 1) * multiplier;
+                  apRateSec += (crop ? crop.ap : 0) * multiplier;
+                }
+              } else if (type === TILE_TYPES.MAINTENANCE) {
+                sprinklerCount++;
+              } else if (type === TILE_TYPES.INCREASER) {
+                fertilizerCount++;
+              } else if (type === TILE_TYPES.COSMETIC) {
+                cosmeticCount++;
+              }
+            }
+          }
+
+          // Extrapolate daily rates
+          const goldRateHour = goldRateSec * 3600;
+          const apRateHour = apRateSec * 3600;
+          const goldRateDay = goldRateSec * 86400;
+          const apRateDay = apRateSec * 86400;
+
+          const completionPct = Math.round(this.config.completionRatePrevDay * 100);
+
+          const bodyEl = document.getElementById('stats-detail-body');
+          bodyEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 16px; font-size: 10px;">
+              <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                    <th style="padding: 6px 0;">Resource</th>
+                    <th style="padding: 6px 0; text-align: right;">Per Second</th>
+                    <th style="padding: 6px 0; text-align: right;">Per Hour</th>
+                    <th style="padding: 6px 0; text-align: right;">Daily Pace</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); color: #ffd700;">
+                    <td style="padding: 8px 0; font-weight: bold;">🪙 Gold</td>
+                    <td style="padding: 8px 0; text-align: right;">${goldRateSec.toFixed(1)}g</td>
+                    <td style="padding: 8px 0; text-align: right;">${Math.round(goldRateHour).toLocaleString()}g</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(goldRateDay).toLocaleString()}g</td>
+                  </tr>
+                  <tr style="color: #38bdf8;">
+                    <td style="padding: 8px 0; font-weight: bold;">⚡ AP</td>
+                    <td style="padding: 8px 0; text-align: right;">${apRateSec.toFixed(1)} AP</td>
+                    <td style="padding: 8px 0; text-align: right;">${Math.round(apRateHour).toLocaleString()}</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${Math.round(apRateDay).toLocaleString()}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Task Streak Boost:</span>
+                  <span style="color: ${completionPct >= 80 ? '#4ade80' : completionPct >= 40 ? '#fbbf24' : '#f87171'}; font-weight: bold;">${completionPct}% multiplier</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Hired Farmers:</span>
+                  <span style="color: #cbd5e1;">🧑‍🌾 ${this.farmers.length} roamer(s)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Placed Crops:</span>
+                  <span style="color: #cbd5e1;">🌱 ${cropCount} crops</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Infrastructure:</span>
+                  <span style="color: #cbd5e1;">🚿 ${sprinklerCount} sprinkler(s) / 🧪 ${fertilizerCount} fertilizer(s)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Cosmetic Decos:</span>
+                  <span style="color: #cbd5e1;">🌸 ${cosmeticCount} item(s)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Daily Reset Hour:</span>
+                  <span style="color: #cbd5e1;">🌅 ${this.config.checkInHour || 10}:00</span>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          document.getElementById('tycoon-stats-dialog').style.display = 'flex';
+        });
+      }
+
+      const statsCloseBtn = document.getElementById('stats-close-btn');
+      if (statsCloseBtn) {
+        statsCloseBtn.addEventListener('click', () => {
+          document.getElementById('tycoon-stats-dialog').style.display = 'none';
+        });
+      }
     }
 
     getSerializableState() {
@@ -664,9 +917,7 @@
 
     // renderTasksList removed - now using UIManager toggleTaskPanel
 
-    isDrawingPathActive() {
-      return this.activeTool && this.activeTool.type === TILE_TYPES.PATH && this.selectedFarmerId;
-    }
+
 
     postTileUpdateToWorker(x, y, value) {
       this.worker.postMessage({
@@ -865,33 +1116,36 @@
       let items = [];
       if (tab === "terrain") {
         items = [
-          { type: TILE_TYPES.GRASS, name: "Grass land", emoji: "🟩", cost: 5 },
-          { type: TILE_TYPES.SAND, name: "Sand land", emoji: "🟨", cost: 5 },
-          { type: TILE_TYPES.STONE, name: "Stone land", emoji: "⬜", cost: 8 },
-          { type: TILE_TYPES.WATER, name: "Water tile", emoji: "🟦", cost: 5 }
+          { type: TILE_TYPES.GRASS, name: "Grass land", emoji: "🟩", cost: 2500 },
+          { type: TILE_TYPES.SAND, name: "Sand land", emoji: "🟨", cost: 2500 },
+          { type: TILE_TYPES.STONE, name: "Stone land", emoji: "⬜", cost: 4000 },
+          { type: TILE_TYPES.WATER, name: "Water tile", emoji: "🟦", cost: 2500 }
         ];
       } else if (tab === "producers") {
-        items = [
-          { type: TILE_TYPES.PRODUCER, subType: PRODUCER_SUBS.TREE, name: "AP Tree", emoji: "🌲", cost: 20, charge: 100 },
-          { type: TILE_TYPES.PRODUCER, subType: PRODUCER_SUBS.TOMATO, name: "Tomato Crop", emoji: "🍅", cost: 30, charge: 120 },
-          { type: TILE_TYPES.PRODUCER, subType: PRODUCER_SUBS.APPLE, name: "Apple Tree", emoji: "🍎", cost: 50, charge: 180 }
-        ];
+        items = CROP_TEMPLATES.map((c, idx) => ({
+          type: TILE_TYPES.PRODUCER,
+          subType: idx + 1,
+          name: c.name,
+          emoji: c.emoji,
+          cost: c.cost,
+          charge: 100 + idx * 10
+        }));
       } else if (tab === "tech") {
         items = [
-          { type: TILE_TYPES.INCREASER, name: "Fertilizer (+20%)", emoji: "🧪", cost: 40 },
-          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 60, charge: 200 }
+          { type: TILE_TYPES.INCREASER, name: "Fertilizer (+20%)", emoji: "🧪", cost: 20000 },
+          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 30000, charge: 200 }
         ];
       } else if (tab === "farmers") {
         items = [
-          { type: TILE_TYPES.FARMER, name: "Basic Roamer", emoji: "🧑‍🌾", cost: 100, speed: 2, consumeRate: 1 },
-          { type: TILE_TYPES.FARMER, name: "Fast Roamer", emoji: "🏃‍♂️", cost: 180, speed: 4, consumeRate: 2 },
-          { type: TILE_TYPES.FARMER, name: "AP Collector", emoji: "🧙‍♂️", cost: 250, speed: 3, consumeRate: 1 }
+          { type: TILE_TYPES.FARMER, name: "Basic Roamer", emoji: "🧑‍🌾", cost: 50000, speed: 2, consumeRate: 1 },
+          { type: TILE_TYPES.FARMER, name: "Fast Roamer", emoji: "🏃‍♂️", cost: 90000, speed: 4, consumeRate: 2 },
+          { type: TILE_TYPES.FARMER, name: "AP Collector", emoji: "🧙‍♂️", cost: 125000, speed: 3, consumeRate: 1 }
         ];
       } else if (tab === "cosmetics") {
         items = [
-          { type: TILE_TYPES.COSMETIC, name: "Flower Pot", emoji: "🌸", cost: 10 },
-          { type: TILE_TYPES.COSMETIC, name: "Decorative Rock", emoji: "🪨", cost: 10 },
-          { type: TILE_TYPES.COSMETIC, name: "Magic Mushroom", emoji: "🍄", cost: 15 }
+          { type: TILE_TYPES.COSMETIC, name: "Flower Pot", emoji: "🌸", cost: 5000 },
+          { type: TILE_TYPES.COSMETIC, name: "Decorative Rock", emoji: "🪨", cost: 5000 },
+          { type: TILE_TYPES.COSMETIC, name: "Magic Mushroom", emoji: "🍄", cost: 7500 }
         ];
       }
 
@@ -902,8 +1156,15 @@
           card.classList.add('selected');
         }
         
+        let displayHtml = `<div class="tycoon-shop-item-emoji">${item.emoji}</div>`;
+        if (item.type === TILE_TYPES.PRODUCER) {
+          const row = Math.floor((item.subType - 1) / 3);
+          const col = (item.subType - 1) % 3;
+          displayHtml = `<div class="tycoon-shop-item-sprite" style="width: 36px; height: 36px; background-image: url('cropsstylesheet.png'); background-size: 108px 216px; background-position: -${col * 36}px -${row * 36}px; margin-bottom: 4px; display: inline-block;"></div>`;
+        }
+        
         card.innerHTML = `
-          <div class="tycoon-shop-item-emoji">${item.emoji}</div>
+          ${displayHtml}
           <div class="tycoon-shop-item-name">${item.name}</div>
           <div class="tycoon-shop-item-cost">🪙 ${item.cost}</div>
         `;
@@ -1033,10 +1294,9 @@
             const charge = (tile >> 8) & 0xFF;
             if (charge > 0) {
               const subType = (tile >> 24) & 0xFF;
-              let goldBase = 1;
-              if (subType === PRODUCER_SUBS.TREE) goldBase = 2;
-              else if (subType === PRODUCER_SUBS.TOMATO) goldBase = 1;
-              else if (subType === PRODUCER_SUBS.APPLE) goldBase = 3;
+              const cropIdx = (subType >= 1 && subType <= 18) ? (subType - 1) : 0;
+              const crop = CROP_TEMPLATES[cropIdx];
+              const goldBase = crop ? crop.gold : 1;
               totalRate += goldBase * this.config.completionRatePrevDay;
             }
           }
@@ -1192,8 +1452,16 @@
       // The data-original-display restoration above already brings the main UI back.
       // Refresh the game HUD so resource values are current.
       try {
-        if (window.UIManager && typeof UIManager.refreshGameUI === 'function') {
-          UIManager.refreshGameUI();
+        if (window.UIManager) {
+          const gameArea = document.getElementById('gameArea');
+          if (gameArea) {
+            gameArea.style.removeProperty('--stage-bg-image');
+            void gameArea.offsetHeight; // Force DOM reflow
+          }
+          UIManager._stageBackdropKey = '';
+          if (typeof UIManager.refreshGameUI === 'function') {
+            UIManager.refreshGameUI();
+          }
         }
       } catch(e) {
         // Fallback only if UI manager is genuinely unavailable
@@ -1342,6 +1610,56 @@
       requestAnimationFrame((time) => this.renderLoop(time));
     }
 
+    getLightingState() {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const checkInHour = this.config.checkInHour || 10;
+      
+      const relHour = (currentHour - checkInHour + 24) % 24;
+      
+      if (relHour >= 22 || relHour < 2) {
+        // Dawn
+        let ratio = 0;
+        if (relHour >= 22) {
+          ratio = (relHour - 22 + now.getMinutes() / 60) / 4;
+        } else {
+          ratio = 0.5 + (relHour + now.getMinutes() / 60) / 4;
+        }
+        return {
+          phase: 'dawn',
+          ambientColor: `rgba(244, 63, 94, ${0.12 * Math.sin(ratio * Math.PI)})`,
+          isDark: true,
+          darknessIntensity: 0.15 * (1 - ratio)
+        };
+      } else if (relHour >= 2 && relHour < 10) {
+        // Day
+        return {
+          phase: 'day',
+          ambientColor: 'rgba(0, 0, 0, 0)',
+          isDark: false,
+          darknessIntensity: 0
+        };
+      } else if (relHour >= 10 && relHour < 14) {
+        // Dusk
+        const elapsed = (relHour - 10) + now.getMinutes() / 60;
+        const ratio = elapsed / 4;
+        return {
+          phase: 'dusk',
+          ambientColor: `rgba(139, 92, 246, ${0.22 * ratio})`,
+          isDark: true,
+          darknessIntensity: 0.22 * ratio
+        };
+      } else {
+        // Night
+        return {
+          phase: 'night',
+          ambientColor: 'rgba(15, 23, 76, 0.45)',
+          isDark: true,
+          darknessIntensity: 0.45
+        };
+      }
+    }
+
     drawCanvas() {
       const ctx = this.ctx;
       const w = this.canvas.width;
@@ -1358,7 +1676,7 @@
       ctx.scale(zoom, zoom);
       ctx.translate(-this.camera.x, -this.camera.y);
       
-      // Frustum culling dimensions (expanded to prevent clipping 3x3 object boundaries)
+      // Frustum culling dimensions
       const tw = this.tileWidth;
       const worldLeft = this.camera.x - (w / 2) / zoom;
       const worldTop = this.camera.y - (h / 2) / zoom;
@@ -1378,7 +1696,6 @@
           const charge = (tile >> 8) & 0xFF;
           const subType = (tile >> 24) & 0xFF;
           
-          // Draw standard land under objects during background pass
           if (type === TILE_TYPES.PRODUCER || type === TILE_TYPES.INCREASER || 
               type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.COSMETIC) {
             type = TILE_TYPES.GRASS;
@@ -1402,33 +1719,25 @@
         }
       }
 
-      // Step 2: Render active farmer paths when drawing tool is active
-      if (this.isDrawingPathActive() && this.drawnPath.length > 0) {
-        ctx.strokeStyle = "rgba(239, 68, 68, 0.6)";
-        ctx.lineWidth = 4;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.beginPath();
-        this.drawnPath.forEach((pt, idx) => {
-          const px = pt.x * tw + tw / 2;
-          const py = pt.y * tw + tw / 2;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        ctx.stroke();
-      }
+
 
       // Step 3: Draw active NPC Farmers
       this.farmers.forEach(farmer => {
         const fx = farmer.x * tw + tw / 2;
         const fy = farmer.y * tw + tw / 2;
         
+        // Soft farmer shadow under emoji
+        ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+        ctx.beginPath();
+        ctx.ellipse(fx, fy + 8, 8, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        
         ctx.font = "18px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(farmer.emoji, fx, fy);
         
-        // Draw miniature action icons/text above farmers
+        // Action indicators
         if (farmer.isSleeping) {
           ctx.font = "8px Arial";
           ctx.fillText("💤", fx + 8, fy - 8);
@@ -1451,7 +1760,6 @@
                            this.activeTool.type === TILE_TYPES.WATER);
         
         if (isTerrain) {
-          // Draw circle terrain painting brush preview
           const size = this.terrainBrushSize || 1;
           const radius = size / 2;
           const radiusSq = radius * radius;
@@ -1470,7 +1778,6 @@
             }
           }
         } else if (this.activeTool.type === TILE_TYPES.FARMER) {
-          // Farmer is a 1x1 placement entity
           const isLand = (this.getTileTypeAt(tx, ty) === TILE_TYPES.GRASS || 
                           this.getTileTypeAt(tx, ty) === TILE_TYPES.SAND || 
                           this.getTileTypeAt(tx, ty) === TILE_TYPES.STONE);
@@ -1480,7 +1787,6 @@
           ctx.fillRect(hx, hy, tw, tw);
           ctx.strokeRect(hx, hy, tw, tw);
         } else {
-          // Object: 3x3 footprint placement
           const isValid = this.canPlaceObjectAt(tx, ty);
           ctx.fillStyle = isValid ? "rgba(34, 197, 94, 0.25)" : "rgba(239, 68, 68, 0.25)";
           ctx.strokeStyle = isValid ? "rgba(34, 197, 94, 0.6)" : "rgba(239, 68, 68, 0.6)";
@@ -1488,7 +1794,6 @@
           ctx.fillRect(hx - tw, hy - tw, tw * 3, tw * 3);
           ctx.strokeRect(hx - tw, hy - tw, tw * 3, tw * 3);
           
-          // Draw the emoji preview in center at 50% opacity
           ctx.save();
           ctx.globalAlpha = 0.5;
           ctx.font = "42px Arial";
@@ -1540,8 +1845,63 @@
         ctx.fillText(emoji, hx + tw / 2, hy + tw / 2);
         ctx.restore();
       }
+
+      // Step 6: Update and render ambient glowing particles / fireflies
+      if (!this.particles) this.particles = [];
+      const lighting = this.getLightingState();
+      
+      if (lighting.isDark && this.particles.length < 50) {
+        for (let ty = minTileY; ty <= maxTileY; ty++) {
+          for (let tx = minTileX; tx <= maxTileX; tx++) {
+            const tile = this.getTileTypeAt(tx, ty);
+            const type = tile & 0xFF;
+            if ((type === TILE_TYPES.PRODUCER || type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.INCREASER) && Math.random() < 0.006) {
+              let pColor = "rgba(251, 191, 36, 0.8)";
+              if (type === TILE_TYPES.MAINTENANCE) pColor = "rgba(56, 189, 248, 0.8)";
+              if (type === TILE_TYPES.INCREASER) pColor = "rgba(168, 85, 247, 0.8)";
+              
+              this.particles.push({
+                x: tx * tw + tw / 2 + (Math.random() * tw * 2 - tw),
+                y: ty * tw + tw / 2 + (Math.random() * tw * 2 - tw),
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: -Math.random() * 0.4 - 0.15,
+                size: Math.random() * 1.8 + 0.8,
+                life: 1.0,
+                decay: Math.random() * 0.012 + 0.006,
+                color: pColor
+              });
+            }
+          }
+        }
+      }
+
+      ctx.save();
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        
+        if (p.life <= 0) {
+          this.particles.splice(i, 1);
+          continue;
+        }
+        
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
       
       ctx.restore();
+
+      // Step 7: Draw screen-space ambient color filter
+      if (lighting.ambientColor && lighting.ambientColor !== 'rgba(0, 0, 0, 0)') {
+        ctx.fillStyle = lighting.ambientColor;
+        ctx.fillRect(0, 0, w, h);
+      }
     }
 
     getTerrainBaseType(type) {
@@ -1560,33 +1920,97 @@
       const y = ty * tw;
       
       switch (type) {
-        case TILE_TYPES.WATER:
-          ctx.fillStyle = "#1e40af"; // Deep blue water
+        case TILE_TYPES.WATER: {
+          ctx.fillStyle = "#0284c7"; // Azure water
           ctx.fillRect(x, y, tw, tw);
-          break;
           
-        case TILE_TYPES.GRASS:
-          ctx.fillStyle = "#166534"; // Grass dark green
-          ctx.fillRect(x, y, tw, tw);
+          const waveOffset = Math.sin(Date.now() / 600 + (tx * 13 + ty * 37)) * 2;
+          ctx.strokeStyle = "rgba(224, 242, 254, 0.25)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x + 4, y + 8 + waveOffset);
+          ctx.quadraticCurveTo(x + 16, y + 5 + waveOffset, x + 28, y + 8 + waveOffset);
+          ctx.moveTo(x + 6, y + 22 - waveOffset);
+          ctx.quadraticCurveTo(x + 18, y + 25 - waveOffset, x + 26, y + 22 - waveOffset);
+          ctx.stroke();
           break;
+        }
           
-        case TILE_TYPES.SAND:
-          ctx.fillStyle = "#ca8a04"; // Yellow sand
+        case TILE_TYPES.GRASS: {
+          ctx.fillStyle = "#1b8a4f"; // Lush forest emerald grass
           ctx.fillRect(x, y, tw, tw);
-          break;
           
-        case TILE_TYPES.STONE:
-          ctx.fillStyle = "#4b5563"; // Dark gray stone
-          ctx.fillRect(x, y, tw, tw);
+          const noise = Math.abs(Math.sin(tx * 12.9898 + ty * 78.233) * 43758.5453) % 1;
+          if (noise > 0.45) {
+            ctx.strokeStyle = "#2dc26d"; // Rich green blades
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 8, y + 22);
+            ctx.quadraticCurveTo(x + 9, y + 15, x + 6, y + 10);
+            ctx.moveTo(x + 20, y + 24);
+            ctx.quadraticCurveTo(x + 19, y + 18, x + 16, y + 13);
+            ctx.moveTo(x + 20, y + 24);
+            ctx.quadraticCurveTo(x + 22, y + 17, x + 24, y + 12);
+            ctx.stroke();
+          }
           break;
+        }
           
-        case TILE_TYPES.PATH:
-          ctx.fillStyle = "#78350f"; // Brown path
+        case TILE_TYPES.SAND: {
+          ctx.fillStyle = "#f5d061"; // Warm cream-gold sand
           ctx.fillRect(x, y, tw, tw);
+          
+          const sandOffset = Math.sin(tx * 9 + ty * 13) * 3;
+          ctx.strokeStyle = "#d9a71a";
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(x + 2, y + 12 + sandOffset);
+          ctx.lineTo(x + 30, y + 12 + sandOffset);
+          ctx.stroke();
           break;
+        }
+          
+        case TILE_TYPES.STONE: {
+          ctx.fillStyle = "#64748b"; // Slate stone
+          ctx.fillRect(x, y, tw, tw);
+          
+          const stoneNoise = (tx * 13 + ty * 29) % 4;
+          ctx.strokeStyle = "#475569";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          if (stoneNoise === 0) {
+            ctx.moveTo(x, y + 10);
+            ctx.lineTo(x + 12, y + 16);
+            ctx.lineTo(x + 20, y + 8);
+          } else if (stoneNoise === 1) {
+            ctx.moveTo(x + 16, y);
+            ctx.lineTo(x + 10, y + 18);
+            ctx.lineTo(x + 22, y + 32);
+          }
+          ctx.stroke();
+          break;
+        }
+          
+        case TILE_TYPES.PATH: {
+          ctx.fillStyle = "#a16207"; // Clay-wood path
+          ctx.fillRect(x, y, tw, tw);
+          
+          ctx.fillStyle = "#b45309";
+          ctx.fillRect(x + 2, y + 2, 12, 12);
+          ctx.fillRect(x + 16, y + 2, 14, 12);
+          ctx.fillRect(x + 2, y + 16, 12, 14);
+          ctx.fillRect(x + 16, y + 16, 14, 14);
+          
+          ctx.strokeStyle = "#78350f";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x + 2, y + 2, 12, 12);
+          ctx.strokeRect(x + 16, y + 2, 14, 12);
+          ctx.strokeRect(x + 2, y + 16, 12, 14);
+          ctx.strokeRect(x + 16, y + 16, 14, 14);
+          break;
+        }
       }
 
-      // Draw darker borders if adjacent to a different base terrain
       const currentBase = this.getTerrainBaseType(type);
       
       const upBase = this.getTerrainBaseType(this.getTileTypeAt(tx, ty - 1) & 0xFF);
@@ -1594,7 +2018,12 @@
       const leftBase = this.getTerrainBaseType(this.getTileTypeAt(tx - 1, ty) & 0xFF);
       const rightBase = this.getTerrainBaseType(this.getTileTypeAt(tx + 1, ty) & 0xFF);
       
-      ctx.fillStyle = "rgba(15, 23, 42, 0.45)"; // Dark slate boundary color
+      // Soft shoreline/boundary blending (water foam or sandy shoreline)
+      if (currentBase === TILE_TYPES.WATER) {
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; // foam highlight
+      } else {
+        ctx.fillStyle = "rgba(245, 208, 97, 0.4)"; // sandy shoreline transition
+      }
       const borderThickness = 3;
       
       if (upBase !== currentBase) {
@@ -1610,39 +2039,79 @@
         ctx.fillRect(x + tw - borderThickness, y, borderThickness, tw);
       }
       
-      // Draw light border grid lines to make it look premium and organized
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, tw, tw);
+      if (this.activeTool !== null) {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y, tw, tw);
+      }
     }
 
     drawTileObject(ctx, tx, ty, type, charge, subType) {
       const tw = this.tileWidth;
       const x = tx * tw;
       const y = ty * tw;
-      
-      // Deterministic noise for tile pixel patterns
       const noise = (tx * 17 + ty * 31) % 100;
       
+      // Flat shadow layer under building
+      ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+      ctx.beginPath();
+      ctx.arc(x + tw / 2, y + tw / 2, tw * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Radial light glow at night
+      const lighting = this.getLightingState();
+      if (lighting.isDark) {
+        let glowColor = "rgba(251, 191, 36, 0.15)";
+        if (type === TILE_TYPES.MAINTENANCE) glowColor = "rgba(56, 189, 248, 0.15)";
+        if (type === TILE_TYPES.INCREASER) glowColor = "rgba(168, 85, 247, 0.15)";
+        
+        const glowGrad = ctx.createRadialGradient(x + tw / 2, y + tw / 2, 2, x + tw / 2, y + tw / 2, tw * 2);
+        glowGrad.addColorStop(0, glowColor);
+        glowGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+        
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(x + tw / 2, y + tw / 2, tw * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       switch (type) {
         case TILE_TYPES.PRODUCER: {
-          // Warm brown soil overlay on the 3x3 footprint
-          ctx.fillStyle = "rgba(120, 53, 15, 0.25)";
-          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
-          ctx.strokeStyle = "rgba(120, 53, 15, 0.5)";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
+          let drawn = false;
+          if (this.cropsImage && this.cropsImage.complete && this.cropsImage.naturalWidth !== 0) {
+            const row = Math.floor((subType - 1) / 3);
+            const col = (subType - 1) % 3;
+            
+            const cellW = 736 / 3;
+            const cellH = 1308 / 6;
+            
+            ctx.save();
+            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 2;
+            ctx.globalAlpha = 0.6 + 0.4 * (charge / 255);
+            ctx.drawImage(
+              this.cropsImage,
+              col * cellW, row * cellH, cellW, cellH,
+              x - tw, y - tw, tw * 3, tw * 3
+            );
+            ctx.restore();
+            drawn = true;
+          }
           
-          let emoji = "🌲";
-          if (subType === PRODUCER_SUBS.TOMATO) emoji = "🍅";
-          else if (subType === PRODUCER_SUBS.APPLE) emoji = "🍎";
+          if (!drawn) {
+            const crop = CROP_TEMPLATES[subType - 1] || CROP_TEMPLATES[0];
+            ctx.save();
+            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 2;
+            ctx.font = "42px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(crop.emoji, x + tw / 2, y + tw / 2);
+            ctx.restore();
+          }
           
-          ctx.font = "42px Arial";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(emoji, x + tw / 2, y + tw / 2);
-          
-          // Draw charge status bar (durability indicator) - scaled to 3x3 bottom
           const barWidth = tw * 2;
           const barHeight = 4;
           const barX = x + tw / 2 - barWidth / 2;
@@ -1657,34 +2126,29 @@
         }
           
         case TILE_TYPES.INCREASER: {
-          // Light purple chemical/fertilizer field
-          ctx.fillStyle = "rgba(147, 51, 234, 0.15)";
-          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
-          ctx.strokeStyle = "rgba(147, 51, 234, 0.5)";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
-          
+          ctx.save();
+          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🧪", x + tw / 2, y + tw / 2);
+          ctx.restore();
           break;
         }
           
         case TILE_TYPES.MAINTENANCE: {
-          // Light blue sprinkler watering field
-          ctx.fillStyle = "rgba(14, 165, 233, 0.15)";
-          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
-          ctx.strokeStyle = "rgba(14, 165, 233, 0.5)";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
-          
+          ctx.save();
+          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText("🚿", x + tw / 2, y + tw / 2);
+          ctx.restore();
           
-          // Sprinkler Charge indicator - scaled to 3x3 bottom
           const barWidth = tw * 2;
           const barHeight = 4;
           const barX = x + tw / 2 - barWidth / 2;
@@ -1697,21 +2161,19 @@
         }
           
         case TILE_TYPES.COSMETIC: {
-          // Light gold decorative field
-          ctx.fillStyle = "rgba(251, 191, 36, 0.08)";
-          ctx.fillRect(x - tw, y - tw, tw * 3, tw * 3);
-          ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x - tw, y - tw, tw * 3, tw * 3);
-          
           let cosEmoji = "🌸";
           if (noise < 33) cosEmoji = "🪨";
           else if (noise < 66) cosEmoji = "🍄";
           
+          ctx.save();
+          ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 2;
           ctx.font = "42px Arial";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(cosEmoji, x + tw / 2, y + tw / 2);
+          ctx.restore();
           break;
         }
       }
@@ -1819,34 +2281,15 @@
       let infoHtml = "";
       
       if (type === TILE_TYPES.PRODUCER) {
-        if (subType === PRODUCER_SUBS.TREE) {
-          name = "AP Tree";
-          emoji = "🌲";
-          cost = 20;
-          infoHtml = `
-            <div><strong>Type:</strong> AP Crop</div>
-            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
-            <div><strong>Yields:</strong> 🪙 2 Gold & ⚡ 1 AP per second (when watered)</div>
-          `;
-        } else if (subType === PRODUCER_SUBS.TOMATO) {
-          name = "Tomato Crop";
-          emoji = "🍅";
-          cost = 30;
-          infoHtml = `
-            <div><strong>Type:</strong> Gold Crop</div>
-            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
-            <div><strong>Yields:</strong> 🪙 1 Gold & ⚡ 3 AP per second, 5% chance of Food (when watered)</div>
-          `;
-        } else if (subType === PRODUCER_SUBS.APPLE) {
-          name = "Apple Tree";
-          emoji = "🍎";
-          cost = 50;
-          infoHtml = `
-            <div><strong>Type:</strong> Premium Crop</div>
-            <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
-            <div><strong>Yields:</strong> 🪙 3 Gold & ⚡ 5 AP per second, 10% chance of Food (when watered)</div>
-          `;
-        }
+        const crop = CROP_TEMPLATES[subType - 1] || CROP_TEMPLATES[0];
+        name = crop.name;
+        emoji = crop.emoji;
+        cost = crop.cost;
+        infoHtml = `
+          <div><strong>Type:</strong> Crop Plant</div>
+          <div><strong>Water Durability:</strong> ${Math.round(charge / 255 * 100)}%</div>
+          <div><strong>Yields:</strong> 🪙 ${crop.gold} Gold & ⚡ ${crop.ap} AP per second (when watered)</div>
+        `;
       } else if (type === TILE_TYPES.INCREASER) {
         name = "Fertilizer (+20%)";
         emoji = "🧪";

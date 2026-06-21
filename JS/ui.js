@@ -6998,7 +6998,8 @@ class UIManager {
     }
 
     this._stageBackdropKey = backdrop.key;
-    gameArea.style.setProperty('--stage-bg-image', `url("${backdrop.src}")`);
+    const absoluteSrc = new URL(backdrop.src, window.location.href).href;
+    gameArea.style.setProperty('--stage-bg-image', `url("${absoluteSrc}")`);
     gameArea.style.setProperty('--stage-bg-position', backdrop.position);
   }
 

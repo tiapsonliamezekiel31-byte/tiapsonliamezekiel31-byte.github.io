@@ -1,4 +1,4 @@
-$content = [System.IO.File]::ReadAllText("c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\style.css")
+$content = [System.IO.File]::ReadAllText("c:\Users\pauli\OneDrive\Documents\Desktop\nemesis3\css\style.css")
 # Let's search for rules that might hide elements
 $matches = [System.Text.RegularExpressions.Regex]::Matches($content, '(?s)([^{]+)\{([^}]+)\}')
 foreach ($m in $matches) {

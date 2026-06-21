@@ -1,5 +1,5 @@
 const fs = require('fs');
-const content = fs.readFileSync('style.css', 'utf8');
+const content = fs.readFileSync('css/style.css', 'utf8');
 
 const stack = [];
 const lines = content.split(/\r?\n/);

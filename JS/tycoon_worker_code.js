@@ -36,7 +36,10 @@ const TILE_TYPES = {
 const PRODUCER_SUBS = {
   TREE: 1,
   TOMATO: 2,
-  APPLE: 3
+  APPLE: 3,
+  CORN: 4,
+  CARROT: 5,
+  MUSHROOM: 6
 };
 
 // Chebyshev distance utility
@@ -149,7 +152,10 @@ function tickSimulation(timestamp) {
         const tx = idx % 32;
         const gx = cx * 32 + tx;
         const gy = cy * 32 + ty;
-        sprinklers.push({ x: gx, y: gy, charge: 255 });
+        const charge = (tile >> 8) & 0xFF;
+        if (charge > 0) {
+          sprinklers.push({ x: gx, y: gy, charge: charge });
+        }
       } else if (type === TILE_TYPES.INCREASER) {
         const ty = Math.floor(idx / 32);
         const tx = idx % 32;
@@ -188,7 +194,7 @@ function tickSimulation(timestamp) {
         // Check if serviced by any active sprinkler (Maintenance) in Chebyshev 3x3 footprint adjacent range
         let isSprinklered = false;
         for (const s of sprinklers) {
-          if (getChebyshevDistance(gx, gy, s.x, s.y) <= 3) {
+          if (getChebyshevDistance(gx, gy, s.x, s.y) <= 3 && s.charge > 0) {
             isSprinklered = true;
             break;
           }
@@ -206,18 +212,14 @@ function tickSimulation(timestamp) {
           let apBase = 0;
           let foodChance = 0;
           
-          if (subType === PRODUCER_SUBS.TREE) {
-            goldBase = 2;
-            apBase = 1;
-          } else if (subType === PRODUCER_SUBS.TOMATO) {
-            goldBase = 1;
-            apBase = 3;
-            foodChance = 0.05; // 5% chance per second
-          } else if (subType === PRODUCER_SUBS.APPLE) {
-            goldBase = 3;
-            apBase = 5;
-            foodChance = 0.10; // 10% chance per second
-          }
+          const cropIdx = (subType >= 1 && subType <= 18) ? (subType - 1) : 0;
+          const goldLookup = [2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 12];
+          const apLookup = [1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10];
+          const foodLookup = [0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22];
+          
+          goldBase = goldLookup[cropIdx];
+          apBase = apLookup[cropIdx];
+          foodChance = foodLookup[cropIdx];
           
           // Apply Increasers (Fertilizers) multiplier: +20% production rate per Increaser in adjacent range
           let increaserCount = 0;
@@ -247,13 +249,14 @@ function tickSimulation(timestamp) {
           // Calculate gains (using exact floats instead of Math.round)
           goldProducedThisSecond += goldBase * multiplier;
           apProducedThisSecond += apBase * multiplier;
+          foodProducedThisSecond += foodChance * multiplier;
         }
         
-        // Write updated charge back to tile
+        // Write updated charge back to tile using original idx
         tile = (tile & 0xFF00FFFF) | (charge << 8);
         arr[idx] = tile;
       } else if (type === TILE_TYPES.MAINTENANCE) {
-        // Sprinklers no longer decay
+        // Sprinklers decay via daily check-in to preserve offline calculation accuracy
       }
     }
   }
@@ -270,10 +273,9 @@ function tickSimulation(timestamp) {
       return;
     }
     
-    // Roam randomly to adjacent non-water tile
     farmer.moveTickAccumulator = (farmer.moveTickAccumulator || 0) + (farmer.speed || 1);
-    if (farmer.moveTickAccumulator >= 10) {
-      farmer.moveTickAccumulator -= 10;
+    if (farmer.moveTickAccumulator >= 3) {
+      farmer.moveTickAccumulator -= 3;
       
       const moves = [];
       for (let dy = -1; dy <= 1; dy++) {
@@ -359,6 +361,7 @@ function handleDailyCheckin(completionRate) {
       const type = tile & 0xFF;
       if (type === TILE_TYPES.MAINTENANCE) {
         let charge = (tile >> 8) & 0xFF;
+        charge = Math.max(0, charge - 100);
         charge = Math.min(255, charge + rechargeValue);
         tile = (tile & 0xFF00FFFF) | (charge << 8);
         arr[idx] = tile;
