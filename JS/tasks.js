@@ -451,7 +451,11 @@ class TaskManager {
     const petPointsAwarded = petPointsMap[todo.difficulty] || 1;
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
-    return true;
+    return {
+      success: true,
+      rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward },
+      completed: true
+    };
   }
 
   static getCurrentGameDateKey() {
@@ -648,6 +652,17 @@ class TaskManager {
 
   static updateStreaks(allComplete = null) {
     const state = getGameState();
+
+    const anySaved = state.dailiesState.dailies.some(d => d.streakSaved);
+    if (anySaved) {
+      state.dailiesState.dailies.forEach(d => { d.streakSaved = false; });
+      state.eventBus.emit(EVENTS.DAILY_STREAK_CHANGED, {
+        completion: state.dailiesState.streakCompletion,
+        nonCompletion: state.dailiesState.streakNonCompletion
+      });
+      return;
+    }
+
     const resolvedAllComplete = (typeof allComplete === 'boolean')
       ? allComplete
       : this.isAllDailiesComplete();
@@ -793,7 +808,7 @@ class TaskManager {
 
   static calculateMissedDailyDamage() {
     const state = getGameState();
-    const missedDailies = this.getMissedDailies();
+    const missedDailies = this.getMissedDailies().filter(d => !d.streakSaved);
 
     const missedDailyDamageTable = state.config.missedDailyDamage || {
       Easy: 1,

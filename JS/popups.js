@@ -1520,6 +1520,7 @@ class PopupsManager {
         <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
         <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
+        <button class="btn-pause-action" id="manageRewardsBtn">🎁 DIAMOND REWARDS CONFIG</button>
         <button class="btn-pause-action" id="buildCompendiumBtn">📖 BUILD COMPENDIUM</button>
         <button class="btn-pause-action" id="resetLayoutBtn">📐 RESET LAYOUT</button>
         <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
@@ -1595,6 +1596,10 @@ class PopupsManager {
       this.showDataBackup();
     });
 
+    popup.querySelector('#manageRewardsBtn').addEventListener('click', () => {
+      this.showCustomRewardsConfigPopup();
+    });
+
     popup.querySelector('#buildCompendiumBtn').addEventListener('click', () => {
       this.showBuildCompendium();
     });
@@ -1650,6 +1655,98 @@ class PopupsManager {
     
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
+    PopupAnimation.scale(popup);
+  }
+
+  static showCustomRewardsConfigPopup() {
+    this.closeAllPopups();
+    const state = getGameState();
+    const overlay = this.createPopupOverlay();
+    overlay.style.pointerEvents = 'auto';
+
+    const popup = document.createElement('div');
+    popup.className = 'popup rewards-config-popup';
+    popup.style.width = 'min(420px, 90vw)';
+
+    popup.innerHTML = `
+      <h2>🎁 REWARDS CONFIG</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body" style="padding-top: 10px; max-height: 320px; overflow-y: auto; text-align: left;">
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,179,63,0.3);">
+          <div style="font-size: 8px; color: var(--accent-gold); font-weight: bold;">ADD NEW REWARD</div>
+          <input id="rewardNameInput" type="text" placeholder="Reward description (e.g. 'Coffee')" style="background: rgba(0,0,0,0.5); border: 1px solid #ffb33f; color: #fff; padding: 6px; border-radius: 4px; font-size: 8px; font-family: inherit;" />
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input id="rewardPriceInput" type="number" min="1" value="10" style="width: 80px; background: rgba(0,0,0,0.5); border: 1px solid #ffb33f; color: #fff; padding: 6px; border-radius: 4px; font-size: 8px; font-family: inherit; text-align: center;" />
+            <span style="font-size: 8px; color: #a0aec0;">Diamonds 💎</span>
+            <button id="addRewardBtn" class="btn-small" style="flex: 1; padding: 6px; font-size: 8px;">ADD</button>
+          </div>
+        </div>
+
+        <div style="font-size: 8px; color: var(--accent-gold); font-weight: bold; margin-bottom: 6px;">CURRENT CUSTOM REWARDS</div>
+        <div id="configRewardsList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+    `;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => {
+      this.closeAllPopups();
+      this.showPauseMenu();
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    const listEl = popup.querySelector('#configRewardsList');
+    const renderConfigRewards = () => {
+      const rewards = state.systemState.customRewards || [];
+      if (rewards.length === 0) {
+        listEl.innerHTML = '<div style="font-size: 8px; color: #a0aec0; text-align: center; padding: 8px;">No custom rewards configured.</div>';
+        return;
+      }
+
+      listEl.innerHTML = rewards.map(r => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 8px; font-size: 8px;">
+          <span style="color: #fff;">${r.name}</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <span style="color: #a855f7; font-weight: bold;">${r.price} 💎</span>
+            <button class="btn-remove-reward" data-id="${r.id}" style="background: rgba(220,53,69,0.2); border: 1px solid #ff4444; color: #ff4444; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 7px; font-family: inherit;">✕</button>
+          </div>
+        </div>
+      `).join('');
+
+      listEl.querySelectorAll('.btn-remove-reward').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          state.systemState.customRewards = state.systemState.customRewards.filter(item => String(item.id) !== String(id));
+          state.save();
+          renderConfigRewards();
+        });
+      });
+    };
+
+    popup.querySelector('#addRewardBtn').addEventListener('click', () => {
+      const nameInput = popup.querySelector('#rewardNameInput');
+      const priceInput = popup.querySelector('#rewardPriceInput');
+      const name = String(nameInput.value || '').trim();
+      const price = Math.max(1, Number(priceInput.value) || 10);
+
+      if (!name) return;
+
+      const newReward = {
+        id: Math.random().toString(36).substring(2, 9),
+        name,
+        price
+      };
+
+      if (!state.systemState.customRewards) state.systemState.customRewards = [];
+      state.systemState.customRewards.push(newReward);
+      state.save();
+
+      nameInput.value = '';
+      priceInput.value = '10';
+      renderConfigRewards();
+    });
+
+    renderConfigRewards();
     PopupAnimation.scale(popup);
   }
 
@@ -2780,7 +2877,7 @@ class PopupsManager {
         </p>
         
         <label for="bulkTodoNames">Tasks (One per line)</label>
-        <textarea id="bulkTodoNames" class="bulk-todo-textarea" placeholder="Read 10 pages&#10;Workout for 30 mins&#10;Reply to emails" spellcheck="false" autofocus></textarea>
+        <textarea id="bulkTodoNames" class="bulk-todo-textarea" placeholder="Read 10 pages&#10;- Subtask 1&#10;- Subtask 2&#10;Workout for 30 mins&#10;Reply to emails" spellcheck="false" autofocus style="height: 180px; font-size: 11px !important; line-height: 1.5; padding: 8px; box-sizing: border-box; width: 100%; min-height: 180px;"></textarea>
         
         <div class="bulk-todo-settings" style="display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
           <div class="bulk-setting-col" style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px;">
@@ -2902,9 +2999,29 @@ class PopupsManager {
 
     popup.querySelector('#btnBulkAddSave').addEventListener('click', () => {
       const lines = (textarea.value || '').split('\n');
-      const validNames = lines.map(line => line.trim()).filter(line => line.length > 0);
+      const parsedTasks = [];
       
-      if (validNames.length === 0) {
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const isSubtask = trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('•');
+        if (isSubtask) {
+          const subtaskName = trimmed.slice(1).trim();
+          if (subtaskName) {
+            if (parsedTasks.length > 0) {
+              parsedTasks[parsedTasks.length - 1].subtasks.push(subtaskName);
+            } else {
+              // No parent task yet, treat as main task
+              parsedTasks.push({ name: subtaskName, subtasks: [] });
+            }
+          }
+        } else {
+          parsedTasks.push({ name: trimmed, subtasks: [] });
+        }
+      });
+
+      if (parsedTasks.length === 0) {
         if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Enter at least one task!', { color: '#ff6666' });
         }
@@ -2960,8 +3077,8 @@ class PopupsManager {
       }
       
       let addedCount = 0;
-      validNames.forEach((name, i) => {
-        const created = TaskManager.addTodo(name, difficulty, fallbackAttribute, deadline, []);
+      parsedTasks.forEach((t, i) => {
+        const created = TaskManager.addTodo(t.name, difficulty, fallbackAttribute, deadline, t.subtasks);
         if (created) {
           if (isCluster) {
             created.clusterId = clusterId;

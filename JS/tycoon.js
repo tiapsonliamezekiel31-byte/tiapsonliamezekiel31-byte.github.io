@@ -10,7 +10,8 @@
     PRODUCER: 5,
     INCREASER: 6,
     MAINTENANCE: 7,
-    COSMETIC: 8
+    COSMETIC: 8,
+    ENERGY_TREE: 9
   };
 
   const PRODUCER_SUBS = {
@@ -62,6 +63,7 @@
       this.worker = null;
       this.cropsImage = new Image();
       this.cropsImage.src = 'cropsstylesheet.png';
+      this.farmerImageCache = {};
       
       // Camera state
       this.camera = {
@@ -98,7 +100,11 @@
       this.config = {
         checkInHour: 10,
         completionRatePrevDay: 1.0,
-        lastSaveTime: Date.now()
+        lastSaveTime: Date.now(),
+        snapToGrid: true,
+        hideGrid: false,
+        pinkMode: false,
+        terrainBorders: false
       };
       
       // Tool selection
@@ -207,6 +213,18 @@
                 <div class="tycoon-form-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                   <label for="settings-snap-grid" style="flex: 1;">Snap Items to Grid:</label>
                   <input type="checkbox" id="settings-snap-grid" style="width: auto !important; height: auto; transform: scale(1.2); margin-right: 8px;">
+                </div>
+                <div class="tycoon-form-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <label for="settings-hide-grid" style="flex: 1;">Hide Grid when Building:</label>
+                  <input type="checkbox" id="settings-hide-grid" style="width: auto !important; height: auto; transform: scale(1.2); margin-right: 8px;">
+                </div>
+                <div class="tycoon-form-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <label for="settings-pink-mode" style="flex: 1;">Pink Mode:</label>
+                  <input type="checkbox" id="settings-pink-mode" style="width: auto !important; height: auto; transform: scale(1.2); margin-right: 8px;">
+                </div>
+                <div class="tycoon-form-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <label for="settings-terrain-borders" style="flex: 1;">Terrain Borders (Vibrant Purple):</label>
+                  <input type="checkbox" id="settings-terrain-borders" style="width: auto !important; height: auto; transform: scale(1.2); margin-right: 8px;">
                 </div>
                 <div class="tycoon-form-row" style="flex-direction: column; align-items: flex-start; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
                   <label for="tycoon-cheat-input" style="margin-bottom: 4px;">Cheat Console:</label>
@@ -321,18 +339,18 @@
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            // Check if clicked an object center/footprint
-            const obj = this.findObjectCenterAt(tile.x, tile.y);
-            if (obj) {
-              this.potentialDraggedObject = obj;
-              this.interactionStartTile = tile;
-              this.interactionStartPos = { x: e.clientX, y: e.clientY };
-              this.isDraggingObject = false;
+            // First check if clicked a farmer visually in screen-space
+            const clickedFarmer = this.findFarmerAt(e.clientX, e.clientY);
+            if (clickedFarmer) {
+              this.showFarmerDetails(clickedFarmer);
             } else {
-              // Click farmer or pan camera
-              const clickedFarmer = this.findFarmerAt(tile.x, tile.y);
-              if (clickedFarmer) {
-                this.showFarmerDetails(clickedFarmer);
+              // Check if clicked an object center/footprint
+              const obj = this.findObjectCenterAt(tile.x, tile.y);
+              if (obj) {
+                this.potentialDraggedObject = obj;
+                this.interactionStartTile = tile;
+                this.interactionStartPos = { x: e.clientX, y: e.clientY };
+                this.isDraggingObject = false;
               } else {
                 this.isPanning = true;
                 this.dragStart.x = e.clientX;
@@ -451,18 +469,18 @@
               this.applyPlacementTool(tile.x, tile.y);
             }
           } else {
-            // Check if clicked an object center/footprint
-            const obj = this.findObjectCenterAt(tile.x, tile.y);
-            if (obj) {
-              this.potentialDraggedObject = obj;
-              this.interactionStartTile = tile;
-              this.interactionStartPos = { x: touch.clientX, y: touch.clientY };
-              this.isDraggingObject = false;
+            // First check if clicked a farmer visually in screen-space
+            const clickedFarmerMapped = this.findFarmerAt(touch.clientX, touch.clientY);
+            if (clickedFarmerMapped) {
+              this.showFarmerDetails(clickedFarmerMapped);
             } else {
-              const tileCoords = this.screenToWorldCoords(touch.clientX, touch.clientY);
-              const clickedFarmerMapped = this.findFarmerAt(tileCoords.x, tileCoords.y);
-              if (clickedFarmerMapped) {
-                this.showFarmerDetails(clickedFarmerMapped);
+              // Check if clicked an object center/footprint
+              const obj = this.findObjectCenterAt(tile.x, tile.y);
+              if (obj) {
+                this.potentialDraggedObject = obj;
+                this.interactionStartTile = tile;
+                this.interactionStartPos = { x: touch.clientX, y: touch.clientY };
+                this.isDraggingObject = false;
               } else {
                 this.isPanning = true;
                 this.lastTouchPos.x = touch.clientX;
@@ -570,6 +588,16 @@
         checkinBtn.addEventListener('click', () => {
           const completionRate = this.calculateCurrentCompletionRate();
           
+          if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+            const db = window.MultiplayerManager.db;
+            const worldName = window.MultiplayerManager.worldName;
+            const playerName = window.MultiplayerManager.playerName;
+            if (db && worldName && playerName) {
+              db.ref(`worlds/${worldName}/players/${playerName}/completionRate`).set(completionRate);
+              window.MultiplayerManager.addLogEntry(`checked in with ${Math.round(completionRate * 100)}% task completion.`);
+            }
+          }
+          
           // Post manual check-in to worker (worker handles its own daily cycle)
           if (this.worker) {
             this.worker.postMessage({
@@ -595,6 +623,9 @@
       document.getElementById('tycoon-settings-btn').addEventListener('click', () => {
         document.getElementById('settings-checkin-hour').value = this.config.checkInHour;
         document.getElementById('settings-snap-grid').checked = this.config.snapToGrid !== false;
+        document.getElementById('settings-hide-grid').checked = !!this.config.hideGrid;
+        document.getElementById('settings-pink-mode').checked = this.config.pinkMode === true;
+        document.getElementById('settings-terrain-borders').checked = this.config.terrainBorders === true;
         document.getElementById('tycoon-import-export').value = JSON.stringify(this.getSerializableState());
         document.getElementById('tycoon-settings-dialog').style.display = 'flex';
       });
@@ -608,6 +639,15 @@
         const hour = Math.max(0, Math.min(23, Number(document.getElementById('settings-checkin-hour').value) || 10));
         this.config.checkInHour = hour;
         this.config.snapToGrid = document.getElementById('settings-snap-grid').checked;
+        this.config.hideGrid = document.getElementById('settings-hide-grid').checked;
+        this.config.pinkMode = document.getElementById('settings-pink-mode').checked;
+        this.config.terrainBorders = document.getElementById('settings-terrain-borders').checked;
+        
+        if (this.config.pinkMode) {
+          document.body.classList.add('tycoon-pink-mode');
+        } else {
+          document.body.classList.remove('tycoon-pink-mode');
+        }
         
         // Process cheat inside settings dialog
         const cheatInput = document.getElementById('tycoon-cheat-input');
@@ -1083,6 +1123,21 @@
       return data;
     }
 
+    syncFarmersState() {
+      this.saveState();
+      if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+        window.MultiplayerManager.broadcastFarmersState(this.farmers);
+        window.MultiplayerManager.addLogEntry(`customized sprite for ${this.farmers.find(f => f.id === this.selectedFarmerId)?.name || 'farmer'}`);
+      } else {
+        if (this.worker) {
+          this.worker.postMessage({
+            type: 'sync_state',
+            farmers: this.farmers
+          });
+        }
+      }
+    }
+
     calculateCurrentCompletionRate() {
       let completionRate = 1.0;
       try {
@@ -1180,16 +1235,24 @@
         }
 
         if (window.MultiplayerManager.isConnected) {
+          const typeBought = this.activeTool.type;
           window.MultiplayerManager.buyObject(cost, `placed ${this.activeTool.name} at (${tx}, ${ty})`, () => {
             window.MultiplayerManager.broadcastTileUpdate(tx, ty, tileVal);
             this.clearBanner();
             this.activeTool = null;
+            if (typeBought === TILE_TYPES.ENERGY_TREE) {
+              this.renderShopGrid("tech");
+            }
           });
         } else {
           this.resources.gold -= cost;
           this.setTileTypeAt(tx, ty, tileVal);
           this.postTileUpdateToWorker(tx, ty, tileVal);
           this.updateHUD();
+          const typeBought = this.activeTool.type;
+          if (typeBought === TILE_TYPES.ENERGY_TREE) {
+            this.renderShopGrid("tech");
+          }
         }
       }
     }
@@ -1286,8 +1349,43 @@
       return { x: worldX, y: worldY };
     }
 
-    findFarmerAt(tx, ty) {
-      return this.farmers.find(f => f.x === tx && f.y === ty);
+    getFarmerScreenPos(farmer) {
+      const tw = this.tileWidth;
+      const visX = farmer.visualX !== undefined ? farmer.visualX : farmer.x;
+      const visY = farmer.visualY !== undefined ? farmer.visualY : farmer.y;
+      
+      const fx = visX * tw + tw / 2;
+      const fy = visY * tw + tw / 2;
+      
+      const w = this.canvas.width;
+      const h = this.canvas.height;
+      const zoom = this.camera.zoom;
+      
+      const canvasX = w / 2 + (fx - this.camera.x) * zoom;
+      const canvasY = h / 2 + (fy - this.camera.y) * zoom;
+      
+      const rect = this.canvas.getBoundingClientRect();
+      return {
+        x: rect.left + canvasX,
+        y: rect.top + canvasY
+      };
+    }
+
+    findFarmerAt(clientX, clientY) {
+      if (!Array.isArray(this.farmers)) return null;
+      
+      let closestFarmer = null;
+      let minDistance = 40; // 40 screen pixels radius target
+      
+      this.farmers.forEach(f => {
+        const screenPos = this.getFarmerScreenPos(f);
+        const dist = Math.hypot(clientX - screenPos.x, clientY - screenPos.y);
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestFarmer = f;
+        }
+      });
+      return closestFarmer;
     }
 
     getTileTypeAt(x, y) {
@@ -1337,9 +1435,12 @@
           charge: 100 + idx * 10
         }));
       } else if (tab === "tech") {
+        const energyTreeCount = this.getEnergyTreeCount();
+        const energyTreeCost = Math.round(500 * Math.pow(1.5, energyTreeCount));
         items = [
           { type: TILE_TYPES.INCREASER, name: "Fertilizer (+20%)", emoji: "🧪", cost: 200 },
-          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 300, charge: 200 }
+          { type: TILE_TYPES.MAINTENANCE, name: "Sprinkler", emoji: "🚿", cost: 300, charge: 200 },
+          { type: TILE_TYPES.ENERGY_TREE, name: "Energy Tree (+10% Cap)", emoji: "⚡🌲", cost: energyTreeCost, description: "Increases the maximum world production cap by +10%." }
         ];
       } else if (tab === "farmers") {
         items = [
@@ -1515,12 +1616,73 @@
         <div style="margin-bottom: 8px;"><strong>Speed:</strong> ${farmer.speed} tiles/s</div>
         <div style="margin-bottom: 8px;"><strong>Description:</strong> ${desc}</div>
         <div style="margin-bottom: 8px; color: #4ade80;"><strong>Special Effect:</strong> ${boostDesc}</div>
+        <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px;">
+          <div style="margin-bottom: 6px;"><strong>Custom Sprite:</strong></div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div id="farmer-sprite-preview" style="width: 36px; height: 36px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); overflow: hidden;">
+              ${farmer.customSprite ? `<img src="${farmer.customSprite}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />` : `<span style="font-size: 18px;">${farmer.emoji}</span>`}
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <button class="tycoon-btn" id="farmer-upload-sprite-btn" style="padding: 4px 8px; font-size: 10px; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Upload Image</button>
+              ${farmer.customSprite ? `<button class="tycoon-btn exit-btn" id="farmer-reset-sprite-btn" style="padding: 4px 8px; font-size: 8px;">Reset Sprite</button>` : ''}
+            </div>
+            <input type="file" id="farmer-sprite-file-input" accept="image/*" style="display: none;" />
+          </div>
+        </div>
       `;
       
       footer.innerHTML = `
         <button class="tycoon-btn" id="farmer-action-btn" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); margin-right: auto;">${actionBtnText}</button>
         <button class="tycoon-btn exit-btn" id="farmer-close-btn">Close</button>
       `;
+
+      // Sprite Customization Logic
+      const fileInput = document.getElementById('farmer-sprite-file-input');
+      const uploadBtn = document.getElementById('farmer-upload-sprite-btn');
+      const resetBtn = document.getElementById('farmer-reset-sprite-btn');
+      const previewDiv = document.getElementById('farmer-sprite-preview');
+
+      uploadBtn.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 200 * 1024) {
+          alert("Please upload an image smaller than 200KB to ensure smooth synchronization.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target.result;
+          farmer.customSprite = dataUrl;
+
+          const img = new Image();
+          img.src = dataUrl;
+          this.farmerImageCache[farmer.id] = img;
+
+          previewDiv.innerHTML = `<img src="${dataUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />`;
+
+          this.syncFarmersState();
+          this.showFarmerDetails(farmer);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          delete farmer.customSprite;
+          if (this.farmerImageCache[farmer.id]) {
+            delete this.farmerImageCache[farmer.id];
+          }
+          previewDiv.innerHTML = `<span style="font-size: 18px;">${farmer.emoji}</span>`;
+          this.syncFarmersState();
+          this.showFarmerDetails(farmer);
+        });
+      }
 
       // Wire Action Button
       document.getElementById('farmer-action-btn').addEventListener('click', () => {
@@ -1558,6 +1720,8 @@
       document.getElementById('farmer-close-btn').addEventListener('click', () => {
         document.getElementById('tycoon-farmer-dialog').style.display = 'none';
       });
+
+      document.getElementById('tycoon-farmer-dialog').style.display = 'flex';
     }
 
     applyFarmerInteractionBenefit(farmer, subType) {
@@ -1791,15 +1955,56 @@
       }, 1200);
     }
 
+    getEnergyTreeCount() {
+      let count = 0;
+      for (const key in this.chunks) {
+        const arr = this.chunks[key];
+        for (let i = 0; i < 1024; i++) {
+          if ((arr[i] & 0xFF) === TILE_TYPES.ENERGY_TREE) {
+            count++;
+          }
+        }
+      }
+      return count;
+    }
+
     updateHUD() {
       document.getElementById('tycoon-gold-val').textContent = this.resources.gold.toFixed(2);
       document.getElementById('tycoon-ap-val').textContent = this.resources.ap.toFixed(2);
       document.getElementById('tycoon-food-val').textContent = this.resources.food.toFixed(2);
       
+      const isMP = window.MultiplayerManager && window.MultiplayerManager.isConnected;
+      const compRate = isMP
+        ? (window.MultiplayerManager.worldAverageCompletionRate || 1.0)
+        : this.config.completionRatePrevDay;
+      
+      const energyTreeCount = this.getEnergyTreeCount();
+      const cap = 1.0 + energyTreeCount * 0.10;
+      
+      // Collect multipliers
+      const fertilizers = [];
+      for (const key in this.chunks) {
+        const arr = this.chunks[key];
+        const coords = key.split(",");
+        const cx = parseInt(coords[0]);
+        const cy = parseInt(coords[1]);
+        for (let i = 0; i < 1024; i++) {
+          if ((arr[i] & 0xFF) === TILE_TYPES.INCREASER) {
+            fertilizers.push({
+              x: cx * 32 + (i % 32),
+              y: cy * 32 + Math.floor(i / 32)
+            });
+          }
+        }
+      }
+
       // Calculate rate estimation
       let totalRate = 0;
       for (const key in this.chunks) {
         const arr = this.chunks[key];
+        const coords = key.split(",");
+        const cx = parseInt(coords[0]);
+        const cy = parseInt(coords[1]);
         for (let i = 0; i < 1024; i++) {
           const tile = arr[i];
           const type = tile & 0xFF;
@@ -1810,7 +2015,39 @@
               const cropIdx = (subType >= 1 && subType <= 18) ? (subType - 1) : 0;
               const crop = CROP_TEMPLATES[cropIdx];
               const goldBase = crop ? crop.gold : 1;
-              totalRate += goldBase * this.config.completionRatePrevDay;
+              
+              const gx = cx * 32 + (i % 32);
+              const gy = cy * 32 + Math.floor(i / 32);
+              
+              // Fertilizer boost
+              let localFertilizers = 0;
+              fertilizers.forEach(f => {
+                if (Math.max(Math.abs(gx - f.x), Math.abs(gy - f.y)) <= 3) {
+                  localFertilizers++;
+                }
+              });
+              let multiplier = 1.0 + (localFertilizers * 0.20);
+              
+              // Farmer boost
+              let farmerAdd = 0;
+              this.farmers.forEach(farmer => {
+                if (!farmer.isSleeping && Math.max(Math.abs(gx - farmer.x), Math.abs(gy - farmer.y)) <= 2) {
+                  const sub = farmer.subType || 1;
+                  if (sub === 4) farmerAdd += 0.30;
+                  else if (sub === 8) farmerAdd += 0.50;
+                  else if (sub === 10) farmerAdd += 0.40;
+                  else farmerAdd += 0.25;
+                }
+              });
+              multiplier += farmerAdd;
+              
+              // Apply cap
+              multiplier = Math.min(cap, multiplier);
+              
+              // Apply task rate
+              multiplier *= Math.max(0.1, compRate);
+              
+              totalRate += goldBase * multiplier;
             }
           }
         }
@@ -1820,12 +2057,18 @@
       document.getElementById('tycoon-rate-val').textContent = `${formattedRate}g/s`;
 
       // Read-only task completion indicator on HUD
-      const rate = this.calculateCurrentCompletionRate();
+      const liveRate = isMP
+        ? (window.MultiplayerManager.worldAverageCompletionRate || 1.0)
+        : this.calculateCurrentCompletionRate();
       const rateEl = document.getElementById('tycoon-rate-val');
       if (rateEl) {
-        const pct = Math.round(rate * 100);
+        const pct = Math.round(liveRate * 100);
         const color = pct >= 80 ? '#4ade80' : pct >= 40 ? '#fbbf24' : '#f87171';
-        rateEl.title = `Task completion today: ${pct}% (affects production multiplier)`;
+        if (isMP) {
+          rateEl.title = `World average task completion: ${pct}% (affects production multiplier)`;
+        } else {
+          rateEl.title = `Task completion today: ${pct}% (affects production multiplier)`;
+        }
         rateEl.style.color = color;
       }
     }
@@ -1881,6 +2124,11 @@
       
       // Hide combat UI and show Tycoon Mode by adding class to body
       document.body.classList.add('tycoon-active');
+      if (this.config.pinkMode) {
+        document.body.classList.add('tycoon-pink-mode');
+      } else {
+        document.body.classList.remove('tycoon-pink-mode');
+      }
       localStorage.setItem('nemesis_active_mode', 'tycoon');
       
       // Explicitly hide all other direct children of body in JS
@@ -1943,6 +2191,7 @@
       
       this.isRenderLoopRunning = false;
       document.body.classList.remove('tycoon-active');
+      document.body.classList.remove('tycoon-pink-mode');
       localStorage.setItem('nemesis_active_mode', 'combat');
       
       // Restore original display styles for direct children of body
@@ -2326,11 +2575,29 @@
         ctx.ellipse(0, 8 - yOffset, 8, 4, 0, 0, Math.PI * 2);
         ctx.fill();
         
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "18px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(farmer.emoji, 0, yOffset);
+        if (farmer.customSprite) {
+          let img = this.farmerImageCache[farmer.id];
+          if (!img || img.src !== farmer.customSprite) {
+            img = new Image();
+            img.src = farmer.customSprite;
+            this.farmerImageCache[farmer.id] = img;
+          }
+          if (img.complete && img.naturalWidth !== 0) {
+            ctx.drawImage(img, -12, -12 + yOffset, 24, 24);
+          } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "18px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(farmer.emoji, 0, yOffset);
+          }
+        } else {
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "18px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(farmer.emoji, 0, yOffset);
+        }
         
         // Action indicators
         if (farmer.isSleeping) {
@@ -2656,28 +2923,47 @@
       const leftBase = this.getTerrainBaseType(this.getTileTypeAt(tx - 1, ty) & 0xFF);
       const rightBase = this.getTerrainBaseType(this.getTileTypeAt(tx + 1, ty) & 0xFF);
       
-      // Soft shoreline/boundary blending (water foam or sandy shoreline)
-      if (currentBase === TILE_TYPES.WATER) {
-        ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; // foam highlight
+      // Soft shoreline/boundary blending (water foam or sandy shoreline) or purple terrain borders
+      if (this.config.terrainBorders === true) {
+        if (currentBase !== TILE_TYPES.WATER) {
+          ctx.fillStyle = "#A168F9"; // Vibrant purple
+          const borderThickness = 4;
+          if (upBase === TILE_TYPES.WATER) {
+            ctx.fillRect(x, y, tw, borderThickness);
+          }
+          if (downBase === TILE_TYPES.WATER) {
+            ctx.fillRect(x, y + tw - borderThickness, tw, borderThickness);
+          }
+          if (leftBase === TILE_TYPES.WATER) {
+            ctx.fillRect(x, y, borderThickness, tw);
+          }
+          if (rightBase === TILE_TYPES.WATER) {
+            ctx.fillRect(x + tw - borderThickness, y, borderThickness, tw);
+          }
+        }
       } else {
-        ctx.fillStyle = "rgba(245, 208, 97, 0.4)"; // sandy shoreline transition
+        if (currentBase === TILE_TYPES.WATER) {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.2)"; // foam highlight
+        } else {
+          ctx.fillStyle = "rgba(245, 208, 97, 0.4)"; // sandy shoreline transition
+        }
+        const borderThickness = 3;
+        
+        if (upBase !== currentBase) {
+          ctx.fillRect(x, y, tw, borderThickness);
+        }
+        if (downBase !== currentBase) {
+          ctx.fillRect(x, y + tw - borderThickness, tw, borderThickness);
+        }
+        if (leftBase !== currentBase) {
+          ctx.fillRect(x, y, borderThickness, tw);
+        }
+        if (rightBase !== currentBase) {
+          ctx.fillRect(x + tw - borderThickness, y, borderThickness, tw);
+        }
       }
-      const borderThickness = 3;
       
-      if (upBase !== currentBase) {
-        ctx.fillRect(x, y, tw, borderThickness);
-      }
-      if (downBase !== currentBase) {
-        ctx.fillRect(x, y + tw - borderThickness, tw, borderThickness);
-      }
-      if (leftBase !== currentBase) {
-        ctx.fillRect(x, y, borderThickness, tw);
-      }
-      if (rightBase !== currentBase) {
-        ctx.fillRect(x + tw - borderThickness, y, borderThickness, tw);
-      }
-      
-      if (this.activeTool !== null) {
+      if (this.activeTool !== null && !this.config.hideGrid) {
         ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, tw, tw);
@@ -2820,12 +3106,42 @@
           ctx.restore();
           break;
         }
+
+        case TILE_TYPES.ENERGY_TREE: {
+          ctx.save();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = "42px Arial";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("⚡🌲", x + tw / 2, y + tw / 2);
+          ctx.restore();
+          break;
+        }
       }
     }
 
     // Save state
     saveState() {
+      // Always save local config settings regardless of multiplayer connection
+      localStorage.setItem('nemesis_tycoon_config', JSON.stringify(this.config));
+
       if (window.MultiplayerManager && window.MultiplayerManager.isConnected) {
+        // Save farmers and config locally even in multiplayer to avoid losing custom sprites
+        const saved = localStorage.getItem('nemesis_tycoon_data');
+        let data = {};
+        if (saved) {
+          try { data = JSON.parse(saved); } catch(e) {}
+        }
+        data.farmers = this.farmers;
+        data.config = this.config;
+        if (!data.resources) data.resources = this.resources;
+        if (!data.chunks) {
+          data.chunks = {};
+          for (const k in this.chunks) {
+            data.chunks[k] = Array.from(this.chunks[k]);
+          }
+        }
+        localStorage.setItem('nemesis_tycoon_data', JSON.stringify(data));
         return;
       }
       const data = {
@@ -2848,15 +3164,37 @@
 
     // Load state
     loadState() {
+      // Load configurations first
+      const savedConfig = localStorage.getItem('nemesis_tycoon_config');
+      if (savedConfig) {
+        try {
+          this.config = JSON.parse(savedConfig);
+        } catch (e) {
+          console.warn("Failed to load tycoon config settings", e);
+        }
+      }
+
       const saved = localStorage.getItem('nemesis_tycoon_data');
       if (saved) {
         try {
           const data = JSON.parse(saved);
           this.resources = data.resources || { gold: 100, ap: 0, food: 0 };
           this.farmers = data.farmers || [];
-          this.config = data.config || { checkInHour: 10, completionRatePrevDay: 1.0, lastSaveTime: Date.now() };
+          
+          const defaultConfig = { checkInHour: 10, completionRatePrevDay: 1.0, lastSaveTime: Date.now() };
+          this.config = Object.assign(defaultConfig, data.config || {}, this.config || {});
+          
           if (this.config.snapToGrid === undefined) {
             this.config.snapToGrid = true;
+          }
+          if (this.config.hideGrid === undefined) {
+            this.config.hideGrid = false;
+          }
+          if (this.config.pinkMode === undefined) {
+            this.config.pinkMode = false;
+          }
+          if (this.config.terrainBorders === undefined) {
+            this.config.terrainBorders = false;
           }
           
           // Re-instantiate TypedArrays
@@ -2878,7 +3216,15 @@
       // Fresh map: starter 8x8 island with 1 Tree in center
       this.resources = { gold: 100, ap: 0, food: 0 };
       this.farmers = [];
-      this.config = { checkInHour: 10, completionRatePrevDay: 1.0, lastSaveTime: Date.now() };
+      this.config = {
+        checkInHour: 10,
+        completionRatePrevDay: 1.0,
+        lastSaveTime: Date.now(),
+        snapToGrid: true,
+        hideGrid: false,
+        pinkMode: false,
+        terrainBorders: false
+      };
       this.chunks = {};
       
       // Generate 8x8 land at the center [0, 0]
@@ -2957,6 +3303,17 @@
           <div><strong>Water Charge:</strong> ${Math.round(charge / 255 * 100)}%</div>
           <div><strong>Effect:</strong> Prevents decay of crops in surrounding 3x3 footprint (recharges at daily check-in)</div>
         `;
+      } else if (type === TILE_TYPES.ENERGY_TREE) {
+        name = "Energy Tree (+10% Cap)";
+        emoji = "⚡🌲";
+        const energyTreeCount = this.getEnergyTreeCount();
+        const energyTreeCost = Math.round(500 * Math.pow(1.5, energyTreeCount));
+        cost = energyTreeCost;
+        infoHtml = `
+          <div><strong>Type:</strong> Cap Booster</div>
+          <div><strong>Effect:</strong> Increases maximum world production cap by +10%</div>
+          <div><strong>Current World Cap:</strong> ${Math.round((1.0 + energyTreeCount * 0.1) * 100)}%</div>
+        `;
       } else if (type === TILE_TYPES.COSMETIC) {
         const noise = (obj.x * 17 + obj.y * 31) % 100;
         if (noise < 33) {
@@ -3002,6 +3359,10 @@
         }
         this.addNotification(`🪙 Sold ${name} for ${refund} gold!`);
         document.getElementById('tycoon-object-dialog').style.display = 'none';
+        
+        if (type === TILE_TYPES.ENERGY_TREE) {
+          this.renderShopGrid("tech");
+        }
       });
       
       document.getElementById('object-close-btn').addEventListener('click', () => {

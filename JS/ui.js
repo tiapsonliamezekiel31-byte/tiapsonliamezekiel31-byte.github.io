@@ -73,6 +73,28 @@ class UIManager {
     );
   }
 
+  static spawnDiamondFloatingPopup(x, y, amount) {
+    if (!amount || amount <= 0) return;
+    try {
+      FloatingDamageNumber.show(x, y, `+${amount} 💎`, {
+        color: '#00e5ff',
+        scale: 1.2
+      });
+      if (typeof ParticleSystem !== 'undefined') {
+        const p = new ParticleSystem();
+        p.emit(x, y, 8, {
+          color: '#00e5ff',
+          glow: true,
+          size: 3,
+          velocity: 3,
+          lifetime: 800
+        });
+      }
+    } catch (e) {
+      console.warn("Failed to spawn diamond floating popup", e);
+    }
+  }
+
   // Mutator display metadata: emoji, color, one-line description
   static MUTATOR_META = {
     vampiric: { icon: '🩸', color: '#C00707', label: 'Vampiric', desc: 'Heals itself when it deals damage' },
@@ -407,10 +429,12 @@ class UIManager {
         <div class="run-completion-head">
           <span>RUN COMPLETION</span>
           <button id="runCompletionToggle" title="Compare vs Nemesis" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 4px;opacity:0.75;line-height:1;">⚔️</button>
+          <button id="runCompletionRewardsToggle" title="Buy Diamond Rewards" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 4px;opacity:0.75;line-height:1;">🎁</button>
           <span id="runCompletionRate">0%</span>
         </div>
         <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
         <div id="runCompletionAttrsContainer" style="display:none;"></div>
+        <div id="runCompletionRewardsContainer" style="display:none; max-height:48px; overflow-y:auto; padding:2px 0;"></div>
       </div>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
         <div class="event-banner-content">
@@ -478,6 +502,10 @@ class UIManager {
         <div id="focusCustomInputGroup" style="display: none; margin-bottom: 12px; align-items: center; justify-content: center; gap: 8px;">
           <span style="font-size: 7px; color: #a0aec0;">Minutes:</span>
           <input type="number" id="focusCustomMins" min="1" max="1440" value="25" style="width: 60px; background: rgba(0,0,0,0.5); border: 1px solid #ffb33f; color: #fff; font-family: inherit; font-size: 8px; padding: 4px; text-align: center; border-radius: 4px;" />
+        </div>
+        <div id="focusTaskSelectionContainer" style="margin: 12px 0; text-align: left; max-height: 120px; overflow-y: auto; border: 1px solid rgba(255, 179, 63, 0.3); padding: 6px; border-radius: 4px; background: rgba(0,0,0,0.3); display: none;">
+          <div class="focus-task-selection-header">FOCUS TARGETS (2X REWARDS):</div>
+          <div id="focusTaskSelectionList"></div>
         </div>
         <div id="focusActionContainer" style="display: flex; gap: 8px; width: 100%;">
           <button class="focus-action-btn focus-start-btn" id="focusStartBtn" style="flex: 1;">START</button>
@@ -557,7 +585,16 @@ class UIManager {
         if (toggleBtn) {
           const state = getGameState();
           if (!state.systemState) state.systemState = {};
+          state.systemState.showRewardsInCompletionPanel = false;
           state.systemState.showAttrsInCompletionPanel = !state.systemState.showAttrsInCompletionPanel;
+          UIManager.updateRunCompletionGraph();
+        }
+        const rewardsToggleBtn = e.target.closest('#runCompletionRewardsToggle');
+        if (rewardsToggleBtn) {
+          const state = getGameState();
+          if (!state.systemState) state.systemState = {};
+          state.systemState.showAttrsInCompletionPanel = false;
+          state.systemState.showRewardsInCompletionPanel = !state.systemState.showRewardsInCompletionPanel;
           UIManager.updateRunCompletionGraph();
         }
       });
@@ -1577,6 +1614,231 @@ class UIManager {
     let isDragging = false;
     let dragStartX = 0, dragStartY = 0, initialLeft = 0, initialTop = 0;
 
+    let selectedFocusTaskIds = new Set(state.systemState.selectedFocusTaskIds || []);
+    let activeFocusBubbles = [];
+    let driftAnimationId = null;
+
+    const populateFocusTaskList = () => {
+      const selectionContainer = document.getElementById('focusTaskSelectionContainer');
+      const selectionList = document.getElementById('focusTaskSelectionList');
+      if (!selectionContainer || !selectionList) return;
+
+      if (state.systemState.focusTimerActive) {
+        selectionContainer.style.display = 'none';
+        return;
+      }
+
+      const incompleteDailies = (state.dailiesState?.dailies || []).filter(d => {
+        const max = d.maxCompletionsPerDay || 1;
+        const current = d.completionsToday || 0;
+        return current < max;
+      });
+
+      const incompleteTodos = TaskManager.getAllTodos().filter(t => !t.completed);
+
+      if (incompleteDailies.length === 0 && incompleteTodos.length === 0) {
+        selectionList.innerHTML = `<div style="font-size: 6px; color: #a0aec0; text-align: center; padding: 10px 0;">No active tasks available</div>`;
+        selectionContainer.style.display = 'block';
+        return;
+      }
+
+      let html = '';
+
+      incompleteDailies.forEach(d => {
+        const isChecked = selectedFocusTaskIds.has(d.id) ? 'checked' : '';
+        html += `
+          <label class="focus-task-item">
+            <input type="checkbox" class="focus-task-checkbox" data-id="${d.id}" data-type="daily" ${isChecked} />
+            <span class="focus-task-title">[Daily] ${d.name}</span>
+          </label>
+        `;
+      });
+
+      incompleteTodos.forEach(t => {
+        const isChecked = selectedFocusTaskIds.has(t.id) ? 'checked' : '';
+        html += `
+          <label class="focus-task-item">
+            <input type="checkbox" class="focus-task-checkbox" data-id="${t.id}" data-type="todo" ${isChecked} />
+            <span class="focus-task-title">[To-Do] ${t.name}</span>
+          </label>
+        `;
+      });
+
+      selectionList.innerHTML = html;
+      selectionContainer.style.display = 'block';
+
+      selectionList.querySelectorAll('.focus-task-checkbox').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.dataset.id;
+          if (e.target.checked) {
+            selectedFocusTaskIds.add(id);
+          } else {
+            selectedFocusTaskIds.delete(id);
+          }
+          state.systemState.selectedFocusTaskIds = Array.from(selectedFocusTaskIds);
+          state.save();
+        });
+      });
+    };
+
+    const startDriftLoop = () => {
+      if (driftAnimationId) cancelAnimationFrame(driftAnimationId);
+      
+      const updateDrift = () => {
+        if (!state.systemState.focusTimerActive) {
+          driftAnimationId = null;
+          return;
+        }
+
+        const overlayRect = overlay.getBoundingClientRect();
+        const width = overlayRect.width || window.innerWidth;
+        const height = overlayRect.height || window.innerHeight;
+
+        activeFocusBubbles.forEach(b => {
+          b.x += b.vx;
+          b.y += b.vy;
+
+          const r = 45;
+
+          if (b.x - r < 0) {
+            b.x = r;
+            b.vx *= -1;
+          } else if (b.x + r > width) {
+            b.x = width - r;
+            b.vx *= -1;
+          }
+
+          if (b.y - r < 0) {
+            b.y = r;
+            b.vy *= -1;
+          } else if (b.y + r > height) {
+            b.y = height - r;
+            b.vy *= -1;
+          }
+
+          b.el.style.transform = `translate3d(${b.x - r}px, ${b.y - r}px, 0)`;
+        });
+
+        driftAnimationId = requestAnimationFrame(updateDrift);
+      };
+      
+      driftAnimationId = requestAnimationFrame(updateDrift);
+    };
+
+    const completeFocusBubbleTask = (bubbleObj) => {
+      const { id, type, el } = bubbleObj;
+      if (el.classList.contains('pop')) return;
+
+      try { if (window.SoundManager) SoundManager.play('heal'); } catch (err) {}
+
+      el.classList.add('pop');
+
+      let res = null;
+      if (type === 'daily') {
+        res = TaskManager.completeDaily(id);
+      } else {
+        res = TaskManager.completeTodo(id);
+      }
+
+      if (res && res.success) {
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        if (res.rewards && res.rewards.diamonds > 0) {
+          UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
+        }
+
+        if (res.rewards && res.rewards.ap) {
+          FloatingDamageNumber.show(centerX, centerY - 20, `+${Math.ceil(res.rewards.ap)} AP`, {
+            color: UIManager.themeColor('--ap-gold', '#FFB33F')
+          });
+        }
+      }
+
+      try { state.save(); } catch (err) {}
+      UIManager.refreshGameUI();
+      UIManager.renderEnemies();
+
+      setTimeout(() => {
+        el.remove();
+        activeFocusBubbles = activeFocusBubbles.filter(b => b.id !== id);
+        selectedFocusTaskIds.delete(id);
+        state.systemState.selectedFocusTaskIds = Array.from(selectedFocusTaskIds);
+        state.save();
+      }, 200);
+    };
+
+    const spawnFocusBubbles = () => {
+      const oldBubbles = overlay.querySelectorAll('.focus-bubble');
+      oldBubbles.forEach(el => el.remove());
+      activeFocusBubbles = [];
+
+      if (!state.systemState.focusTimerActive) return;
+
+      const overlayRect = overlay.getBoundingClientRect();
+      const width = overlayRect.width || window.innerWidth;
+      const height = overlayRect.height || window.innerHeight;
+
+      selectedFocusTaskIds.forEach(id => {
+        let task = state.dailiesState.dailies.find(d => d.id === id);
+        let type = 'daily';
+        if (!task) {
+          task = state.dailiesState.todos.find(t => t.id === id);
+          type = 'todo';
+        }
+
+        if (!task || task.completed) return;
+        if (type === 'daily' && (task.completionsToday || 0) >= (task.maxCompletionsPerDay || 1)) {
+          return;
+        }
+
+        const el = document.createElement('div');
+        el.className = `focus-bubble ${type}`;
+        
+        const r = 45;
+        const startX = r + Math.random() * (width - r * 2);
+        const startY = r + Math.random() * (height - r * 2);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 0.7;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
+        el.style.left = '0';
+        el.style.top = '0';
+        el.style.transform = `translate3d(${startX - r}px, ${startY - r}px, 0)`;
+
+        el.innerHTML = `
+          <div class="focus-task-title">${task.name}</div>
+          <div class="reward-tag">2x 💎</div>
+        `;
+
+        overlay.appendChild(el);
+
+        const bubbleObj = {
+          id,
+          type,
+          el,
+          x: startX,
+          y: startY,
+          vx,
+          vy
+        };
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          completeFocusBubbleTask(bubbleObj);
+        });
+
+        activeFocusBubbles.push(bubbleObj);
+      });
+
+      if (activeFocusBubbles.length > 0) {
+        startDriftLoop();
+      }
+    };
+
     popup.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button, select, input')) return;
       isDragging = true;
@@ -1657,9 +1919,12 @@ class UIManager {
           startBtn.textContent = 'PAUSE';
         }
         if (stopBtn) stopBtn.style.display = 'block';
+        const selectionContainer = document.getElementById('focusTaskSelectionContainer');
+        if (selectionContainer) selectionContainer.style.display = 'none';
       } else {
         startBtn.textContent = 'START';
         if (stopBtn) stopBtn.style.display = 'none';
+        populateFocusTaskList();
       }
       updateDisplay();
     };
@@ -1751,6 +2016,15 @@ class UIManager {
       state.systemState.focusTimerActive = false;
       state.systemState.focusTimerEndTimestamp = 0;
       state.systemState.focusTimerSecondsLeft = 0;
+      state.systemState.selectedFocusTaskIds = [];
+      selectedFocusTaskIds.clear();
+      const oldBubbles = overlay.querySelectorAll('.focus-bubble');
+      oldBubbles.forEach(el => el.remove());
+      activeFocusBubbles = [];
+      if (driftAnimationId) {
+        cancelAnimationFrame(driftAnimationId);
+        driftAnimationId = null;
+      }
       state.save();
       btn.classList.remove('active');
       startBtn.textContent = 'START';
@@ -1814,11 +2088,13 @@ class UIManager {
         secondsLeft = savedLeft;
         btn.classList.add('active');
         syncPopupUI();
+        spawnFocusBubbles();
       } else if (end > now) {
         isTimerPaused = false;
         secondsLeft = Math.ceil((end - now) / 1000);
         btn.classList.add('active');
         syncPopupUI();
+        spawnFocusBubbles();
         startTimerCountdown();
       } else {
         // Completed while away
@@ -1877,6 +2153,10 @@ class UIManager {
         updateDisplay();
 
         try { if (window.SoundManager) SoundManager.play('levelUp'); } catch (e) {}
+
+        spawnFocusBubbles();
+        const selectionContainer = document.getElementById('focusTaskSelectionContainer');
+        if (selectionContainer) selectionContainer.style.display = 'none';
 
         startTimerCountdown();
       }
@@ -3062,6 +3342,10 @@ class UIManager {
               if (res.rewards && res.rewards.ap) {
                 UIManager.showDailyApReward(card, res.rewards.ap);
               }
+              if (res.rewards && res.rewards.diamonds) {
+                const rect = card.getBoundingClientRect();
+                UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+              }
 
               if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                 RetroTaskCompleteAnimation.play(card);
@@ -3078,10 +3362,21 @@ class UIManager {
             const todoName = card.querySelector('.todo-title')?.textContent || '';
             try {
               PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
-                if (!TaskManager.completeTodo(taskId)) return;
+                const res = TaskManager.completeTodo(taskId);
+                if (!res || !res.success) return;
 
                 card.style.transition = 'filter 150ms ease, opacity 400ms ease';
                 card.style.filter = 'brightness(10) contrast(1.5)';
+
+                if (res.rewards) {
+                  const rect = card.getBoundingClientRect();
+                  if (res.rewards.ap) {
+                    FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F') });
+                  }
+                  if (res.rewards.diamonds) {
+                    UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                  }
+                }
 
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                   RetroTaskCompleteAnimation.play(card);
@@ -3095,9 +3390,19 @@ class UIManager {
               });
             } catch (e) {
               // Fallback to immediate complete if PopupsManager unavailable
-              if (!TaskManager.completeTodo(taskId)) return;
+              const res = TaskManager.completeTodo(taskId);
+              if (!res || !res.success) return;
               card.style.transition = 'filter 150ms ease, opacity 400ms ease';
               card.style.filter = 'brightness(10) contrast(1.5)';
+              if (res.rewards) {
+                const rect = card.getBoundingClientRect();
+                if (res.rewards.ap) {
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F') });
+                }
+                if (res.rewards.diamonds) {
+                  UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                }
+              }
               setTimeout(() => {
                 this.updateTodosList();
               }, 200);
@@ -4418,6 +4723,10 @@ class UIManager {
 
   static addDailyNote() {
     const state = getGameState();
+    if (state.systemState && state.systemState.taskListFilters) {
+      state.systemState.taskListFilters.editModeDailies = true;
+      this.updateTaskVisibilityToggleLabels();
+    }
     const note = state.addDailyNote ? state.addDailyNote('', {
       x: 14 + (Math.random() * 18),
       y: 14 + (Math.random() * 22)
@@ -5123,6 +5432,12 @@ class UIManager {
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
       html += '<div class="task-shape-progress">' + progressText + '</div>';
       if (surplusIndicator) html += surplusIndicator;
+      const currentMonthKey = (typeof UIManager.getDailyNoteDateKey === 'function' ? UIManager.getDailyNoteDateKey() : new Date().toISOString().split('T')[0]).slice(0, 7);
+      if (!daily.streakSaversUsed) daily.streakSaversUsed = {};
+      const saversUsed = daily.streakSaversUsed[currentMonthKey] || 0;
+      const saversLeft = Math.max(0, 5 - saversUsed);
+      const saversIndicator = '<span class="task-savers-indicator" title="Streak Savers Left: ' + saversLeft + '" style="position: absolute; bottom: 4px; right: 4px; font-size: 7px; color: #b779ff; font-family: monospace; z-index: 2; text-shadow: 1px 1px 0px #000; letter-spacing: -0.5px;">🛡️' + saversLeft + '</span>';
+      html += saversIndicator;
       // Streak particles: count scales with positive streak (deterministic positions, no Math.random)
       for (let _pi = 0; _pi < particleCount; _pi++) {
         const pDelay = (_pi * 0.22 + (_pi * 17 % 7) * 0.07).toFixed(2);
@@ -5272,10 +5587,15 @@ class UIManager {
       noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
       noteEl.style.zIndex = String(40 + index);
 
+      const editMode = !!state.systemState?.taskListFilters?.editModeDailies;
+      const deleteBtn = noteEl.querySelector('.daily-note-delete');
+      if (deleteBtn) {
+        deleteBtn.style.display = editMode ? 'block' : 'none';
+      }
+
       if (!noteEl.dataset.bound) {
         noteEl.dataset.bound = '1';
 
-        const deleteBtn = noteEl.querySelector('.daily-note-delete');
         if (deleteBtn) {
           deleteBtn.addEventListener('click', (event) => {
             event.preventDefault();
@@ -5298,6 +5618,9 @@ class UIManager {
         }
 
         noteEl.addEventListener('pointerdown', (event) => {
+          if (!getGameState().systemState?.taskListFilters?.editModeDailies) {
+            return;
+          }
           if (event.target.closest('.daily-note-delete')) return;
           if (event.target.closest('button')) return;
           if (event.button !== 0) return;
@@ -5419,6 +5742,8 @@ class UIManager {
 
         if (String(this._focusDailyNoteId || '') === noteId) {
           this._focusDailyNoteId = null;
+          textEl.contentEditable = 'true';
+          noteEl.classList.add('editing');
           setTimeout(() => {
             try {
               textEl.focus();
@@ -5713,6 +6038,10 @@ class UIManager {
                 card.style.transform = `scale(${sizeScale * 1.04})`;
                 if (res.rewards && res.rewards.ap) {
                   UIManager.showDailyApReward(card, res.rewards.ap);
+                }
+                if (res.rewards && res.rewards.diamonds) {
+                  const rect = card.getBoundingClientRect();
+                  UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
                 }
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                   RetroTaskCompleteAnimation.play(card);
@@ -7120,16 +7449,22 @@ class UIManager {
     const graph = document.getElementById('runCompletionGraph');
     const rateEl = document.getElementById('runCompletionRate');
     const attrsContainer = document.getElementById('runCompletionAttrsContainer');
+    const rewardsContainer = document.getElementById('runCompletionRewardsContainer');
     if (!panel || !graph || !rateEl) return;
 
     const state = getGameState();
     const showAttrs = !!(state?.systemState?.showAttrsInCompletionPanel);
+    const showRewards = !!(state?.systemState?.showRewardsInCompletionPanel);
+    
     const toggleBtn = document.getElementById('runCompletionToggle');
+    const rewardsToggleBtn = document.getElementById('runCompletionRewardsToggle');
     if (toggleBtn) toggleBtn.style.opacity = showAttrs ? '1' : '0.75';
+    if (rewardsToggleBtn) rewardsToggleBtn.style.opacity = showRewards ? '1' : '0.75';
 
     if (showAttrs) {
-      // Hide graph, show attribute comparison
+      // Hide graph/rewards, show attribute comparison
       graph.style.display = 'none';
+      if (rewardsContainer) rewardsContainer.style.display = 'none';
       rateEl.textContent = 'VS';
       if (attrsContainer) {
         attrsContainer.style.display = 'block';
@@ -7157,9 +7492,54 @@ class UIManager {
       return;
     }
 
+    if (showRewards) {
+      // Hide graph/attrs, show custom diamond rewards
+      graph.style.display = 'none';
+      if (attrsContainer) attrsContainer.style.display = 'none';
+      rateEl.textContent = '🎁';
+      if (rewardsContainer) {
+        rewardsContainer.style.display = 'block';
+        const customRewards = state.systemState.customRewards || [];
+        if (customRewards.length === 0) {
+          rewardsContainer.innerHTML = `<div style="font-size:7px; color:#a0aec0; text-align:center; padding: 4px 0;">No rewards.<br>Config in Menu.</div>`;
+        } else {
+          rewardsContainer.innerHTML = customRewards.map(r => {
+            const canAfford = state.playerState.diamonds >= r.price;
+            return `<div style="margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:2px 4px; border-radius:3px; border:1px solid rgba(168,85,247,0.15);">
+              <div style="display:flex; flex-direction:column; text-align:left; max-width:100px;">
+                <span style="font-size:7px; color:#fff; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.name}">${r.name}</span>
+                <span style="font-size:6px; color:#a855f7;">${r.price} 💎</span>
+              </div>
+              <button class="buy-custom-reward-btn" data-id="${r.id}" ${canAfford ? '' : 'disabled'} style="font-size:6px; font-family:inherit; padding:2px 4px; border-radius:2px; background:${canAfford ? '#a855f7' : 'rgba(255,255,255,0.05)'}; color:${canAfford ? '#fff' : '#666'}; border:none; cursor:${canAfford ? 'pointer' : 'not-allowed'}; font-weight:bold;">BUY</button>
+            </div>`;
+          }).join('');
+
+          rewardsContainer.querySelectorAll('.buy-custom-reward-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = e.currentTarget.dataset.id;
+              const reward = (state.systemState.customRewards || []).find(item => String(item.id) === String(id));
+              if (reward && state.playerState.diamonds >= reward.price) {
+                state.spendDiamonds(reward.price);
+                state.save();
+                try {
+                  PopupsManager.showAlert('Reward Purchased! 🎁', `You bought:\n"${reward.name}"\nfor ${reward.price} Diamonds! Enjoy your reward!`);
+                } catch(err) {
+                  alert(`Purchased: ${reward.name}`);
+                }
+                UIManager.refreshGameUI();
+              }
+            });
+          });
+        }
+      }
+      return;
+    }
+
     // Graph mode
     graph.style.display = '';
     if (attrsContainer) attrsContainer.style.display = 'none';
+    if (rewardsContainer) rewardsContainer.style.display = 'none';
 
     const entries = this.getRunCompletionEntries();
     if (!entries.length) {

@@ -31,7 +31,8 @@ const TILE_TYPES = {
   PRODUCER: 5,
   INCREASER: 6,
   MAINTENANCE: 7,
-  COSMETIC: 8
+  COSMETIC: 8,
+  ENERGY_TREE: 9
 };
 
 const PRODUCER_SUBS = {
@@ -122,15 +123,6 @@ function isNightTime(timestamp) {
 
 // Runs a single 1Hz (per-second) simulation tick
 function tickSimulation(timestamp) {
-  if (lastTickTime !== null) {
-    if (crossedCheckinTime(lastTickTime, timestamp)) {
-      if (!isMultiplayerMode) {
-        const compRate = config.completionRateCurrentDay !== undefined ? config.completionRateCurrentDay : 0.0;
-        handleDailyCheckin(compRate);
-        config.completionRateCurrentDay = 0.0; // reset for subsequent days
-      }
-    }
-  }
   lastTickTime = timestamp;
 
   if (isMultiplayerMode) {
@@ -183,6 +175,7 @@ function tickSimulation(timestamp) {
   // 1. Gather all maintenance and increaser buildings to apply radius effects
   const sprinklers = [];
   const fertilizers = [];
+  let energyTreeCount = 0;
   
   // Scan all chunks for radius effect sources
   for (const key in chunks) {
@@ -210,9 +203,12 @@ function tickSimulation(timestamp) {
         const gx = cx * 32 + tx;
         const gy = cy * 32 + ty;
         fertilizers.push({ x: gx, y: gy });
+      } else if (type === TILE_TYPES.ENERGY_TREE) {
+        energyTreeCount++;
       }
     }
   }
+  const cap = 1.0 + energyTreeCount * 0.10;
 
   // 2. Process producers (trees/crops) decay & production
   let goldProducedThisSecond = 0;
@@ -295,6 +291,9 @@ function tickSimulation(timestamp) {
             }
           });
           multiplier += farmerMultiplierAdd;
+          
+          // Limit total multiplier (base 1.0 + buffs) to the world cap
+          multiplier = Math.min(cap, multiplier);
           
           // Apply live task completion rate: current-day rate drives production in real time.
           // Falls back to previous day's rate if current day hasn't been tracked yet.

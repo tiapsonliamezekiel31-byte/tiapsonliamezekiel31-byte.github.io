@@ -662,3 +662,76 @@ body.tycoon-active #todosPanel {
   }
 }
 
+/* Pink Mode Styles */
+body.tycoon-pink-mode .tycoon-hud-panel {
+  background: rgba(244, 63, 94, 0.4) !important;
+  border-color: rgba(251, 113, 133, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.4), inset 0 0 12px rgba(244, 63, 94, 0.3) !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-drawer {
+  background: rgba(244, 63, 94, 0.35) !important;
+  border-color: rgba(251, 113, 133, 0.55) !important;
+  box-shadow: 0 -8px 32px rgba(244, 63, 94, 0.4) !important;
+}
+
+body.tycoon-pink-mode .tycoon-btn {
+  background: rgba(244, 63, 94, 0.3) !important;
+  border-color: rgba(251, 113, 133, 0.5) !important;
+  color: #ffe4e6 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.tycoon-pink-mode .tycoon-btn:hover,
+body.tycoon-pink-mode .tycoon-btn:active {
+  background: rgba(244, 63, 94, 0.55) !important;
+  border-color: #fda4af !important;
+  box-shadow: 0 0 8px rgba(251, 113, 133, 0.6) !important;
+}
+
+body.tycoon-pink-mode .tycoon-btn.exit-btn {
+  background: rgba(225, 29, 72, 0.4) !important;
+  border-color: rgba(225, 29, 72, 0.6) !important;
+}
+
+body.tycoon-pink-mode .tycoon-btn.exit-btn:hover {
+  background: rgba(225, 29, 72, 0.6) !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-title {
+  color: #ffe4e6 !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(251, 113, 133, 0.5) !important;
+}
+
+body.tycoon-pink-mode .tycoon-tab-btn {
+  color: #fca5a5 !important;
+}
+
+body.tycoon-pink-mode .tycoon-tab-btn.active {
+  color: #fff !important;
+  border-bottom-color: #fda4af !important;
+  text-shadow: 0 0 6px rgba(251, 113, 133, 0.8) !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-card {
+  background: rgba(244, 63, 94, 0.2) !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-card:hover,
+body.tycoon-pink-mode .tycoon-shop-card.selected {
+  background: rgba(244, 63, 94, 0.45) !important;
+  border-color: #fda4af !important;
+  box-shadow: 0 0 14px rgba(251, 113, 133, 0.7) !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-item-name {
+  color: #ffe4e6 !important;
+}
+
+body.tycoon-pink-mode .tycoon-shop-item-cost {
+  color: #f43f5e !important;
+  font-weight: bold !important;
+}
+

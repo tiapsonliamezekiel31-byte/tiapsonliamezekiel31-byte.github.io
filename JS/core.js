@@ -261,7 +261,12 @@ class GameState {
         buffsCollected: 0,
         tasksCompleted: 0,
         daysSurvived: 0
-      }
+      },
+      customRewards: [
+        { id: '1', name: 'Coffee', price: 10 },
+        { id: '2', name: '1h Video Games', price: 20 },
+        { id: '3', name: '1 Bar of Chocolate', price: 5 }
+      ]
     };
   }
 
@@ -368,6 +373,13 @@ class GameState {
       tasksCompleted: 0,
       daysSurvived: 0
     };
+    if (!this.systemState.customRewards) {
+      this.systemState.customRewards = [
+        { id: '1', name: 'Coffee', price: 10 },
+        { id: '2', name: '1h Video Games', price: 20 },
+        { id: '3', name: '1 Bar of Chocolate', price: 5 }
+      ];
+    }
   }
   
   // Health
@@ -846,6 +858,13 @@ class GameState {
         this.systemState.isCheckInRunning = false;
         if (this.systemState.dialoguePopupsEnabled === undefined) {
           this.systemState.dialoguePopupsEnabled = true;
+        }
+        if (!this.systemState.customRewards || !Array.isArray(this.systemState.customRewards)) {
+          this.systemState.customRewards = [
+            { id: '1', name: 'Coffee', price: 10 },
+            { id: '2', name: '1h Video Games', price: 20 },
+            { id: '3', name: '1 Bar of Chocolate', price: 5 }
+          ];
         }
       }
       if (!this.combatState || typeof this.combatState !== 'object') {
@@ -1331,7 +1350,33 @@ function performCheckIn() {
   state.eventBus.emit(EVENTS.CHECK_IN, { time: nowMs });
 
   const completedDailies = TaskManager.getCompletedDailies();
-  const missedDailies = TaskManager.getMissedDailies();
+  const rawMissedDailies = TaskManager.getMissedDailies();
+  
+  const history = state.dailiesState.history || [];
+  const lastEntry = history[history.length - 1];
+  const currentMonthKey = getLocalDateKey().slice(0, 7); // 'YYYY-MM'
+
+  const savedDailies = [];
+  const missedDailies = [];
+
+  rawMissedDailies.forEach(daily => {
+    if (!daily.streakSaversUsed) daily.streakSaversUsed = {};
+    const usedThisMonth = daily.streakSaversUsed[currentMonthKey] || 0;
+    
+    // Check if missed last time
+    const missedLastTime = lastEntry && Array.isArray(lastEntry.missedDailies) &&
+      lastEntry.missedDailies.some(d => String(d.id) === String(daily.id));
+      
+    if (usedThisMonth < 5 && !missedLastTime) {
+      daily.streakSaversUsed[currentMonthKey] = usedThisMonth + 1;
+      daily.streakSaved = true;
+      savedDailies.push(daily);
+    } else {
+      daily.streakSaved = false;
+      missedDailies.push(daily);
+    }
+  });
+
   const allDailiesComplete = missedDailies.length === 0;
 
   // 1) Calculate missed-daily damage D and scale to N
@@ -2101,6 +2146,7 @@ function performCheckIn() {
       allDailiesComplete,
       completedDailies: completedDailies.map(d => ({ id: d.id, name: d.name, difficulty: d.difficulty, attribute: d.attribute })),
       missedDailies: missedDailies.map(d => ({ id: d.id, name: d.name, difficulty: d.difficulty, attribute: d.attribute })),
+      savedDailies: savedDailies.map(d => ({ id: d.id, name: d.name, difficulty: d.difficulty, attribute: d.attribute })),
       missedDailyDamage: D,
       scaledN: N,
       lateTodoDamage,
@@ -2123,6 +2169,8 @@ function performCheckIn() {
         if (daily.currentStreak > daily.longestStreak) {
           daily.longestStreak = daily.currentStreak;
         }
+      } else if (daily.streakSaved) {
+        // Streak is paused, do nothing to currentStreak
       } else {
         daily.currentStreak = 0;
       }

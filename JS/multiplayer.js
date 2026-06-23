@@ -144,6 +144,13 @@
         this.addLogEntry(`${playerName} joined the world.`);
       }
 
+      // Register player in the world with their latest completion rate
+      const currentRate = window.TycoonManager ? window.TycoonManager.calculateCurrentCompletionRate() : 1.0;
+      await worldRef.child('players').child(playerName).set({
+        completionRate: currentRate,
+        lastCheckinTime: Date.now()
+      });
+
       this.isConnected = true;
       localStorage.setItem('nemesis_multiplayer_active_world', worldName);
       
@@ -170,11 +177,17 @@
       
       this.addLogEntry(`${this.playerName} left the world.`);
       
+      // Remove player registration
+      if (this.db && this.worldName && this.playerName) {
+        this.db.ref(`worlds/${this.worldName}/players/${this.playerName}`).remove();
+      }
+      
       // Turn off listeners
       if (this.db && this.worldName) {
         this.db.ref(`worlds/${this.worldName}/chunks`).off();
         this.db.ref(`worlds/${this.worldName}/farmers`).off();
         this.db.ref(`worlds/${this.worldName}/resources`).off();
+        this.db.ref(`worlds/${this.worldName}/players`).off();
         this.db.ref(`worlds/${this.worldName}/log`).off();
       }
 
@@ -298,6 +311,25 @@
         });
         this.renderLogsList(logs);
       });
+
+      // 5. Players updates (to calculate world average completion rate)
+      worldRef.child('players').on('value', (snapshot) => {
+        if (!this.isConnected) return;
+        const players = snapshot.val() || {};
+        let total = 0;
+        let count = 0;
+        for (const name in players) {
+          if (players[name] && typeof players[name].completionRate === 'number') {
+            total += players[name].completionRate;
+            count++;
+          }
+        }
+        this.worldAverageCompletionRate = count > 0 ? (total / count) : 1.0;
+        
+        if (window.TycoonManager) {
+          window.TycoonManager.updateHUD();
+        }
+      });
     }
 
     async runSharedTick() {
@@ -330,7 +362,7 @@
       let apProduced = 0;
       let foodProduced = 0;
       
-      const TILE_TYPES = { PRODUCER: 5, INCREASER: 6, MAINTENANCE: 7 };
+      const TILE_TYPES = { PRODUCER: 5, INCREASER: 6, MAINTENANCE: 7, ENERGY_TREE: 9 };
       const CROP_TEMPLATES = [
         { gold: 0.02, ap: 0.01, food: 0.0005 },
         { gold: 0.02, ap: 0.02, food: 0.0006 },
@@ -415,8 +447,21 @@
               });
               multiplier += farmerAdd;
               
-              // Apply live task completion rate multiplier
-              const compRate = window.TycoonManager.calculateCurrentCompletionRate();
+              // Count Energy Trees to calculate world cap
+              let energyTreeCount = 0;
+              for (const k in chunks) {
+                const arr = chunks[k];
+                for (let idx2 = 0; idx2 < 1024; idx2++) {
+                  if ((arr[idx2] & 0xFF) === TILE_TYPES.ENERGY_TREE) {
+                    energyTreeCount++;
+                  }
+                }
+              }
+              const cap = 1.0 + energyTreeCount * 0.10;
+              multiplier = Math.min(cap, multiplier);
+              
+              // Apply world average task completion rate multiplier
+              const compRate = this.worldAverageCompletionRate !== undefined ? this.worldAverageCompletionRate : 1.0;
               multiplier *= Math.max(0.1, compRate);
 
               goldProduced += crop.gold * multiplier * elapsedSeconds;
