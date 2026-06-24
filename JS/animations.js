@@ -328,7 +328,7 @@ class FloatingDamageNumber {
       position: fixed;
       left: 0;
       top: 0;
-      font-family: 'Press Start 2P', monospace;
+      font-family: 'Orbitron', monospace;
       color: ${color};
       font-weight: 900;
       letter-spacing: 0.5px;
@@ -482,7 +482,7 @@ FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, option
   div.style.zIndex = 10002;
   div.style.whiteSpace = 'nowrap';
   div.style.willChange = 'transform, opacity';
-  div.style.fontFamily = "'Press Start 2P', monospace";
+  div.style.fontFamily = "'Orbitron', monospace";
   div.style.fontWeight = '900';
   div.style.letterSpacing = '0.5px';
   div.style.webkitTextStroke = `0.5px ${opts.color}`;
@@ -4245,6 +4245,7 @@ class WeaponHitAnimation {
     this._tintCard(card, 'rgba(96, 165, 250, 0.45)', 300);
   }
 }
+
 
 
 

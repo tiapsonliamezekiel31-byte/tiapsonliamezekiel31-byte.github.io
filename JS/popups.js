@@ -490,8 +490,8 @@ class PopupsManager {
     const popup = document.createElement('div');
     popup.className = 'popup diamond-rewards-popup';
 
-    if (!Array.isArray(state.systemState.diamondRewards)) {
-      state.systemState.diamondRewards = [];
+    if (!Array.isArray(state.systemState.customRewards)) {
+      state.systemState.customRewards = [];
     }
 
     let html = '<h2>💎 REAL-LIFE REWARDS</h2><button class="btn-close">✕</button>';
@@ -527,7 +527,7 @@ class PopupsManager {
 
     const renderRewards = () => {
       if (!list) return;
-      const rewards = Array.isArray(state.systemState.diamondRewards) ? state.systemState.diamondRewards : [];
+      const rewards = Array.isArray(state.systemState.customRewards) ? state.systemState.customRewards : [];
       if (!rewards.length) {
         list.innerHTML = '<div class="diamond-reward-empty">No rewards yet. Add one above.</div>';
         return;
@@ -537,7 +537,7 @@ class PopupsManager {
         <div class="diamond-reward-item" data-index="${index}">
           <div class="diamond-reward-item-main">
             <div class="diamond-reward-item-name">${reward.name}</div>
-            <div class="diamond-reward-item-meta">${reward.cost} diamonds</div>
+            <div class="diamond-reward-item-meta">${reward.price} diamonds</div>
           </div>
           <div class="diamond-reward-item-actions">
             <button class="btn-buy-reward" data-index="${index}">BUY</button>
@@ -549,10 +549,10 @@ class PopupsManager {
       list.querySelectorAll('.btn-buy-reward').forEach(button => {
         button.addEventListener('click', (event) => {
           const index = Number(event.currentTarget.dataset.index);
-          const reward = state.systemState.diamondRewards[index];
+          const reward = state.systemState.customRewards[index];
           if (!reward) return;
 
-          const cost = Math.max(1, Math.ceil(Number(reward.cost) || 0));
+          const cost = Math.max(1, Math.ceil(Number(reward.price) || 0));
           if ((state.playerState.diamonds || 0) < cost) {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough diamonds', { color: '#ff6666' });
             return;
@@ -570,7 +570,7 @@ class PopupsManager {
       list.querySelectorAll('.btn-delete-reward').forEach(button => {
         button.addEventListener('click', (event) => {
           const index = Number(event.currentTarget.dataset.index);
-          state.systemState.diamondRewards.splice(index, 1);
+          state.systemState.customRewards.splice(index, 1);
           saveRewards();
         });
       });
@@ -590,10 +590,10 @@ class PopupsManager {
         return;
       }
 
-      state.systemState.diamondRewards.push({
+      state.systemState.customRewards.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         name,
-        cost,
+        price: cost,
         claimed: false,
         createdAt: Date.now()
       });
@@ -745,7 +745,7 @@ class PopupsManager {
             <div class="buff-title" style="font-weight: bold; color: var(--accent-gold); font-size: 11px; margin-bottom: 4px;">${skillName}</div>
             <div class="buff-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${skillDesc}</div>
           </div>
-          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
+          <button class="btn-select btn-small" style="font-family: 'Orbitron', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
         </div>
       `;
     });
@@ -800,7 +800,7 @@ class PopupsManager {
             <div class="talisman-title" style="font-weight: bold; color: #eebbff; font-size: 11px; margin-bottom: 4px;">${tName}</div>
             <div class="talisman-effect" style="font-size: 8px; color: var(--text-muted, #ccc); line-height: 1.4;">${desc}</div>
           </div>
-          <button class="btn-select btn-small" style="font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
+          <button class="btn-select btn-small" style="font-family: 'Orbitron', monospace; font-size: 8px; padding: 6px 10px; cursor: pointer; flex-shrink: 0; width: 110px !important; margin: 0 !important;">CHOOSE</button>
         </div>
       `;
     });
@@ -1394,7 +1394,7 @@ class PopupsManager {
 
     popup.innerHTML = `
       <h2>${title || 'Warning'}</h2>
-      <div class="alert-message" style="font-size: 10px; color: #fff; margin: 12px 0; line-height: 1.4; font-family: 'Press Start 2P', monospace;">${message || ''}</div>
+      <div class="alert-message" style="font-size: 10px; color: #fff; margin: 12px 0; line-height: 1.4; font-family: 'Orbitron', monospace;">${message || ''}</div>
       <div class="alert-actions" style="margin-top: 16px;">
         <button class="btn-large btn-ok">OK</button>
       </div>
@@ -4177,3 +4177,4 @@ class PopupsManager {
     }
   }
 }
+

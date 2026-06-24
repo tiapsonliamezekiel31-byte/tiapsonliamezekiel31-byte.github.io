@@ -211,6 +211,7 @@ class UIManager {
   static initializeUI() {
     document.body.innerHTML = '';
     this.createHudWidget();
+    this.createCyberOverloadHud();
     this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
@@ -322,6 +323,188 @@ class UIManager {
     hud.addEventListener('pointermove', onPointerMove);
     hud.addEventListener('pointerup', onPointerUp);
     hud.addEventListener('pointercancel', onPointerUp);
+  }
+
+  static createCyberOverloadHud() {
+    let hud = document.getElementById('cyberOverloadHud');
+    if (hud) return;
+
+    hud = document.createElement('div');
+    hud.id = 'cyberOverloadHud';
+    hud.className = 'cyber-overload-hud';
+    hud.innerHTML = `
+      <div class="cyber-hud-header">
+        <span class="cyber-hud-title">&gt; CYBER_INFO_OVERLOAD</span>
+        <button class="cyber-hud-toggle">_</button>
+      </div>
+      <div class="cyber-hud-body" id="cyberHudBody"></div>
+    `;
+    document.body.appendChild(hud);
+
+    // Draggable functionality
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+    const header = hud.querySelector('.cyber-hud-header');
+
+    const onPointerDown = (e) => {
+      if (e.target.closest('button')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      hud.style.right = 'auto';
+      hud.style.bottom = 'auto';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+      
+      const maxX = window.innerWidth - hud.offsetWidth;
+      const maxY = window.innerHeight - hud.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      hud.style.left = newLeft + 'px';
+      hud.style.top = newTop + 'px';
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_cyber_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    header.addEventListener('pointerdown', onPointerDown);
+    hud.addEventListener('pointermove', onPointerMove);
+    hud.addEventListener('pointerup', onPointerUp);
+    hud.addEventListener('pointercancel', onPointerUp);
+
+    // Restore position
+    const savedPos = localStorage.getItem('nemesis_cyber_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.right = 'auto';
+        hud.style.bottom = 'auto';
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) { }
+    } else {
+      // Default position: bottom-left
+      hud.style.left = '20px';
+      hud.style.bottom = '80px';
+      hud.style.top = 'auto';
+      hud.style.right = 'auto';
+    }
+
+    // Toggle minimize
+    const toggleBtn = hud.querySelector('.cyber-hud-toggle');
+    const savedMinimized = localStorage.getItem('nemesis_cyber_hud_minimized') === 'true';
+    if (savedMinimized) {
+      hud.classList.add('minimized');
+      toggleBtn.textContent = '□';
+    }
+    toggleBtn.addEventListener('click', () => {
+      hud.classList.toggle('minimized');
+      const isMin = hud.classList.contains('minimized');
+      toggleBtn.textContent = isMin ? '□' : '_';
+      localStorage.setItem('nemesis_cyber_hud_minimized', String(isMin));
+    });
+  }
+
+  static updateCyberOverloadHud() {
+    const body = document.getElementById('cyberHudBody');
+    if (!body) return;
+
+    const state = getGameState();
+    if (!state) return;
+
+    const p = state.playerState || {};
+    const s = state.stageState || {};
+    const c = state.combatState || {};
+    const n = state.nemesisState || {};
+
+    // Advanced Stats Calculations
+    let apGainedToday = 0;
+    const maxApConfig = p.maxAp || 0;
+    (state.dailiesState?.dailies || []).forEach(d => {
+      if (d.completedToday) {
+        const reward = state.config?.taskRewards?.[d.difficulty];
+        if (reward && reward.ap) {
+          apGainedToday += reward.ap;
+        }
+      }
+    });
+
+    let goldGainedToday = 0;
+    let maxGoldConfig = 0;
+    (state.dailiesState?.dailies || []).forEach(d => {
+      const reward = state.config?.taskRewards?.[d.difficulty];
+      if (reward) {
+        if (reward.gold) maxGoldConfig += reward.gold;
+        if (d.completedToday && reward.gold) goldGainedToday += reward.gold;
+      }
+    });
+
+    const activeWeapon = p.activeWeapon;
+    const weaponCfg = state.config?.weapons?.[activeWeapon];
+    const baseCrit = weaponCfg ? (weaponCfg.critChance || 0) : 0;
+    const upgrades = p.weaponUpgrades?.[activeWeapon];
+    const critUp = (upgrades || []).reduce((s, u) => s + (u.crit || 0), 0);
+    const classPassiveCrit = (typeof PlayerManager !== 'undefined' && PlayerManager.getClassPassive()?.critBonus) || 0;
+    const totalCrit = Math.round((baseCrit + classPassiveCrit + critUp) * 100);
+
+    let dodgeCost = 0;
+    if (state.config && state.config.dodgeCost) {
+      let multiplier = 1;
+      if (p.talismans?.includes('Lead boots')) multiplier *= 1.5;
+      dodgeCost = Math.ceil((p.maxAp || 0) * state.config.dodgeCost * multiplier);
+    }
+
+    const streakMult = p.streakMultiplier || 1.0;
+    const savers = p.streakSaversLeft || 0;
+    
+    // Assemble info as plain, compact text
+    let info = '';
+    info += `[ CHARACTER ]\n`;
+    info += `CLASS : ${p.className || 'NONE'} (LVL ${p.level || 1})\n`;
+    info += `HP    : ${Math.ceil(p.hp || 0)}/${Math.ceil(p.maxHp || 100)}\n`;
+    info += `MANA  : ${Math.ceil(p.mana || 0)}/${Math.ceil(p.maxMana || 0)}\n`;
+    info += `GOLD  : ${p.gold || 0} | DMND: ${p.diamonds || 0}\n`;
+    info += `KEYS  : ${p.lootboxKeys || 0} | TAGS: ${p.killTags || 0}\n\n`;
+
+    info += `[ COMBAT DATA ]\n`;
+    info += `CRIT RATE  : ${totalCrit}%\n`;
+    info += `DODGE COST : ${dodgeCost} Mana\n`;
+    info += `COMBO HEAT : ${c.currentCombo || 0}\n`;
+    info += `WEAPON     : ${activeWeapon || 'NONE'}\n\n`;
+
+    info += `[ DAILY EFFICIENCY ]\n`;
+    info += `AP GAINED  : ${apGainedToday}/${maxApConfig}\n`;
+    info += `GOLD GAINED: ${goldGainedToday}/${maxGoldConfig}\n`;
+    info += `STREAK MULT: ${streakMult.toFixed(2)}x (SAVERS: ${savers})\n\n`;
+
+    info += `[ WORLD & NEMESIS ]\n`;
+    info += `STAGE : ${s.level || 1} (WAVE ${s.wave || 1})\n`;
+    info += `NEMESIS LEVEL : ${n.level || 1}\n`;
+
+    body.textContent = info;
   }
 
   static createNavigationMenu() {
@@ -2961,7 +3144,7 @@ class UIManager {
               display: flex;
               align-items: center;
               justify-content: center;
-              font-family: 'Press Start 2P', monospace;
+              font-family: 'Orbitron', monospace;
               font-size: 8px;
               color: #fff;
               box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -3553,15 +3736,15 @@ class UIManager {
     const popup = document.createElement('div');
     popup.className = 'popup diamond-rewards-popup';
 
-    if (!Array.isArray(state.systemState.diamondRewards)) {
-      state.systemState.diamondRewards = [];
+    if (!Array.isArray(state.systemState.customRewards)) {
+      state.systemState.customRewards = [];
     }
 
     const renderRewards = () => {
       const list = popup.querySelector('#diamondRewardList');
       if (!list) return;
 
-      const rewards = state.systemState.diamondRewards;
+      const rewards = state.systemState.customRewards;
       if (!rewards.length) {
         list.innerHTML = '<div class="diamond-reward-empty">No rewards yet. Add one above.</div>';
         return;
@@ -3571,7 +3754,7 @@ class UIManager {
         <div class="diamond-reward-item" data-index="${index}">
           <div class="diamond-reward-item-main">
             <div class="diamond-reward-item-name">${reward.name}</div>
-            <div class="diamond-reward-item-meta">${reward.cost} diamonds</div>
+            <div class="diamond-reward-item-meta">${reward.price} diamonds</div>
           </div>
           <div class="diamond-reward-item-actions">
             <button class="btn-buy-reward" data-index="${index}">BUY</button>
@@ -3583,10 +3766,10 @@ class UIManager {
       list.querySelectorAll('.btn-buy-reward').forEach(button => {
         button.addEventListener('click', (event) => {
           const index = Number(event.currentTarget.dataset.index);
-          const reward = state.systemState.diamondRewards[index];
+          const reward = state.systemState.customRewards[index];
           if (!reward) return;
 
-          const cost = Math.max(1, Math.ceil(Number(reward.cost) || 0));
+          const cost = Math.max(1, Math.ceil(Number(reward.price) || 0));
           if ((state.playerState.diamonds || 0) < cost) {
             FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough diamonds', { color: '#ff6666' });
             return;
@@ -3605,7 +3788,7 @@ class UIManager {
       list.querySelectorAll('.btn-delete-reward').forEach(button => {
         button.addEventListener('click', (event) => {
           const index = Number(event.currentTarget.dataset.index);
-          state.systemState.diamondRewards.splice(index, 1);
+          state.systemState.customRewards.splice(index, 1);
           try { state.save(); } catch (e) { }
           renderRewards();
         });
@@ -3647,10 +3830,10 @@ class UIManager {
         return;
       }
 
-      state.systemState.diamondRewards.push({
+      state.systemState.customRewards.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         name,
-        cost,
+        price: cost,
         claimed: false,
         createdAt: Date.now()
       });
@@ -6674,10 +6857,10 @@ class UIManager {
           clusterHeader = `
             <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
-                <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Press Start 2P', monospace; font-weight: bold;">${deadlineLabel}</div>
-                <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace;">${deadlineDistance}</div>
+                <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Orbitron', monospace; font-weight: bold;">${deadlineLabel}</div>
+                <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace;">${deadlineDistance}</div>
               </div>
-              <div class="cluster-badge" style="font-size: 6px; color: #a04ef6; font-family: 'Press Start 2P', monospace; font-weight: bold; text-transform: lowercase;">${attrTexts.join(', ')}</div>
+              <div class="cluster-badge" style="font-size: 6px; color: #a04ef6; font-family: 'Orbitron', monospace; font-weight: bold; text-transform: lowercase;">${attrTexts.join(', ')}</div>
             </div>
           `;
         }
@@ -6687,8 +6870,8 @@ class UIManager {
         clusterHeader = `
           <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
-              <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Press Start 2P', monospace; font-weight: bold;">${deadlineLabel}</div>
-              <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace;">${deadlineDistance}</div>
+              <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Orbitron', monospace; font-weight: bold;">${deadlineLabel}</div>
+              <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace;">${deadlineDistance}</div>
             </div>
           </div>
         `;
@@ -6738,7 +6921,7 @@ class UIManager {
         <div class="todo-card-body" style="margin-top: 2px;">
           ${subtaskCount > 0 ? `
             <div class="todo-subtasks-wrap" style="margin-top: 4px;">
-              <div class="todo-subtask-label" style="font-size: 6px; color: var(--text-muted); font-family: 'Press Start 2P', monospace; margin-bottom: 4px;">${subtaskCount} subtasks</div>
+              <div class="todo-subtask-label" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace; margin-bottom: 4px;">${subtaskCount} subtasks</div>
               <div class="subtasks">${subtasks}</div>
             </div>
           ` : ''}
@@ -6858,6 +7041,43 @@ class UIManager {
         card.remove();
       }
     });
+
+    // Draw lines between alive enemies on the canvas
+    const canvas = document.getElementById('enemyCanvas');
+    if (canvas) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const alivePositions = [];
+      enemies.forEach((enemy, index) => {
+        if (enemy && !enemy.isDead) {
+          const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
+          const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
+          const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+          const x = centerX + Math.cos(angle) * currentRadius;
+          let y = centerY + Math.sin(angle) * currentRadius;
+          if (enemy.isBoss) {
+            y += 28;
+          }
+          alivePositions.push({ x, y });
+        }
+      });
+
+      if (alivePositions.length > 1) {
+        ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < alivePositions.length; i++) {
+          for (let j = i + 1; j < alivePositions.length; j++) {
+            ctx.moveTo(alivePositions[i].x, alivePositions[i].y);
+            ctx.lineTo(alivePositions[j].x, alivePositions[j].y);
+          }
+        }
+        ctx.stroke();
+      }
+    }
 
     // Bind click handlers to enemy cards for targeting
     this.bindEnemyTargeting();
@@ -7271,6 +7491,7 @@ class UIManager {
     } catch (e) {
       console.warn('refreshGameUI: failed to sync resources', e);
     }
+    try { this.updateCyberOverloadHud(); } catch (e) { }
     this.scheduleUpdateDailiesList();
     this.updateTodosList();
     this.updateDeathDefianceBadge();
@@ -7820,7 +8041,7 @@ class UIManager {
       p.style.top = `${y}px`;
       p.style.pointerEvents = 'none';
       p.style.zIndex = '11000';
-      p.style.fontFamily = "'Press Start 2P', monospace";
+      p.style.fontFamily = "'Orbitron', monospace";
       p.style.fontSize = customSize;
       p.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
       p.style.textShadow = '0 0 8px rgba(255,255,255,0.8)';
@@ -8494,3 +8715,4 @@ window.debugAddMutator = function (enemyId, mutator) {
     try { if (typeof UIManager !== 'undefined') UIManager.renderEnemies(); } catch (e) { }
   } catch (e) { console.warn('debugAddMutator failed', e); }
 };
+

@@ -3376,3 +3376,4 @@
   // Register in global namespace
   window.TycoonManager = new TycoonEngine();
 })();
+
