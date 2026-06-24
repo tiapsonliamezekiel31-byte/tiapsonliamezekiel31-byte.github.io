@@ -892,6 +892,8 @@ class UIManager {
     const ebPanel = gameArea.querySelector('#eventBannerPanel');
     let isEbDragging = false;
     let ebStartX = 0, ebStartY = 0, ebInitialLeft = 0, ebInitialTop = 0;
+    let ebLatestX = 0, ebLatestY = 0;
+    let ebRafId = null;
 
     const savedEbPos = localStorage.getItem('nemesis_event_banner_pos');
     if (savedEbPos) {
@@ -943,23 +945,35 @@ class UIManager {
     const onEbMove = (e) => {
       if (!isEbDragging) return;
       e.preventDefault();
-      const dx = e.clientX - ebStartX;
-      const dy = e.clientY - ebStartY;
-      let newLeft = ebInitialLeft + dx;
-      let newTop = ebInitialTop + dy;
+      ebLatestX = e.clientX;
+      ebLatestY = e.clientY;
 
-      const maxX = window.innerWidth - ebPanel.offsetWidth;
-      const maxY = window.innerHeight - ebPanel.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!ebRafId) {
+        ebRafId = requestAnimationFrame(() => {
+          const dx = ebLatestX - ebStartX;
+          const dy = ebLatestY - ebStartY;
+          let newLeft = ebInitialLeft + dx;
+          let newTop = ebInitialTop + dy;
 
-      ebPanel.style.left = newLeft + 'px';
-      ebPanel.style.top = newTop + 'px';
+          const maxX = window.innerWidth - ebPanel.offsetWidth;
+          const maxY = window.innerHeight - ebPanel.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          ebPanel.style.left = newLeft + 'px';
+          ebPanel.style.top = newTop + 'px';
+          ebRafId = null;
+        });
+      }
     };
 
     const onEbUp = (e) => {
       if (!isEbDragging) return;
       isEbDragging = false;
+      if (ebRafId) {
+        cancelAnimationFrame(ebRafId);
+        ebRafId = null;
+      }
       try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
         left: parseInt(ebPanel.style.left, 10) || 0,
