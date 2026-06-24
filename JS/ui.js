@@ -277,6 +277,9 @@ class UIManager {
       } catch (e) { }
     }
 
+    let latestX = 0, latestY = 0;
+    let rafId = null;
+
     const onPointerDown = (e) => {
       if (e.target.closest('button, input, textarea, select, a')) return;
       if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -295,23 +298,35 @@ class UIManager {
     const onPointerMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
+      latestX = e.clientX;
+      latestY = e.clientY;
 
-      const maxX = window.innerWidth - hud.offsetWidth;
-      const maxY = window.innerHeight - hud.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
 
-      hud.style.left = newLeft + 'px';
-      hud.style.top = newTop + 'px';
+          const maxX = window.innerWidth - hud.offsetWidth;
+          const maxY = window.innerHeight - hud.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
     };
 
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_hud_pos', JSON.stringify({
         left: parseInt(hud.style.left, 10) || 0,
@@ -344,6 +359,8 @@ class UIManager {
     // Draggable functionality
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
 
     const header = hud.querySelector('.cyber-hud-header');
 
@@ -366,23 +383,35 @@ class UIManager {
     const onPointerMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
-      
-      const maxX = window.innerWidth - hud.offsetWidth;
-      const maxY = window.innerHeight - hud.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      latestX = e.clientX;
+      latestY = e.clientY;
 
-      hud.style.left = newLeft + 'px';
-      hud.style.top = newTop + 'px';
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+          
+          const maxX = window.innerWidth - hud.offsetWidth;
+          const maxY = window.innerHeight - hud.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
     };
 
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_cyber_hud_pos', JSON.stringify({
         left: parseInt(hud.style.left, 10) || 0,
@@ -784,6 +813,8 @@ class UIManager {
     }
     let isRcDragging = false;
     let rcStartX = 0, rcStartY = 0, rcInitialLeft = 0, rcInitialTop = 0;
+    let rcLatestX = 0, rcLatestY = 0;
+    let rcRafId = null;
 
     const savedRcPos = localStorage.getItem('nemesis_run_graph_pos');
     if (savedRcPos) {
@@ -815,23 +846,35 @@ class UIManager {
     const onRcMove = (e) => {
       if (!isRcDragging) return;
       e.preventDefault();
-      const dx = e.clientX - rcStartX;
-      const dy = e.clientY - rcStartY;
-      let newLeft = rcInitialLeft + dx;
-      let newTop = rcInitialTop + dy;
+      rcLatestX = e.clientX;
+      rcLatestY = e.clientY;
 
-      const maxX = window.innerWidth - rcPanel.offsetWidth;
-      const maxY = window.innerHeight - rcPanel.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!rcRafId) {
+        rcRafId = requestAnimationFrame(() => {
+          const dx = rcLatestX - rcStartX;
+          const dy = rcLatestY - rcStartY;
+          let newLeft = rcInitialLeft + dx;
+          let newTop = rcInitialTop + dy;
 
-      rcPanel.style.left = newLeft + 'px';
-      rcPanel.style.top = newTop + 'px';
+          const maxX = window.innerWidth - rcPanel.offsetWidth;
+          const maxY = window.innerHeight - rcPanel.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          rcPanel.style.left = newLeft + 'px';
+          rcPanel.style.top = newTop + 'px';
+          rcRafId = null;
+        });
+      }
     };
 
     const onRcUp = (e) => {
       if (!isRcDragging) return;
       isRcDragging = false;
+      if (rcRafId) {
+        cancelAnimationFrame(rcRafId);
+        rcRafId = null;
+      }
       try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
         left: parseInt(rcPanel.style.left, 10) || 0,
@@ -7296,6 +7339,8 @@ class UIManager {
     const container = strip.parentElement;
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
 
     const onPointerDown = (e) => {
       if (e.target.closest('button, input, textarea, select, a, .weapon-chip, .weapon-upgrade-btn')) return;
@@ -7316,23 +7361,35 @@ class UIManager {
     const onPointerMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
+      latestX = e.clientX;
+      latestY = e.clientY;
 
-      const maxX = window.innerWidth - container.offsetWidth;
-      const maxY = window.innerHeight - container.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
 
-      container.style.left = newLeft + 'px';
-      container.style.top = newTop + 'px';
+          const maxX = window.innerWidth - container.offsetWidth;
+          const maxY = window.innerHeight - container.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          container.style.left = newLeft + 'px';
+          container.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
     };
 
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       try { strip.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_weapon_pos', JSON.stringify({
         left: parseInt(container.style.left, 10) || 0,
@@ -8465,6 +8522,8 @@ class UIManager {
     // Make Satchel Draggable
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
 
     const onPointerDown = (e) => {
       if (e.target.closest('button, input, textarea, select, a, .satchel-item')) return;
@@ -8485,23 +8544,35 @@ class UIManager {
     const onPointerMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
+      latestX = e.clientX;
+      latestY = e.clientY;
 
-      const maxX = window.innerWidth - panel.offsetWidth;
-      const maxY = window.innerHeight - panel.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
 
-      panel.style.left = newLeft + 'px';
-      panel.style.top = newTop + 'px';
+          const maxX = window.innerWidth - panel.offsetWidth;
+          const maxY = window.innerHeight - panel.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          panel.style.left = newLeft + 'px';
+          panel.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
     };
 
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       try { panel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_satchel_pos', JSON.stringify({
         left: parseInt(panel.style.left, 10) || 0,
