@@ -2184,15 +2184,7 @@ class UIManager {
     if (stopBtn) {
       stopBtn.addEventListener('click', (e) => {
         if (e) e.stopPropagation();
-        let shouldStop = false;
-        try {
-          shouldStop = confirm('Cancel focus timer? Doubled rewards will end immediately.');
-        } catch (err) {
-          shouldStop = true;
-        }
-        if (shouldStop) {
-          resetTimer();
-        }
+        resetTimer();
       });
     }
   }
