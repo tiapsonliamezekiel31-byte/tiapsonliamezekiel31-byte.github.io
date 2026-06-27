@@ -1756,7 +1756,8 @@ class UIManager {
             b.vy *= -1;
           }
 
-          b.el.style.transform = `translate3d(${b.x - r}px, ${b.y - r}px, 0)`;
+          b.el.style.left = `${b.x - r}px`;
+          b.el.style.top = `${b.y - r}px`;
         });
 
         driftAnimationId = requestAnimationFrame(updateDrift);
@@ -1843,6 +1844,15 @@ class UIManager {
         const bubbleSize = Math.round(80 * sizeScale);
         const shadeCol = UIManager.shadeColor(attrColor, -20);
 
+        const r = bubbleSize / 2;
+        const startX = r + Math.random() * (width - r * 2);
+        const startY = r + Math.random() * (height - r * 2);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.5 + Math.random() * 0.7;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+
         el.className = `focus-bubble shape-task shape-${shapeClass}`;
         el.style.cssText = `
           --task-accent: ${attrColor};
@@ -1854,22 +1864,11 @@ class UIManager {
           background: linear-gradient(180deg, ${attrColor}, ${shadeCol});
           border: 2px solid color-mix(in srgb, ${attrColor} 72%, white 28%);
           color: ${taskInk};
-          left: 0;
-          top: 0;
+          left: ${startX - r}px;
+          top: ${startY - r}px;
           z-index: 20002;
           pointer-events: auto;
         `;
-        
-        const r = bubbleSize / 2;
-        const startX = r + Math.random() * (width - r * 2);
-        const startY = r + Math.random() * (height - r * 2);
-
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 0.5 + Math.random() * 0.7;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-
-        el.style.transform = `translate3d(${startX - r}px, ${startY - r}px, 0)`;
 
         el.innerHTML = `
           <div class="focus-task-title">${task.name}</div>
@@ -2183,8 +2182,15 @@ class UIManager {
     });
 
     if (stopBtn) {
-      stopBtn.addEventListener('click', () => {
-        if (confirm('Cancel focus timer? Doubled rewards will end immediately.')) {
+      stopBtn.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        let shouldStop = false;
+        try {
+          shouldStop = confirm('Cancel focus timer? Doubled rewards will end immediately.');
+        } catch (err) {
+          shouldStop = true;
+        }
+        if (shouldStop) {
           resetTimer();
         }
       });
