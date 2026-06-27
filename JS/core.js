@@ -829,6 +829,17 @@ class GameState {
     try {
       const data = JSON.parse(saved);
       this.playerState = data.playerState;
+
+      // Ensure all configured attributes exist in playerState
+      if (!this.playerState.attributes) {
+        this.playerState.attributes = {};
+      }
+      (this.config.attributes || []).forEach(attr => {
+        if (!this.playerState.attributes[attr]) {
+          this.playerState.attributes[attr] = { points: 0, level: 1 };
+        }
+      });
+
       this.playerState.diamonds = Math.max(0, Math.round(Number(this.playerState.diamonds) || 0));
       if (this.playerState.petPoints === undefined) this.playerState.petPoints = 0;
       if (this.playerState.petImage === undefined) this.playerState.petImage = null;
@@ -870,7 +881,18 @@ class GameState {
       this.stageState = data.stageState;
       this.combatState = data.combatState;
       this.buffs = data.buffs;
-      this.nemesisState = data.nemesisState;
+      this.nemesisState = data.nemesisState || {};
+      
+      // Ensure all configured attributes exist in nemesisState
+      if (!this.nemesisState.attributes) {
+        this.nemesisState.attributes = {};
+      }
+      (this.config.attributes || []).forEach(attr => {
+        if (!this.nemesisState.attributes[attr]) {
+          this.nemesisState.attributes[attr] = { points: 0, level: 1 };
+        }
+      });
+
       this.systemState = data.systemState;
       if (this.systemState) {
         this.systemState.isCheckInRunning = false;
