@@ -7257,7 +7257,7 @@ button:hover,
   justify-content: center;
   font-family: 'Orbitron', monospace;
   color: #d1d5db;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 #focus-clock-popup[style*="flex"] {
@@ -7840,6 +7840,7 @@ button:hover,
   transition: transform 0.1s ease, opacity 0.3s ease;
   will-change: transform, opacity;
   overflow: hidden;
+  pointer-events: auto !important;
 }
 
 .focus-bubble:hover {

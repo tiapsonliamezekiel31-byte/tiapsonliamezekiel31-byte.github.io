@@ -22,6 +22,38 @@ class UIManager {
   static _updateDailiesTimer = null;
   static _stageBackdropKey = '';
 
+  static getAttributeColor(attribute) {
+    const palette = getGameState()?.config?.attributeColors || {};
+    return palette[String(attribute || '').toUpperCase()] || '#7a7a7a';
+  }
+
+  static getTextColorForHex(hex) {
+    const normalized = String(hex || '').replace('#', '');
+    if (normalized.length !== 6) return '#ffffff';
+    const r = parseInt(normalized.slice(0, 2), 16);
+    const g = parseInt(normalized.slice(2, 4), 16);
+    const b = parseInt(normalized.slice(4, 6), 16);
+    const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+    return luminance > 150 ? '#14161d' : '#ffffff';
+  }
+
+  static shadeColor(hex, amount = -18) {
+    const normalized = String(hex || '').replace('#', '');
+    if (normalized.length !== 6) return '#2d2d2d';
+    let r = parseInt(normalized.slice(0, 2), 16);
+    let g = parseInt(normalized.slice(2, 4), 16);
+    let b = parseInt(normalized.slice(4, 6), 16);
+
+    r = Math.max(0, Math.min(255, r + amount));
+    g = Math.max(0, Math.min(255, g + amount));
+    b = Math.max(0, Math.min(255, b + amount));
+
+    const rHex = r.toString(16).padStart(2, '0');
+    const gHex = g.toString(16).padStart(2, '0');
+    const bHex = b.toString(16).padStart(2, '0');
+    return `#${rHex}${gHex}${bHex}`;
+  }
+
   static STAGE_BACKDROPS = {
     1: {
       A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' },
@@ -1805,11 +1837,11 @@ class UIManager {
 
         // Derive shape, color, and size from the task
         const shapeClass = UIManager.shapeClassForDifficulty ? UIManager.shapeClassForDifficulty(task.difficulty) : 'easy';
-        const attrColor = (typeof getAttributeColor === 'function') ? getAttributeColor(task.attribute) : '#7a7a7a';
-        const taskInk = (typeof getTextColorForHex === 'function') ? getTextColorForHex(attrColor) : '#ffffff';
+        const attrColor = UIManager.getAttributeColor(task.attribute);
+        const taskInk = UIManager.getTextColorForHex(attrColor);
         const sizeScale = Math.max(0.7, Number(task.size) || 1);
         const bubbleSize = Math.round(80 * sizeScale);
-        const shadeCol = (typeof shadeColor === 'function') ? shadeColor(attrColor, -20) : attrColor;
+        const shadeCol = UIManager.shadeColor(attrColor, -20);
 
         el.className = `focus-bubble shape-task shape-${shapeClass}`;
         el.style.cssText = `
@@ -1825,6 +1857,7 @@ class UIManager {
           left: 0;
           top: 0;
           z-index: 20002;
+          pointer-events: auto;
         `;
         
         const r = bubbleSize / 2;
@@ -1965,6 +1998,9 @@ class UIManager {
     closeBtn.addEventListener('click', hidePopup);
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) hidePopup();
+    });
+    popup.addEventListener('click', (e) => {
+      if (e.target === popup) hidePopup();
     });
 
     btn.addEventListener('click', () => {
