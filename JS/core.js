@@ -258,6 +258,10 @@ class GameState {
         enemiesDefeated: 0,
         bossesSailed: 0,
         totalGoldEarned: 0,
+        totalDiamondsEarned: 0,
+        totalDamageTaken: 0,
+        damageTakenCount: 0,
+        last15DealtHits: [],
         buffsCollected: 0,
         tasksCompleted: 0,
         daysSurvived: 0
@@ -369,6 +373,10 @@ class GameState {
       enemiesDefeated: 0,
       bossesSailed: 0,
       totalGoldEarned: 0,
+      totalDiamondsEarned: 0,
+      totalDamageTaken: 0,
+      damageTakenCount: 0,
+      last15DealtHits: [],
       buffsCollected: 0,
       tasksCompleted: 0,
       daysSurvived: 0
@@ -405,6 +413,10 @@ class GameState {
   
   takeDamage(amount) {
     this.setHp(this.playerState.hp - amount);
+    if (amount > 0 && this.systemState.runStats) {
+      this.systemState.runStats.totalDamageTaken = (this.systemState.runStats.totalDamageTaken || 0) + amount;
+      this.systemState.runStats.damageTakenCount = (this.systemState.runStats.damageTakenCount || 0) + 1;
+    }
     if (amount > 0 && this.hasBuff('Fury')) {
       const furyPct = this.config.buffs?.['Fury']?.effect?.furyApBonus ?? 0.08;
       const bonusAp = Math.round(this.playerState.maxAp * furyPct);
@@ -491,6 +503,9 @@ class GameState {
   
   addGold(amount) {
     this.setGold(this.playerState.gold + amount);
+    if (amount > 0 && this.systemState.runStats) {
+      this.systemState.runStats.totalGoldEarned = (this.systemState.runStats.totalGoldEarned || 0) + amount;
+    }
   }
   
   // Diamonds
@@ -507,6 +522,9 @@ class GameState {
   
   addDiamonds(amount) {
     this.setDiamonds(this.playerState.diamonds + amount);
+    if (amount > 0 && this.systemState.runStats) {
+      this.systemState.runStats.totalDiamondsEarned = (this.systemState.runStats.totalDiamondsEarned || 0) + amount;
+    }
   }
 
   spendDiamonds(amount) {

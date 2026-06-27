@@ -149,6 +149,20 @@ class Enemy {
     this.hp -= amount;
     const after = this.hp;
     console.debug(`[Enemy.takeDamage] ${this.name}(${this.id}) before=${before} damage=${amount} after=${after}`);
+    try {
+      const state = getGameState();
+      if (state && state.systemState && state.systemState.runStats) {
+        if (!state.systemState.runStats.last15DealtHits) {
+          state.systemState.runStats.last15DealtHits = [];
+        }
+        state.systemState.runStats.last15DealtHits.push(amount);
+        if (state.systemState.runStats.last15DealtHits.length > 15) {
+          state.systemState.runStats.last15DealtHits.shift();
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to track enemy damage hit:', e);
+    }
     if (this.hp <= 0) {
       this.hp = 0;
       this.isDead = true;

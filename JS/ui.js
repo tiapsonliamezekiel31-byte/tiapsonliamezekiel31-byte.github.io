@@ -243,6 +243,7 @@ class UIManager {
   static initializeUI() {
     document.body.innerHTML = '';
     this.createHudWidget();
+    this.createStatsHudWidget();
     this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
@@ -371,6 +372,57 @@ class UIManager {
     hud.addEventListener('pointercancel', onPointerUp);
   }
 
+  static createStatsHudWidget() {
+    const statsHud = document.createElement('div');
+    statsHud.id = 'statsHudWidget';
+    statsHud.className = 'draggable-stats-hud';
+    statsHud.innerHTML = `
+      <div class="stats-hud-header">
+        <div class="stats-hud-header-title">📊 <span>RUN STATS</span></div>
+        <div class="stats-hud-controls">
+          <button class="stats-hud-btn stats-toggle-btn" title="Minimize/Maximize">－</button>
+        </div>
+      </div>
+      <div class="stats-hud-content">
+        <!-- Gas Meter -->
+        <div class="stats-hud-section">
+          <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
+        </div>
+        <!-- Radar Chart -->
+        <div class="stats-hud-section">
+          <div class="stats-hud-section-title">Attributes (vs Nemesis)</div>
+          <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+        </div>
+        <!-- Advanced Statistics Grid -->
+        <div class="stats-grid">
+          <div class="stats-box">
+            <span class="stats-box-label">Gold velocity</span>
+            <span class="stats-box-value" id="statsGoldVelocity">0.0/min</span>
+          </div>
+          <div class="stats-box">
+            <span class="stats-box-label">Diamond velocity</span>
+            <span class="stats-box-value" id="statsDiamondVelocity">0.0/min</span>
+          </div>
+          <div class="stats-box">
+            <span class="stats-box-label">Avg Dealt Hit</span>
+            <span class="stats-box-value" id="statsDmgDealtAvg">0.0</span>
+            <span class="stats-box-sub">Last 15 hits</span>
+          </div>
+          <div class="stats-box">
+            <span class="stats-box-label">Avg Taken Hit</span>
+            <span class="stats-box-value" id="statsDmgTakenAvg">0.0</span>
+            <span class="stats-box-sub">Across run</span>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(statsHud);
+    try {
+      StatsHUD.init();
+    } catch (e) {
+      console.error('StatsHUD init error', e);
+    }
+  }
 
   static createNavigationMenu() {
     const hamburger = document.createElement('div');
@@ -7311,6 +7363,7 @@ class UIManager {
     this.updateStageIndicator();
     this.renderEnemies();
     this.updateRunCompletionGraph();
+    try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
     try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) { }
@@ -8577,4 +8630,336 @@ window.debugAddMutator = function (enemyId, mutator) {
     try { if (typeof UIManager !== 'undefined') UIManager.renderEnemies(); } catch (e) { }
   } catch (e) { console.warn('debugAddMutator failed', e); }
 };
+
+class StatsHUD {
+  static init() {
+    const hud = document.getElementById('statsHudWidget');
+    if (!hud) return;
+
+    const savedPos = localStorage.getItem('nemesis_stats_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.right = 'auto';
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) {}
+    } else {
+      hud.style.left = '20px';
+      hud.style.bottom = '80px';
+    }
+
+    const savedSize = localStorage.getItem('nemesis_stats_hud_size');
+    if (savedSize) {
+      try {
+        const { width, height } = JSON.parse(savedSize);
+        hud.style.width = Math.max(140, width) + 'px';
+        hud.style.height = Math.max(252, height) + 'px';
+      } catch (e) {}
+    }
+
+    const isCollapsed = localStorage.getItem('nemesis_stats_hud_collapsed') === 'true';
+    if (isCollapsed) {
+      hud.classList.add('collapsed');
+      const toggleBtn = hud.querySelector('.stats-toggle-btn');
+      if (toggleBtn) toggleBtn.textContent = '＋';
+    }
+
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    const header = hud.querySelector('.stats-hud-header');
+    const content = hud.querySelector('.stats-hud-content');
+    
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+
+      const maxX = window.innerWidth - hud.offsetWidth;
+      const maxY = window.innerHeight - hud.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, maxX));
+      newTop = Math.max(0, Math.min(newTop, maxY));
+
+      hud.style.left = newLeft + 'px';
+      hud.style.top = newTop + 'px';
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) {}
+      localStorage.setItem('nemesis_stats_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    header.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.bottom = 'auto';
+      hud.style.right = 'auto';
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) {}
+      
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    });
+
+    const toggleBtn = hud.querySelector('.stats-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const collapsed = hud.classList.toggle('collapsed');
+        toggleBtn.textContent = collapsed ? '＋' : '－';
+        localStorage.setItem('nemesis_stats_hud_collapsed', String(collapsed));
+        if (!collapsed) {
+          StatsHUD.update();
+        }
+      });
+    }
+
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver((entries) => {
+        if (hud.classList.contains('collapsed')) return;
+        for (let entry of entries) {
+          const w = hud.offsetWidth;
+          const h = hud.offsetHeight;
+          localStorage.setItem('nemesis_stats_hud_size', JSON.stringify({
+            width: Math.round(w),
+            height: Math.round(h)
+          }));
+          
+          // Calculate proportional scale factor
+          // Base content dimensions: width 140px, height 252px total (226px content)
+          const scaleX = w / 140;
+          const scaleY = (h - 20) / 226;
+          const scale = Math.min(scaleX, scaleY);
+          
+          if (content) {
+            content.style.transform = `scale(${scale})`;
+            // Center content inside if there is extra space
+            const extraWidth = w - (132 * scale);
+            content.style.marginLeft = `${Math.max(0, extraWidth / 2)}px`;
+          }
+        }
+      });
+      observer.observe(hud);
+    }
+
+    StatsHUD.update();
+  }
+
+  static update() {
+    const hud = document.getElementById('statsHudWidget');
+    if (!hud || hud.classList.contains('collapsed')) return;
+
+    const state = getGameState();
+    if (!state) return;
+
+    const entries = (typeof UIManager !== 'undefined' && typeof UIManager.getRunCompletionEntries === 'function') 
+      ? UIManager.getRunCompletionEntries() 
+      : [];
+    
+    let avgRate = 0;
+    if (entries.length > 0) {
+      const sum = entries.reduce((acc, entry) => acc + (entry.pct || 0), 0);
+      avgRate = sum / entries.length;
+    }
+
+    const startTime = Number(state.systemState?.gameStartTime) || 0;
+    const runStats = state.systemState?.runStats || {};
+    const msElapsed = startTime > 0 ? Date.now() - startTime : 0;
+    const minsElapsed = msElapsed / 60000;
+
+    const goldEarned = Number(runStats.totalGoldEarned) || 0;
+    const goldVel = minsElapsed > 0.1 ? (goldEarned / minsElapsed).toFixed(1) : '0.0';
+
+    const diamondsEarned = Number(runStats.totalDiamondsEarned) || 0;
+    const diaVel = minsElapsed > 0.1 ? (diamondsEarned / minsElapsed).toFixed(1) : '0.0';
+
+    const elGoldVal = document.getElementById('statsGoldVelocity');
+    const elDiaVal = document.getElementById('statsDiamondVelocity');
+    if (elGoldVal) elGoldVal.textContent = `${goldVel}/min`;
+    if (elDiaVal) elDiaVal.textContent = `${diaVel}/min`;
+
+    const dmgDealtHits = runStats.last15DealtHits || [];
+    const avgDmgDealt = dmgDealtHits.length > 0 
+      ? (dmgDealtHits.reduce((a, b) => a + b, 0) / dmgDealtHits.length).toFixed(1) 
+      : '0.0';
+
+    const totalDmgTaken = Number(runStats.totalDamageTaken) || 0;
+    const dmgTakenCount = Number(runStats.damageTakenCount) || 0;
+    const avgDmgTaken = dmgTakenCount > 0 ? (totalDmgTaken / dmgTakenCount).toFixed(1) : '0.0';
+
+    const elDmgDealt = document.getElementById('statsDmgDealtAvg');
+    const elDmgTaken = document.getElementById('statsDmgTakenAvg');
+    if (elDmgDealt) elDmgDealt.textContent = avgDmgDealt;
+    if (elDmgTaken) elDmgTaken.textContent = avgDmgTaken;
+
+    StatsHUD.drawCharts(avgRate);
+  }
+
+  static drawCharts(avgRate = null) {
+    const hud = document.getElementById('statsHudWidget');
+    if (!hud || hud.classList.contains('collapsed')) return;
+
+    const state = getGameState();
+    if (!state) return;
+
+    if (avgRate === null) {
+      const entries = (typeof UIManager !== 'undefined' && typeof UIManager.getRunCompletionEntries === 'function') 
+        ? UIManager.getRunCompletionEntries() 
+        : [];
+      let sum = 0;
+      if (entries.length > 0) {
+        sum = entries.reduce((acc, entry) => acc + (entry.pct || 0), 0);
+        avgRate = sum / entries.length;
+      } else {
+        avgRate = 0;
+      }
+    }
+
+    const gasContainer = document.getElementById('statsGasMeterSvgContainer');
+    if (gasContainer) {
+      const ratePct = Math.round(avgRate * 100);
+      const circumference = 56.55;
+      const strokeOffset = circumference * (1 - avgRate);
+
+      gasContainer.innerHTML = `
+        <svg viewBox="0 0 100 32" style="width:100%; height:100%; overflow:visible;">
+          <path d="M 32 24 A 18 18 0 0 1 68 24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" stroke-linecap="round"/>
+          <path d="M 32 24 A 18 18 0 0 1 68 24" fill="none" stroke="url(#gasGradient)" stroke-width="4" stroke-linecap="round"
+                stroke-dasharray="${circumference}" stroke-dashoffset="${strokeOffset}" style="transition: stroke-dashoffset 0.5s ease;"/>
+          <line x1="50" y1="24" x2="${50 + 15 * Math.cos(Math.PI * (1 - avgRate))}" y2="${24 - 15 * Math.sin(Math.PI * (1 - avgRate))}" 
+                stroke="#d8b4fe" stroke-width="1" stroke-linecap="round" style="transition: all 0.5s ease;"/>
+          <circle cx="50" cy="24" r="2" fill="#a78bfa"/>
+          <text x="50" y="19" font-size="7" font-weight="bold" fill="#fff" text-anchor="middle">${ratePct}%</text>
+          <text x="50" y="30" font-size="4.5" fill="#9ca3af" text-anchor="middle" font-weight="bold">RUN COMPLETION</text>
+          <defs>
+            <linearGradient id="gasGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#ef4444"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#10b981"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      `;
+    }
+
+    const radarContainer = document.getElementById('statsRadarSvgContainer');
+    if (radarContainer) {
+      const config = state.config || {};
+      const attributes = config.attributes || ['STR', 'INT', 'DISC', 'CREA', 'SOC', 'CAP', 'RESP'];
+      const playerAttrs = state.playerState?.attributes || {};
+      const nemesisAttrs = state.nemesisState?.attributes || {};
+      const attrColors = config.attributeColors || {};
+
+      let maxVal = 10;
+      for (const attr of attributes) {
+        maxVal = Math.max(maxVal, playerAttrs[attr]?.points || 0, nemesisAttrs[attr]?.points || 0);
+      }
+
+      const C_X = 50;
+      const C_Y = 38;
+      const R = 24;
+      const numPoints = attributes.length;
+      const angleStep = (2 * Math.PI) / numPoints;
+
+      let gridsHtml = '';
+      const gridLevels = [0.25, 0.5, 0.75, 1.0];
+      gridLevels.forEach(lvl => {
+        const pts = [];
+        for (let i = 0; i < numPoints; i++) {
+          const angle = i * angleStep - Math.PI / 2;
+          const x = C_X + R * lvl * Math.cos(angle);
+          const y = C_Y + R * lvl * Math.sin(angle);
+          pts.push(`${x},${y}`);
+        }
+        gridsHtml += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.3"/>`;
+      });
+
+      let axesHtml = '';
+      for (let i = 0; i < numPoints; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        const x = C_X + R * Math.cos(angle);
+        const y = C_Y + R * Math.sin(angle);
+        axesHtml += `<line x1="${C_X}" y1="${C_Y}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,0.08)" stroke-width="0.3"/>`;
+      }
+
+      const playerPts = [];
+      for (let i = 0; i < numPoints; i++) {
+        const attr = attributes[i];
+        const val = playerAttrs[attr]?.points || 0;
+        const radius = (val / maxVal) * R;
+        const angle = i * angleStep - Math.PI / 2;
+        const x = C_X + radius * Math.cos(angle);
+        const y = C_Y + radius * Math.sin(angle);
+        playerPts.push(`${x},${y}`);
+      }
+      const playerPolygon = `<polygon points="${playerPts.join(' ')}" fill="rgba(139, 92, 246, 0.25)" stroke="#8b5cf6" stroke-width="0.8"/>`;
+
+      const nemesisPts = [];
+      for (let i = 0; i < numPoints; i++) {
+        const attr = attributes[i];
+        const val = nemesisAttrs[attr]?.points || 0;
+        const radius = (val / maxVal) * R;
+        const angle = i * angleStep - Math.PI / 2;
+        const x = C_X + radius * Math.cos(angle);
+        const y = C_Y + radius * Math.sin(angle);
+        nemesisPts.push(`${x},${y}`);
+      }
+      const nemesisPolygon = `<polygon points="${nemesisPts.join(' ')}" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" stroke-width="0.8" stroke-dasharray="1.5,1.5"/>`;
+
+      let labelsHtml = '';
+      for (let i = 0; i < numPoints; i++) {
+        const attr = attributes[i];
+        const angle = i * angleStep - Math.PI / 2;
+        const labelRadius = R + 5;
+        const x = C_X + labelRadius * Math.cos(angle);
+        const y = C_Y + labelRadius * Math.sin(angle);
+
+        let textAnchor = 'middle';
+        if (Math.cos(angle) > 0.15) textAnchor = 'start';
+        else if (Math.cos(angle) < -0.15) textAnchor = 'end';
+
+        let dy = '0.3em';
+        if (Math.sin(angle) < -0.8) dy = '-0.1em';
+        else if (Math.sin(angle) > 0.8) dy = '0.6em';
+
+        const color = attrColors[attr] || '#f1de97';
+        labelsHtml += `<text x="${x}" y="${y}" font-size="5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr}</text>`;
+      }
+
+      radarContainer.innerHTML = `
+        <svg viewBox="0 0 100 85" style="width:100%; height:100%; overflow:visible;">
+          ${gridsHtml}
+          ${axesHtml}
+          ${nemesisPolygon}
+          ${playerPolygon}
+          ${labelsHtml}
+          <g transform="translate(5, 80)" font-size="4.2" font-weight="bold">
+            <circle cx="2" cy="-1.5" r="1" fill="#8b5cf6"/>
+            <text x="5" y="0" fill="#a78bfa">Player</text>
+            <circle cx="35" cy="-1.5" r="1" fill="#ef4444"/>
+            <text x="38" y="0" fill="#ef4444">Nemesis</text>
+          </g>
+        </svg>
+      `;
+    }
+  }
+}
+window.StatsHUD = StatsHUD;
 

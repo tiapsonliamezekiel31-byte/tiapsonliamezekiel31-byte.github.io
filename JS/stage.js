@@ -140,6 +140,10 @@ class StageManager {
       enemiesDefeated: 0,
       bossesSailed: 0,
       totalGoldEarned: 0,
+      totalDiamondsEarned: 0,
+      totalDamageTaken: 0,
+      damageTakenCount: 0,
+      last15DealtHits: [],
       buffsCollected: 0,
       tasksCompleted: 0,
       daysSurvived: 0

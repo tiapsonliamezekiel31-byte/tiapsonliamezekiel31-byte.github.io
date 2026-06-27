@@ -1,6 +1,6 @@
 /* style_tycoon.css - Glassmorphic, dark theme styles for Tycoon Mode */
 
-body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHandlesContainer):not(#todosPanel):not(#rightTabHandlesContainer):not(.popup-overlay):not(.floating-wizard):not(script):not(style) {
+body.tycoon-active> :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHandlesContainer):not(#todosPanel):not(#rightTabHandlesContainer):not(.popup-overlay):not(.floating-wizard):not(script):not(style) {
   display: none !important;
 }
 
@@ -16,7 +16,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   background: #0f172a;
   color: #f8fafc;
   font-family: 'Orbitron', 'Orbitron', 'Orbitron', monospace, sans-serif;
-  display: none; /* Controlled by toggle */
+  display: none;
+  /* Controlled by toggle */
   flex-direction: column;
   overflow: hidden;
   user-select: none;
@@ -29,7 +30,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   width: 100%;
   height: 100%;
   overflow: hidden;
-  touch-action: none; /* Crucial for custom multi-touch gesture handling */
+  touch-action: none;
+  /* Crucial for custom multi-touch gesture handling */
 }
 
 #tycoon-canvas {
@@ -58,7 +60,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   position: relative !important;
   border: none !important;
   border-radius: 0 !important;
-  background: rgba(56, 189, 248, 0.8) !important; /* Outer cyan border */
+  background: rgba(56, 189, 248, 0.8) !important;
+  /* Outer cyan border */
   padding: 11px 17px !important;
   clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px) !important;
   filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.5)) drop-shadow(0 0 1px rgba(56, 189, 248, 0.3)) !important;
@@ -75,7 +78,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   background: rgba(15, 23, 42, 0.95) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(56, 189, 248, 0.4) !important; /* Inner cyan border */
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  /* Inner cyan border */
   clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px) !important;
   z-index: -1 !important;
   pointer-events: none !important;
@@ -127,10 +131,12 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   align-items: center;
   gap: 6px;
   font-family: inherit;
-  min-height: 44px; /* Mobile touch size */
+  min-height: 44px;
+  /* Mobile touch size */
 }
 
-.tycoon-btn:hover, .tycoon-btn:active {
+.tycoon-btn:hover,
+.tycoon-btn:active {
   background: rgba(255, 255, 255, 0.2);
   border-color: #ffd700;
   transform: translateY(-1px);
@@ -157,7 +163,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   transition: background 0.2s ease;
 }
 
-.tycoon-shop-handle:hover, .tycoon-shop-handle:active {
+.tycoon-shop-handle:hover,
+.tycoon-shop-handle:active {
   background: rgba(255, 255, 255, 0.45);
 }
 
@@ -167,7 +174,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   left: 50%;
   transform: translateX(-50%);
   width: min(600px, 100vw);
-  height: 260px; /* Default height */
+  height: 260px;
+  /* Default height */
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   border-top-left-radius: 24px;
@@ -180,7 +188,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
-  touch-action: none; /* Prevent scrolling browser when dragging drawer */
+  touch-action: none;
+  /* Prevent scrolling browser when dragging drawer */
 }
 
 .tycoon-shop-header {
@@ -252,7 +261,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   min-height: 90px;
 }
 
-.tycoon-shop-card:hover, .tycoon-shop-card.selected {
+.tycoon-shop-card:hover,
+.tycoon-shop-card.selected {
   background: rgba(255, 255, 255, 0.12);
   border-color: #ffd700;
 }
@@ -381,7 +391,8 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
   font-size: 9px;
 }
 
-.tycoon-form-row input, .tycoon-form-row select {
+.tycoon-form-row input,
+.tycoon-form-row select {
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
@@ -417,6 +428,7 @@ body.tycoon-active > :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHand
     transform: translateY(0) scale(1);
     opacity: 1;
   }
+
   100% {
     transform: translateY(-40px) scale(0.9);
     opacity: 0;
@@ -496,17 +508,17 @@ body.tycoon-active #petTabHandle {
     right: 8px;
     gap: 6px;
   }
-  
+
   .tycoon-hud-panel {
     padding: 6px 10px;
     gap: 10px;
   }
-  
+
   .tycoon-stat {
     font-size: 8px;
     gap: 4px;
   }
-  
+
   .tycoon-btn {
     padding: 6px 10px;
     font-size: 8px;
@@ -552,39 +564,42 @@ body.tycoon-active #petTabHandle {
   .tycoon-shop-item-cost {
     font-size: 6px;
   }
-  
+
   .tycoon-dialog {
     padding: 16px;
     gap: 12px;
   }
-  
+
   .tycoon-dialog h3 {
     font-size: 11px;
   }
-  
+
   .tycoon-form-row {
     margin-bottom: 8px;
   }
-  
+
   .tycoon-form-row label {
     font-size: 8px;
   }
-  
-  .tycoon-form-row input, .tycoon-form-row select {
+
+  .tycoon-form-row input,
+  .tycoon-form-row select {
     padding: 6px;
     font-size: 8px;
     width: 80px;
   }
-  
+
   .tycoon-active-tool-banner {
     top: 75px;
     padding: 10px 16px;
     font-size: 8px;
   }
+
   .tycoon-brush-controls {
     margin-top: 6px;
     gap: 6px;
   }
+
   .tycoon-brush-controls .brush-size-btn {
     padding: 6px 12px;
     font-size: 8px;
@@ -600,7 +615,8 @@ body.tycoon-active #todosPanel {
 /* Multiplayer Log Panel */
 .tycoon-mp-log-panel {
   position: absolute;
-  bottom: 280px; /* Above the shop drawer */
+  bottom: 280px;
+  /* Above the shop drawer */
   right: 16px;
   width: min(320px, 90vw);
   max-height: 200px;
@@ -669,7 +685,8 @@ body.tycoon-active #todosPanel {
 /* Adjustments for mobile to ensure logs look good */
 @media (max-width: 600px) {
   .tycoon-mp-log-panel {
-    bottom: 210px; /* Closer to shop drawer */
+    bottom: 210px;
+    /* Closer to shop drawer */
     right: 8px;
     width: min(240px, 90vw);
     max-height: 150px;
@@ -748,5 +765,3 @@ body.tycoon-pink-mode .tycoon-shop-item-cost {
   color: #f43f5e !important;
   font-weight: bold !important;
 }
-
-
