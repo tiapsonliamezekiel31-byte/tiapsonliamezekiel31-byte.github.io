@@ -47,7 +47,7 @@ function ensureAnimationStyles() {
 
     @keyframes nmMeterPulse {
       0%, 100% { box-shadow: 0 0 0 0 var(--nm-meter-color, #C00707); }
-      50% { box-shadow: 0 0 20px 5px var(--nm-meter-color, #C00707); }
+      50% { box-shadow: 0 0 0 4px var(--nm-meter-color, #C00707); }
     }
 
     @keyframes nmMeterShimmer {
@@ -177,6 +177,8 @@ class ParticleSystem {
   static _tickRunning = false;
 
   emit(x, y, count = 10, options = {}) {
+    const durationScale = 1.3;
+    const speedScale = 0.77;
     const {
       color = (typeof UIManager !== 'undefined') ? UIManager.themeColor('--text-white', '#ffffff') : '#fff',
       velocity = 5,
@@ -185,19 +187,22 @@ class ParticleSystem {
       size = 4
     } = options;
 
+    const scaledLifetime = lifetime * durationScale;
+    const scaledVelocity = velocity * speedScale;
+
     const scaledCount = Math.max(1, Math.min(AnimationRuntime.maxBurstParticles, Math.round(count * AnimationRuntime.particleScale)));
 
     const now = performance.now();
 
     for (let i = 0; i < scaledCount; i++) {
       const angle = Math.random() * spread;
-      const speed = velocity * (0.8 + Math.random() * 0.4);
+      const speed = scaledVelocity * (0.8 + Math.random() * 0.4);
 
       // reuse element from pool when possible
       const particle = ParticleSystem._pool.length ? ParticleSystem._pool.pop() : document.createElement('div');
 
       const borderRadius = options.shape === 'square' ? '0px' : '50%';
-      const glowStyle = options.glow ? `box-shadow: 0 0 10px ${color}, 0 0 20px ${color};` : '';
+      const glowStyle = options.glow ? `border: 1px solid #bd00ff; box-shadow: 1px 1px 0px rgba(0,0,0,0.5);` : '';
 
       particle.style.cssText = `
         position: fixed;
@@ -215,8 +220,8 @@ class ParticleSystem {
       `;
       this.config.container.appendChild(particle);
 
-      const vx = options.vx !== undefined ? options.vx : Math.cos(angle) * speed;
-      const vy = options.vy !== undefined ? options.vy : Math.sin(angle) * speed;
+      const vx = options.vx !== undefined ? options.vx * speedScale : Math.cos(angle) * speed;
+      const vy = options.vy !== undefined ? options.vy * speedScale : Math.sin(angle) * speed;
 
       ParticleSystem._active.push({
         el: particle,
@@ -225,7 +230,7 @@ class ParticleSystem {
         vx,
         vy,
         start: now,
-        lifetime,
+        lifetime: scaledLifetime,
         gravity: options.gravity || 0,
         accelY: options.accelY || 0,
         rotateSpeed: options.rotateSpeed || 0
@@ -1429,7 +1434,7 @@ class RetroTaskCompleteAnimation {
           width: ${sizeW}px; height: ${sizeH}px;
           background: ${color}; pointer-events: none;
           z-index: 999998; will-change: transform, opacity;
-          box-shadow: 0 0 10px ${color};
+          border: 2px solid #bd00ff;
         `;
         container.appendChild(conf);
 
@@ -1527,7 +1532,7 @@ class RetroTaskCompleteAnimation {
               width: ${size}px; height: ${size}px;
               border-radius: 50%;
               background: ${fireworkColor}; pointer-events: none;
-              z-index: 999998; box-shadow: 0 0 15px ${fireworkColor}, 0 0 30px ${fireworkColor};
+              z-index: 999998; border: 3px solid #bd00ff;
               will-change: transform, opacity;
             `;
             container.appendChild(part);
@@ -1677,12 +1682,16 @@ class RetroTaskCompleteAnimation {
           holyBeam.style.width = '180px';
           holyBeam.style.height = '100vh';
           holyBeam.style.height = '100dvh';
-          holyBeam.style.background = 'linear-gradient(90deg, transparent, rgba(255, 230, 100, 0.5) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 230, 100, 0.5) 75%, transparent)';
-          holyBeam.style.boxShadow = '0 0 100px rgba(255, 215, 106, 0.8), 0 0 200px rgba(255, 215, 106, 0.6)';
+          holyBeam.style.background = '#FFE664';
+          holyBeam.style.borderLeft = '6px solid #FFFFFF';
+          holyBeam.style.borderRight = '6px solid #FFFFFF';
+          holyBeam.style.boxShadow = '8px 0 0 #ffaa00, -8px 0 0 #ffaa00';
           
           if (difficulty === 'Hard' || difficulty === 'Ultra') {
-            holyBeam.style.background = 'linear-gradient(90deg, transparent, rgba(255, 100, 200, 0.6) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 100, 200, 0.6) 75%, transparent)';
-            holyBeam.style.boxShadow = '0 0 120px rgba(255, 100, 200, 0.9), 0 0 240px rgba(255, 100, 200, 0.7)';
+            holyBeam.style.background = '#FF64C8';
+            holyBeam.style.borderLeft = '6px solid #FFFFFF';
+            holyBeam.style.borderRight = '6px solid #FFFFFF';
+            holyBeam.style.boxShadow = '8px 0 0 #d90077, -8px 0 0 #d90077';
           }
           document.body.appendChild(holyBeam);
 
@@ -1698,7 +1707,8 @@ class RetroTaskCompleteAnimation {
               top: ${cy + 20}px;
               width: ${size}px; height: ${size}px;
               background: ${sparkColor};
-              box-shadow: 0 0 15px ${sparkColor}, 0 0 30px ${sparkColor};
+              border: 2px solid #bd00ff;
+              box-shadow: 2px 2px 0px rgba(0,0,0,0.4);
               pointer-events: none; z-index: 999999;
               will-change: transform, opacity;
             `;
@@ -1752,7 +1762,7 @@ class RetroTaskCompleteAnimation {
           background: ${color};
           pointer-events: none;
           z-index: 999998;
-          box-shadow: 0 0 15px ${color}, 0 0 30px ${color};
+          border: 3px solid #bd00ff;
           will-change: transform, opacity;
         `;
         container.appendChild(square);
@@ -1886,7 +1896,10 @@ class RetroWarpAnimation {
       top: -100px;
       width: ${rect.width * 0.8}px;
       height: ${rect.top + 100}px;
-      background: linear-gradient(180deg, rgba(0, 229, 255, 0) 0%, rgba(0, 229, 255, 0.8) 100%);
+      background: #00e5ff;
+      border-left: 4px solid #ffffff;
+      border-right: 4px solid #ffffff;
+      box-shadow: 4px 0 0 #bd00ff, -4px 0 0 #bd00ff;
       pointer-events: none;
       z-index: 12999;
       mix-blend-mode: screen;
@@ -1938,7 +1951,7 @@ class RetroWarpAnimation {
         sq.style.cssText = `
           position: fixed; left: 0; top: 0;
           width: ${size}px; height: ${size}px;
-          background: #00e5ff; pointer-events: none; z-index: 13000;
+          background: #00e5ff; border: 2px solid #bd00ff; pointer-events: none; z-index: 13000;
           will-change: transform, opacity;
         `;
         container.appendChild(sq);
@@ -1979,7 +1992,9 @@ class RetroLevelUpAnimation {
       bottom: 0;
       width: 100vw;
       height: 100vh;
-      background: linear-gradient(0deg, rgba(255, 215, 0, 0.7) 0%, rgba(0, 229, 255, 0.3) 50%, rgba(255, 255, 255, 0) 100%);
+      background: rgba(255, 215, 0, 0.9);
+      border-top: 8px solid #ffffff;
+      box-shadow: inset 0 8px 0 #00e5ff, 0 4px 0 #000;
       transform: scaleY(0);
       transform-origin: bottom;
       pointer-events: none;
@@ -2012,7 +2027,7 @@ class RetroLevelUpAnimation {
         width: ${size}px;
         height: ${size}px;
         background: ${isGold ? '#FFD700' : '#00e5ff'};
-        box-shadow: 0 0 10px ${isGold ? '#FFD700' : '#00e5ff'};
+        border: 2px solid #bd00ff;
         pointer-events: none;
         z-index: 14001;
         will-change: transform, opacity;
@@ -2230,7 +2245,7 @@ class RetroComboFinisherAnimation {
           width: ${startSize}px;
           height: ${startSize}px;
           border: ${borderSize}px solid #ffd700;
-          box-shadow: 0 0 20px #ffaa00, inset 0 0 10px #ffd700;
+          box-shadow: 0 0 0 3px #bd00ff, inset 0 0 0 3px #bd00ff;
           background: rgba(255, 215, 0, 0.05);
           pointer-events: none;
           z-index: 13400;
@@ -2269,7 +2284,7 @@ class RetroComboFinisherAnimation {
         width: ${size}px; height: ${size}px;
         background: #ffd700;
         border: 2px solid #ff5500;
-        box-shadow: 0 0 10px #ffaa00;
+        box-shadow: 2px 2px 0px #bd00ff;
         pointer-events: none;
         z-index: 13401;
         will-change: transform, opacity;
@@ -2609,8 +2624,10 @@ class RetroEnergyBeamAnimation {
       top: -100px;
       width: 40px;
       height: ${window.innerHeight + 200}px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.2) 0%, ${color} 40%, #ffffff 50%, ${color} 60%, rgba(255,255,255,0.2) 100%);
-      box-shadow: 0 0 20px ${color}, 0 0 40px ${color};
+      background: ${color};
+      border-left: 4px solid #ffffff;
+      border-right: 4px solid #ffffff;
+      box-shadow: 4px 0 0 #bd00ff, -4px 0 0 #bd00ff;
       pointer-events: none;
       z-index: 13500;
       opacity: 0;
@@ -2624,7 +2641,7 @@ class RetroEnergyBeamAnimation {
     }
 
     const start = performance.now();
-    const duration = 400;
+    const duration = Math.round(400 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -2681,7 +2698,8 @@ class RetroOrbBurstAnimation {
         width: ${size}px;
         height: ${size}px;
         background: ${color};
-        box-shadow: 0 0 6px ${color};
+        border: 2px solid #bd00ff;
+        box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
         pointer-events: none;
         z-index: 13600;
         will-change: transform, opacity;
@@ -2694,7 +2712,7 @@ class RetroOrbBurstAnimation {
       const ty = Math.sin(angle) * distance;
 
       const start = performance.now();
-      const duration = 400 + Math.random() * 200;
+      const duration = Math.round((400 + Math.random() * 200) * 1.3);
 
       const animate = () => {
         const progress = Math.min(1, (performance.now() - start) / duration);
@@ -2738,7 +2756,7 @@ class RetroPixelRainAnimation {
           width: ${size}px;
           height: ${size}px;
           background: ${color};
-          box-shadow: 0 0 8px ${color};
+          border: 2px solid #bd00ff;
           pointer-events: none;
           z-index: 13200;
           will-change: transform, opacity;
@@ -2746,7 +2764,7 @@ class RetroPixelRainAnimation {
         container.appendChild(drop);
 
         const start = performance.now();
-        const duration = 600 + Math.random() * 400;
+        const duration = Math.round((600 + Math.random() * 400) * 1.3);
 
         const animate = () => {
           const progress = Math.min(1, (performance.now() - start) / duration);
@@ -2762,7 +2780,7 @@ class RetroPixelRainAnimation {
           }
         };
         requestAnimationFrame(animate);
-      }, Math.random() * 400);
+      }, Math.round(Math.random() * 400 * 1.3));
     }
   }
 }
@@ -2780,7 +2798,7 @@ class RetroRagePulseAnimation {
     cardElement.style.willChange = 'transform, box-shadow';
 
     const start = performance.now();
-    const duration = 500;
+    const duration = Math.round(500 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -2790,7 +2808,7 @@ class RetroRagePulseAnimation {
       const glowSize = 10 + Math.sin(progress * Math.PI * 4) * 15;
 
       cardElement.style.transform = `${origTransform} scale(${pulse})`;
-      cardElement.style.boxShadow = `0 0 ${glowSize}px ${color}, inset 0 0 10px ${color}`;
+      cardElement.style.boxShadow = `0 0 0 4px #ffffff, 0 0 0 8px ${color}`;
 
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -2825,8 +2843,9 @@ class RetroHellfireAnimation {
           bottom: -50px;
           width: ${size}px;
           height: ${size * 2}px;
-          background: linear-gradient(to top, ${color}, #ffcc00, transparent);
-          box-shadow: 0 0 15px ${color};
+          background: ${color};
+          border: 3px solid #ffcc00;
+          box-shadow: 4px 4px 0px #bd00ff;
           border-radius: 4px;
           pointer-events: none;
           z-index: 13200;
@@ -2836,7 +2855,7 @@ class RetroHellfireAnimation {
         container.appendChild(fire);
 
         const start = performance.now();
-        const duration = 600 + Math.random() * 500;
+        const duration = Math.round((600 + Math.random() * 500) * 1.3);
         const driftX = (Math.random() - 0.5) * 100;
 
         const animate = () => {
@@ -2853,7 +2872,7 @@ class RetroHellfireAnimation {
           }
         };
         requestAnimationFrame(animate);
-      }, Math.random() * 300);
+      }, Math.round(Math.random() * 300 * 1.3));
     }
   }
 }
@@ -2878,7 +2897,7 @@ class RetroSandstormAnimation {
           width: ${size}px;
           height: ${size}px;
           background: ${color};
-          box-shadow: 0 0 5px ${color};
+           border: 1.5px solid #bd00ff;
           pointer-events: none;
           z-index: 13200;
           will-change: transform, opacity;
@@ -2888,7 +2907,7 @@ class RetroSandstormAnimation {
         container.appendChild(sand);
 
         const start = performance.now();
-        const duration = 800 + Math.random() * 600;
+        const duration = Math.round((800 + Math.random() * 600) * 1.3);
         const startY = top;
 
         const animate = () => {
@@ -2905,7 +2924,7 @@ class RetroSandstormAnimation {
           }
         };
         requestAnimationFrame(animate);
-      }, Math.random() * 400);
+      }, Math.round(Math.random() * 400 * 1.3));
     }
   }
 }
@@ -2931,7 +2950,7 @@ class RetroMagicCircleAnimation {
       will-change: transform, opacity;
       transform: scale(0.1) rotate(0deg);
       opacity: 0;
-      transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 300ms;
+      transition: transform 390ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 390ms;
     `;
 
     // Neon glowing SVG magic circle design
@@ -2957,14 +2976,14 @@ class RetroMagicCircleAnimation {
 
     setTimeout(() => {
       // Spinning expand & burst
-      div.style.transition = 'transform 400ms ease-in, opacity 400ms';
+      div.style.transition = 'transform 520ms ease-in, opacity 520ms';
       div.style.transform = 'scale(1.8) rotate(360deg)';
       div.style.opacity = '0';
       if (typeof RetroOrbBurstAnimation !== 'undefined') {
         RetroOrbBurstAnimation.play(cardElement, color);
       }
-      setTimeout(() => div.remove(), 400);
-    }, 800);
+      setTimeout(() => div.remove(), 520);
+    }, 1040);
   }
 }
 
@@ -2990,7 +3009,7 @@ class RetroAcidSplashAnimation {
         width: ${size}px;
         height: ${size * 1.5}px;
         background: ${color};
-        box-shadow: 0 0 8px ${color};
+        border: 2px solid #bd00ff;
         border-radius: 50% 50% 40% 40%;
         pointer-events: none;
         z-index: 13300;
@@ -2999,17 +3018,17 @@ class RetroAcidSplashAnimation {
       container.appendChild(drop);
 
       const angle = (Math.random() * Math.PI) - Math.PI; // Upwards spread
-      const speed = 4 + Math.random() * 8;
+      const speed = (4 + Math.random() * 8) * 0.77;
       const vx = Math.cos(angle) * speed;
-      let vy = Math.sin(angle) * speed - 2;
+      let vy = Math.sin(angle) * speed - 2 * 0.77;
 
       const start = performance.now();
-      const duration = 600 + Math.random() * 300;
+      const duration = Math.round((600 + Math.random() * 300) * 1.3);
 
       const animate = () => {
         const progress = Math.min(1, (performance.now() - start) / duration);
         // Gravity effect
-        vy += 0.35;
+        vy += 0.27;
         const curX = cx + vx * (progress * 25);
         const curY = cy + vy * (progress * 25) + (0.5 * 0.35 * Math.pow(progress * 25, 2));
 
@@ -3048,7 +3067,7 @@ class RetroEarthShatterAnimation {
         height: ${size}px;
         background: ${color};
         border: 2px solid #332211;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        box-shadow: 4px 4px 0px #bd00ff;
         pointer-events: none;
         z-index: 13250;
         will-change: transform, opacity;
@@ -3057,7 +3076,7 @@ class RetroEarthShatterAnimation {
       container.appendChild(shard);
 
       const start = performance.now();
-      const duration = 500 + Math.random() * 400;
+      const duration = Math.round((500 + Math.random() * 400) * 1.3);
       const jumpHeight = 100 + Math.random() * 250;
 
       const animate = () => {
@@ -3150,8 +3169,10 @@ class RetroHolyBeamAnimation {
           top: -100px;
           width: 60px;
           height: ${window.innerHeight + 300}px;
-          background: linear-gradient(90deg, transparent, ${color}, #fff, ${color}, transparent);
-          box-shadow: 0 0 25px ${color};
+          background: ${color};
+          border-left: 4px solid #ffffff;
+          border-right: 4px solid #ffffff;
+          box-shadow: 5px 0 0 #bd00ff, -5px 0 0 #bd00ff;
           pointer-events: none;
           z-index: 13450;
           opacity: 0;
@@ -3162,7 +3183,7 @@ class RetroHolyBeamAnimation {
         container.appendChild(beam);
 
         const start = performance.now();
-        const duration = 500;
+        const duration = Math.round(500 * 1.3);
 
         const animate = () => {
           const progress = Math.min(1, (performance.now() - start) / duration);
@@ -3189,7 +3210,7 @@ class RetroHolyBeamAnimation {
           }
         };
         requestAnimationFrame(animate);
-      }, i * 120);
+      }, Math.round(i * 120 * 1.3));
     }
   }
 }
@@ -3228,17 +3249,17 @@ class RetroRoyalCrownBurstAnimation {
       container.appendChild(crown);
 
       const angle = (i / count) * Math.PI * 2;
-      const speed = 3 + Math.random() * 5;
+      const speed = (3 + Math.random() * 5) * 0.77;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
 
       const start = performance.now();
-      const duration = 600 + Math.random() * 300;
+      const duration = Math.round((600 + Math.random() * 300) * 1.3);
 
       const animate = () => {
         const progress = Math.min(1, (performance.now() - start) / duration);
-        const curX = cx + vx * (progress * 35);
-        const curY = cy + vy * (progress * 35);
+        const curX = cx + vx * (progress * 35 * 0.77);
+        const curY = cy + vy * (progress * 35 * 0.77);
         const rot = progress * 360;
 
         crown.style.transform = `translate3d(${curX - cx}px, ${curY - cy}px, 0) rotate(${rot}deg) scale(${1 - progress})`;
@@ -3266,7 +3287,8 @@ class RetroBloodTideAnimation {
       bottom: -100px;
       height: 100px;
       background: ${color};
-      box-shadow: 0 0 30px ${color};
+      border-top: 6px solid #ffffff;
+      box-shadow: 0 -4px 0px #bd00ff;
       pointer-events: none;
       z-index: 13500;
       will-change: transform, opacity;
@@ -3279,7 +3301,7 @@ class RetroBloodTideAnimation {
     }
 
     const start = performance.now();
-    const duration = 700;
+    const duration = Math.round(700 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -3330,8 +3352,9 @@ class RetroLavaSpitAnimation {
       top: ${cy - size / 2}px;
       width: ${size}px;
       height: ${size}px;
-      background: radial-gradient(circle, #ffffff 0%, ${color} 60%, transparent 100%);
-      box-shadow: 0 0 20px ${color};
+      background: #ffffff;
+      border: 4px solid ${color};
+      box-shadow: 0 0 0 3px #bd00ff;
       border-radius: 50%;
       pointer-events: none;
       z-index: 13600;
@@ -3343,7 +3366,7 @@ class RetroLavaSpitAnimation {
     const targetY = window.innerHeight * 0.7; // Target user's area
 
     const start = performance.now();
-    const duration = 600;
+    const duration = Math.round(600 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -3404,7 +3427,7 @@ class RetroSpectralSwordsAnimation {
         container.appendChild(sword);
 
         const start = performance.now();
-        const duration = 400;
+        const duration = Math.round(400 * 1.3);
         const targetY = window.innerHeight * 0.7 + Math.random() * 100;
 
         const animate = () => {
@@ -3420,7 +3443,7 @@ class RetroSpectralSwordsAnimation {
           }
         };
         requestAnimationFrame(animate);
-      }, i * 100);
+      }, Math.round(i * 100 * 1.3));
     }
   }
 }
@@ -3436,8 +3459,9 @@ class RetroSolarFlareAnimation {
       top: 50%;
       width: ${size}px;
       height: ${size}px;
-      background: radial-gradient(circle, #ffffff 0%, ${color} 50%, transparent 100%);
-      box-shadow: 0 0 40px ${color};
+      background: #ffffff;
+      border: 6px solid ${color};
+      box-shadow: 0 0 0 4px #bd00ff;
       border-radius: 50%;
       pointer-events: none;
       z-index: 13550;
@@ -3452,7 +3476,7 @@ class RetroSolarFlareAnimation {
     }
 
     const start = performance.now();
-    const duration = 650;
+    const duration = Math.round(650 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -3500,8 +3524,9 @@ class RetroVoidBlackHoleAnimation {
       top: ${cy - size / 2}px;
       width: ${size}px;
       height: ${size}px;
-      background: radial-gradient(circle, #000000 30%, ${color} 70%, transparent 100%);
-      box-shadow: 0 0 30px ${color}, inset 0 0 20px #000;
+      background: #000000;
+      border: 6px solid ${color};
+      box-shadow: 0 0 0 4px #bd00ff;
       border-radius: 50%;
       pointer-events: none;
       z-index: 13700;
@@ -3514,7 +3539,7 @@ class RetroVoidBlackHoleAnimation {
     // Temp scale animation on the boss card itself if present
     const origTransform = cardElement ? cardElement.style.transform : '';
     if (cardElement) {
-      cardElement.style.transition = 'transform 600ms cubic-bezier(0.25, 0.8, 0.25, 1)';
+      cardElement.style.transition = `transform ${Math.round(600 * 1.3)}ms cubic-bezier(0.25, 0.8, 0.25, 1)`;
       cardElement.style.transform = `${origTransform} scale(0.85)`;
     }
 
@@ -3523,7 +3548,7 @@ class RetroVoidBlackHoleAnimation {
     }
 
     const start = performance.now();
-    const duration = 800;
+    const duration = Math.round(800 * 1.3);
 
     const animate = () => {
       const progress = Math.min(1, (performance.now() - start) / duration);
@@ -3584,9 +3609,10 @@ class WeaponHitAnimation {
   }
 
   static _raf(duration, onFrame, onDone) {
+    const scaledDuration = duration * 1.3;
     const start = performance.now();
     const tick = () => {
-      const p = Math.min(1, (performance.now() - start) / duration);
+      const p = Math.min(1, (performance.now() - start) / scaledDuration);
       onFrame(p);
       if (p < 1) requestAnimationFrame(tick);
       else if (onDone) onDone();
@@ -3598,32 +3624,34 @@ class WeaponHitAnimation {
     // Animate an overlay div instead of touching card.style.transform,
     // so the game's layout transform is never disturbed.
     if (!card) return;
+    const scaledDuration = duration * 1.3;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
     el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:transparent;will-change:transform;`;
     document.body.appendChild(el);
     const start = performance.now();
     const tick = () => {
-      const p = Math.min(1, (performance.now() - start) / duration);
+      const p = Math.min(1, (performance.now() - start) / scaledDuration);
       if (p >= 1) { try { el.remove(); } catch (e) { } return; }
       el.style.transform = `translateX(${(Math.random() - 0.5) * intensity * 2 * (1 - p)}px)`;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
     // Safety cleanup
-    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 120);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, scaledDuration + 120);
   }
 
   static _squishCard(card, scaleY, duration) {
     // Animate an overlay div that covers the card instead of touching
     // card.style.transform — prevents permanent size mutation on the card.
     if (!card) return;
+    const scaledDuration = duration * 1.3;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
     el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13099;border-radius:6px;background:rgba(0,0,0,0.08);transform-origin:center center;will-change:transform;`;
     document.body.appendChild(el);
-    const inDur = Math.round(duration * 0.28);
-    const outDur = duration - inDur;
+    const inDur = Math.round(scaledDuration * 0.28);
+    const outDur = scaledDuration - inDur;
     // Phase 1: squish
     el.style.transition = `transform ${inDur}ms cubic-bezier(0.25,0,0,1)`;
     requestAnimationFrame(() => { el.style.transform = `scaleY(${scaleY})`; });
@@ -3636,12 +3664,13 @@ class WeaponHitAnimation {
     }, inDur + 12);
     el._t1 = t1;
     // Safety: always remove after full duration
-    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 300);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, scaledDuration + 300);
   }
 
   static _tintCard(card, color, duration) {
     // Use a fixed overlay instead of touching card.style.background.
     if (!card) return;
+    const scaledDuration = duration * 1.3;
     const c = this._cardCenter(card);
     const el = document.createElement('div');
     el.style.cssText = `position:fixed;left:${c.r.left}px;top:${c.r.top}px;width:${c.w}px;height:${c.h}px;pointer-events:none;z-index:13098;border-radius:6px;background:${color};will-change:opacity;`;
@@ -3649,16 +3678,16 @@ class WeaponHitAnimation {
     // Fade in quickly, then fade out
     el.style.opacity = '0';
     requestAnimationFrame(() => {
-      el.style.transition = `opacity ${Math.round(duration * 0.15)}ms ease-out`;
+      el.style.transition = `opacity ${Math.round(scaledDuration * 0.15)}ms ease-out`;
       el.style.opacity = '1';
       setTimeout(() => {
-        el.style.transition = `opacity ${Math.round(duration * 0.6)}ms ease-in`;
+        el.style.transition = `opacity ${Math.round(scaledDuration * 0.6)}ms ease-in`;
         el.style.opacity = '0';
-        setTimeout(() => { try { el.remove(); } catch (e) { } }, Math.round(duration * 0.6) + 50);
-      }, Math.round(duration * 0.35));
+        setTimeout(() => { try { el.remove(); } catch (e) { } }, Math.round(scaledDuration * 0.6) + 50);
+      }, Math.round(scaledDuration * 0.35));
     });
     // Safety cleanup
-    setTimeout(() => { try { el.remove(); } catch (e) { } }, duration + 200);
+    setTimeout(() => { try { el.remove(); } catch (e) { } }, scaledDuration + 200);
   }
 
 
@@ -3726,7 +3755,7 @@ class WeaponHitAnimation {
     }
 
     const { el } = this._overlay(card);
-    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;border:4px solid rgba(180, 110, 50, 0.95);background:transparent;box-shadow: 0 0 20px rgba(180, 110, 50, 0.9), inset 0 0 10px rgba(180, 110, 50, 0.6);`;
+    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;border:5px solid #b8860b;background:transparent;box-shadow: 0 0 0 4px #bd00ff;`;
     this._raf(350, p => {
       el.style.opacity = 1 - p;
       el.style.transform = `scale(${1.0 + (1 - p) * 0.08})`;
@@ -3747,7 +3776,7 @@ class WeaponHitAnimation {
       // Expanding gravitational rings
       const { el: ring } = this._overlay(card);
       const ringSize = Math.max(c.w, c.h) * 1.5;
-      ring.style.cssText += `width:${ringSize}px;height:${ringSize}px;left:${c.x - ringSize / 2}px;top:${c.y - ringSize / 2}px;border-radius:50%;border:4px double #8b5cf6;box-shadow:0 0 15px #6d28d9;background:transparent;`;
+      ring.style.cssText += `width:${ringSize}px;height:${ringSize}px;left:${c.x - ringSize / 2}px;top:${c.y - ringSize / 2}px;border-radius:50%;border:6px solid #8b5cf6;box-shadow:0 0 0 4px #bd00ff;background:transparent;`;
       this._raf(400, p => {
         ring.style.transform = `scale(${0.3 + p * 1.1})`;
         ring.style.opacity = 1 - p;
@@ -3778,17 +3807,17 @@ class WeaponHitAnimation {
     const sf = isLow ? 0.5 : 1.0;
     const c = this._cardCenter(card);
 
-    const flashDur = 65;
-    const intervals = isLow ? [0, 80, 160] : [0, 60, 120, 180];
+    const flashDur = Math.round(65 * 1.3);
+    const intervals = isLow ? [0, Math.round(80 * 1.3), Math.round(160 * 1.3)] : [0, Math.round(60 * 1.3), Math.round(120 * 1.3), Math.round(180 * 1.3)];
     intervals.forEach(d => {
       setTimeout(() => {
-        this._tintCard(card, 'rgba(255, 255, 255, 0.85)', flashDur);
+        this._tintCard(card, 'rgba(255, 255, 255, 0.85)', 65);
         if (!isLow) {
           // Add diagonal slash slits
           const { el } = this._overlay(card);
           const deg = (Math.random() > 0.5 ? 45 : -45) + (Math.random() - 0.5) * 15;
-          el.style.cssText += `width:${c.w * 1.4}px;height:6px;left:${c.x - c.w * 0.7}px;top:${c.y + (Math.random() - 0.5) * c.h * 0.5}px;background:#fff;box-shadow:0 0 8px #fff;transform:rotate(${deg}deg);`;
-          this._raf(flashDur, p => { el.style.opacity = 1 - p; }, () => el.remove());
+          el.style.cssText += `width:${c.w * 1.4}px;height:6px;left:${c.x - c.w * 0.7}px;top:${c.y + (Math.random() - 0.5) * c.h * 0.5}px;background:#fff;border: 1.5px solid #bd00ff;transform:rotate(${deg}deg);`;
+          this._raf(65, p => { el.style.opacity = 1 - p; }, () => el.remove());
         }
       }, d);
     });
@@ -3805,7 +3834,7 @@ class WeaponHitAnimation {
       const c = this._cardCenter(tgt);
       const { el } = this._overlay(tgt);
       const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 1.9);
-      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(249, 115, 22, 0.95) 0%, rgba(80, 80, 80, 0.85) 45%, rgba(0, 0, 0, 0.6) 75%, transparent 100%);box-shadow: 0 0 25px rgba(249, 115, 22, 0.4);`;
+      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:#f97316;border:6px solid #505050;box-shadow: 0 0 0 4px #bd00ff;`;
 
       this._raf(500, p => {
         el.style.transform = `scale(${0.2 + p * 0.95})`;
@@ -3843,7 +3872,7 @@ class WeaponHitAnimation {
     const { el } = this._overlay(card);
     const size = Math.max(c.w, c.h) * (isLow ? 1.4 : 2.0);
 
-    el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;border:${isLow ? '4px' : '7px double'} solid rgba(255, 215, 0, 0.95);background:transparent;box-shadow:0 0 25px rgba(255, 215, 0, 0.95);`;
+    el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;border:6px solid rgba(255, 215, 0, 0.95);background:transparent;box-shadow:0 0 0 4px #bd00ff;`;
 
     this._raf(500, p => {
       el.style.transform = `scale(${0.4 + p * 0.8})`;
@@ -3878,7 +3907,7 @@ class WeaponHitAnimation {
       const el = document.createElement('div');
       const angle = (i / runes.length) * Math.PI * 2;
       el.textContent = r;
-      el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#c084fc;text-shadow:0 0 8px rgba(192,132,252,0.9), 0 0 16px rgba(192,132,252,0.7);will-change:transform,opacity;transform:translate(-50%,-50%);`;
+      el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#c084fc;text-shadow:-2px -2px 0 #bd00ff, 2px -2px 0 #bd00ff, -2px 2px 0 #bd00ff, 2px 2px 0 #bd00ff, 0 0 0 3px #ffffff;will-change:transform,opacity;transform:translate(-50%,-50%);`;
       document.body.appendChild(el);
 
       const dist = isLow ? 44 : 90;
@@ -3899,7 +3928,7 @@ class WeaponHitAnimation {
     const c = this._cardCenter(card);
     const { el } = this._overlay(card);
 
-    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 4px rgba(220,20,60,0.95), 0 0 15px rgba(220,20,60,0.6);border:2px solid rgba(220,20,60,0.8);`;
+    el.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:transparent;box-shadow:inset 0 0 0 4px rgba(220,20,60,0.95);border:4px solid #bd00ff;`;
     this._raf(550, p => {
       el.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
       el.style.transform = `scale(${1.0 + Math.sin(p * Math.PI) * 0.05})`;
@@ -3921,7 +3950,7 @@ class WeaponHitAnimation {
             size: 6 * sf
           }
         );
-      }, i * (isLow ? 30 : 18));
+      }, Math.round(i * (isLow ? 30 : 18) * 1.3));
     }
 
     this._tintCard(card, 'rgba(200, 0, 40, 0.5)', 250);
@@ -3945,7 +3974,7 @@ class WeaponHitAnimation {
       const scaleMultiplier = isPrimary ? (isLow ? 1.6 : 2.2) : (isLow ? 1.1 : 1.6);
       const size = scaleMultiplier * Math.max(c.w, c.h);
 
-      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:radial-gradient(circle, rgba(255, 245, 200, 0.98) 0%, rgba(255, 120, 0, 0.9) 35%, rgba(180, 40, 0, 0.6) 70%, transparent 100%);box-shadow:0 0 30px rgba(255, 100, 0, 0.8);`;
+      el.style.cssText += `width:${size}px;height:${size}px;left:${c.x - size / 2}px;top:${c.y - size / 2}px;border-radius:50%;background:#ff7800;border:6px solid #ffffff;box-shadow:0 0 0 4px #bd00ff;`;
 
       const dur = isPrimary ? 550 : 380;
       this._raf(dur, p => {
@@ -3972,14 +4001,14 @@ class WeaponHitAnimation {
         const offsetX = (Math.random() - 0.5) * c.w * 0.8;
         const offsetY = (Math.random() - 0.5) * c.h * 0.8;
 
-        el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x + offsetX - sz / 2}px;top:${c.y + offsetY - sz / 2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:rgba(255, 245, 180, 0.95);box-shadow:0 0 10px rgba(255, 230, 100, 0.9);will-change:opacity,transform;`;
+        el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x + offsetX - sz / 2}px;top:${c.y + offsetY - sz / 2}px;width:${sz}px;height:${sz}px;border-radius:50%;background:#fff5b4;border:2px solid #bd00ff;will-change:opacity,transform;`;
         document.body.appendChild(el);
 
         this._raf(120, p => {
           el.style.transform = `scale(${1 + p * 0.4})`;
           el.style.opacity = 1 - p;
         }, () => el.remove());
-      }, i * (isLow ? 45 : 28));
+      }, Math.round(i * (isLow ? 45 : 28) * 1.3));
     }
     this._shakeCard(card, 6 * sf, 350);
   }
@@ -4003,17 +4032,19 @@ class WeaponHitAnimation {
       d += ` L${bW / 2 + (s % 2 === 0 ? -18 : 18) * (isCrit ? 1.5 : 1.1)},${(s / segments) * bH}`;
     }
 
+    const outlinePath = document.createElementNS(NS, 'path');
+    outlinePath.setAttribute('d', d);
+    outlinePath.setAttribute('stroke', '#bd00ff');
+    outlinePath.setAttribute('stroke-width', isCrit ? (isLow ? '12' : '18') : (isLow ? '8' : '12'));
+    outlinePath.setAttribute('fill', 'none');
+
     const path = document.createElementNS(NS, 'path');
     path.setAttribute('d', d);
     path.setAttribute('stroke', isCrit ? '#fffbeb' : '#facc15');
     path.setAttribute('stroke-width', isCrit ? (isLow ? '6' : '9') : (isLow ? '4' : '6'));
     path.setAttribute('fill', 'none');
 
-    const defs = document.createElementNS(NS, 'defs');
-    defs.innerHTML = `<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="${isLow ? 3 : 6}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
-    path.setAttribute('filter', 'url(#boltGlowWHA)');
-
-    svg.appendChild(defs);
+    svg.appendChild(outlinePath);
     svg.appendChild(path);
     document.body.appendChild(svg);
 
@@ -4039,7 +4070,7 @@ class WeaponHitAnimation {
     const { el } = this._overlay(card);
     const beamHeight = isLow ? 8 : 16;
 
-    el.style.cssText += `left:${c.r.left}px;top:${c.y - beamHeight / 2}px;width:${c.w}px;height:${beamHeight}px;background:linear-gradient(90deg,transparent,#60a5fa,#a0d0ff,#60a5fa,transparent);border-radius:4px;box-shadow: 0 0 20px #60a5fa, 0 0 35px #3b82f6;`;
+    el.style.cssText += `left:${c.r.left}px;top:${c.y - beamHeight / 2}px;width:${c.w}px;height:${beamHeight}px;background:#60a5fa;border-top:3px solid #ffffff;border-bottom:3px solid #ffffff;box-shadow: 0 3px 0 #3b82f6, 0 -3px 0 #3b82f6;border-radius:4px;`;
 
     this._raf(300, p => {
       el.style.transform = `scaleY(${p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8})`;
@@ -4060,18 +4091,23 @@ class WeaponHitAnimation {
       const mx = (c.x + cs.x) / 2 - minX, my = Math.min(c.y, cs.y) - 60 - minY;
 
       const mkL = (xa, ya, xb, yb, col) => {
+        const g = document.createElementNS(NS, 'g');
+        const outL = document.createElementNS(NS, 'path');
+        outL.setAttribute('d', `M${xa},${ya} Q${mx},${my} ${xb},${yb}`);
+        outL.setAttribute('stroke', '#bd00ff');
+        outL.setAttribute('stroke-width', isLow ? '7' : '12');
+        outL.setAttribute('fill', 'none');
+        g.appendChild(outL);
+
         const l = document.createElementNS(NS, 'path');
         l.setAttribute('d', `M${xa},${ya} Q${mx},${my} ${xb},${yb}`);
         l.setAttribute('stroke', col);
         l.setAttribute('stroke-width', isLow ? '3' : '6');
         l.setAttribute('fill', 'none');
-        l.setAttribute('filter', 'url(#boltGlowWHA)');
-        return l;
+        g.appendChild(l);
+        return g;
       };
 
-      const glowDefs = document.createElementNS(NS, 'defs');
-      glowDefs.innerHTML = '<filter id="boltGlowWHA"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
-      svg.appendChild(glowDefs);
       svg.appendChild(mkL(c.x - minX, c.y - minY, cs.x - minX, cs.y - minY, '#60a5fa'));
 
       document.body.appendChild(svg);
@@ -4083,7 +4119,7 @@ class WeaponHitAnimation {
       setTimeout(() => {
         this._tintCard(secondaryCard, 'rgba(78, 163, 255, 0.7)', 220);
         this._shakeCard(secondaryCard, 8 * sf, 200);
-      }, 100);
+      }, 130);
     }
   }
 
@@ -4095,7 +4131,7 @@ class WeaponHitAnimation {
     const { el } = this._overlay(card);
     const borderWidth = isLow ? 4 : 8;
 
-    el.style.cssText += `width:${c.w + 10}px;height:${c.h + 10}px;left:${c.r.left - 5}px;top:${c.r.top - 5}px;border-radius:10px;border:${borderWidth}px solid rgba(34, 197, 94, 0.95);background:transparent;box-shadow:0 0 20px rgba(34, 197, 94, 0.8), inset 0 0 15px rgba(34, 197, 94, 0.45);`;
+    el.style.cssText += `width:${c.w + 10}px;height:${c.h + 10}px;left:${c.r.left - 5}px;top:${c.r.top - 5}px;border-radius:10px;border:${borderWidth}px solid rgba(34, 197, 94, 0.95);background:transparent;box-shadow:0 0 0 4px #bd00ff;`;
 
     this._raf(650, p => {
       const scaleVal = p < 0.15 ? 0.8 + (p / 0.15) * 0.2 : p < 0.75 ? (1.0 - (p - 0.15) / 0.6 * 0.12) : 0.88;
@@ -4117,7 +4153,7 @@ class WeaponHitAnimation {
     const sz = Math.max(c.w, c.h) * (isLow ? 1.0 : 1.8);
 
     el.textContent = '☽';
-    el.style.cssText = `position:fixed;pointer-events:none;z-index:13120;left:${c.x}px;top:${c.y}px;font-size:${sz}px;line-height:1;color:${isResisted ? '#ef4444' : '#31105e'};text-shadow:0 0 20px ${isResisted ? 'rgba(239,68,68,0.95)' : 'rgba(124,58,237,0.95)'}, 0 0 30px ${isResisted ? '#b91c1c' : '#5b21b6'};will-change:transform,opacity;transform:translate(-50%,-50%) rotate(-80deg) scale(0.3);`;
+    el.style.cssText = `position:fixed;pointer-events:none;z-index:13120;left:${c.x}px;top:${c.y}px;font-size:${sz}px;line-height:1;color:${isResisted ? '#ef4444' : '#31105e'};text-shadow:-3px -3px 0 #bd00ff, 3px -3px 0 #bd00ff, -3px 3px 0 #bd00ff, 3px 3px 0 #bd00ff, 0 0 0 4px #ffffff;will-change:transform,opacity;transform:translate(-50%,-50%) rotate(-80deg) scale(0.3);`;
     document.body.appendChild(el);
 
     this._raf(600, p => {
@@ -4163,9 +4199,9 @@ class WeaponHitAnimation {
       anvil.style.top = `${y}px`;
       anvil.style.opacity = p < 0.15 ? p / 0.15 : 1.0;
     }, () => {
-      anvil.style.transition = 'opacity 150ms ease-out';
+      anvil.style.transition = `opacity ${Math.round(150 * 1.3)}ms ease-out`;
       anvil.style.opacity = '0';
-      setTimeout(() => anvil.remove(), 150);
+      setTimeout(() => anvil.remove(), Math.round(150 * 1.3));
 
       const particleCount = isCrit ? 18 : 8;
       const col = isCrit ? '#ff8800' : '#d1d5db';
@@ -4186,7 +4222,7 @@ class WeaponHitAnimation {
     for (let i = 0; i < lineCount; i++) {
       const { el } = this._overlay(card);
       const yOffset = isDouble ? (i - 1) * 12 : 0;
-      el.style.cssText += `left:${c.x - tw / 2}px;top:${c.y + yOffset - (isDouble ? 3 : 1.5)}px;width:${tw}px;height:${isDouble ? '6px' : '3px'};border-radius:3px;background:linear-gradient(90deg,transparent,${col},white,${col},transparent);box-shadow: 0 0 12px ${col};`;
+      el.style.cssText += `left:${c.x - tw / 2}px;top:${c.y + yOffset - (isDouble ? 3 : 1.5)}px;width:${tw}px;height:${isDouble ? '6px' : '3px'};border-radius:3px;background:${col};border-top:1px solid #ffffff;border-bottom:1px solid #ffffff;box-shadow: 0 2px 0 #bd00ff;`;
       this._raf(isDouble ? 450 : 280, p => {
         el.style.opacity = p < 0.1 ? p / 0.1 : 1 - (p - 0.1) / 0.9;
         el.style.transform = `scaleX(${1.0 + p * 0.2})`;
@@ -4194,7 +4230,7 @@ class WeaponHitAnimation {
     }
 
     const arrow = document.createElement('div');
-    arrow.innerHTML = `<span style="font-size:${isDouble ? '28px' : '18px'};color:${col};text-shadow:0 0 8px ${col};">➤</span>`;
+    arrow.innerHTML = `<span style="font-size:${isDouble ? '28px' : '18px'};color:${col};text-shadow:-1.5px -1.5px 0 #bd00ff, 1.5px -1.5px 0 #bd00ff, -1.5px 1.5px 0 #bd00ff, 1.5px 1.5px 0 #bd00ff;">➤</span>`;
     arrow.style.cssText = `position:fixed;pointer-events:none;z-index:13125;left:${c.x - tw / 2}px;top:${c.y}px;transform:translate(-50%,-50%);will-change:transform;`;
     document.body.appendChild(arrow);
     this._raf(isDouble ? 350 : 220, p => {
@@ -4218,7 +4254,7 @@ class WeaponHitAnimation {
 
     const stamp = document.createElement('div');
     stamp.textContent = '🛡';
-    stamp.style.cssText = `position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w, c.h) * (isLow ? 0.8 : 1.4)}px;line-height:1;filter:drop-shadow(0 0 12px rgba(96,165,250,0.95)) drop-shadow(0 0 6px #fff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
+    stamp.style.cssText = `position:fixed;pointer-events:none;z-index:13115;left:${c.x}px;top:${c.y}px;font-size:${Math.min(c.w, c.h) * (isLow ? 0.8 : 1.4)}px;line-height:1;filter:drop-shadow(3px 3px 0px #bd00ff) drop-shadow(-3px -3px 0px #bd00ff);will-change:transform,opacity;transform:translate(-50%,-50%) scale(0.1);`;
     document.body.appendChild(stamp);
 
     this._raf(650, p => {
@@ -4228,7 +4264,7 @@ class WeaponHitAnimation {
 
     const { el: outline } = this._overlay(card);
     const crestBorder = isLow ? 4 : 8;
-    outline.style.cssText += `width:${c.w + 12}px;height:${c.h + 12}px;left:${c.r.left - 6}px;top:${c.r.top - 6}px;border-radius:10px;border:${crestBorder}px double rgba(96,165,250,0.95);background:transparent;box-shadow:0 0 25px rgba(96,165,250,0.8), inset 0 0 15px rgba(96,165,250,0.45);`;
+    outline.style.cssText += `width:${c.w + 12}px;height:${c.h + 12}px;left:${c.r.left - 6}px;top:${c.r.top - 6}px;border-radius:10px;border:${crestBorder}px solid rgba(96,165,250,0.95);background:transparent;box-shadow:0 0 0 4px #bd00ff;`;
     this._raf(750, p => {
       outline.style.opacity = p < 0.15 ? p / 0.15 : 1 - (p - 0.15) / 0.85;
       outline.style.transform = `scale(${1.0 + (1 - p) * 0.05})`;
@@ -4236,7 +4272,7 @@ class WeaponHitAnimation {
 
     if (!isLow) {
       const { el: grid } = this._overlay(card);
-      grid.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background-image:radial-gradient(rgba(96, 165, 250, 0.15) 30%, transparent 70%);background-size:16px 16px;mix-blend-mode:screen;`;
+      grid.style.cssText += `width:${c.w}px;height:${c.h}px;left:${c.r.left}px;top:${c.r.top}px;border-radius:6px;background:rgba(96, 165, 250, 0.15);border: 2px dashed rgba(96, 165, 250, 0.8);`;
       this._raf(700, p => {
         grid.style.opacity = p < 0.2 ? p / 0.2 : 1 - (p - 0.2) / 0.8;
       }, () => grid.remove());
