@@ -2035,6 +2035,16 @@ class UIManager {
       });
     }
 
+    const showPopup = () => {
+      popup.style.display = 'flex';
+      overlay.style.display = 'block';
+
+      const draggableHud = document.getElementById('draggableHud');
+      const statsHudWidget = document.getElementById('statsHudWidget');
+      if (draggableHud) draggableHud.style.display = 'none';
+      if (statsHudWidget) statsHudWidget.style.display = 'none';
+    };
+
     const hidePopup = () => {
       if (state.systemState.focusTimerActive) {
         popup.style.display = 'none';
@@ -2044,6 +2054,11 @@ class UIManager {
         popup.style.display = 'none';
         overlay.style.display = 'none';
       }
+
+      const draggableHud = document.getElementById('draggableHud');
+      const statsHudWidget = document.getElementById('statsHudWidget');
+      if (draggableHud) draggableHud.style.display = '';
+      if (statsHudWidget) statsHudWidget.style.display = '';
     };
 
     closeBtn.addEventListener('click', hidePopup);
@@ -2058,8 +2073,7 @@ class UIManager {
       if (popup.style.display === 'flex') {
         hidePopup();
       } else {
-        popup.style.display = 'flex';
-        overlay.style.display = 'block';
+        showPopup();
         miniWidget.style.display = 'none';
         syncPopupUI();
       }
@@ -2067,8 +2081,7 @@ class UIManager {
 
     miniWidget.addEventListener('click', () => {
       miniWidget.style.display = 'none';
-      popup.style.display = 'flex';
-      overlay.style.display = 'block';
+      showPopup();
       popup.style.left = '';
       popup.style.top = '';
       popup.style.transform = '';
