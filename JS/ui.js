@@ -316,6 +316,7 @@ class UIManager {
       if (e.target.closest('button, input, textarea, select, a')) return;
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
+      hud.classList.add('is-dragging');
       startX = e.clientX;
       startY = e.clientY;
       const rect = hud.getBoundingClientRect();
@@ -355,6 +356,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      hud.classList.remove('is-dragging');
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -683,6 +685,7 @@ class UIManager {
       if (e.target.closest('button, input, textarea, select, a')) return;
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       isRcDragging = true;
+      rcPanel.classList.add('is-dragging');
       rcStartX = e.clientX;
       rcStartY = e.clientY;
       const rect = rcPanel.getBoundingClientRect();
@@ -723,6 +726,7 @@ class UIManager {
     const onRcUp = (e) => {
       if (!isRcDragging) return;
       isRcDragging = false;
+      rcPanel.classList.remove('is-dragging');
       if (rcRafId) {
         cancelAnimationFrame(rcRafId);
         rcRafId = null;
@@ -6154,13 +6158,18 @@ class UIManager {
       if (!dragState.moved) {
         const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
         if (distance > 6) {
-          dragState.moved = true;
-          dragState.card.classList.add('dragging');
+          // Cancel hold-to-complete if finger moved too far
           clearTimeout(this.dailyHoldTimer);
           const overlay = dragState.card.querySelector('.hold-progress-overlay');
           if (overlay) {
             overlay.style.transition = 'none';
             overlay.style.width = '0%';
+          }
+          // Only allow repositioning in edit mode
+          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+          if (editModeDailies) {
+            dragState.moved = true;
+            dragState.card.classList.add('dragging');
           }
         }
       }
@@ -7203,6 +7212,7 @@ class UIManager {
       if (e.target.closest('button, input, textarea, select, a, .weapon-chip, .weapon-upgrade-btn')) return;
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
+      container.classList.add('is-dragging');
       startX = e.clientX;
       startY = e.clientY;
       const rect = container.getBoundingClientRect();
@@ -7243,6 +7253,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      container.classList.remove('is-dragging');
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -8386,6 +8397,7 @@ class UIManager {
       if (e.target.closest('button, input, textarea, select, a, .satchel-item')) return;
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       isDragging = true;
+      panel.classList.add('is-dragging');
       startX = e.clientX;
       startY = e.clientY;
       const rect = panel.getBoundingClientRect();
@@ -8426,6 +8438,7 @@ class UIManager {
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      panel.classList.remove('is-dragging');
       if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -8680,28 +8693,44 @@ class StatsHUD {
 
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
     const header = hud.querySelector('.stats-hud-header');
     const content = hud.querySelector('.stats-hud-content');
     
     const onPointerMove = (e) => {
       if (!isDragging) return;
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      let newLeft = initialLeft + dx;
-      let newTop = initialTop + dy;
+      e.preventDefault();
+      latestX = e.clientX;
+      latestY = e.clientY;
 
-      const maxX = window.innerWidth - hud.offsetWidth;
-      const maxY = window.innerHeight - hud.offsetHeight;
-      newLeft = Math.max(0, Math.min(newLeft, maxX));
-      newTop = Math.max(0, Math.min(newTop, maxY));
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
 
-      hud.style.left = newLeft + 'px';
-      hud.style.top = newTop + 'px';
+          const maxX = window.innerWidth - hud.offsetWidth;
+          const maxY = window.innerHeight - hud.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
     };
 
     const onPointerUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      hud.classList.remove('is-dragging');
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
       document.removeEventListener('pointercancel', onPointerUp);
@@ -8715,6 +8744,7 @@ class StatsHUD {
     header.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button')) return;
       isDragging = true;
+      hud.classList.add('is-dragging');
       startX = e.clientX;
       startY = e.clientY;
       const rect = hud.getBoundingClientRect();
@@ -8886,8 +8916,8 @@ class StatsHUD {
       }
 
       const C_X = 50;
-      const C_Y = 38;
-      const R = 24;
+      const C_Y = 45;
+      const R = 26;
       const numPoints = attributes.length;
       const angleStep = (2 * Math.PI) / numPoints;
 
@@ -8940,7 +8970,7 @@ class StatsHUD {
       for (let i = 0; i < numPoints; i++) {
         const attr = attributes[i];
         const angle = i * angleStep - Math.PI / 2;
-        const labelRadius = R + 5;
+        const labelRadius = R + 7;
         const x = C_X + labelRadius * Math.cos(angle);
         const y = C_Y + labelRadius * Math.sin(angle);
 
@@ -8949,21 +8979,22 @@ class StatsHUD {
         else if (Math.cos(angle) < -0.15) textAnchor = 'end';
 
         let dy = '0.3em';
-        if (Math.sin(angle) < -0.8) dy = '-0.1em';
-        else if (Math.sin(angle) > 0.8) dy = '0.6em';
+        if (Math.sin(angle) < -0.8) dy = '-0.3em';
+        else if (Math.sin(angle) > 0.8) dy = '0.8em';
 
         const color = attrColors[attr] || '#f1de97';
-        labelsHtml += `<text x="${x}" y="${y}" font-size="5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr}</text>`;
+        const pVal = Math.round(playerAttrs[attr]?.points || 0);
+        labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} ${pVal}</text>`;
       }
 
       radarContainer.innerHTML = `
-        <svg viewBox="0 0 100 85" style="width:100%; height:100%; overflow:visible;">
+        <svg viewBox="0 0 100 95" style="width:100%; height:100%; overflow:visible;">
           ${gridsHtml}
           ${axesHtml}
           ${nemesisPolygon}
           ${playerPolygon}
           ${labelsHtml}
-          <g transform="translate(5, 80)" font-size="4.2" font-weight="bold">
+          <g transform="translate(5, 90)" font-size="4.2" font-weight="bold">
             <circle cx="2" cy="-1.5" r="1" fill="#8b5cf6"/>
             <text x="5" y="0" fill="#a78bfa">Player</text>
             <circle cx="35" cy="-1.5" r="1" fill="#ef4444"/>
