@@ -2044,8 +2044,10 @@ body::before {
 }
 
 /* Blood Oath: filter drop-shadow works outside clip-path on all shapes */
-.task-card-daily.blood-oath-active {
-  animation: blood-glow-filter 1.1s ease-in-out infinite alternate;
+.task-card-daily.blood-oath-active,
+.task-card-daily.shape-task.blood-oath-active,
+.task-card-todo.blood-oath-active {
+  animation: blood-glow-filter 1.1s ease-in-out infinite alternate !important;
 }
 
 @keyframes blood-glow-filter {
@@ -2348,22 +2350,28 @@ body::before {
   opacity: 0.82;
 }
 
-.task-card-daily.shape-task.shape-easy {
+.task-card-daily.shape-task.shape-easy,
+.focus-bubble.shape-task.shape-easy {
   border-radius: 50% !important;
+  clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-medium {
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+.task-card-daily.shape-task.shape-medium,
+.focus-bubble.shape-task.shape-medium {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
   border-radius: 0 !important;
 }
 
-.task-card-daily.shape-task.shape-hard {
+.task-card-daily.shape-task.shape-hard,
+.focus-bubble.shape-task.shape-hard {
   border-radius: 0 !important;
+  clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-ultra {
-  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
-  border-radius: 0;
+.task-card-daily.shape-task.shape-ultra,
+.focus-bubble.shape-task.shape-ultra {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+  border-radius: 0 !important;
 }
 
 /* =========================================================================
@@ -2603,8 +2611,8 @@ body::before {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 160px;
-  overflow: auto;
+  max-height: none !important;
+  overflow: visible !important;
   padding-right: 2px;
 }
 
@@ -2752,7 +2760,7 @@ body::before {
 }
 
 .task-card-todo .subtasks {
-  max-height: 96px;
+  max-height: none !important;
 }
 
 .task-card-todo .subtask-input,
@@ -3478,13 +3486,17 @@ body::before {
 }
 
 /* Event target: rainbow filter drop-shadow works outside clip-path on all shapes */
-.task-card-daily.task-event-target {
-  animation: rainbow-glow-filter 3s linear infinite;
+.task-card-daily.task-event-target,
+.task-card-daily.shape-task.task-event-target,
+.task-card-todo.task-event-target {
+  animation: rainbow-glow-filter 3s linear infinite !important;
 }
 
 /* When blood oath AND event target are both active, blend both */
-.task-card-daily.blood-oath-active.task-event-target {
-  animation: blood-rainbow-filter 3s linear infinite;
+.task-card-daily.blood-oath-active.task-event-target,
+.task-card-daily.shape-task.blood-oath-active.task-event-target,
+.task-card-todo.blood-oath-active.task-event-target {
+  animation: blood-rainbow-filter 3s linear infinite !important;
 }
 
 @keyframes rainbow-glow-filter {
@@ -7218,7 +7230,7 @@ button:hover,
 }
 
 /* ============================================================
-   FOCUS TIMER PREMIUM STYLES
+   FOCUS TIMER — FULL-SCREEN MINIMALISTIC
    ============================================================ */
 .focus-overlay {
   position: fixed;
@@ -7226,217 +7238,184 @@ button:hover,
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(5, 3, 10, 0.85);
-  backdrop-filter: blur(5px);
-  z-index: 19999;
+  background: rgba(8, 8, 12, 0.92);
+  backdrop-filter: blur(6px);
+  z-index: 19998;
   display: none;
   pointer-events: auto;
-  transition: opacity 0.3s ease;
 }
 
 #focus-clock-popup {
   position: fixed;
-  z-index: 20000;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle at center, #1b122c 0%, #0a0514 100%);
-  border: 2px solid #ffb33f;
-  outline: 4px solid #0d0716;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85), 0 0 20px rgba(168, 85, 247, 0.4), inset 0 0 15px rgba(168, 85, 247, 0.15);
-  padding: 20px;
-  border-radius: 8px;
-  width: 300px;
-  max-width: 90vw;
-  box-sizing: border-box;
-  text-align: center;
-  font-family: 'Orbitron', monospace;
-  color: #f5f5f7;
-  cursor: move;
-  user-select: none;
+  z-index: 19999;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   display: none;
-}
-
-#focus-clock-popup:active {
-  cursor: grabbing;
-}
-
-.focus-popup-header {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
-  border-bottom: 2px solid rgba(255, 179, 63, 0.3);
-  padding-bottom: 8px;
+  justify-content: center;
+  font-family: 'Orbitron', monospace;
+  color: #d1d5db;
+  pointer-events: none;
 }
 
-.focus-popup-title {
-  font-size: 8px;
-  color: #ffb33f;
-  text-shadow: 0 0 6px rgba(255, 179, 63, 0.5);
-  letter-spacing: 0.5px;
+#focus-clock-popup[style*="flex"] {
+  display: flex;
+}
+
+.focus-fullscreen-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(380px, 92vw);
+  pointer-events: auto;
+  position: relative;
 }
 
 .focus-popup-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
   background: none;
-  border: none;
-  color: #f87171;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #9ca3af;
   cursor: pointer;
   font-size: 11px;
   font-family: inherit;
-  padding: 0 4px;
-  transition: color 0.15s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s, border-color 0.15s;
 }
 
 .focus-popup-close:hover {
-  color: #ef4444;
+  color: #f87171;
+  border-color: rgba(248,113,113,0.4);
 }
 
-/* Hourglass and Runic Ring */
-.analog-clock-container {
-  display: flex;
-  justify-content: center;
-  margin: 14px 0;
+/* Large digit display */
+.focus-fs-timer-label {
+  font-size: clamp(52px, 12vw, 80px);
+  font-weight: 900;
+  color: #e5e7eb;
+  letter-spacing: 4px;
+  line-height: 1;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.5);
 }
 
-.hourglass-svg {
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.3));
+/* Depleting bar */
+.focus-fs-bar-wrap {
+  width: 100%;
 }
 
-.rune-ring-track {
-  stroke: rgba(168, 85, 247, 0.12);
+.focus-fs-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
 }
 
-.rune-ring-fill {
-  transition: stroke-dashoffset 0.3s ease;
-  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.6));
+.focus-fs-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: hsl(120, 55%, 40%);
+  border-radius: 3px;
+  transition: width 0.9s linear, background 2s ease;
 }
 
-.hourglass-graphic {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-
-@keyframes sandFlow {
-  0% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: -10;
-  }
-}
-
-.sand-stream-flow {
-  animation: sandFlow 0.5s linear infinite;
-}
-
-/* Digital clock readout */
-.digital-clock-readout {
-  font-size: 18px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 0 0 8px rgba(168, 85, 247, 0.6), 0 0 2px #fff;
-  margin: 12px 0;
-  letter-spacing: 2px;
-}
-
-/* Settings, sliders, controls */
+/* Duration buttons */
 .focus-timer-options {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   gap: 6px;
-  margin-bottom: 14px;
+  width: 100%;
 }
 
 .focus-duration-btn {
   flex: 1;
-  background: rgba(15, 8, 25, 0.85);
-  border: 1px solid rgba(255, 179, 63, 0.25);
-  color: #c0a8e8;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #9ca3af;
   font-family: inherit;
   font-size: 7px;
   padding: 8px 2px;
   border-radius: 4px;
   cursor: pointer;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.8);
   transition: all 0.15s ease;
 }
 
 .focus-duration-btn:hover {
-  background: rgba(168, 85, 247, 0.15);
-  border-color: #ffb33f;
-  color: #fff;
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.25);
+  color: #e5e7eb;
 }
 
 .focus-duration-btn.active {
-  background: rgba(168, 85, 247, 0.3);
-  border-color: #ffb33f;
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.3);
   color: #fff;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4), inset 0 0 4px rgba(255, 179, 63, 0.2);
 }
 
+/* Action buttons */
 .focus-action-btn {
-  padding: 11px;
+  padding: 12px;
   font-family: inherit;
   font-size: 9px;
   font-weight: bold;
   border-radius: 4px;
   cursor: pointer;
-  border: 2px solid #ffb33f;
+  border: 1px solid rgba(255,255,255,0.15);
   transition: all 0.2s;
   letter-spacing: 1px;
 }
 
 #focusCustomMins:focus {
   outline: none;
-  border-color: #a855f7 !important;
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+  border-color: rgba(255,255,255,0.35) !important;
 }
 
 .focus-start-btn {
-  background: linear-gradient(180deg, #059669, #047857);
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+  background: rgba(255,255,255,0.08);
+  color: #e5e7eb;
 }
 
 .focus-start-btn:hover {
+  background: rgba(255,255,255,0.14);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(5, 150, 105, 0.5);
 }
 
 .focus-cancel-btn {
-  background: linear-gradient(180deg, #dc2626, #b91c1c);
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3);
+  background: rgba(220,38,38,0.15);
+  color: #fca5a5;
+  border-color: rgba(220,38,38,0.3);
 }
 
 .focus-cancel-btn:hover {
+  background: rgba(220,38,38,0.25);
   transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(220, 38, 38, 0.5);
 }
 
 .focus-cost-warning {
   font-size: 6.5px;
-  color: #a0aec0;
-  margin-top: 8px;
+  color: #6b7280;
+  text-align: center;
   line-height: 1.4;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
-/* Minimized widget styles */
+/* Mini widget (shown when focus screen is dismissed during active timer) */
 #focus-mini-widget {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: radial-gradient(circle at center, #1b0a2e 0%, #0c0316 100%);
-  border: 1.5px solid #ffb33f;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6), 0 0 12px rgba(168, 85, 247, 0.4);
+  background: rgba(20, 20, 28, 0.92);
+  border: 1px solid rgba(255,255,255,0.14);
   border-radius: 30px;
   padding: 8px 14px;
   font-family: 'Orbitron', monospace;
   font-size: 7px;
-  color: #fff;
+  color: #d1d5db;
   z-index: 20001;
   display: flex;
   align-items: center;
@@ -7464,15 +7443,15 @@ button:hover,
   to { opacity: 1; transform: scale(1.2); }
 }
 
-/* Focus button trigger on main screen (floating action button in top-right) */
+/* Focus button trigger */
 .btn-focus-timer {
   position: fixed;
   top: 16px;
   right: 16px;
   z-index: 10000;
-  background: radial-gradient(circle at center, #2c164d 0%, #150529 100%);
-  border: 2px solid #ffb33f;
-  color: #fff;
+  background: rgba(20, 20, 28, 0.92);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #d1d5db;
   font-family: 'Orbitron', monospace;
   font-size: 8px;
   padding: 8px 12px;
@@ -7482,23 +7461,24 @@ button:hover,
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), 0 0 8px rgba(168, 85, 247, 0.3);
   pointer-events: auto;
 }
 
 .btn-focus-timer:hover {
-  background: radial-gradient(circle at center, #3c2069 0%, #1c0836 100%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 179, 63, 0.5);
-  transform: scale(1.05);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.25);
+  transform: scale(1.04);
 }
 
 .btn-focus-timer.active {
+  border-color: rgba(248,113,113,0.5);
+  color: #fca5a5;
   animation: timerGlowPulse 1.5s infinite alternate;
 }
 
 @keyframes timerGlowPulse {
-  from { box-shadow: 0 0 6px rgba(255, 179, 63, 0.3); }
-  to { box-shadow: 0 0 18px rgba(255, 179, 63, 0.8); }
+  from { box-shadow: 0 0 4px rgba(248,113,113,0.2); }
+  to { box-shadow: 0 0 14px rgba(248,113,113,0.6); }
 }
 
 /* ============================================================
@@ -7856,7 +7836,7 @@ button:hover,
   box-sizing: border-box;
   cursor: pointer;
   user-select: none;
-  z-index: 19999;
+  z-index: 20002;
   transition: transform 0.1s ease, opacity 0.3s ease;
   will-change: transform, opacity;
   overflow: hidden;
@@ -7938,83 +7918,4 @@ button:hover,
   height: 100%;
   pointer-events: none;
   z-index: 0;
-}
-
-/* Cyber Info Overload HUD styling */
-.cyber-overload-hud {
-  position: fixed;
-  touch-action: none !important;
-  z-index: 9999;
-  border: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 0 !important;
-  clip-path: none !important;
-  filter: none !important;
-  box-sizing: border-box;
-  width: 200px;
-  height: 175px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  resize: both;
-  min-width: 140px;
-  min-height: 40px;
-}
-
-.cyber-overload-hud::before {
-  display: none !important;
-}
-
-.cyber-overload-hud.minimized {
-  height: 24px !important;
-  resize: none;
-}
-
-.cyber-hud-header {
-  background: transparent;
-  border-bottom: none;
-  color: rgba(255, 246, 204, 0.6);
-  padding: 5px 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: move;
-  user-select: none;
-  flex-shrink: 0;
-  box-sizing: border-box;
-}
-
-.cyber-hud-title {
-  font-weight: bold;
-  letter-spacing: 0.5px;
-  pointer-events: none;
-  font-size: 8px;
-  text-transform: uppercase;
-}
-
-.cyber-hud-toggle {
-  background: none;
-  border: none;
-  color: rgba(255, 246, 204, 0.6);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 8px;
-  padding: 0 4px;
-  font-weight: bold;
-  line-height: 1;
-}
-
-.cyber-hud-body {
-  padding: 8px;
-  flex: 1;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  text-align: left;
-  box-sizing: border-box;
-  color: rgba(255, 215, 170, 0.85);
-  font-family: monospace;
-  font-size: 8px;
-  line-height: 1.3;
-  background: transparent;
 }

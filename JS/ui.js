@@ -211,7 +211,6 @@ class UIManager {
   static initializeUI() {
     document.body.innerHTML = '';
     this.createHudWidget();
-    this.createCyberOverloadHud();
     this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
@@ -340,201 +339,6 @@ class UIManager {
     hud.addEventListener('pointercancel', onPointerUp);
   }
 
-  static createCyberOverloadHud() {
-    let hud = document.getElementById('cyberOverloadHud');
-    if (hud) return;
-
-    hud = document.createElement('div');
-    hud.id = 'cyberOverloadHud';
-    hud.className = 'cyber-overload-hud';
-    hud.innerHTML = `
-      <div class="cyber-hud-header">
-        <span class="cyber-hud-title">&gt; CYBER_INFO_OVERLOAD</span>
-        <button class="cyber-hud-toggle">_</button>
-      </div>
-      <div class="cyber-hud-body" id="cyberHudBody"></div>
-    `;
-    document.body.appendChild(hud);
-
-    // Draggable functionality
-    let isDragging = false;
-    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
-    let latestX = 0, latestY = 0;
-    let rafId = null;
-
-    const header = hud.querySelector('.cyber-hud-header');
-
-    const onPointerDown = (e) => {
-      if (e.target.closest('button')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      isDragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      const rect = hud.getBoundingClientRect();
-      initialLeft = rect.left;
-      initialTop = rect.top;
-      hud.style.left = initialLeft + 'px';
-      hud.style.top = initialTop + 'px';
-      hud.style.right = 'auto';
-      hud.style.bottom = 'auto';
-      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
-    };
-
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      latestX = e.clientX;
-      latestY = e.clientY;
-
-      if (!rafId) {
-        rafId = requestAnimationFrame(() => {
-          const dx = latestX - startX;
-          const dy = latestY - startY;
-          let newLeft = initialLeft + dx;
-          let newTop = initialTop + dy;
-          
-          const maxX = window.innerWidth - hud.offsetWidth;
-          const maxY = window.innerHeight - hud.offsetHeight;
-          newLeft = Math.max(0, Math.min(newLeft, maxX));
-          newTop = Math.max(0, Math.min(newTop, maxY));
-
-          hud.style.left = newLeft + 'px';
-          hud.style.top = newTop + 'px';
-          rafId = null;
-        });
-      }
-    };
-
-    const onPointerUp = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
-      localStorage.setItem('nemesis_cyber_hud_pos', JSON.stringify({
-        left: parseInt(hud.style.left, 10) || 0,
-        top: parseInt(hud.style.top, 10) || 0
-      }));
-    };
-
-    header.addEventListener('pointerdown', onPointerDown);
-    hud.addEventListener('pointermove', onPointerMove);
-    hud.addEventListener('pointerup', onPointerUp);
-    hud.addEventListener('pointercancel', onPointerUp);
-
-    // Restore position
-    const savedPos = localStorage.getItem('nemesis_cyber_hud_pos');
-    if (savedPos) {
-      try {
-        const { left, top } = JSON.parse(savedPos);
-        hud.style.right = 'auto';
-        hud.style.bottom = 'auto';
-        hud.style.left = left + 'px';
-        hud.style.top = top + 'px';
-      } catch (e) { }
-    } else {
-      // Default position: bottom-left
-      hud.style.left = '20px';
-      hud.style.bottom = '80px';
-      hud.style.top = 'auto';
-      hud.style.right = 'auto';
-    }
-
-    // Toggle minimize
-    const toggleBtn = hud.querySelector('.cyber-hud-toggle');
-    const savedMinimized = localStorage.getItem('nemesis_cyber_hud_minimized') === 'true';
-    if (savedMinimized) {
-      hud.classList.add('minimized');
-      toggleBtn.textContent = '□';
-    }
-    toggleBtn.addEventListener('click', () => {
-      hud.classList.toggle('minimized');
-      const isMin = hud.classList.contains('minimized');
-      toggleBtn.textContent = isMin ? '□' : '_';
-      localStorage.setItem('nemesis_cyber_hud_minimized', String(isMin));
-    });
-  }
-
-  static updateCyberOverloadHud() {
-    const body = document.getElementById('cyberHudBody');
-    if (!body) return;
-
-    const state = getGameState();
-    if (!state) return;
-
-    const p = state.playerState || {};
-    const s = state.stageState || {};
-    const c = state.combatState || {};
-    const n = state.nemesisState || {};
-
-    // Advanced Stats Calculations
-    let apGainedToday = 0;
-    const maxApConfig = p.maxAp || 0;
-    (state.dailiesState?.dailies || []).forEach(d => {
-      if (d.completedToday) {
-        const reward = state.config?.taskRewards?.[d.difficulty];
-        if (reward && reward.ap) {
-          apGainedToday += reward.ap;
-        }
-      }
-    });
-
-    let goldGainedToday = 0;
-    let maxGoldConfig = 0;
-    (state.dailiesState?.dailies || []).forEach(d => {
-      const reward = state.config?.taskRewards?.[d.difficulty];
-      if (reward) {
-        if (reward.gold) maxGoldConfig += reward.gold;
-        if (d.completedToday && reward.gold) goldGainedToday += reward.gold;
-      }
-    });
-
-    const activeWeapon = p.activeWeapon;
-    const weaponCfg = state.config?.weapons?.[activeWeapon];
-    const baseCrit = weaponCfg ? (weaponCfg.critChance || 0) : 0;
-    const upgrades = p.weaponUpgrades?.[activeWeapon];
-    const critUp = (upgrades || []).reduce((s, u) => s + (u.crit || 0), 0);
-    const classPassiveCrit = (typeof PlayerManager !== 'undefined' && PlayerManager.getClassPassive()?.critBonus) || 0;
-    const totalCrit = Math.round((baseCrit + classPassiveCrit + critUp) * 100);
-
-    let dodgeCost = 0;
-    if (state.config && state.config.dodgeCost) {
-      let multiplier = 1;
-      if (p.talismans?.includes('Lead boots')) multiplier *= 1.5;
-      dodgeCost = Math.ceil((p.maxAp || 0) * state.config.dodgeCost * multiplier);
-    }
-
-    const streakMult = p.streakMultiplier || 1.0;
-    const savers = p.streakSaversLeft || 0;
-    
-    // Assemble info as plain, compact text
-    let info = '';
-    info += `[ CHARACTER ]\n`;
-    info += `CLASS : ${p.className || 'NONE'} (LVL ${p.level || 1})\n`;
-    info += `HP    : ${Math.ceil(p.hp || 0)}/${Math.ceil(p.maxHp || 100)}\n`;
-    info += `MANA  : ${Math.ceil(p.mana || 0)}/${Math.ceil(p.maxMana || 0)}\n`;
-    info += `GOLD  : ${p.gold || 0} | DMND: ${p.diamonds || 0}\n`;
-    info += `KEYS  : ${p.lootboxKeys || 0} | TAGS: ${p.killTags || 0}\n\n`;
-
-    info += `[ COMBAT DATA ]\n`;
-    info += `CRIT RATE  : ${totalCrit}%\n`;
-    info += `DODGE COST : ${dodgeCost} Mana\n`;
-    info += `COMBO HEAT : ${c.currentCombo || 0}\n`;
-    info += `WEAPON     : ${activeWeapon || 'NONE'}\n\n`;
-
-    info += `[ DAILY EFFICIENCY ]\n`;
-    info += `AP GAINED  : ${apGainedToday}/${maxApConfig}\n`;
-    info += `GOLD GAINED: ${goldGainedToday}/${maxGoldConfig}\n`;
-    info += `STREAK MULT: ${streakMult.toFixed(2)}x (SAVERS: ${savers})\n\n`;
-
-    info += `[ WORLD & NEMESIS ]\n`;
-    info += `STAGE : ${s.level || 1} (WAVE ${s.wave || 1})\n`;
-    info += `NEMESIS LEVEL : ${n.level || 1}\n`;
-
-    body.textContent = info;
-  }
 
   static createNavigationMenu() {
     const hamburger = document.createElement('div');
@@ -659,71 +463,35 @@ class UIManager {
       <div class="combo-indicator" id="comboIndicator"></div>
       <div class="focus-overlay" id="focusOverlay"></div>
       <div id="focus-clock-popup">
-        <div class="focus-popup-header">
-          <span class="focus-popup-title">⏱️ FOCUS HOURGLASS</span>
+        <div class="focus-fullscreen-inner">
           <button class="focus-popup-close" id="focusPopupClose">✕</button>
+          <div class="focus-fs-timer-label" id="digitalClock">25:00</div>
+          <div class="focus-fs-bar-wrap">
+            <div class="focus-fs-bar-track">
+              <div class="focus-fs-bar-fill" id="focusProgressBar"></div>
+            </div>
+          </div>
+          <div class="focus-timer-options">
+            <button class="focus-duration-btn" data-mins="5">5m</button>
+            <button class="focus-duration-btn" data-mins="15">15m</button>
+            <button class="focus-duration-btn active" data-mins="25">25m</button>
+            <button class="focus-duration-btn" data-mins="50">50m</button>
+            <button class="focus-duration-btn" id="focusCustomBtn">Custom</button>
+          </div>
+          <div id="focusCustomInputGroup" style="display: none; margin-bottom: 12px; align-items: center; justify-content: center; gap: 8px;">
+            <span style="font-size: 7px; color: #9ca3af;">Minutes:</span>
+            <input type="number" id="focusCustomMins" min="1" max="1440" value="25" style="width: 60px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-family: inherit; font-size: 8px; padding: 4px; text-align: center; border-radius: 4px;" />
+          </div>
+          <div id="focusTaskSelectionContainer" style="margin: 12px 0; text-align: left; max-height: 140px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); padding: 6px; border-radius: 4px; background: rgba(255,255,255,0.04); display: none;">
+            <div class="focus-task-selection-header">FOCUS TARGETS (2X REWARDS):</div>
+            <div id="focusTaskSelectionList"></div>
+          </div>
+          <div id="focusActionContainer" style="display: flex; gap: 8px; width: 100%; max-width: 300px;">
+            <button class="focus-action-btn focus-start-btn" id="focusStartBtn" style="flex: 1;">START</button>
+            <button class="focus-action-btn focus-cancel-btn" id="focusStopBtn" style="flex: 1; display: none;">STOP</button>
+          </div>
+          <div class="focus-cost-warning">Costs 30 Mana · Doubles all task rewards</div>
         </div>
-        <div class="analog-clock-container">
-          <svg class="hourglass-svg" viewBox="0 0 120 120" width="130" height="130" aria-label="Hourglass of Focus">
-            <!-- Runic progress ring track -->
-            <circle cx="60" cy="60" r="50" class="rune-ring-track" stroke="rgba(168, 85, 247, 0.15)" stroke-width="4" fill="none" />
-            <!-- Runic progress ring -->
-            <circle cx="60" cy="60" r="50" id="runicProgressRing" class="rune-ring-fill" stroke="var(--accent-purple, #a855f7)" stroke-width="4" stroke-linecap="round" fill="none" transform="rotate(-90 60 60)" stroke-dasharray="314.16" stroke-dashoffset="0" />
-            
-            <!-- Rune Symbols -->
-            <text x="60" y="18" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᛉ</text>
-            <text x="105" y="63" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚦ</text>
-            <text x="60" y="110" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚫ</text>
-            <text x="15" y="63" font-size="8" fill="#ffb33f" text-anchor="middle" font-family="monospace">ᚲ</text>
-
-            <g class="hourglass-graphic">
-              <!-- Metallic Plates -->
-              <path d="M35 22h50v6H35z" fill="#ffb33f" />
-              <path d="M35 92h50v6H35z" fill="#ffb33f" />
-              <!-- Bulbs -->
-              <path d="M42 28 C42 45, 52 56, 57 60 C52 64, 42 75, 42 92 L78 92 C78 75, 68 64, 63 60 C68 56, 78 45, 78 28 Z" fill="none" stroke="rgba(255, 255, 255, 0.25)" stroke-width="2" />
-              
-              <clipPath id="topBulbClip">
-                <path d="M42 28 C42 45, 52 56, 57 60 C68 56, 78 45, 78 28 Z" />
-              </clipPath>
-              <clipPath id="bottomBulbClip">
-                <path d="M57 60 C52 64, 42 75, 42 92 L78 92 C78 75, 68 64, 63 60 Z" />
-              </clipPath>
-              
-              <rect id="topSand" x="40" y="28" width="40" height="32" fill="url(#sandGradient)" clip-path="url(#topBulbClip)" />
-              <rect id="bottomSand" x="40" y="60" width="40" height="32" fill="url(#sandGradient)" clip-path="url(#bottomBulbClip)" />
-              <line id="sandStream" x1="60" y1="56" x2="60" y2="92" stroke="#d1b3ff" stroke-width="2.5" stroke-dasharray="5 5" class="sand-stream-flow" style="display: none;" />
-            </g>
-            <defs>
-              <linearGradient id="sandGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stop-color="#8b5cf6" />
-                <stop offset="50%" stop-color="#d8b4fe" />
-                <stop offset="100%" stop-color="#6d28d9" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div class="digital-clock-readout" id="digitalClock">25:00</div>
-        <div class="focus-timer-options">
-          <button class="focus-duration-btn" data-mins="5">5m</button>
-          <button class="focus-duration-btn" data-mins="15">15m</button>
-          <button class="focus-duration-btn active" data-mins="25">25m</button>
-          <button class="focus-duration-btn" data-mins="50">50m</button>
-          <button class="focus-duration-btn" id="focusCustomBtn">Custom</button>
-        </div>
-        <div id="focusCustomInputGroup" style="display: none; margin-bottom: 12px; align-items: center; justify-content: center; gap: 8px;">
-          <span style="font-size: 7px; color: #a0aec0;">Minutes:</span>
-          <input type="number" id="focusCustomMins" min="1" max="1440" value="25" style="width: 60px; background: rgba(0,0,0,0.5); border: 1px solid #ffb33f; color: #fff; font-family: inherit; font-size: 8px; padding: 4px; text-align: center; border-radius: 4px;" />
-        </div>
-        <div id="focusTaskSelectionContainer" style="margin: 12px 0; text-align: left; max-height: 120px; overflow-y: auto; border: 1px solid rgba(255, 179, 63, 0.3); padding: 6px; border-radius: 4px; background: rgba(0,0,0,0.3); display: none;">
-          <div class="focus-task-selection-header">FOCUS TARGETS (2X REWARDS):</div>
-          <div id="focusTaskSelectionList"></div>
-        </div>
-        <div id="focusActionContainer" style="display: flex; gap: 8px; width: 100%;">
-          <button class="focus-action-btn focus-start-btn" id="focusStartBtn" style="flex: 1;">START</button>
-          <button class="focus-action-btn focus-cancel-btn" id="focusStopBtn" style="flex: 1; display: none;">STOP</button>
-        </div>
-        <div class="focus-cost-warning">Costs 30 Mana<br>Doubles Daily & To-Do rewards</div>
       </div>
       <div id="focus-mini-widget" style="display: none;">
         <div class="mini-widget-pulse-dot"></div>
@@ -1938,7 +1706,7 @@ class UIManager {
           b.x += b.vx;
           b.y += b.vy;
 
-          const r = 45;
+          const r = b.r || 45;
 
           if (b.x - r < 0) {
             b.x = r;
@@ -2010,7 +1778,7 @@ class UIManager {
     };
 
     const spawnFocusBubbles = () => {
-      const oldBubbles = overlay.querySelectorAll('.focus-bubble');
+      const oldBubbles = popup.querySelectorAll('.focus-bubble');
       oldBubbles.forEach(el => el.remove());
       activeFocusBubbles = [];
 
@@ -2034,9 +1802,32 @@ class UIManager {
         }
 
         const el = document.createElement('div');
-        el.className = `focus-bubble ${type}`;
+
+        // Derive shape, color, and size from the task
+        const shapeClass = UIManager.shapeClassForDifficulty ? UIManager.shapeClassForDifficulty(task.difficulty) : 'easy';
+        const attrColor = (typeof getAttributeColor === 'function') ? getAttributeColor(task.attribute) : '#7a7a7a';
+        const taskInk = (typeof getTextColorForHex === 'function') ? getTextColorForHex(attrColor) : '#ffffff';
+        const sizeScale = Math.max(0.7, Number(task.size) || 1);
+        const bubbleSize = Math.round(80 * sizeScale);
+        const shadeCol = (typeof shadeColor === 'function') ? shadeColor(attrColor, -20) : attrColor;
+
+        el.className = `focus-bubble shape-task shape-${shapeClass}`;
+        el.style.cssText = `
+          --task-accent: ${attrColor};
+          --task-accent-strong: ${shadeCol};
+          --task-ink: ${taskInk};
+          --streak-sat: 1;
+          width: ${bubbleSize}px;
+          height: ${bubbleSize}px;
+          background: linear-gradient(180deg, ${attrColor}, ${shadeCol});
+          border: 2px solid color-mix(in srgb, ${attrColor} 72%, white 28%);
+          color: ${taskInk};
+          left: 0;
+          top: 0;
+          z-index: 20002;
+        `;
         
-        const r = 45;
+        const r = bubbleSize / 2;
         const startX = r + Math.random() * (width - r * 2);
         const startY = r + Math.random() * (height - r * 2);
 
@@ -2045,8 +1836,6 @@ class UIManager {
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
 
-        el.style.left = '0';
-        el.style.top = '0';
         el.style.transform = `translate3d(${startX - r}px, ${startY - r}px, 0)`;
 
         el.innerHTML = `
@@ -2054,12 +1843,13 @@ class UIManager {
           <div class="reward-tag">2x 💎</div>
         `;
 
-        overlay.appendChild(el);
+        popup.appendChild(el);
 
         const bubbleObj = {
           id,
           type,
           el,
+          r,
           x: startX,
           y: startY,
           vx,
@@ -2079,64 +1869,16 @@ class UIManager {
       }
     };
 
-    popup.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button, select, input')) return;
-      isDragging = true;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      const rect = popup.getBoundingClientRect();
-      initialLeft = rect.left + rect.width / 2;
-      initialTop = rect.top + rect.height / 2;
-      popup.style.left = initialLeft + 'px';
-      popup.style.top = initialTop + 'px';
-      popup.style.transform = 'translate(-50%, -50%)';
-      try { popup.setPointerCapture(e.pointerId); } catch (err) { }
-    });
-
-    popup.addEventListener('pointermove', (e) => {
-      if (!isDragging) return;
-      const dx = e.clientX - dragStartX;
-      const dy = e.clientY - dragStartY;
-      popup.style.left = (initialLeft + dx) + 'px';
-      popup.style.top = (initialTop + dy) + 'px';
-    });
-
-    const stopDragging = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      try { popup.releasePointerCapture(e.pointerId); } catch (err) { }
-    };
-    popup.addEventListener('pointerup', stopDragging);
-    popup.addEventListener('pointercancel', stopDragging);
+    // Dragging is disabled for full-screen layout
 
     const updateHands = (totalSecs, currentSecs) => {
-      const elapsedRatio = (totalSecs - currentSecs) / totalSecs;
-
-      const topSand = document.getElementById('topSand');
-      const bottomSand = document.getElementById('bottomSand');
-      const sandStream = document.getElementById('sandStream');
-      const runicProgress = document.getElementById('runicProgressRing');
-
-      const isActive = state.systemState.focusTimerActive;
-
-      if (topSand) {
-        const topY = 28 + (32 * elapsedRatio);
-        const topHeight = Math.max(0, 32 * (1 - elapsedRatio));
-        topSand.setAttribute('y', topY);
-        topSand.setAttribute('height', topHeight);
-      }
-      if (bottomSand) {
-        const bottomY = 92 - (32 * elapsedRatio);
-        const bottomHeight = Math.max(0, 32 * elapsedRatio);
-        bottomSand.setAttribute('y', bottomY);
-        bottomSand.setAttribute('height', bottomHeight);
-      }
-      if (sandStream) {
-        sandStream.style.display = (isActive && !isTimerPaused && currentSecs > 0) ? 'block' : 'none';
-      }
-      if (runicProgress) {
-        const offset = 314.16 * elapsedRatio;
-        runicProgress.style.strokeDashoffset = offset;
+      const remainingRatio = totalSecs > 0 ? currentSecs / totalSecs : 0;
+      const progressBar = document.getElementById('focusProgressBar');
+      if (progressBar) {
+        progressBar.style.width = (remainingRatio * 100) + '%';
+        // Shift color as time depletes: green → yellow → red
+        const hue = Math.round(remainingRatio * 120); // 120=green, 0=red
+        progressBar.style.background = `hsl(${hue}, 55%, 40%)`;
       }
     };
 
@@ -2226,14 +1968,11 @@ class UIManager {
     });
 
     btn.addEventListener('click', () => {
-      if (popup.style.display === 'block') {
+      if (popup.style.display === 'flex') {
         hidePopup();
       } else {
-        popup.style.display = 'block';
+        popup.style.display = 'flex';
         overlay.style.display = 'block';
-        popup.style.left = '50%';
-        popup.style.top = '50%';
-        popup.style.transform = 'translate(-50%, -50%)';
         miniWidget.style.display = 'none';
         syncPopupUI();
       }
@@ -2241,11 +1980,11 @@ class UIManager {
 
     miniWidget.addEventListener('click', () => {
       miniWidget.style.display = 'none';
-      popup.style.display = 'block';
+      popup.style.display = 'flex';
       overlay.style.display = 'block';
-      popup.style.left = '50%';
-      popup.style.top = '50%';
-      popup.style.transform = 'translate(-50%, -50%)';
+      popup.style.left = '';
+      popup.style.top = '';
+      popup.style.transform = '';
       syncPopupUI();
     });
 
@@ -2257,8 +1996,9 @@ class UIManager {
       state.systemState.focusTimerEndTimestamp = 0;
       state.systemState.focusTimerSecondsLeft = 0;
       state.systemState.selectedFocusTaskIds = [];
+      localStorage.removeItem('nemesis_focus_end');
       selectedFocusTaskIds.clear();
-      const oldBubbles = overlay.querySelectorAll('.focus-bubble');
+      const oldBubbles = popup.querySelectorAll('.focus-bubble');
       oldBubbles.forEach(el => el.remove());
       activeFocusBubbles = [];
       if (driftAnimationId) {
@@ -2296,6 +2036,7 @@ class UIManager {
           state.systemState.focusTimerActive = false;
           state.systemState.focusTimerEndTimestamp = 0;
           state.systemState.focusTimerSecondsLeft = 0;
+          localStorage.removeItem('nemesis_focus_end');
           state.save();
           btn.classList.remove('active');
           try {
@@ -2314,7 +2055,9 @@ class UIManager {
     // Rehydrate/resume timer if it is active on page load/re-init
     if (state.systemState.focusTimerActive) {
       const now = Date.now();
-      const end = Number(state.systemState.focusTimerEndTimestamp) || 0;
+      // Prefer direct localStorage value (written synchronously) over state (may not flush before tab close)
+      const lsEnd = Number(localStorage.getItem('nemesis_focus_end')) || 0;
+      const end = lsEnd || (Number(state.systemState.focusTimerEndTimestamp) || 0);
       const savedLeft = Number(state.systemState.focusTimerSecondsLeft) || 0;
       const originalDurationMins = Number(state.systemState.focusTimerDurationMins) || 25;
       
@@ -2351,22 +2094,21 @@ class UIManager {
         if (isTimerPaused) {
           isTimerPaused = false;
           startBtn.textContent = 'PAUSE';
-          state.systemState.focusTimerEndTimestamp = Date.now() + secondsLeft * 1000;
+          const resumeEnd = Date.now() + secondsLeft * 1000;
+          state.systemState.focusTimerEndTimestamp = resumeEnd;
           state.systemState.focusTimerSecondsLeft = secondsLeft;
+          localStorage.setItem('nemesis_focus_end', String(resumeEnd));
           state.save();
           startTimerCountdown();
-          const sandStream = document.getElementById('sandStream');
-          if (sandStream) sandStream.style.display = 'block';
         } else {
           isTimerPaused = true;
           startBtn.textContent = 'RESUME';
           clearInterval(timerInterval);
           timerInterval = null;
-          state.systemState.focusTimerEndTimestamp = 0; // 0 denotes paused
+          state.systemState.focusTimerEndTimestamp = 0;
           state.systemState.focusTimerSecondsLeft = secondsLeft;
+          localStorage.removeItem('nemesis_focus_end');
           state.save();
-          const sandStream = document.getElementById('sandStream');
-          if (sandStream) sandStream.style.display = 'none';
         }
       } else {
         const mana = state.playerState.mana || 0;
@@ -2379,8 +2121,10 @@ class UIManager {
         state.drainMana(30);
         state.systemState.focusTimerActive = true;
         state.systemState.focusTimerDurationMins = selectedMinutes;
-        state.systemState.focusTimerEndTimestamp = Date.now() + selectedMinutes * 60 * 1000;
+        const newEnd = Date.now() + selectedMinutes * 60 * 1000;
+        state.systemState.focusTimerEndTimestamp = newEnd;
         state.systemState.focusTimerSecondsLeft = selectedMinutes * 60;
+        localStorage.setItem('nemesis_focus_end', String(newEnd));
         state.save();
 
         isTimerPaused = false;
@@ -6964,7 +6708,7 @@ class UIManager {
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
       return `
-      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
+      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
         
         ${clusterHeader}
 
@@ -7562,7 +7306,6 @@ class UIManager {
     } catch (e) {
       console.warn('refreshGameUI: failed to sync resources', e);
     }
-    try { this.updateCyberOverloadHud(); } catch (e) { }
     this.scheduleUpdateDailiesList();
     this.updateTodosList();
     this.updateDeathDefianceBadge();

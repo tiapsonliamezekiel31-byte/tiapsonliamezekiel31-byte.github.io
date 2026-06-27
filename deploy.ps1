@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: sync tycoon cheat commands to multiplayer Firebase world"
+$commitMsg = "feat: focus timer fullscreen, shape bubbles, subtask expansion, blood oath glow"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
