@@ -27,6 +27,221 @@ class TaskManager {
     }
   }
 
+  static parseMetadata(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
+    let name = rawText.trim();
+    let attribute = null;
+    let clusterAttributes = null;
+    let difficulty = null;
+    let deadline = null;
+
+    const state = getGameState();
+    const validAttrs = state?.config?.attributes || ['STR', 'INT', 'DISC', 'CREA', 'SOC', 'CAP', 'RESP'];
+    const validDiffs = ['Easy', 'Medium', 'Hard', 'Ultra'];
+
+    // 1. Parse Attribute Proportions (e.g. STR 5 or STR)
+    const attrRegex = new RegExp(`\\b(${validAttrs.join('|')})\\b(?:\\s*(\\d+(?:\\.\\d+)?))?`, 'gi');
+    let attrMatch;
+    const foundAttrs = {};
+    
+    while ((attrMatch = attrRegex.exec(name)) !== null) {
+      const attr = attrMatch[1].toUpperCase();
+      const val = attrMatch[2] !== undefined ? Number(attrMatch[2]) : 1;
+      foundAttrs[attr] = val;
+    }
+
+    if (Object.keys(foundAttrs).length > 0) {
+      clusterAttributes = foundAttrs;
+      let maxVal = -1;
+      for (const attr in foundAttrs) {
+        if (foundAttrs[attr] > maxVal) {
+          maxVal = foundAttrs[attr];
+          attribute = attr;
+        }
+      }
+      name = name.replace(attrRegex, '');
+    }
+
+    // 2. Parse Difficulty
+    for (const diff of validDiffs) {
+      const regex = new RegExp(`\\b${diff}\\b`, 'i');
+      if (regex.test(name)) {
+        difficulty = diff;
+        name = name.replace(regex, '');
+        break;
+      }
+    }
+
+    // 3. Parse Deadline Date & Time
+    let targetDate = new Date();
+    targetDate.setHours(23, 59, 0, 0); // Default to end of day
+    let dateParsed = false;
+    let timeParsed = false;
+
+    // Relative dates
+    const tomorrowRegex = /\btomorrow\b/i;
+    const todayRegex = /\btoday\b/i;
+    const nextWeekRegex = /\bnext\s+week\b/i;
+    
+    if (tomorrowRegex.test(name)) {
+      targetDate.setDate(targetDate.getDate() + 1);
+      name = name.replace(tomorrowRegex, '');
+      dateParsed = true;
+    } else if (todayRegex.test(name)) {
+      name = name.replace(todayRegex, '');
+      dateParsed = true;
+    } else if (nextWeekRegex.test(name)) {
+      targetDate.setDate(targetDate.getDate() + 7);
+      name = name.replace(nextWeekRegex, '');
+      dateParsed = true;
+    }
+
+    // Days of the week (e.g. next monday, monday)
+    const dayOfWeekRegex = /\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i;
+    const dayMatch = name.match(dayOfWeekRegex);
+    if (dayMatch) {
+      const isNext = !!dayMatch[1];
+      const targetDayName = dayMatch[2].toLowerCase();
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const targetDayIndex = days.indexOf(targetDayName);
+      
+      const currentDayIndex = targetDate.getDay();
+      let diffDays = targetDayIndex - currentDayIndex;
+      if (diffDays <= 0) {
+        diffDays += 7;
+      }
+      if (isNext && diffDays < 7) {
+        diffDays += 7;
+      }
+      targetDate.setDate(targetDate.getDate() + diffDays);
+      name = name.replace(dayOfWeekRegex, '');
+      dateParsed = true;
+    }
+
+    // Absolute dates
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const absDateRegex1 = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})\b/i;
+    const absDateRegex2 = /\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
+    
+    let absMatch = name.match(absDateRegex1);
+    let regexToReplace = absDateRegex1;
+    if (!absMatch) {
+      absMatch = name.match(absDateRegex2);
+      regexToReplace = absDateRegex2;
+    }
+    if (absMatch) {
+      let monthStr, dayStr;
+      if (regexToReplace === absDateRegex1) {
+        monthStr = absMatch[1];
+        dayStr = absMatch[2];
+      } else {
+        dayStr = absMatch[1];
+        monthStr = absMatch[2];
+      }
+      const monthIdx = months.indexOf(monthStr.toLowerCase().substring(0, 3));
+      if (monthIdx !== -1) {
+        targetDate.setMonth(monthIdx);
+        targetDate.setDate(Number(dayStr));
+        name = name.replace(regexToReplace, '');
+        dateParsed = true;
+      }
+    }
+
+    // Time parsing
+    const timeAmPmRegex = /\b(\d{1,2})\s*(am|pm)\b/i;
+    const time24Regex = /\b(\d{1,2}):(\d{2})\b/;
+    
+    let timeMatch = name.match(timeAmPmRegex);
+    if (timeMatch) {
+      let hour = Number(timeMatch[1]);
+      const ampm = timeMatch[2].toLowerCase();
+      if (ampm === 'pm' && hour < 12) hour += 12;
+      if (ampm === 'am' && hour === 12) hour = 0;
+      targetDate.setHours(hour, 0, 0, 0);
+      name = name.replace(timeAmPmRegex, '');
+      timeParsed = true;
+    } else {
+      timeMatch = name.match(time24Regex);
+      if (timeMatch) {
+        targetDate.setHours(Number(timeMatch[1]), Number(timeMatch[2]), 0, 0);
+        name = name.replace(time24Regex, '');
+        timeParsed = true;
+      }
+    }
+
+    name = name.replace(/\s+/g, ' ').replace(/^\s*[-,\s]+\s*|\s*[-,\s]+\s*$/g, '').trim();
+
+    if (dateParsed || timeParsed) {
+      deadline = targetDate.getTime();
+    } else {
+      deadline = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) 
+        ? UIManager.quickDayDeadline 
+        : new Date(new Date().setDate(new Date().getDate() + 1)).setHours(23, 59, 0, 0);
+    }
+
+    return {
+      name: name || '',
+      attribute: attribute || fallbackAttr,
+      clusterAttributes,
+      difficulty: difficulty || fallbackDiff,
+      deadline
+    };
+  }
+
+  static parseNaturalLanguage(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
+    const res = this.parseMetadata(rawText, fallbackAttr, fallbackDiff);
+    if (!res.name) res.name = 'Untitled NLP Task';
+    return res;
+  }
+
+  static parseBulkAddText(bulkText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
+    const lines = bulkText.split('\n');
+    const tasks = [];
+    let currentHeader = null;
+
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const trimmedLine = rawLine.trim();
+      if (!trimmedLine) continue;
+
+      if (trimmedLine.startsWith('#') || trimmedLine.startsWith('@')) {
+        const metaText = trimmedLine.substring(1).trim();
+        currentHeader = this.parseMetadata(metaText, fallbackAttr, fallbackDiff);
+        continue;
+      }
+
+      const isSubtask = /^[ \t]+/.test(rawLine) || /^[-\*\+]\s*/.test(trimmedLine);
+
+      if (isSubtask) {
+        const subtaskName = trimmedLine.replace(/^[-\*\+]\s*/, '').trim();
+        if (subtaskName && tasks.length > 0) {
+          tasks[tasks.length - 1].subtasks.push(subtaskName);
+        }
+      } else {
+        if (currentHeader) {
+          tasks.push({
+            name: trimmedLine,
+            difficulty: currentHeader.difficulty,
+            attribute: currentHeader.attribute,
+            clusterAttributes: currentHeader.clusterAttributes,
+            deadline: currentHeader.deadline,
+            subtasks: []
+          });
+        } else {
+          const parsed = this.parseNaturalLanguage(trimmedLine, fallbackAttr, fallbackDiff);
+          tasks.push({
+            name: parsed.name,
+            difficulty: parsed.difficulty,
+            attribute: parsed.attribute,
+            clusterAttributes: parsed.clusterAttributes,
+            deadline: parsed.deadline,
+            subtasks: []
+          });
+        }
+      }
+    }
+    return tasks;
+  }
+
   // ============================================================
   // DAILIES
   // ============================================================
@@ -261,7 +476,8 @@ class TaskManager {
 
   static getCompletedDailies() {
     const state = getGameState();
-    return state.dailiesState.dailies.filter(d => d.completed);
+    const today = this.getCurrentGameDateKey();
+    return state.dailiesState.dailies.filter(d => d.completed && this.isDailyScheduled(d, today));
   }
 
   static getMaxPotentialDiamonds() {
@@ -278,7 +494,8 @@ class TaskManager {
 
   static getMissedDailies() {
     const state = getGameState();
-    return state.dailiesState.dailies.filter(d => !d.completed);
+    const today = this.getCurrentGameDateKey();
+    return state.dailiesState.dailies.filter(d => !d.completed && this.isDailyScheduled(d, today));
   }
 
   static isAllDailiesComplete() {
@@ -466,6 +683,50 @@ class TaskManager {
     return new Date().toISOString().split('T')[0];
   }
 
+  static isDailyScheduled(daily, dateKey) {
+    if (!daily.repeatMode || daily.repeatMode === 'daily') {
+      return true;
+    }
+    
+    if (daily.repeatMode === 'weekly') {
+      // Create a local date for the given dateKey
+      const parts = dateKey.split('-');
+      if (parts.length === 3) {
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        const weekDays = Array.isArray(daily.weekDays) ? daily.weekDays : [0, 1, 2, 3, 4, 5, 6];
+        return weekDays.includes(d.getDay());
+      }
+      return true; // Fallback
+    }
+    
+    if (daily.repeatMode === 'interval') {
+      const startKey = daily.createdAtDateKey || dateKey;
+      const startParts = startKey.split('-');
+      const currentParts = dateKey.split('-');
+      
+      if (startParts.length === 3 && currentParts.length === 3) {
+        const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+        const currentDate = new Date(currentParts[0], currentParts[1] - 1, currentParts[2]);
+        
+        // Calculate difference in days, ignoring DST issues by using UTC time of those local dates
+        const utcStart = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const utcCurrent = Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+        
+        const diffMs = utcCurrent - utcStart;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        const interval = Math.max(1, daily.intervalDays || 1);
+        
+        // If current date is before start date, we could technically still modulo if we wanted, 
+        // but normally diffDays >= 0.
+        return Math.abs(diffDays) % interval === 0;
+      }
+      return true; // Fallback
+    }
+    
+    return true;
+  }
+
   static getPlannerDayData(dateKey) {
     const state = getGameState();
     const plannerKey = state.config.plannerKey || 'nemesis_planner_data';
@@ -486,7 +747,8 @@ class TaskManager {
     const state = getGameState();
     const dateKey = this.getCurrentGameDateKey();
 
-    const dailyApTotal = this.getAllDailies().reduce((sum, daily) => {
+    const scheduledDailies = this.getAllDailies().filter(d => this.isDailyScheduled(d, dateKey));
+    const dailyApTotal = scheduledDailies.reduce((sum, daily) => {
       const reward = state.config.taskRewards[daily.difficulty];
       return sum + (reward?.ap || 0);
     }, 0);
@@ -650,12 +912,24 @@ class TaskManager {
   // STREAKS
   // ============================================================
 
-  static updateStreaks(allComplete = null) {
+  static updateStreaks(allComplete = null, scheduledCount = null) {
     const state = getGameState();
 
     const anySaved = state.dailiesState.dailies.some(d => d.streakSaved);
     if (anySaved) {
       state.dailiesState.dailies.forEach(d => { d.streakSaved = false; });
+      state.eventBus.emit(EVENTS.DAILY_STREAK_CHANGED, {
+        completion: state.dailiesState.streakCompletion,
+        nonCompletion: state.dailiesState.streakNonCompletion
+      });
+      return;
+    }
+
+    const activeScheduledCount = (scheduledCount !== null) 
+      ? scheduledCount 
+      : state.dailiesState.dailies.filter(d => this.isDailyScheduled(d, this.getCurrentGameDateKey())).length;
+
+    if (activeScheduledCount === 0) {
       state.eventBus.emit(EVENTS.DAILY_STREAK_CHANGED, {
         completion: state.dailiesState.streakCompletion,
         nonCompletion: state.dailiesState.streakNonCompletion
@@ -726,7 +1000,9 @@ class TaskManager {
         negative++;
         continue;
       }
-      break;
+      // If neither completed nor missed, it means it was not scheduled (or the day was skipped).
+      // We continue looking further back in history instead of breaking the streak.
+      continue;
     }
     return positive > 0 ? positive : negative > 0 ? -negative : 0;
   }
@@ -768,8 +1044,10 @@ class TaskManager {
 
     // IMPORTANT: streaks are based on the day that just ended,
     // so compute before we clear completion flags.
+    const today = this.getCurrentGameDateKey();
+    const scheduledCount = state.dailiesState.dailies.filter(d => this.isDailyScheduled(d, today)).length;
     const allCompleteBeforeReset = this.isAllDailiesComplete();
-    this.updateStreaks(allCompleteBeforeReset);
+    this.updateStreaks(allCompleteBeforeReset, scheduledCount);
     state.systemState.completeDayClaimDate = null;
     state.systemState.completeDayApBonus = 0;
     PlayerManager.recalculateMaxAp();

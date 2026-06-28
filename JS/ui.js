@@ -312,22 +312,6 @@ class UIManager {
     let latestX = 0, latestY = 0;
     let rafId = null;
 
-    const onPointerDown = (e) => {
-      if (e.target.closest('button, input, textarea, select, a')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      isDragging = true;
-      hud.classList.add('is-dragging');
-      startX = e.clientX;
-      startY = e.clientY;
-      const rect = hud.getBoundingClientRect();
-      initialLeft = rect.left;
-      initialTop = rect.top;
-      hud.style.right = 'auto';
-      hud.style.left = initialLeft + 'px';
-      hud.style.top = initialTop + 'px';
-      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
-    };
-
     const onPointerMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
@@ -361,6 +345,9 @@ class UIManager {
         cancelAnimationFrame(rafId);
         rafId = null;
       }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
       try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_hud_pos', JSON.stringify({
         left: parseInt(hud.style.left, 10) || 0,
@@ -368,10 +355,27 @@ class UIManager {
       }));
     };
 
+    const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      hud.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.right = 'auto';
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    };
+
     hud.addEventListener('pointerdown', onPointerDown);
-    hud.addEventListener('pointermove', onPointerMove);
-    hud.addEventListener('pointerup', onPointerUp);
-    hud.addEventListener('pointercancel', onPointerUp);
   }
 
   static createStatsHudWidget() {
@@ -538,6 +542,14 @@ class UIManager {
         <div id="runCompletionAttrsContainer" style="display:none;"></div>
         <div id="runCompletionRewardsContainer" style="display:none; max-height:48px; overflow-y:auto; padding:2px 0;"></div>
       </div>
+      <div id="weeklyHeatmapPanel" class="weekly-heatmap-panel" aria-label="Consistency Heatmap">
+        <div class="weekly-heatmap-head">
+          <span>CONSISTENCY HEATMAP</span>
+          <button id="weeklyHeatmapCollapseBtn" class="stage-notes-collapse-btn">－</button>
+        </div>
+        <div class="weekly-heatmap-body" id="weeklyHeatmapBody"></div>
+      </div>
+      <button id="weeklyHeatmapMinimized" class="weekly-heatmap-minimized" style="display: none;" title="Open Consistency Heatmap">📊</button>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
         <div class="event-banner-content">
           <div id="eventBannerTitle" class="event-banner-title">Event Name</div>
@@ -598,50 +610,60 @@ class UIManager {
     `;
     document.body.appendChild(gameArea);
 
-    const centerGroup = gameArea.querySelector('#gameCenter');
+    const centerGroup = gameArea.querySelector('.enemy-circle-container');
     const handle = gameArea.querySelector('#centerDragHandle');
     let isDragging = false;
-    let startX = 0, currentTx = 0, initialTx = 0;
+    let startX = 0, startY = 0;
+    let currentTx = 0, currentTy = 0;
+    let initialTx = 0, initialTy = 0;
 
     const savedPos = localStorage.getItem('nemesis_center_pos');
     if (savedPos) {
       try {
-        const { tx } = JSON.parse(savedPos);
+        const { tx, ty } = JSON.parse(savedPos);
         currentTx = tx || 0;
-        centerGroup.style.transform = `translate(${currentTx}px, 0px)`;
+        currentTy = ty || 0;
+        centerGroup.style.transform = `translate(${currentTx}px, ${currentTy}px)`;
       } catch (e) { }
     }
-
-    const onDown = (e) => {
-      isDragging = true;
-      startX = e.clientX;
-      initialTx = currentTx;
-      handle.setPointerCapture(e.pointerId);
-    };
 
     const onMove = (e) => {
       if (!isDragging) return;
       e.preventDefault();
       const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
       currentTx = initialTx + dx;
-      centerGroup.style.transform = `translate(${currentTx}px, 0px)`;
+      currentTy = initialTy + dy;
+      centerGroup.style.transform = `translate(${currentTx}px, ${currentTy}px)`;
     };
 
     const onUp = (e) => {
       if (!isDragging) return;
       isDragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
       handle.releasePointerCapture(e.pointerId);
       localStorage.setItem('nemesis_center_pos', JSON.stringify({
         tx: currentTx,
-        ty: 0
+        ty: currentTy
       }));
+    };
+
+    const onDown = (e) => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      initialTx = currentTx;
+      initialTy = currentTy;
+      handle.setPointerCapture(e.pointerId);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+      document.addEventListener('pointercancel', onUp);
     };
 
     if (handle) {
       handle.addEventListener('pointerdown', onDown);
-      handle.addEventListener('pointermove', onMove);
-      handle.addEventListener('pointerup', onUp);
-      handle.addEventListener('pointercancel', onUp);
     }
 
     const rcPanel = gameArea.querySelector('#runCompletionPanel');
@@ -681,23 +703,6 @@ class UIManager {
       } catch (e) { }
     }
 
-    const onRcDown = (e) => {
-      if (e.target.closest('button, input, textarea, select, a')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      isRcDragging = true;
-      rcPanel.classList.add('is-dragging');
-      rcStartX = e.clientX;
-      rcStartY = e.clientY;
-      const rect = rcPanel.getBoundingClientRect();
-      rcInitialLeft = rect.left;
-      rcInitialTop = rect.top;
-      rcPanel.style.right = 'auto';
-      rcPanel.style.bottom = 'auto';
-      rcPanel.style.left = rcInitialLeft + 'px';
-      rcPanel.style.top = rcInitialTop + 'px';
-      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) { }
-    };
-
     const onRcMove = (e) => {
       if (!isRcDragging) return;
       e.preventDefault();
@@ -731,6 +736,9 @@ class UIManager {
         cancelAnimationFrame(rcRafId);
         rcRafId = null;
       }
+      document.removeEventListener('pointermove', onRcMove);
+      document.removeEventListener('pointerup', onRcUp);
+      document.removeEventListener('pointercancel', onRcUp);
       try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
         left: parseInt(rcPanel.style.left, 10) || 0,
@@ -738,11 +746,162 @@ class UIManager {
       }));
     };
 
+    const onRcDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isRcDragging = true;
+      rcPanel.classList.add('is-dragging');
+      rcStartX = e.clientX;
+      rcStartY = e.clientY;
+      const rect = rcPanel.getBoundingClientRect();
+      rcInitialLeft = rect.left;
+      rcInitialTop = rect.top;
+      rcPanel.style.right = 'auto';
+      rcPanel.style.bottom = 'auto';
+      rcPanel.style.left = rcInitialLeft + 'px';
+      rcPanel.style.top = rcInitialTop + 'px';
+      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onRcMove);
+      document.addEventListener('pointerup', onRcUp);
+      document.addEventListener('pointercancel', onRcUp);
+    };
+
     if (rcPanel) {
       rcPanel.addEventListener('pointerdown', onRcDown);
-      rcPanel.addEventListener('pointermove', onRcMove);
-      rcPanel.addEventListener('pointerup', onRcUp);
-      rcPanel.addEventListener('pointercancel', onRcUp);
+    }
+
+    // Consistency Heatmap Widget setup
+    const heatmapPanel = gameArea.querySelector('#weeklyHeatmapPanel');
+    const heatmapMinimized = gameArea.querySelector('#weeklyHeatmapMinimized');
+    const heatmapCollapseBtn = gameArea.querySelector('#weeklyHeatmapCollapseBtn');
+
+    if (heatmapCollapseBtn && heatmapPanel && heatmapMinimized) {
+      heatmapCollapseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        heatmapPanel.style.display = 'none';
+        heatmapMinimized.style.display = 'flex';
+        localStorage.setItem('nemesis_heatmap_collapsed', 'true');
+      });
+    }
+
+    if (heatmapMinimized && heatmapPanel) {
+      heatmapMinimized.addEventListener('click', () => {
+        heatmapPanel.style.display = 'block';
+        heatmapMinimized.style.display = 'none';
+        localStorage.setItem('nemesis_heatmap_collapsed', 'false');
+        
+        const savedPos = localStorage.getItem('nemesis_heatmap_pos');
+        if (savedPos) {
+          try {
+            const { left, top } = JSON.parse(savedPos);
+            heatmapPanel.style.left = left + 'px';
+            heatmapPanel.style.top = top + 'px';
+          } catch (e) { }
+        }
+      });
+    }
+
+    // Load collapsed state
+    const isHeatmapCollapsed = localStorage.getItem('nemesis_heatmap_collapsed') === 'true';
+    if (isHeatmapCollapsed) {
+      if (heatmapPanel) heatmapPanel.style.display = 'none';
+      if (heatmapMinimized) heatmapMinimized.style.display = 'flex';
+    } else {
+      if (heatmapPanel) heatmapPanel.style.display = 'block';
+      if (heatmapMinimized) heatmapMinimized.style.display = 'none';
+    }
+
+    // Load positions
+    const savedHeatmapPos = localStorage.getItem('nemesis_heatmap_pos');
+    if (savedHeatmapPos && heatmapPanel) {
+      try {
+        const { left, top } = JSON.parse(savedHeatmapPos);
+        heatmapPanel.style.left = left + 'px';
+        heatmapPanel.style.top = top + 'px';
+        if (heatmapMinimized) {
+          heatmapMinimized.style.left = left + 'px';
+          heatmapMinimized.style.top = top + 'px';
+        }
+      } catch (e) { }
+    }
+
+    // Draggable logic for heatmapPanel
+    let isHmDragging = false;
+    let hmStartX = 0, hmStartY = 0, hmInitialLeft = 0, hmInitialTop = 0;
+    let hmLatestX = 0, hmLatestY = 0;
+    let hmRafId = null;
+
+    const onHmMove = (e) => {
+      if (!isHmDragging) return;
+      e.preventDefault();
+      hmLatestX = e.clientX;
+      hmLatestY = e.clientY;
+
+      if (!hmRafId) {
+        hmRafId = requestAnimationFrame(() => {
+          const dx = hmLatestX - hmStartX;
+          const dy = hmLatestY - hmStartY;
+          let newLeft = hmInitialLeft + dx;
+          let newTop = hmInitialTop + dy;
+
+          const maxX = window.innerWidth - heatmapPanel.offsetWidth;
+          const maxY = window.innerHeight - heatmapPanel.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          heatmapPanel.style.left = newLeft + 'px';
+          heatmapPanel.style.top = newTop + 'px';
+          if (heatmapMinimized) {
+            heatmapMinimized.style.left = newLeft + 'px';
+            heatmapMinimized.style.top = newTop + 'px';
+          }
+          hmRafId = null;
+        });
+      }
+    };
+
+    const onHmUp = (e) => {
+      if (!isHmDragging) return;
+      isHmDragging = false;
+      heatmapPanel.classList.remove('is-dragging');
+      if (hmRafId) {
+        cancelAnimationFrame(hmRafId);
+        hmRafId = null;
+      }
+      document.removeEventListener('pointermove', onHmMove);
+      document.removeEventListener('pointerup', onHmUp);
+      document.removeEventListener('pointercancel', onHmUp);
+      try { heatmapPanel.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_heatmap_pos', JSON.stringify({
+        left: parseInt(heatmapPanel.style.left, 10) || 0,
+        top: parseInt(heatmapPanel.style.top, 10) || 0
+      }));
+    };
+
+    const onHmDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isHmDragging = true;
+      heatmapPanel.classList.add('is-dragging');
+      hmStartX = e.clientX;
+      hmStartY = e.clientY;
+      const rect = heatmapPanel.getBoundingClientRect();
+      hmInitialLeft = rect.left;
+      hmInitialTop = rect.top;
+      heatmapPanel.style.right = 'auto';
+      heatmapPanel.style.bottom = 'auto';
+      heatmapPanel.style.left = hmInitialLeft + 'px';
+      heatmapPanel.style.top = hmInitialTop + 'px';
+      try { heatmapPanel.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onHmMove);
+      document.addEventListener('pointerup', onHmUp);
+      document.addEventListener('pointercancel', onHmUp);
+    };
+
+    if (heatmapPanel) {
+      heatmapPanel.addEventListener('pointerdown', onHmDown);
     }
 
     const ebPanel = gameArea.querySelector('#eventBannerPanel');
@@ -796,6 +955,10 @@ class UIManager {
       ebPanel.style.left = ebInitialLeft + 'px';
       ebPanel.style.top = ebInitialTop + 'px';
       try { ebPanel.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onEbMove);
+      document.addEventListener('pointerup', onEbUp);
+      document.addEventListener('pointercancel', onEbUp);
     };
 
     const onEbMove = (e) => {
@@ -830,6 +993,9 @@ class UIManager {
         cancelAnimationFrame(ebRafId);
         ebRafId = null;
       }
+      document.removeEventListener('pointermove', onEbMove);
+      document.removeEventListener('pointerup', onEbUp);
+      document.removeEventListener('pointercancel', onEbUp);
       try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) { }
       localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
         left: parseInt(ebPanel.style.left, 10) || 0,
@@ -852,9 +1018,6 @@ class UIManager {
       }
       onEbDown(e);
     });
-    ebPanel.addEventListener('pointermove', onEbMove);
-    ebPanel.addEventListener('pointerup', onEbUp);
-    ebPanel.addEventListener('pointercancel', onEbUp);
 
     // Custom touch-friendly resize handle
     const resizeHandle = gameArea.querySelector('#eventBannerResizeHandle');
@@ -977,18 +1140,6 @@ class UIManager {
       let startX = 0, startY = 0;
       let initialLeft = 0, initialTop = 0;
 
-      const onPointerDown = (e) => {
-        if (e.target.closest('textarea, button, input')) return; // Avoid drag when interacting with text area or buttons
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = element.getBoundingClientRect();
-        const areaRect = gameArea.getBoundingClientRect();
-        initialLeft = rect.left - areaRect.left;
-        initialTop = rect.top - areaRect.top;
-        try { handleElement.setPointerCapture(e.pointerId); } catch(err){}
-      };
-
       const onPointerMove = (e) => {
         if (!isDragging) return;
         const dx = e.clientX - startX;
@@ -1008,6 +1159,9 @@ class UIManager {
       const onPointerUp = (e) => {
         if (!isDragging) return;
         isDragging = false;
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
         try { handleElement.releasePointerCapture(e.pointerId); } catch(err){}
         localStorage.setItem(storageKey, JSON.stringify({
           left: parseInt(element.style.left, 10) || 0,
@@ -1015,10 +1169,23 @@ class UIManager {
         }));
       };
 
+      const onPointerDown = (e) => {
+        if (e.target.closest('textarea, button, input')) return; // Avoid drag when interacting with text area or buttons
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = element.getBoundingClientRect();
+        const areaRect = gameArea.getBoundingClientRect();
+        initialLeft = rect.left - areaRect.left;
+        initialTop = rect.top - areaRect.top;
+        try { handleElement.setPointerCapture(e.pointerId); } catch(err){}
+
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.addEventListener('pointercancel', onPointerUp);
+      };
+
       handleElement.addEventListener('pointerdown', onPointerDown);
-      handleElement.addEventListener('pointermove', onPointerMove);
-      handleElement.addEventListener('pointerup', onPointerUp);
-      handleElement.addEventListener('pointercancel', onPointerUp);
     };
 
     if (notesWidget) {
@@ -1198,10 +1365,23 @@ class UIManager {
     rightTab.innerHTML = `
       <div class="tab-header">
         <h3>TO-DOS</h3>
-        <div>
-          <button id="addTodoNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <select id="todosDifficultyFilter" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
+            <option value="All">All Diff</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+            <option value="Ultra">Ultra</option>
+          </select>
+          <select id="addTodoNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
+            <option value="" disabled selected>＋ Add Note/Sticker</option>
+            <option value="note">＋ Text Note</option>
+            <option value="grid">＋ Grid Board</option>
+            <option value="arrow">＋ Arrow Line</option>
+            <option value="calendar">＋ Calendar</option>
+          </select>
+          <button id="todosEraserBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; border-radius: 999px; cursor: pointer; width: auto; height: auto;">Eraser: OFF</button>
           <button id="todosShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
-          <button id="todosBulkAddBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Bulk</button>
           <button class="tab-close">✕</button>
         </div>
       </div>
@@ -1209,6 +1389,25 @@ class UIManager {
         <span class="quick-day-label">⚡ Quick Day:</span>
         <button id="quickDayBtn" class="quick-day-value">Not set</button>
         <button id="quickDayClearBtn" class="quick-day-clear" title="Clear quick day">✕</button>
+      </div>
+      <div class="bulk-add-inline-container" id="bulkAddInlineContainer">
+        <button id="toggleBulkAddInlineBtn" class="bulk-toggle-header-btn">＋ Inline Bulk Add (NLP) ▾</button>
+        <div id="bulkAddInlineContent" class="bulk-add-inline-content" style="display: none;">
+          <textarea id="bulkAddInlineTextarea" placeholder="Enter tasks (one per line). e.g.:&#10;Clean room Hard STR tomorrow&#10;Study math Medium INT monday 5pm" spellcheck="false"></textarea>
+          <div class="bulk-add-inline-controls">
+            <div class="inline-control-selects">
+              <select id="inlineBulkAttr" title="Fallback Attribute"></select>
+              <select id="inlineBulkDiff" title="Fallback Difficulty">
+                <option value="Easy">Easy</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Ultra">Ultra</option>
+              </select>
+            </div>
+            <button id="inlineBulkAddSaveBtn" class="btn-success btn-small">ADD ALL</button>
+          </div>
+          <div class="nlp-help-text">Type tags (e.g. STR, INT, Easy, tomorrow, 5pm) in line. System parses them!</div>
+        </div>
       </div>
       <div class="tab-content todo-board" id="todosList"></div>
     `;
@@ -2572,13 +2771,118 @@ class UIManager {
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
     document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
     document.getElementById('todosShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('todos'));
+    UIManager.isEraserActive = false;
+    document.getElementById('todosEraserBtn')?.addEventListener('click', () => {
+      UIManager.isEraserActive = !UIManager.isEraserActive;
+      const btn = document.getElementById('todosEraserBtn');
+      const board = document.getElementById('todosList');
+      if (btn) {
+        if (UIManager.isEraserActive) {
+          btn.textContent = 'Eraser: ON';
+          btn.style.borderColor = '#ff4d4d';
+          btn.style.color = '#ff4d4d';
+          btn.style.background = 'rgba(255, 77, 77, 0.2)';
+          
+          UIManager.isDrawingArrow = false;
+          board?.classList.remove('drawing-arrow-mode');
+          board?.classList.add('eraser-mode');
+        } else {
+          btn.textContent = 'Eraser: OFF';
+          btn.style.borderColor = 'rgba(255,255,255,0.15)';
+          btn.style.color = '#f5f5f7';
+          btn.style.background = 'rgba(0,0,0,0.4)';
+          board?.classList.remove('eraser-mode');
+        }
+      }
+    });
 
     document.getElementById('dailiesTabHandle').addEventListener('click', () => this.toggleTaskPanel('dailies'));
     document.getElementById('todosTabHandle').addEventListener('click', () => this.toggleTaskPanel('todos'));
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
-    document.getElementById('addTodoNoteBtn')?.addEventListener('click', () => this.addTodoNote());
+    document.getElementById('addTodoNoteBtn')?.addEventListener('change', (e) => {
+      const type = e.target.value;
+      if (type) {
+        if (type === 'arrow') {
+          UIManager.isDrawingArrow = true;
+          const board = document.getElementById('todosList');
+          if (board) {
+            board.classList.add('drawing-arrow-mode');
+            try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Click & Drag to Draw Arrow ⚡', { color: '#e8b84a' }); } catch (err) {}
+          }
+        } else {
+          this.addTodoNote(type);
+        }
+        e.target.value = ''; // Reset select to placeholder
+      }
+    });
+
+    // Populate fallback attribute select for inline bulk add
+    const inlineBulkAttr = document.getElementById('inlineBulkAttr');
+    if (inlineBulkAttr) {
+      inlineBulkAttr.innerHTML = getGameState().config.attributes.map(a => `<option value="${a}">${a}</option>`).join('');
+    }
+
+    // Toggle inline bulk add panel
+    document.getElementById('toggleBulkAddInlineBtn')?.addEventListener('click', () => {
+      const content = document.getElementById('bulkAddInlineContent');
+      if (content) {
+        const isHidden = content.style.display === 'none';
+        content.style.display = isHidden ? 'flex' : 'none';
+        document.getElementById('toggleBulkAddInlineBtn').textContent = isHidden 
+          ? '＋ Inline Bulk Add (NLP) ▴' 
+          : '＋ Inline Bulk Add (NLP) ▾';
+      }
+    });
+
+    // Inline Bulk Add ADD ALL button
+    document.getElementById('inlineBulkAddSaveBtn')?.addEventListener('click', () => {
+      const textarea = document.getElementById('bulkAddInlineTextarea');
+      if (!textarea) return;
+
+      const fallbackAttr = document.getElementById('inlineBulkAttr')?.value || 'RESP';
+      const fallbackDiff = document.getElementById('inlineBulkDiff')?.value || 'Medium';
+
+      const parsedTasks = TaskManager.parseBulkAddText(textarea.value, fallbackAttr, fallbackDiff);
+      if (parsedTasks.length === 0) return;
+
+      let count = 0;
+      parsedTasks.forEach(t => {
+        const created = TaskManager.addTodo(
+          t.name,
+          t.difficulty,
+          t.attribute,
+          t.deadline,
+          t.subtasks
+        );
+        if (created) {
+          if (t.clusterAttributes) {
+            created.clusterAttributes = t.clusterAttributes;
+          }
+          created.layout = {
+            x: 15 + (Math.random() * 20),
+            y: 8 + (Math.random() * 8)
+          };
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        textarea.value = '';
+        this.positionTodoCards();
+        this.updateTodosList();
+        try { getGameState().save(); } catch (e) {}
+        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Added ${count} Tasks`, { color: '#ffd700' }); } catch (e) {}
+      }
+    });
+
+    // Difficulty filter listener
+    UIManager.currentTodoDifficultyFilter = 'All';
+    document.getElementById('todosDifficultyFilter')?.addEventListener('change', (e) => {
+      UIManager.currentTodoDifficultyFilter = e.target.value;
+      UIManager.updateTodosList();
+    });
 
     // Achievements & Pet & Cosmetics Tab Handles & Close Listeners
     document.getElementById('achievementsTabHandle').addEventListener('click', () => this.toggleTaskPanel('achievements'));
@@ -3560,9 +3864,10 @@ class UIManager {
       }
       const summaryEl = document.getElementById('dailiesSummary');
       if (summaryEl) {
-        const dailies = TaskManager.getAllDailies();
-        const completedCount = dailies.filter(daily => daily.completed).length;
-        summaryEl.textContent = `${completedCount}/${dailies.length} complete${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
+        const today = TaskManager.getCurrentGameDateKey();
+        const scheduledDailies = TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, today));
+        const completedCount = scheduledDailies.filter(daily => daily.completed).length;
+        summaryEl.textContent = `${completedCount}/${scheduledDailies.length} complete${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
       }
     } catch (e) {
       console.warn('updatePendingDamageDisplay error', e);
@@ -4824,12 +5129,21 @@ class UIManager {
     this.updateDailiesList();
   }
 
-  static addTodoNote() {
+  static addTodoNote(type = 'note') {
     const state = getGameState();
-    const note = state.addTodoNote ? state.addTodoNote('', {
+    let text = '';
+    let extra = {};
+    if (type === 'grid') {
+      extra = { width: 300, height: 200 };
+    } else if (type === 'arrow') {
+      extra = { width: 150, height: 80, direction: 'right' };
+    } else if (type === 'calendar') {
+      extra = { width: 350, height: 280 };
+    }
+    const note = state.addTodoNote ? state.addTodoNote(text, {
       x: 14 + (Math.random() * 18),
       y: 14 + (Math.random() * 22)
-    }) : null;
+    }, type, extra) : null;
 
     if (!note) return;
     this._focusTodoNoteId = String(note.id);
@@ -5413,7 +5727,16 @@ class UIManager {
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
-    const visibleDailies = showCompleted ? dailies : dailies.filter(daily => !daily.completed);
+    const editModeActive = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+    const today = TaskManager.getCurrentGameDateKey();
+    
+    let visibleDailies = dailies;
+    if (!editModeActive) {
+      visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
+    }
+    if (!showCompleted) {
+      visibleDailies = visibleDailies.filter(daily => !daily.completed);
+    }
     this.updatePendingDamageDisplay();
 
     const computeDailyStreak = (dailyId) => {
@@ -5475,13 +5798,14 @@ class UIManager {
     const eventTargets = (event && !event.claimed && event.targets) ? event.targets : [];
 
     visibleDailies.forEach(daily => {
+      const isScheduled = TaskManager.isDailyScheduled(daily, today);
       const streak = computeDailyStreak(daily.id);
       const maxCompletions = Math.max(1, Number(daily.maxCompletionsPerDay) || 1);
       const completionsToday = Math.max(0, Number(daily.completionsToday) || 0);
       const remainingCompletions = Math.max(0, maxCompletions - completionsToday);
       const opacity = daily.completed
         ? (showCompleted ? 0.38 : 0)
-        : (maxCompletions > 1 ? Math.max(0.5, remainingCompletions / maxCompletions) : 1);
+        : (isScheduled ? (maxCompletions > 1 ? Math.max(0.5, remainingCompletions / maxCompletions) : 1) : 0.4);
       const sizeScale = Math.max(0.5, Number(daily.size) || 1);
       const attributeColor = getAttributeColor(daily.attribute);
       const textColor = getTextColorForHex(attributeColor);
@@ -5511,6 +5835,12 @@ class UIManager {
         }
       }
 
+      let unscheduledIndicator = '';
+      if (!isScheduled) {
+        let text = daily.repeatMode === 'weekly' ? 'Weekly' : daily.repeatMode === 'interval' ? 'Interval' : 'Unscheduled';
+        unscheduledIndicator = '<span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--accent-gold);color:#000;font-size:7px;padding:2px 4px;border-radius:4px;z-index:3;font-weight:bold;white-space:nowrap;">' + text + '</span>';
+      }
+
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
       html += '<div class="hold-progress-overlay"></div>';
@@ -5519,6 +5849,7 @@ class UIManager {
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
       html += '<div class="task-shape-progress">' + progressText + '</div>';
       if (surplusIndicator) html += surplusIndicator;
+      if (unscheduledIndicator) html += unscheduledIndicator;
       const currentMonthKey = (typeof UIManager.getDailyNoteDateKey === 'function' ? UIManager.getDailyNoteDateKey() : new Date().toISOString().split('T')[0]).slice(0, 7);
       if (!daily.streakSaversUsed) daily.streakSaversUsed = {};
       const saversUsed = daily.streakSaversUsed[currentMonthKey] || 0;
@@ -5870,19 +6201,181 @@ class UIManager {
       let noteEl = existingNotes.get(noteId);
       if (!noteEl) {
         noteEl = document.createElement('div');
-        noteEl.className = 'todo-note-card';
         noteEl.dataset.noteId = noteId;
-        noteEl.innerHTML = `
-          <button class="todo-note-delete" type="button" aria-label="Delete note">✕</button>
-          <div class="todo-note-text" contenteditable="false" spellcheck="false"></div>
-        `;
         board.appendChild(noteEl);
       }
 
+      // Configure class name & z-index
+      noteEl.className = `todo-note-card sticker-${noteData.type || 'note'}`;
       noteEl.style.left = `${Number.isFinite(Number(noteData.x)) ? Number(noteData.x) : 12}%`;
       noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
       noteEl.style.zIndex = String(40 + index);
 
+      // Set dimensions if present
+      if (noteData.width) {
+        noteEl.style.width = `${noteData.width}px`;
+      } else {
+        noteEl.style.width = '';
+      }
+      if (noteData.height) {
+        noteEl.style.height = `${noteData.height}px`;
+      } else {
+        noteEl.style.height = '';
+      }
+
+      // Build HTML for specific sticker types if it hasn't been set up yet
+      const currentType = noteEl.dataset.type;
+      const targetType = noteData.type || 'note';
+      if (currentType !== targetType) {
+        noteEl.dataset.type = targetType;
+        noteEl.removeAttribute('data-bound'); // Rebind elements if type changes
+        
+        if (targetType === 'grid') {
+          noteEl.innerHTML = `
+            <button class="todo-note-delete" type="button" aria-label="Delete grid">✕</button>
+            <div class="todo-sticker-title">📋 GRID BOARD</div>
+            <div class="todo-grid-sticker-cols">
+              <div class="todo-grid-col">
+                <div class="todo-grid-col-title" style="color: var(--accent-copper);">TODO</div>
+                <div class="todo-grid-col-content" data-col="0" contenteditable="true" spellcheck="false"></div>
+              </div>
+              <div class="todo-grid-col">
+                <div class="todo-grid-col-title" style="color: var(--accent-gold);">DOING</div>
+                <div class="todo-grid-col-content" data-col="1" contenteditable="true" spellcheck="false"></div>
+              </div>
+              <div class="todo-grid-col">
+                <div class="todo-grid-col-title" style="color: #4ade80;">DONE</div>
+                <div class="todo-grid-col-content" data-col="2" contenteditable="true" spellcheck="false"></div>
+              </div>
+            </div>
+            <div class="todo-note-resizer"></div>
+          `;
+        } else if (targetType === 'arrow') {
+          const w = noteData.width || 100;
+          noteEl.innerHTML = `
+            <button class="todo-note-delete" type="button" aria-label="Delete arrow">✕</button>
+            <div class="todo-arrow-sticker-wrap" style="width: 100%; height: 100%; position: relative; overflow: visible;">
+              <svg class="todo-arrow-svg" viewBox="0 0 ${w} 40" style="width: 100%; height: 100%; display: block; overflow: visible;">
+                <defs>
+                  <marker id="arrowhead-${noteId}" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-gold)" />
+                  </marker>
+                </defs>
+                <line class="arrow-line" x1="0" y1="20" x2="${w}" y2="20" stroke="var(--accent-gold)" stroke-width="6" marker-end="url(#arrowhead-${noteId})" />
+              </svg>
+            </div>
+          `;
+        } else if (targetType === 'calendar') {
+          noteEl.innerHTML = `
+            <button class="todo-note-delete" type="button" aria-label="Delete calendar">✕</button>
+            <div class="todo-calendar-header">
+              <div class="calendar-month-title"></div>
+            </div>
+            <div class="todo-calendar-grid">
+              <div class="calendar-day-label">S</div>
+              <div class="calendar-day-label">M</div>
+              <div class="calendar-day-label">T</div>
+              <div class="calendar-day-label">W</div>
+              <div class="calendar-day-label">T</div>
+              <div class="calendar-day-label">F</div>
+              <div class="calendar-day-label">S</div>
+            </div>
+            <div class="todo-note-resizer"></div>
+          `;
+        } else {
+          // Standard Text Note
+          noteEl.innerHTML = `
+            <button class="todo-note-delete" type="button" aria-label="Delete note">✕</button>
+            <div class="todo-note-text" contenteditable="false" spellcheck="false"></div>
+          `;
+        }
+      }
+
+      // Populate content and values
+      if (targetType === 'grid') {
+        const parts = String(noteData.text || '').split('|');
+        const cols = noteEl.querySelectorAll('.todo-grid-col-content');
+        cols.forEach((colEl, i) => {
+          const val = parts[i] || '';
+          if (colEl.textContent !== val && document.activeElement !== colEl) {
+            colEl.textContent = val;
+          }
+        });
+      } else if (targetType === 'arrow') {
+        const angle = Number(noteData.direction) || 0;
+        noteEl.style.transform = `rotate(${angle}deg)`;
+        noteEl.style.transformOrigin = 'left center';
+
+        const line = noteEl.querySelector('.arrow-line');
+        const w = noteData.width || 100;
+        if (line) {
+          line.setAttribute('x2', String(w));
+        }
+        const svg = noteEl.querySelector('.todo-arrow-svg');
+        if (svg) {
+          svg.setAttribute('viewBox', `0 0 ${w} 40`);
+        }
+      } else if (targetType === 'calendar') {
+        const titleEl = noteEl.querySelector('.calendar-month-title');
+        const gridEl = noteEl.querySelector('.todo-calendar-grid');
+        if (titleEl && gridEl) {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth();
+          const firstDay = new Date(year, month, 1).getDay();
+          const totalDays = new Date(year, month + 1, 0).getDate();
+          const monthName = now.toLocaleString('default', { month: 'long' });
+
+          titleEl.textContent = `${monthName.toUpperCase()} ${year}`;
+
+          // Remove any existing day cells (keeping the labels)
+          gridEl.querySelectorAll('.calendar-cell').forEach(el => el.remove());
+
+          // Insert empty cells
+          for (let i = 0; i < firstDay; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'calendar-cell empty';
+            gridEl.appendChild(cell);
+          }
+          // Insert day cells showing task progress
+          const todos = TaskManager.getAllTodos();
+          for (let day = 1; day <= totalDays; day++) {
+            const dayStart = new Date(year, month, day, 0, 0, 0, 0).getTime();
+            const dayEnd = new Date(year, month, day, 23, 59, 59, 999).getTime();
+            const dayTodos = todos.filter(t => t.deadline && t.deadline >= dayStart && t.deadline <= dayEnd);
+            const total = dayTodos.length;
+            const completed = dayTodos.filter(t => t.completed).length;
+
+            const cell = document.createElement('div');
+            let cellClass = 'calendar-cell';
+            if (day === now.getDate()) cellClass += ' today';
+            
+            let cellInner = `<span class="calendar-day-num">${day}</span>`;
+            if (total > 0) {
+              if (completed === total) {
+                cellClass += ' tasks-all-completed';
+                cellInner += `<span class="calendar-tasks-indicator completed">✓</span>`;
+              } else {
+                cellClass += ' tasks-pending';
+                cellInner += `<span class="calendar-tasks-indicator pending">${completed}/${total}</span>`;
+              }
+            }
+            cell.className = cellClass;
+            cell.innerHTML = cellInner;
+            gridEl.appendChild(cell);
+          }
+        }
+      } else {
+        const textEl = noteEl.querySelector('.todo-note-text');
+        if (textEl) {
+          const nextText = String(noteData.text || '');
+          if (textEl.textContent !== nextText && document.activeElement !== textEl) {
+            textEl.textContent = nextText;
+          }
+        }
+      }
+
+      // Bind events if not bound
       if (!noteEl.dataset.bound) {
         noteEl.dataset.bound = '1';
 
@@ -5896,6 +6389,42 @@ class UIManager {
           });
         }
 
+        // Resizer event binding
+        const resizer = noteEl.querySelector('.todo-note-resizer');
+        if (resizer) {
+          resizer.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const startW = noteEl.offsetWidth;
+            const startH = noteEl.offsetHeight;
+            const startX = e.clientX;
+            const startY = e.clientY;
+
+            const onResizeMove = (moveEvent) => {
+              const deltaX = moveEvent.clientX - startX;
+              const deltaY = moveEvent.clientY - startY;
+              const newW = Math.max(120, startW + deltaX);
+              const newH = Math.max(80, startH + deltaY);
+              noteEl.style.width = `${newW}px`;
+              noteEl.style.height = `${newH}px`;
+            };
+
+            const onResizeUp = () => {
+              document.removeEventListener('pointermove', onResizeMove);
+              document.removeEventListener('pointerup', onResizeUp);
+              state.updateTodoNote?.(noteId, {
+                width: noteEl.offsetWidth,
+                height: noteEl.offsetHeight
+              });
+            };
+
+            document.addEventListener('pointermove', onResizeMove);
+            document.addEventListener('pointerup', onResizeUp);
+          });
+        }
+
+
+        // Contenteditable bindings for standard note
         const textEl = noteEl.querySelector('.todo-note-text');
         if (textEl) {
           textEl.addEventListener('input', () => {
@@ -5908,9 +6437,21 @@ class UIManager {
           });
         }
 
+        // Contenteditable bindings for grid columns
+        const cols = noteEl.querySelectorAll('.todo-grid-col-content');
+        cols.forEach((colEl) => {
+          const updateGridState = () => {
+            const vals = Array.from(noteEl.querySelectorAll('.todo-grid-col-content')).map(el => el.innerText || '');
+            state.updateTodoNote?.(noteId, { text: vals.join('|') });
+          };
+          colEl.addEventListener('input', updateGridState);
+          colEl.addEventListener('blur', updateGridState);
+        });
+
+        // Pointerdown dragging implementation
         noteEl.addEventListener('pointerdown', (event) => {
-          if (event.target.closest('.todo-note-delete')) return;
-          if (event.target.closest('button')) return;
+          if (event.target.closest('.todo-note-delete, .todo-note-resizer')) return;
+          if (event.target.closest('button, input, select')) return;
           if (event.button !== 0) return;
 
           const textEl = noteEl.querySelector('.todo-note-text');
@@ -6019,27 +6560,21 @@ class UIManager {
         });
       }
 
+      // Initial focus for new notes
       const textEl = noteEl.querySelector('.todo-note-text');
-      if (textEl) {
-        const nextText = String(noteData.text || '');
-        if (textEl.textContent !== nextText && document.activeElement !== textEl) {
-          textEl.textContent = nextText;
-        }
-
-        if (String(this._focusTodoNoteId || '') === noteId) {
-          this._focusTodoNoteId = null;
-          setTimeout(() => {
-            try {
-              textEl.focus();
-              const range = document.createRange();
-              range.selectNodeContents(textEl);
-              range.collapse(false);
-              const selection = window.getSelection();
-              selection.removeAllRanges();
-              selection.addRange(range);
-            } catch (error) { }
-          }, 0);
-        }
+      if (textEl && String(this._focusTodoNoteId || '') === noteId) {
+        this._focusTodoNoteId = null;
+        setTimeout(() => {
+          try {
+            textEl.focus();
+            const range = document.createRange();
+            range.selectNodeContents(textEl);
+            range.collapse(false);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } catch (error) { }
+        }, 0);
       }
     });
 
@@ -6397,6 +6932,129 @@ class UIManager {
 
     board.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
+
+      if (UIManager.isEraserActive) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const eraseAt = (x, y) => {
+          const target = document.elementFromPoint(x, y);
+          if (!target) return;
+          const card = target.closest('.task-card-todo');
+          const note = target.closest('.todo-note-card');
+          if (card) {
+            const todoId = card.dataset.id;
+            const state = getGameState();
+            const idx = state.dailiesState.todos.findIndex(t => t.id === todoId);
+            if (idx !== -1) {
+              state.dailiesState.todos.splice(idx, 1);
+              try { getGameState().save(); } catch (e) {}
+              UIManager.updateTodosList();
+              try { FloatingDamageNumber.show(x, y, 'Erased ✕', { color: '#ff4d4d' }); } catch (e) {}
+            }
+          } else if (note) {
+            const noteId = note.dataset.noteId;
+            if (noteId) {
+              getGameState().removeTodoNote?.(noteId);
+              try { getGameState().save(); } catch (e) {}
+              UIManager.renderTodoNotes();
+              try { FloatingDamageNumber.show(x, y, 'Erased ✕', { color: '#ff4d4d' }); } catch (e) {}
+            }
+          }
+        };
+
+        eraseAt(event.clientX, event.clientY);
+
+        const onEraserMove = (moveEv) => {
+          eraseAt(moveEv.clientX, moveEv.clientY);
+        };
+        const onEraserUp = () => {
+          document.removeEventListener('pointermove', onEraserMove);
+          document.removeEventListener('pointerup', onEraserUp);
+        };
+        document.addEventListener('pointermove', onEraserMove);
+        document.addEventListener('pointerup', onEraserUp);
+        return;
+      }
+
+      if (UIManager.isDrawingArrow) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const boardRect = board.getBoundingClientRect();
+        const startX = event.clientX - boardRect.left + board.scrollLeft;
+        const startY = event.clientY - boardRect.top + board.scrollTop;
+
+        let previewSvg = document.getElementById('arrow-preview-svg');
+        if (!previewSvg) {
+          previewSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          previewSvg.id = 'arrow-preview-svg';
+          previewSvg.style.position = 'absolute';
+          previewSvg.style.pointerEvents = 'none';
+          previewSvg.style.zIndex = '999';
+          previewSvg.style.width = `${board.scrollWidth}px`;
+          previewSvg.style.height = `${board.scrollHeight}px`;
+          previewSvg.style.left = '0';
+          previewSvg.style.top = '0';
+          previewSvg.innerHTML = `
+            <defs>
+              <marker id="preview-arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-gold)" />
+              </marker>
+            </defs>
+            <line id="preview-arrow-line" stroke="var(--accent-gold)" stroke-width="6" marker-end="url(#preview-arrowhead)" />
+          `;
+          board.appendChild(previewSvg);
+        }
+        const line = previewSvg.querySelector('#preview-arrow-line');
+        line.setAttribute('x1', String(startX));
+        line.setAttribute('y1', String(startY));
+        line.setAttribute('x2', String(startX));
+        line.setAttribute('y2', String(startY));
+
+        const onDrawMove = (moveEvent) => {
+          const currentX = moveEvent.clientX - boardRect.left + board.scrollLeft;
+          const currentY = moveEvent.clientY - boardRect.top + board.scrollTop;
+          line.setAttribute('x2', String(currentX));
+          line.setAttribute('y2', String(currentY));
+        };
+
+        const onDrawUp = (upEvent) => {
+          document.removeEventListener('pointermove', onDrawMove);
+          document.removeEventListener('pointerup', onDrawUp);
+          if (previewSvg) previewSvg.remove();
+
+          const endX = upEvent.clientX - boardRect.left + board.scrollLeft;
+          const endY = upEvent.clientY - boardRect.top + board.scrollTop;
+          const dx = endX - startX;
+          const dy = endY - startY;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist > 15) {
+            const width = Math.max(50, Math.round(dist));
+            const height = 40;
+            const xPercent = (startX / Math.max(1, board.scrollWidth)) * 100;
+            const yPercent = (startY / Math.max(1, board.scrollHeight)) * 100;
+            const angle = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
+
+            const state = getGameState();
+            state.addTodoNote('', { x: xPercent, y: yPercent }, 'arrow', { 
+              width, 
+              height, 
+              direction: String(angle) 
+            });
+            UIManager.renderTodoNotes();
+          }
+
+          UIManager.isDrawingArrow = false;
+          board.classList.remove('drawing-arrow-mode');
+        };
+
+        document.addEventListener('pointermove', onDrawMove);
+        document.addEventListener('pointerup', onDrawUp);
+        return;
+      }
+
       if (event.target.closest('button, input, textarea, select, label')) return;
 
       const card = event.target.closest('.task-card-todo');
@@ -6725,7 +7383,11 @@ class UIManager {
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedTodos;
+    const diffFilter = UIManager.currentTodoDifficultyFilter || 'All';
     const visibleTodos = todos.filter(todo => {
+      if (diffFilter !== 'All' && todo.difficulty !== diffFilter) {
+        return false;
+      }
       if (todo.completed && !todo.clusterId) {
         return showCompleted;
       }
@@ -6801,7 +7463,7 @@ class UIManager {
 
       const subtasks = (todo.subtasks || []).map(st => `
         <div class="subtask ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
-          <label class="subtask-label"><input type="checkbox" class="subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''}> <span class="subtask-name">${st.name}</span></label>
+          <label class="subtask-label"><input type="checkbox" class="subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''}> <span class="subtask-name" style="color: inherit;">${st.name}</span></label>
           <button class="subtask-remove" data-subtask-id="${st.id}" title="Remove subtask">×</button>
         </div>
       `).join('');
@@ -6809,9 +7471,22 @@ class UIManager {
 
       // Border and color configurations
       const isCluster = todo.clusterId && !todo.completed;
+      let displayAttr = todo.attribute;
+      if (todo.clusterAttributes && typeof todo.clusterAttributes === 'object') {
+        let maxVal = -1;
+        for (const attr in todo.clusterAttributes) {
+          if (todo.clusterAttributes[attr] > maxVal) {
+            maxVal = todo.clusterAttributes[attr];
+            displayAttr = attr;
+          }
+        }
+      }
+      const attrColor = palette[displayAttr] || '#555';
+      const textColor = UIManager.getTextColorForHex(attrColor);
+      const bgGradient = `background: linear-gradient(135deg, ${attrColor}cf, ${UIManager.shadeColor(attrColor, -60)}e5) !important; color: ${textColor} !important;`;
       const borderStyle = isCluster
         ? 'border-color: #6a0dad !important; --cluster-color: #6a0dad; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px rgba(106,13,173,0.5) !important;'
-        : `border-color: ${palette[todo.attribute] || '#555'} !important; --task-accent: ${palette[todo.attribute] || '#555'}; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px ${(palette[todo.attribute] || '#555')}44 !important;`;
+        : `border-color: ${attrColor} !important; --task-accent: ${attrColor}; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px ${attrColor}44 !important; ${bgGradient}`;
 
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
@@ -7387,6 +8062,7 @@ class UIManager {
     this.updateStageIndicator();
     this.renderEnemies();
     this.updateRunCompletionGraph();
+    try { this.updateWeeklyHeatmap(); } catch (e) { }
     try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
@@ -7721,6 +8397,49 @@ class UIManager {
     }).join('')}
     `;
     rateEl.textContent = `${Math.round(lastPct * 100)}%`;
+  }
+
+  static updateWeeklyHeatmap() {
+    const container = document.getElementById('weeklyHeatmapBody');
+    if (!container) return;
+
+    const state = getGameState();
+    const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
+
+    // Generate past 28 dates starting from 27 days ago to today
+    const dates = [];
+    const now = new Date();
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const date = String(d.getDate()).padStart(2, '0');
+      dates.push(`${year}-${month}-${date}`);
+    }
+
+    const historyMap = {};
+    history.forEach(entry => {
+      if (entry && entry.date) {
+        historyMap[entry.date] = entry;
+      }
+    });
+
+    container.innerHTML = dates.map(dateStr => {
+      const entry = historyMap[dateStr];
+      const completedCount = entry ? (entry.completedDailies || []).length : 0;
+      let level = 0;
+      if (completedCount > 0) {
+        if (completedCount <= 2) level = 1;
+        else if (completedCount <= 4) level = 2;
+        else if (completedCount <= 6) level = 3;
+        else level = 4;
+      }
+
+      const formattedDate = new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const tooltip = `${formattedDate}: ${completedCount} completed`;
+
+      return `<div class="heatmap-cell level-${level}" title="${tooltip}"></div>`;
+    }).join('');
   }
 
   static showFloatingText(enemyId, text, options = {}) {

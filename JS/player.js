@@ -58,12 +58,24 @@ class PlayerManager {
   static recalculateMaxAp() {
     const state = getGameState();
     
-    // MAX_AP = sum of AP from all dailies if completed (excludes todos and planner)
-    let maxAp = 0;
+    // MAX_AP = average sum of AP from dailies based on their schedule
+    let totalAp = 0;
     state.dailiesState.dailies.forEach(daily => {
       const reward = state.config.taskRewards[daily.difficulty];
-      maxAp += reward.ap;
+      const baseAp = reward?.ap || 0;
+      
+      let weight = 1;
+      if (daily.repeatMode === 'weekly') {
+        const activeDays = Array.isArray(daily.weekDays) ? daily.weekDays.length : 7;
+        weight = activeDays / 7;
+      } else if (daily.repeatMode === 'interval') {
+        const interval = Math.max(1, daily.intervalDays || 1);
+        weight = 1 / interval;
+      }
+      totalAp += baseAp * weight;
     });
+
+    let maxAp = Math.round(totalAp);
 
     const completeDayBonus = Number(state.systemState?.completeDayApBonus) || 0;
     maxAp += completeDayBonus;

@@ -1033,8 +1033,11 @@ class PopupsManager {
           const state = getGameState();
           if (state && state.dailiesState) {
             const dailies = state.dailiesState.dailies || [];
-            const completed = dailies.filter(d => d.completed).length;
-            const total = dailies.length;
+            const scheduledDailies = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function' 
+              ? dailies.filter(d => TaskManager.isDailyScheduled(d, TaskManager.getCurrentGameDateKey()))
+              : dailies;
+            const completed = scheduledDailies.filter(d => d.completed).length;
+            const total = scheduledDailies.length;
             completionRate = total > 0 ? (completed / total) : 1.0;
           }
         } catch(e) {}
@@ -2423,8 +2426,8 @@ class PopupsManager {
             wizardData.subtasks
           );
           if (created) {
-            // Apply coordinates based on wizard invocation
-            TaskManager.updateTodoLayout(created.id, { x: xPercent, y: yPercent });
+            // Apply coordinates based on wizard invocation, but force spawning at the top
+            TaskManager.updateTodoLayout(created.id, { x: xPercent, y: 8 + (Math.random() * 8) });
             this.closeAllPopups();
             UIManager.updateTodosList();
             UIManager.positionTodoCards();
@@ -2485,6 +2488,31 @@ class PopupsManager {
           <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #a855f7; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
             <div id="surplusStreakInfo" style="font-size: 11px; color: #a855f7; margin-bottom: 8px; font-family: monospace;"></div>
             <div id="surplusMilestonesContainer"></div>
+          </div>
+        </div>
+        <label>Repeat Schedule</label>
+        <select id="editRepeatMode" style="margin-bottom: 8px;">
+          <option value="daily" ${daily.repeatMode === 'daily' || !daily.repeatMode ? 'selected' : ''}>Daily</option>
+          <option value="weekly" ${daily.repeatMode === 'weekly' ? 'selected' : ''}>Weekly (Days of Week)</option>
+          <option value="interval" ${daily.repeatMode === 'interval' ? 'selected' : ''}>Interval (Every N Days)</option>
+        </select>
+        
+        <div id="repeatWeeklyOptions" style="display: ${daily.repeatMode === 'weekly' ? 'block' : 'none'}; margin-bottom: 12px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+          <label style="font-size: 10px; margin-bottom: 4px; display: block; color: var(--text-muted);">Select Days:</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((day, idx) => `
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 11px;">
+                <input type="checkbox" class="repeat-day-checkbox" value="${idx}" ${(daily.weekDays || [0,1,2,3,4,5,6]).includes(idx) ? 'checked' : ''} /> ${day}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <div id="repeatIntervalOptions" style="display: ${daily.repeatMode === 'interval' ? 'block' : 'none'}; margin-bottom: 12px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-size: 11px; margin: 0;">Every</label>
+            <input id="editIntervalDays" type="number" min="1" value="${daily.intervalDays || 3}" style="width: 50px; font-size: 11px; padding: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
+            <label style="font-size: 11px; margin: 0;">Days</label>
           </div>
         </div>
       </div>
@@ -2574,7 +2602,21 @@ class PopupsManager {
     // Initialize milestones rendering
     renderMilestonesList();
 
+    const repeatModeSelect = popup.querySelector('#editRepeatMode');
+    const weeklyOptions = popup.querySelector('#repeatWeeklyOptions');
+    const intervalOptions = popup.querySelector('#repeatIntervalOptions');
+    if (repeatModeSelect) {
+      repeatModeSelect.addEventListener('change', (e) => {
+        weeklyOptions.style.display = e.target.value === 'weekly' ? 'block' : 'none';
+        intervalOptions.style.display = e.target.value === 'interval' ? 'block' : 'none';
+      });
+    }
+
     popup.querySelector('#saveDaily').addEventListener('click', () => {
+      const repeatMode = popup.querySelector('#editRepeatMode').value;
+      const weekDays = Array.from(popup.querySelectorAll('.repeat-day-checkbox:checked')).map(cb => parseInt(cb.value));
+      const intervalDays = Math.max(1, Number(popup.querySelector('#editIntervalDays').value) || 1);
+
       const updates = {
         name: popup.querySelector('#editName').value,
         attribute: popup.querySelector('#editAttr').value,
@@ -2582,7 +2624,10 @@ class PopupsManager {
         maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1),
         size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1),
         dailySurplusEnabled: currentMilestones.length > 0,
-        surplusMilestones: currentMilestones
+        surplusMilestones: currentMilestones,
+        repeatMode,
+        weekDays: weekDays.length > 0 ? weekDays : [0, 1, 2, 3, 4, 5, 6],
+        intervalDays
       };
       // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
       try {
@@ -3086,7 +3131,12 @@ class PopupsManager {
             created.clusterAttributes = clusterAttributes;
             created.layout = {
               x: 20,
-              y: 20
+              y: 8 + (Math.random() * 8)
+            };
+          } else {
+            created.layout = {
+              x: 15 + (Math.random() * 20),
+              y: 8 + (Math.random() * 8)
             };
           }
           addedCount++;

@@ -101,7 +101,24 @@ const USER_DATA_STORAGE_KEYS = [
   'nemesis_satchel_pos',
   'nemesis_weapon_pos',
   'nemesis_center_pos',
-  'nemesis_run_graph_pos'
+  'nemesis_run_graph_pos',
+  'nemesis_heatmap_pos',
+  'nemesis_heatmap_collapsed',
+  'nemesis_event_banner_pos',
+  'nemesis_event_banner_size',
+  'nemesis_stage_notes_text',
+  'nemesis_stage_notes_collapsed',
+  'nemesis_stage_notes_pos',
+  'nemesis_focus_end',
+  'nemesis_stats_hud_pos',
+  'nemesis_stats_hud_size',
+  'nemesis_stats_hud_collapsed',
+  'nemesis_active_mode',
+  'nemesis_tycoon_data',
+  'nemesis_tycoon_config',
+  'nemesis_multiplayer_player_name',
+  'nemesis_multiplayer_active_world',
+  'nemesis_firebase_config'
 ];
 const USER_DATA_EXPORT_VERSION = 1;
 
@@ -111,7 +128,11 @@ function normalizeDailyNoteEntry(entry, fallbackText = '') {
       id: String(entry.id || `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
       text: String(entry.text ?? entry.value ?? fallbackText ?? ''),
       x: Number.isFinite(Number(entry.x)) ? Number(entry.x) : 12,
-      y: Number.isFinite(Number(entry.y)) ? Number(entry.y) : 12
+      y: Number.isFinite(Number(entry.y)) ? Number(entry.y) : 12,
+      type: String(entry.type || 'note'),
+      width: entry.width !== undefined && entry.width !== null ? Number(entry.width) : null,
+      height: entry.height !== undefined && entry.height !== null ? Number(entry.height) : null,
+      direction: entry.direction !== undefined && entry.direction !== null ? String(entry.direction) : null
     };
   }
 
@@ -122,7 +143,11 @@ function normalizeDailyNoteEntry(entry, fallbackText = '') {
     id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     text,
     x: 12,
-    y: 12
+    y: 12,
+    type: 'note',
+    width: null,
+    height: null,
+    direction: null
   };
 }
 
@@ -727,12 +752,14 @@ class GameState {
     return this.systemState.todoNotes;
   }
 
-  addTodoNote(text = '', position = {}) {
+  addTodoNote(text = '', position = {}, type = 'note', extra = {}) {
     const notes = this.getTodoNotes();
     const note = normalizeDailyNoteEntry({
       text,
       x: Number(position.x),
-      y: Number(position.y)
+      y: Number(position.y),
+      type,
+      ...extra
     });
     if (!note) return null;
     notes.push(note);
@@ -747,6 +774,10 @@ class GameState {
     if (updates.text !== undefined) note.text = String(updates.text || '');
     if (updates.x !== undefined) note.x = Number(updates.x);
     if (updates.y !== undefined) note.y = Number(updates.y);
+    if (updates.type !== undefined) note.type = String(updates.type);
+    if (updates.width !== undefined) note.width = updates.width !== null ? Number(updates.width) : null;
+    if (updates.height !== undefined) note.height = updates.height !== null ? Number(updates.height) : null;
+    if (updates.direction !== undefined) note.direction = updates.direction !== null ? String(updates.direction) : null;
     this.save();
     return true;
   }
