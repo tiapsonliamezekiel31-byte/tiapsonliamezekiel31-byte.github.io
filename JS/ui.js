@@ -8406,11 +8406,11 @@ class UIManager {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
 
-    // Generate past 28 dates starting from 27 days ago to today
+    // Generate past 28 dates starting from 27 days ago to today in a timezone-safe way
     const dates = [];
-    const now = new Date();
     for (let i = 27; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const d = new Date();
+      d.setDate(d.getDate() - i);
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const date = String(d.getDate()).padStart(2, '0');
