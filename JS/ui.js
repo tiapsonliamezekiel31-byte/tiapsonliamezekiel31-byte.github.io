@@ -8422,15 +8422,15 @@ class UIManager {
       const total = comp + missed;
       const rate = total > 0 ? (comp / total) : (entry.allDailiesComplete ? 1.0 : 0.0);
 
-      let level = 1; // Default to Blue for checked-in day (even if 0% completed)
-      if (rate > 0.25 && rate <= 0.5) level = 2;
-      else if (rate > 0.5 && rate <= 0.75) level = 3;
-      else if (rate > 0.75) level = 4;
+      // Hue 240 is Blue (0% completed), Hue 360 is Red (100% completed)
+      const hue = 240 + Math.round(rate * 120);
+      const color = `hsl(${hue}, 85%, 60%)`;
+      const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
 
       const dateStr = entry.date || (entry.timestamp ? new Date(entry.timestamp).toLocaleDateString() : '');
       const tooltip = `${dateStr}: ${Math.round(rate * 100)}% completed (${comp}/${total})`;
 
-      return `<div class="heatmap-cell level-${level}" title="${tooltip}"></div>`;
+      return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
     }).join('');
   }
 
