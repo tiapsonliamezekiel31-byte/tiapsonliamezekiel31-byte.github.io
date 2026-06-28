@@ -8406,37 +8406,29 @@ class UIManager {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
 
-    // Generate past 28 dates starting from 27 days ago to today in a timezone-safe way
-    const dates = [];
-    for (let i = 27; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const date = String(d.getDate()).padStart(2, '0');
-      dates.push(`${year}-${month}-${date}`);
-    }
+    // Take the last 28 check-in entries
+    const recentEntries = history.slice(-28);
 
-    const historyMap = {};
-    history.forEach(entry => {
-      if (entry && entry.date) {
-        historyMap[entry.date] = entry;
-      }
-    });
+    // Pad on the left with null so the list length is exactly 28 (today sits at the bottom-right)
+    const cells = Array(28 - recentEntries.length).fill(null).concat(recentEntries);
 
-    container.innerHTML = dates.map(dateStr => {
-      const entry = historyMap[dateStr];
-      const completedCount = entry ? (entry.completedDailies || []).length : 0;
-      let level = 0;
-      if (completedCount > 0) {
-        if (completedCount <= 2) level = 1;
-        else if (completedCount <= 4) level = 2;
-        else if (completedCount <= 6) level = 3;
-        else level = 4;
+    container.innerHTML = cells.map((entry) => {
+      if (!entry) {
+        return `<div class="heatmap-cell level-0" title="No check-in"></div>`;
       }
 
-      const formattedDate = new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-      const tooltip = `${formattedDate}: ${completedCount} completed`;
+      const comp = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
+      const missed = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
+      const total = comp + missed;
+      const rate = total > 0 ? (comp / total) : (entry.allDailiesComplete ? 1.0 : 0.0);
+
+      let level = 1; // Default to Blue for checked-in day (even if 0% completed)
+      if (rate > 0.25 && rate <= 0.5) level = 2;
+      else if (rate > 0.5 && rate <= 0.75) level = 3;
+      else if (rate > 0.75) level = 4;
+
+      const dateStr = entry.date || (entry.timestamp ? new Date(entry.timestamp).toLocaleDateString() : '');
+      const tooltip = `${dateStr}: ${Math.round(rate * 100)}% completed (${comp}/${total})`;
 
       return `<div class="heatmap-cell level-${level}" title="${tooltip}"></div>`;
     }).join('');

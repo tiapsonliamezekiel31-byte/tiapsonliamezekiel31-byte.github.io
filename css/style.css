@@ -8889,17 +8889,20 @@ button:hover,
   background: rgba(255, 255, 255, 0.05);
 }
 .heatmap-cell.level-1 {
-  background: rgba(161, 92, 255, 0.25);
+  background: #3b82f6; /* Blue (0-25%) */
+  box-shadow: 0 0 3px rgba(59, 130, 246, 0.4);
 }
 .heatmap-cell.level-2 {
-  background: rgba(161, 92, 255, 0.5);
+  background: #8b5cf6; /* Purple-Blue (25-50%) */
+  box-shadow: 0 0 3px rgba(139, 92, 246, 0.4);
 }
 .heatmap-cell.level-3 {
-  background: rgba(161, 92, 255, 0.75);
+  background: #ec4899; /* Magenta (50-75%) */
+  box-shadow: 0 0 3px rgba(236, 72, 153, 0.4);
 }
 .heatmap-cell.level-4 {
-  background: #a15cff;
-  box-shadow: 0 0 4px rgba(161, 92, 255, 0.6);
+  background: #ef4444; /* Red (75-100%) */
+  box-shadow: 0 0 4px rgba(239, 68, 68, 0.6);
 }
 
 .weekly-heatmap-minimized {
