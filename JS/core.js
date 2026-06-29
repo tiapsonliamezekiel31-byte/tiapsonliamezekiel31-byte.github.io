@@ -696,12 +696,14 @@ class GameState {
     return this.getDailyNotes().map((note) => note.text).filter(Boolean).join('\n');
   }
 
-  addDailyNote(text = '', position = {}) {
+  addDailyNote(text = '', position = {}, type = 'note', extra = {}) {
     const notes = this.getDailyNotes();
     const note = normalizeDailyNoteEntry({
       text,
       x: Number(position.x),
-      y: Number(position.y)
+      y: Number(position.y),
+      type,
+      ...extra
     });
     if (!note) return null;
     notes.push(note);
@@ -716,6 +718,9 @@ class GameState {
     if (updates.text !== undefined) note.text = String(updates.text || '');
     if (updates.x !== undefined) note.x = Number(updates.x);
     if (updates.y !== undefined) note.y = Number(updates.y);
+    if (updates.type !== undefined) note.type = String(updates.type);
+    if (updates.width !== undefined) note.width = updates.width !== null ? Number(updates.width) : null;
+    if (updates.height !== undefined) note.height = updates.height !== null ? Number(updates.height) : null;
     this.save();
     return true;
   }

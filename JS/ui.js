@@ -588,7 +588,7 @@ class UIManager {
             <button class="focus-action-btn focus-start-btn" id="focusStartBtn" style="flex: 1;">START</button>
             <button class="focus-action-btn focus-cancel-btn" id="focusStopBtn" style="flex: 1; display: none;">STOP</button>
           </div>
-          <div class="focus-cost-warning">Costs 30 Mana · Doubles all task rewards</div>
+          <div class="focus-cost-warning">Costs 15 Mana · Doubles all task rewards</div>
         </div>
       </div>
       <div id="focus-mini-widget" style="display: none;">
@@ -1300,6 +1300,7 @@ class UIManager {
         <div>
           <button id="completeDayBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost">Complete Day</button>
           <button id="addDailyNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
+          <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
           <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
           <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Edit: off</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
@@ -2415,13 +2416,13 @@ class UIManager {
         }
       } else {
         const mana = state.playerState.mana || 0;
-        if (mana < 30) {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana! (Requires 30 💧)', { color: '#ff5a5a' });
+        if (mana < 15) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana! (Requires 15 💧)', { color: '#ff5a5a' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
           return;
         }
 
-        state.drainMana(30);
+        state.drainMana(15);
         state.systemState.focusTimerActive = true;
         state.systemState.focusTimerDurationMins = selectedMinutes;
         const newEnd = Date.now() + selectedMinutes * 60 * 1000;
@@ -2801,6 +2802,26 @@ class UIManager {
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
+    document.getElementById('addDailyRectBtn')?.addEventListener('click', () => {
+      UIManager.isDrawingRect = !UIManager.isDrawingRect;
+      const board = document.getElementById('dailiesList');
+      const btn = document.getElementById('addDailyRectBtn');
+      if (board) {
+        if (UIManager.isDrawingRect) {
+          board.classList.add('drawing-rect-mode');
+          btn?.classList.add('active');
+          const state = getGameState();
+          if (!state.systemState?.taskListFilters?.editModeDailies) {
+            state.systemState.taskListFilters.editModeDailies = true;
+            this.updateDailiesList();
+          }
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Click & Drag on Background to Draw Rectangle ⚡', { color: '#e8b84a' }); } catch (err) {}
+        } else {
+          board.classList.remove('drawing-rect-mode');
+          btn?.classList.remove('active');
+        }
+      }
+    });
     document.getElementById('addTodoNoteBtn')?.addEventListener('change', (e) => {
       const type = e.target.value;
       if (type) {
@@ -4473,6 +4494,13 @@ class UIManager {
 
     if (kind === 'dailies') {
       state.systemState.taskListFilters.editModeDailies = !state.systemState.taskListFilters.editModeDailies;
+      if (!state.systemState.taskListFilters.editModeDailies) {
+        UIManager.isDrawingRect = false;
+        const board = document.getElementById('dailiesList');
+        if (board) board.classList.remove('drawing-rect-mode');
+        const btn = document.getElementById('addDailyRectBtn');
+        if (btn) btn.classList.remove('active');
+      }
     }
 
     state.save();
@@ -5728,6 +5756,13 @@ class UIManager {
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
     const editModeActive = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+    
+    if (editModeActive) {
+      container.classList.add('edit-mode-active');
+    } else {
+      container.classList.remove('edit-mode-active');
+    }
+
     const today = TaskManager.getCurrentGameDateKey();
     
     let visibleDailies = dailies;
@@ -5844,6 +5879,12 @@ class UIManager {
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
       html += '<div class="hold-progress-overlay"></div>';
+      if (daily.bloodOathActive) {
+        html += '<div class="blood-oath-fire-container">';
+        html += '<div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>';
+        html += '<div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>';
+        html += '</div>';
+      }
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
       html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
@@ -5981,7 +6022,7 @@ class UIManager {
     if (!board) return;
 
     const notes = Array.isArray(state.getDailyNotes?.()) ? state.getDailyNotes() : [];
-    const existingNotes = new Map(Array.from(board.querySelectorAll('.daily-note-card')).map((note) => [String(note.dataset.noteId), note]));
+    const existingNotes = new Map(Array.from(board.querySelectorAll('.daily-note-card, .daily-rect-card')).map((note) => [String(note.dataset.noteId), note]));
     const activeIds = new Set();
 
     notes.forEach((noteData, index) => {
@@ -5990,20 +6031,52 @@ class UIManager {
       activeIds.add(noteId);
 
       let noteEl = existingNotes.get(noteId);
+      const targetType = noteData.type || 'note';
+      
       if (!noteEl) {
         noteEl = document.createElement('div');
-        noteEl.className = 'daily-note-card';
         noteEl.dataset.noteId = noteId;
-        noteEl.innerHTML = `
-          <button class="daily-note-delete" type="button" aria-label="Delete note">✕</button>
-          <div class="daily-note-text" contenteditable="false" spellcheck="false"></div>
-        `;
         board.appendChild(noteEl);
       }
 
+      noteEl.className = targetType === 'rect' ? 'daily-rect-card' : 'daily-note-card';
       noteEl.style.left = `${Number.isFinite(Number(noteData.x)) ? Number(noteData.x) : 12}%`;
       noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
-      noteEl.style.zIndex = String(40 + index);
+      noteEl.style.zIndex = targetType === 'rect' ? String(1 + index) : String(40 + index);
+
+      if (targetType === 'rect') {
+        if (noteData.width) {
+          noteEl.style.width = `${noteData.width}px`;
+        } else {
+          noteEl.style.width = '150px';
+        }
+        if (noteData.height) {
+          noteEl.style.height = `${noteData.height}px`;
+        } else {
+          noteEl.style.height = '100px';
+        }
+      } else {
+        noteEl.style.width = '';
+        noteEl.style.height = '';
+      }
+
+      const currentType = noteEl.dataset.type;
+      if (currentType !== targetType) {
+        noteEl.dataset.type = targetType;
+        noteEl.removeAttribute('data-bound');
+        
+        if (targetType === 'rect') {
+          noteEl.innerHTML = `
+            <button class="daily-note-delete" type="button" aria-label="Delete rectangle">✕</button>
+            <div class="daily-rect-resizer"></div>
+          `;
+        } else {
+          noteEl.innerHTML = `
+            <button class="daily-note-delete" type="button" aria-label="Delete note">✕</button>
+            <div class="daily-note-text" contenteditable="false" spellcheck="false"></div>
+          `;
+        }
+      }
 
       const editMode = !!state.systemState?.taskListFilters?.editModeDailies;
       const deleteBtn = noteEl.querySelector('.daily-note-delete');
@@ -6020,6 +6093,39 @@ class UIManager {
             event.stopPropagation();
             state.removeDailyNote?.(noteId);
             this.renderDailyNotes();
+          });
+        }
+
+        const resizer = noteEl.querySelector('.daily-rect-resizer');
+        if (resizer) {
+          resizer.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const startW = noteEl.offsetWidth;
+            const startH = noteEl.offsetHeight;
+            const startX = e.clientX;
+            const startY = e.clientY;
+
+            const onResizeMove = (moveEvent) => {
+              const deltaX = moveEvent.clientX - startX;
+              const deltaY = moveEvent.clientY - startY;
+              const newW = Math.max(40, startW + deltaX);
+              const newH = Math.max(40, startH + deltaY);
+              noteEl.style.width = `${newW}px`;
+              noteEl.style.height = `${newH}px`;
+            };
+
+            const onResizeUp = () => {
+              document.removeEventListener('pointermove', onResizeMove);
+              document.removeEventListener('pointerup', onResizeUp);
+              state.updateDailyNote?.(noteId, {
+                width: noteEl.offsetWidth,
+                height: noteEl.offsetHeight
+              });
+            };
+
+            document.addEventListener('pointermove', onResizeMove);
+            document.addEventListener('pointerup', onResizeUp);
           });
         }
 
@@ -6040,6 +6146,7 @@ class UIManager {
             return;
           }
           if (event.target.closest('.daily-note-delete')) return;
+          if (event.target.closest('.daily-rect-resizer')) return;
           if (event.target.closest('button')) return;
           if (event.button !== 0) return;
 
@@ -6094,10 +6201,8 @@ class UIManager {
             }
 
             const boardNow = board.getBoundingClientRect();
-            const halfWidth = dragState.noteWidth / 2;
-            const halfHeight = dragState.noteHeight / 2;
-            const nextLeftPx = Math.max(halfWidth, Math.min(boardNow.width - halfWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
-            const nextTopPx = Math.max(halfHeight, Math.min(boardNow.height - halfHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
+            const nextLeftPx = Math.max(0, Math.min(boardNow.width - dragState.noteWidth, moveEvent.clientX - boardNow.left - dragState.offsetX));
+            const nextTopPx = Math.max(0, Math.min(boardNow.height - dragState.noteHeight, moveEvent.clientY - boardNow.top - dragState.offsetY));
 
             dragState.moved = true;
             dragState.nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
@@ -6115,8 +6220,7 @@ class UIManager {
               if (dragState.moved) {
                 state.moveDailyNote?.(noteId, { x: dragState.nextX, y: dragState.nextY });
               }
-            } else {
-              // Tap - select first, then edit on subsequent click
+            } else if (targetType !== 'rect') {
               if (noteEl.classList.contains('selected')) {
                 if (textEl) {
                   textEl.contentEditable = 'true';
@@ -6592,6 +6696,83 @@ class UIManager {
     board.dataset.dragBound = '1';
 
     board.addEventListener('pointerdown', (event) => {
+      if (UIManager.isDrawingRect) {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const boardRect = board.getBoundingClientRect();
+        const startX = event.clientX - boardRect.left + board.scrollLeft;
+        const startY = event.clientY - boardRect.top + board.scrollTop;
+
+        let previewRect = document.getElementById('rect-preview-div');
+        if (!previewRect) {
+          previewRect = document.createElement('div');
+          previewRect.id = 'rect-preview-div';
+          previewRect.style.position = 'absolute';
+          previewRect.style.pointerEvents = 'none';
+          previewRect.style.zIndex = '999';
+          previewRect.style.border = '2px dashed var(--accent-gold)';
+          previewRect.style.background = 'rgba(232, 184, 74, 0.15)';
+          previewRect.style.left = `${startX}px`;
+          previewRect.style.top = `${startY}px`;
+          previewRect.style.width = '0px';
+          previewRect.style.height = '0px';
+          board.appendChild(previewRect);
+        }
+
+        const onDrawMove = (moveEvent) => {
+          const currentX = moveEvent.clientX - boardRect.left + board.scrollLeft;
+          const currentY = moveEvent.clientY - boardRect.top + board.scrollTop;
+          
+          const x = Math.min(startX, currentX);
+          const y = Math.min(startY, currentY);
+          const width = Math.abs(currentX - startX);
+          const height = Math.abs(currentY - startY);
+          
+          previewRect.style.left = `${x}px`;
+          previewRect.style.top = `${y}px`;
+          previewRect.style.width = `${width}px`;
+          previewRect.style.height = `${height}px`;
+        };
+
+        const onDrawUp = (upEvent) => {
+          document.removeEventListener('pointermove', onDrawMove);
+          document.removeEventListener('pointerup', onDrawUp);
+          
+          const endX = upEvent.clientX - boardRect.left + board.scrollLeft;
+          const endY = upEvent.clientY - boardRect.top + board.scrollTop;
+          
+          const x = Math.min(startX, endX);
+          const y = Math.min(startY, endY);
+          const width = Math.abs(endX - startX);
+          const height = Math.abs(endY - startY);
+          
+          if (previewRect) previewRect.remove();
+
+          if (width > 15 && height > 15) {
+            const xPercent = (x / Math.max(1, board.scrollWidth)) * 100;
+            const yPercent = (y / Math.max(1, board.scrollHeight)) * 100;
+
+            const state = getGameState();
+            state.addDailyNote?.('', { x: xPercent, y: yPercent }, 'rect', {
+              width,
+              height
+            });
+            UIManager.renderDailyNotes();
+          }
+
+          UIManager.isDrawingRect = false;
+          board.classList.remove('drawing-rect-mode');
+          const btn = document.getElementById('addDailyRectBtn');
+          if (btn) btn.classList.remove('active');
+        };
+
+        document.addEventListener('pointermove', onDrawMove);
+        document.addEventListener('pointerup', onDrawUp);
+        return;
+      }
+
       const card = event.target.closest('.task-card-daily');
       if (!card || !board.contains(card)) return;
       if (event.target.closest('button, input, textarea, select, label')) return;
@@ -7492,7 +7673,12 @@ class UIManager {
 
       return `
       <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
-        
+        ${todo.bloodOathActive ? `
+          <div class="blood-oath-fire-container">
+            <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+            <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+          </div>
+        ` : ''}
         ${clusterHeader}
 
         <!-- Floating difficulty shape next to the card -->
