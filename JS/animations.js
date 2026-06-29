@@ -84,10 +84,13 @@ function restartAnimationClass(element, className) {
 }
 
 // Color helpers: resolve CSS color to RGB, convert to HSL, and produce slight hue/darkness variants
+const _colorCache = {};
 function resolveCssColorToRgb(colorStr) {
   if (!colorStr) return null;
   try {
     const s = String(colorStr).trim();
+    if (_colorCache[s]) return _colorCache[s];
+
     // direct rgb(a)
     const m = s.match(/rgba?\(([^)]+)\)/);
     if (m) {
@@ -96,7 +99,8 @@ function resolveCssColorToRgb(colorStr) {
       const g = parseInt(parts[1], 10) || 0;
       const b = parseInt(parts[2], 10) || 0;
       const a = parts[3] !== undefined ? parseFloat(parts[3]) : 1;
-      return { r, g, b, a };
+      _colorCache[s] = { r, g, b, a };
+      return _colorCache[s];
     }
 
     // hex
@@ -107,7 +111,8 @@ function resolveCssColorToRgb(colorStr) {
         const r = parseInt(hex.slice(0, 2), 16);
         const g = parseInt(hex.slice(2, 4), 16);
         const b = parseInt(hex.slice(4, 6), 16);
-        return { r, g, b, a: 1 };
+        _colorCache[s] = { r, g, b, a: 1 };
+        return _colorCache[s];
       }
     }
 
@@ -125,7 +130,8 @@ function resolveCssColorToRgb(colorStr) {
       const g = parseInt(parts[1], 10) || 0;
       const b = parseInt(parts[2], 10) || 0;
       const a = parts[3] !== undefined ? parseFloat(parts[3]) : 1;
-      return { r, g, b, a };
+      _colorCache[s] = { r, g, b, a };
+      return _colorCache[s];
     }
   } catch (e) { }
   return null;
@@ -373,6 +379,10 @@ class FloatingDamageNumber {
       color
     };
     FloatingDamageNumber._list.push(item);
+    FXCanvas.init();
+    FXCanvas.startTick();
+
+    return { style: {} };
 
     if (!FloatingDamageNumber._running) {
       FloatingDamageNumber._running = true;
