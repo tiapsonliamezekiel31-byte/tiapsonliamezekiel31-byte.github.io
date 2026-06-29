@@ -1893,6 +1893,7 @@ body::before {
 
 .drawing-rect-mode {
   cursor: crosshair !important;
+  touch-action: none !important;
 }
 
 .btn-toggle-pill {
@@ -2415,6 +2416,7 @@ body::before {
   border-left-width: 3px;
   border-radius: 0 !important;
   position: absolute;
+  z-index: 10;
   width: clamp(116px, 16vw, 168px);
   aspect-ratio: 1 / 1;
   overflow: hidden;

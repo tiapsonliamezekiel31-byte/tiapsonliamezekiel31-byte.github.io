@@ -6701,6 +6701,8 @@ class UIManager {
         event.preventDefault();
         event.stopPropagation();
         
+        try { board.setPointerCapture(event.pointerId); } catch (err) {}
+        
         const boardRect = board.getBoundingClientRect();
         const startX = event.clientX - boardRect.left + board.scrollLeft;
         const startY = event.clientY - boardRect.top + board.scrollTop;
@@ -6722,6 +6724,7 @@ class UIManager {
         }
 
         const onDrawMove = (moveEvent) => {
+          if (moveEvent.pointerId !== event.pointerId) return;
           const currentX = moveEvent.clientX - boardRect.left + board.scrollLeft;
           const currentY = moveEvent.clientY - boardRect.top + board.scrollTop;
           
@@ -6737,6 +6740,9 @@ class UIManager {
         };
 
         const onDrawUp = (upEvent) => {
+          if (upEvent.pointerId !== event.pointerId) return;
+          try { board.releasePointerCapture(event.pointerId); } catch (err) {}
+          
           document.removeEventListener('pointermove', onDrawMove);
           document.removeEventListener('pointerup', onDrawUp);
           
