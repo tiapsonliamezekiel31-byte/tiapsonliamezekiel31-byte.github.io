@@ -383,6 +383,8 @@ class FloatingDamageNumber {
       FloatingDamageNumber._running = true;
       requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
     }
+
+    return div;
   }
 
   static showBurst(x, y, totalValue, options = {}) {
