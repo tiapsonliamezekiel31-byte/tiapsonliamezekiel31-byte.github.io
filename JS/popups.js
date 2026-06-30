@@ -916,9 +916,9 @@ class PopupsManager {
   // WEAPON UPGRADE POPUP (Spend Kill Tags for weapon-specific upgrades)
   // ============================================================
   static showWeaponUpgrade(weaponName) {
-    const state = getGameState();
     this.closeAllPopups();
 
+    const state = getGameState();
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup weapon-upgrade-popup';
@@ -926,28 +926,167 @@ class PopupsManager {
     const tags = PlayerManager.getKillTags(weaponName) || 0;
     const cost = state.config.killTagsPerUpgrade || 5;
 
-    // Define available upgrades (each upgrade now gives both crit and damage bonuses)
+    // Define available upgrades (modified types per user request)
     const upgrades = [
-      { id: 'mastery_i', name: 'Mastery I', desc: '+1% Crit · +5% Damage', effect: { crit: 0.01, damage: 0.05 } },
-      { id: 'mastery_ii', name: 'Mastery II', desc: '+2% Crit · +10% Damage', effect: { crit: 0.02, damage: 0.10 } }
+      { id: 'mastery_i', name: 'Mastery I', desc: '+1% Crit · +10% Damage', effect: { crit: 0.01, damage: 0.10 } },
+      { id: 'mastery_ii', name: 'Mastery II', desc: '+3% Crit · +5% Damage', effect: { crit: 0.03, damage: 0.05 } }
     ];
 
-    let html = `<h2>SMITH — Upgrade ${weaponName}</h2><button class="btn-close">✕</button>`;
-    html += `<div class="upgrade-info">Kill Tags for ${weaponName}: <strong>${tags}</strong></div>`;
-    html += `<div class="upgrade-cost">Each upgrade costs ${cost} Kill Tags</div>`;
-    html += '<div class="upgrade-list">';
+    // Retrieve weapon configuration
+    const weaponCfg = state.config.weapons[weaponName];
+    if (!weaponCfg) {
+      console.error(`Weapon config not found: ${weaponName}`);
+      return;
+    }
 
-    upgrades.forEach(u => {
-      html += `
-        <div class="upgrade-row" data-upgrade="${u.id}">
-          <div class="upgrade-name">${u.name}</div>
-          <div class="upgrade-desc">${u.desc}</div>
-          <div class="upgrade-actions"><button class="btn-upgrade" data-upgrade="${u.id}">Upgrade</button></div>
+    // Determine current element
+    const weaponsArray = state.playerState.weapons || [];
+    const weaponIndex = weaponsArray.indexOf(weaponName);
+    const weaponElement = (weaponIndex >= 0) ? (state.playerState.weaponElements?.[weaponIndex] || null) : null;
+
+    // Instantiate temporary attack plan to scale stats
+    let actualApCost = weaponCfg.baseApCost;
+    try {
+      if (typeof WeaponAttack !== 'undefined') {
+        const attackPlan = new WeaponAttack(weaponName, weaponElement);
+        actualApCost = attackPlan.getScaledApCost();
+      }
+    } catch (err) {
+      console.warn('Failed to calculate scaled AP cost, using base cost', err);
+    }
+
+    // Sum applied upgrades
+    const upgradesApplied = PlayerManager.getWeaponUpgrades(weaponName) || [];
+    const critUp = upgradesApplied.reduce((s, u) => s + (u.crit || 0), 0);
+    const dmgUp = upgradesApplied.reduce((s, u) => s + (u.damage || 0), 0);
+
+    // Class passive crit and damage multiplier
+    const classPassive = PlayerManager.getClassPassive();
+    const classPassiveCrit = classPassive?.critBonus || 0;
+    let classPassiveDmgMult = 1.0;
+    if (classPassive) {
+      if (classPassive.damageDealt) classPassiveDmgMult *= classPassive.damageDealt;
+      if (classPassive.damageMultiplier) classPassiveDmgMult *= classPassive.damageMultiplier;
+    }
+
+    // Current Stats
+    const baseCrit = weaponCfg.critChance || 0;
+    const totalCrit = baseCrit + classPassiveCrit + critUp;
+
+    const baseDmgMult = weaponCfg.damageMultiplier;
+    const damageMultiplierCombined = baseDmgMult * (1 + dmgUp);
+    const finalDmgMultiplier = damageMultiplierCombined * classPassiveDmgMult;
+    const estimatedDamage = actualApCost * finalDmgMultiplier;
+
+    // Runes check
+    if (!state.playerState.weaponRunes) state.playerState.weaponRunes = {};
+    if (!state.playerState.weaponRunes[weaponName]) state.playerState.weaponRunes[weaponName] = {};
+    const runes = state.playerState.weaponRunes[weaponName];
+
+    let html = `<h2 style="margin-top:0;">SMITH — Upgrade ${weaponName}</h2><button class="btn-close">✕</button>`;
+    html += `
+    <div class="upgrade-split-container">
+      <!-- LEFT PANEL: WEAPON CARD, STATS, RUNES, BUFFS -->
+      <div class="upgrade-left-panel">
+        <div class="weapon-showcase-box">
+          <div class="weapon-showcase-icon ${weaponElement ? 'glow-' + weaponElement.toLowerCase() : ''}" id="smithWeaponIcon">
+            ${weaponCfg.icon || '⚔️'}
+          </div>
+          <h3 class="weapon-showcase-name">${weaponName}</h3>
+          ${weaponElement ? `<span class="weapon-showcase-element" style="border-color:${state.config.enemyElementColors?.[weaponElement] || 'rgba(255,255,255,0.15)'}; background: ${state.config.enemyElementColors?.[weaponElement] + '1e' || 'rgba(255,255,255,0.08)'}; color: ${state.config.enemyElementColors?.[weaponElement] || '#fff'};">${weaponElement} Infusion</span>` : ''}
         </div>
-      `;
-    });
 
-    html += '</div>';
+        <div class="left-panel-section-title">Weapon Stats</div>
+        <div class="weapon-stats-list">
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">AP Cost:</span>
+            <span class="weapon-stat-val" id="smith-stat-ap">${actualApCost} <span class="weapon-stat-preview" id="smith-preview-ap"></span></span>
+          </div>
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">Dmg Multiplier:</span>
+            <span class="weapon-stat-val" id="smith-stat-mult">${(damageMultiplierCombined * 100).toFixed(0)}% <span class="weapon-stat-preview" id="smith-preview-mult"></span></span>
+          </div>
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">Est. Damage:</span>
+            <span class="weapon-stat-val" id="smith-stat-dmg">${Math.round(estimatedDamage)} <span class="weapon-stat-preview" id="smith-preview-dmg"></span></span>
+          </div>
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">Crit Chance:</span>
+            <span class="weapon-stat-val" id="smith-stat-crit">${(totalCrit * 100).toFixed(0)}% <span class="weapon-stat-preview" id="smith-preview-crit"></span></span>
+          </div>
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">Fire Rate:</span>
+            <span class="weapon-stat-val">${weaponCfg.fireRate || 1}</span>
+          </div>
+          ${weaponCfg.special ? `
+          <div class="weapon-stat-row">
+            <span class="weapon-stat-label">Special:</span>
+            <span class="weapon-stat-val" style="color: var(--accent-gold); font-size: 0.75rem; font-family: sans-serif; text-align: right; text-transform: none; letter-spacing: 0;">${weaponCfg.special}</span>
+          </div>` : ''}
+        </div>
+
+        <div class="left-panel-section-title">Infused Runes</div>
+        <div class="runes-sockets-container">
+          <div class="rune-socket ${runes.tier1 ? 'active' : ''}" data-rune-name="${runes.tier1 || ''}" data-rune-tier="1">
+            <span class="rune-socket-icon">${runes.tier1 ? (state.config.runes?.tier1?.[runes.tier1]?.icon || '🔥') : '⚪'}</span>
+            <span class="rune-socket-label">Tier 1</span>
+            <span class="rune-socket-name">${runes.tier1 ? runes.tier1.replace(' Rune', '') : 'Empty'}</span>
+          </div>
+          <div class="rune-socket ${runes.tier2 ? 'active' : ''}" data-rune-name="${runes.tier2 || ''}" data-rune-tier="2">
+            <span class="rune-socket-icon">${runes.tier2 ? (state.config.runes?.tier2?.[runes.tier2]?.icon || '🔮') : '⚪'}</span>
+            <span class="rune-socket-label">Tier 2</span>
+            <span class="rune-socket-name">${runes.tier2 ? runes.tier2.replace(' Rune', '') : 'Empty'}</span>
+          </div>
+          <div class="rune-socket ${runes.tier3 ? 'active' : ''}" data-rune-name="${runes.tier3 || ''}" data-rune-tier="3">
+            <span class="rune-socket-icon">${runes.tier3 ? (state.config.runes?.tier3?.[runes.tier3]?.icon || '🌪️') : '⚪'}</span>
+            <span class="rune-socket-label">Tier 3</span>
+            <span class="rune-socket-name">${runes.tier3 ? runes.tier3.replace(' Rune', '') : 'Empty'}</span>
+          </div>
+        </div>
+
+        <div class="left-panel-section-title">Active Buffs</div>
+        <div class="active-buffs-list">
+          ${state.buffs && state.buffs.length > 0 ? state.buffs.map(b => {
+            const bMeta = state.config.buffs?.[b] || { icon: '🔸', description: b };
+            return `<div class="buff-chip" data-buff-name="${b}" data-buff-desc="${bMeta.description}">${bMeta.icon} ${b}</div>`;
+          }).join('') : '<div style="font-size:0.75rem;color:var(--text-muted);font-style:italic;margin-top:2px;">No active buffs</div>'}
+        </div>
+
+        <div class="blacksmith-info-box" id="smithInfoBox">
+          Tap/Hover a rune or active buff to see details.
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL: FORGE & MASTERY -->
+      <div class="upgrade-right-panel">
+        <div class="right-panel-header">
+          <h3 style="margin: 0; font-family: 'Orbitron', monospace; font-size: 1.1rem; color: #fff;">FORGE</h3>
+          <div class="kill-tags-counter" title="Current Kill Tags on this weapon">🏷️ <span>${tags}</span></div>
+        </div>
+        
+        <div class="upgrade-instructions">Spend Kill Tags to permanently forge enhancements.</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;">
+          Each forge costs <strong style="color:#fff;">${cost}</strong> Kill Tags.
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;" class="upgrade-list">
+          ${upgrades.map(u => {
+            const disabledAttr = tags >= cost ? '' : 'disabled';
+            return `
+            <div class="upgrade-card" data-upgrade-id="${u.id}">
+              <div class="upgrade-card-meta">
+                <div class="upgrade-card-title">${u.name}</div>
+                <div class="upgrade-card-desc">${u.desc}</div>
+              </div>
+              <button class="btn-forge btn-upgrade" data-upgrade="${u.id}" ${disabledAttr}>FORGE</button>
+            </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+    `;
+
     popup.innerHTML = html;
 
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
@@ -955,6 +1094,96 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
+
+    const infoBox = popup.querySelector('#smithInfoBox');
+    const defaultInfoText = 'Tap/Hover a rune or active buff to see details.';
+
+    // Interactive details for Rune Sockets
+    popup.querySelectorAll('.rune-socket').forEach(sock => {
+      const name = sock.dataset.runeName;
+      const tier = sock.dataset.runeTier;
+      
+      const showDetails = () => {
+        if (name) {
+          const rMeta = state.config.runes?.['tier' + tier]?.[name];
+          infoBox.innerHTML = `
+            <div class="info-title">${rMeta?.icon || '💎'} ${name} (Tier ${tier})</div>
+            <div>${rMeta?.description || 'No description available'}</div>
+          `;
+        } else {
+          infoBox.innerHTML = `
+            <div class="info-title" style="color: var(--text-muted);">Empty Socket (Tier ${tier})</div>
+            <div>Kill enemies to gain Kill Tags and unlock random rune selections at 15 (Tier 1), 30 (Tier 2), and 45 (Tier 3) kills.</div>
+          `;
+        }
+      };
+
+      const resetDetails = () => {
+        infoBox.innerHTML = defaultInfoText;
+      };
+
+      sock.addEventListener('mouseenter', showDetails);
+      sock.addEventListener('mouseleave', resetDetails);
+      sock.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDetails();
+      });
+    });
+
+    // Interactive details for Active Buffs
+    popup.querySelectorAll('.buff-chip').forEach(chip => {
+      const name = chip.dataset.buffName;
+      const desc = chip.dataset.buffDesc;
+      const icon = chip.textContent.split(' ')[0] || '🔸';
+
+      const showDetails = () => {
+        infoBox.innerHTML = `
+          <div class="info-title">${icon} ${name}</div>
+          <div>${desc}</div>
+        `;
+      };
+
+      const resetDetails = () => {
+        infoBox.innerHTML = defaultInfoText;
+      };
+
+      chip.addEventListener('mouseenter', showDetails);
+      chip.addEventListener('mouseleave', resetDetails);
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showDetails();
+      });
+    });
+
+    // Live stat preview on upgrade cards hover
+    popup.querySelectorAll('.upgrade-card').forEach(card => {
+      const uid = card.dataset.upgradeId;
+      const upgrade = upgrades.find(u => u.id === uid);
+      if (!upgrade) return;
+
+      const showPreview = () => {
+        const nextCritUp = critUp + upgrade.effect.crit;
+        const nextDmgUp = dmgUp + upgrade.effect.damage;
+
+        const nextTotalCrit = baseCrit + classPassiveCrit + nextCritUp;
+        const nextDmgMultCombined = baseDmgMult * (1 + nextDmgUp);
+        const nextFinalDmgMultiplier = nextDmgMultCombined * classPassiveDmgMult;
+        const nextEstimatedDamage = actualApCost * nextFinalDmgMultiplier;
+
+        popup.querySelector('#smith-preview-mult').innerHTML = ` → ${(nextDmgMultCombined * 100).toFixed(0)}%`;
+        popup.querySelector('#smith-preview-dmg').innerHTML = ` → ${Math.round(nextEstimatedDamage)}`;
+        popup.querySelector('#smith-preview-crit').innerHTML = ` → ${(nextTotalCrit * 100).toFixed(0)}%`;
+      };
+
+      const resetPreview = () => {
+        popup.querySelector('#smith-preview-mult').innerHTML = '';
+        popup.querySelector('#smith-preview-dmg').innerHTML = '';
+        popup.querySelector('#smith-preview-crit').innerHTML = '';
+      };
+
+      card.addEventListener('mouseenter', showPreview);
+      card.addEventListener('mouseleave', resetPreview);
+    });
 
     // Hook upgrade buttons
     popup.querySelectorAll('.btn-upgrade').forEach(btn => {
@@ -980,7 +1209,14 @@ class PopupsManager {
         try { const s = getGameState(); if (s.save) s.save(); } catch (e) {}
 
         FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Upgraded ${weaponName}`, { color: '#ffd700' });
-        this.closeAllPopups();
+        
+        // Re-open/refresh the popup to reflect changes immediately
+        this.showWeaponUpgrade(weaponName);
+        
+        // Refresh underlying game UI
+        if (window.UIManager && typeof UIManager.refreshGameUI === 'function') {
+          UIManager.refreshGameUI();
+        }
       });
     });
   }

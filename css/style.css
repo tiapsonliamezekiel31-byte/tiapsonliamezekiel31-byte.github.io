@@ -9298,3 +9298,348 @@ button:hover,
 .weekly-heatmap-minimized:hover {
   transform: scale(1.05);
 }
+
+/* ============================================================
+   BLACKSMITH IMPROVED UPGRADE SMITH POPUP
+   ============================================================ */
+.weapon-upgrade-popup {
+  max-width: 820px !important;
+  width: 95vw;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
+}
+
+.upgrade-split-container {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  text-align: left;
+}
+
+.upgrade-left-panel {
+  flex: 1 1 330px;
+  background: rgba(20, 16, 28, 0.4);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  padding: 16px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.upgrade-right-panel {
+  flex: 1 1 330px;
+  background: rgba(10, 8, 14, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.weapon-showcase-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.weapon-showcase-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at center, rgba(217, 119, 6, 0.05), transparent 70%);
+  pointer-events: none;
+}
+
+.weapon-showcase-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 8px;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.weapon-showcase-box:hover .weapon-showcase-icon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* Glow effects based on elemental infusion */
+.glow-fire { filter: drop-shadow(0 0 15px rgba(255, 154, 46, 0.7)); }
+.glow-water { filter: drop-shadow(0 0 15px rgba(78, 163, 255, 0.7)); }
+.glow-earth { filter: drop-shadow(0 0 15px rgba(68, 255, 68, 0.7)); }
+.glow-air { filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6)); }
+.glow-aether { filter: drop-shadow(0 0 15px rgba(255, 215, 106, 0.8)); }
+
+.weapon-showcase-name {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--accent-gold);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  margin: 0;
+}
+
+.weapon-showcase-element {
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 6px;
+  color: #fff;
+}
+
+.weapon-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weapon-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 5px;
+  font-size: 0.85rem;
+}
+
+.weapon-stat-label {
+  color: var(--text-muted);
+}
+
+.weapon-stat-val {
+  font-family: 'Orbitron', monospace;
+  font-weight: bold;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.weapon-stat-preview {
+  color: #22c55e; /* green preview text */
+  font-weight: bold;
+  font-size: 0.8rem;
+  animation: pulse-green 1.5s infinite alternate;
+}
+
+@keyframes pulse-green {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+.left-panel-section-title {
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent-copper);
+  margin: 8px 0 4px 0;
+  border-left: 2px solid var(--accent-copper);
+  padding-left: 6px;
+}
+
+.runes-sockets-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rune-socket {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.rune-socket:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.rune-socket.active {
+  border: 1px solid var(--accent-gold);
+  background: rgba(255, 179, 63, 0.04);
+}
+
+.rune-socket-icon {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+.rune-socket-label {
+  color: var(--text-muted);
+  font-weight: bold;
+}
+
+.rune-socket-name {
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.active-buffs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 24px;
+}
+
+.buff-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  color: #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.buff-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-copper);
+}
+
+.blacksmith-info-box {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.blacksmith-info-box .info-title {
+  font-weight: bold;
+  color: var(--accent-gold);
+  margin-bottom: 2px;
+}
+
+.right-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.kill-tags-counter {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: var(--accent-gold);
+  background: rgba(255, 179, 63, 0.08);
+  border: 1px solid rgba(255, 179, 63, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.upgrade-instructions {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.upgrade-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: default;
+}
+
+.upgrade-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(217, 119, 6, 0.4);
+}
+
+.upgrade-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.upgrade-card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.upgrade-card-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.btn-forge {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  color: #fff;
+  border: none;
+  font-family: 'Orbitron', monospace;
+  font-weight: bold;
+  font-size: 0.8rem;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.btn-forge:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+}
+
+.btn-forge:disabled {
+  background: #374151;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
