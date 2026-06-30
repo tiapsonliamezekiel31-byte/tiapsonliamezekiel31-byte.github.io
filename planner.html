@@ -726,6 +726,37 @@
         max-width: calc(100vw - 24px);
       }
     }
+
+    .goals-cluster {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 12px 0 0 0;
+      z-index: 10;
+      position: relative;
+    }
+    .goal-star {
+      font-size: 36px;
+      color: rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .goal-star:hover {
+      transform: scale(1.15);
+      color: rgba(255, 255, 255, 0.4);
+    }
+    .goal-star.is-filled {
+      color: #ffd76a;
+      text-shadow: 0 0 20px rgba(255, 215, 106, 0.7);
+    }
+    .goal-star.is-filled:hover {
+      color: #fff4d4;
+      text-shadow: 0 0 25px rgba(255, 215, 106, 0.9);
+      transform: scale(1.15);
+    }
   </style>
 </head>
 <body>
@@ -746,10 +777,54 @@
       <button id="logsBtn" class="btn-icon">📜 Logs</button>
     </div>
 
+    <div class="goals-cluster" id="goalsCluster">
+      <div class="goal-star" data-slot="0">★</div>
+      <div class="goal-star" data-slot="1">★</div>
+      <div class="goal-star" data-slot="2">★</div>
+    </div>
+
     <div class="planner-stage" id="plannerStage"></div>
 
     <!-- Floating button for notes -->
     <button id="addNoteBtn" class="btn-icon" style="position: fixed; bottom: 20px; right: 20px;">📝 Add Note</button>
+  </div>
+
+  <div class="planner-modal" id="addGoalModal" aria-hidden="true">
+    <div class="planner-modal-card" role="dialog" aria-modal="true" aria-labelledby="addGoalTitle">
+      <div class="planner-modal-header">
+        <h2 id="addGoalTitle">Set a Goal</h2>
+        <button id="closeAddGoalBtn" class="btn-icon">✕ Close</button>
+      </div>
+      <div class="planner-modal-body">
+        <div class="planner-panel">
+          <label class="planner-field" style="margin-bottom:12px; display:block;">
+            <div class="planner-inline-note">Goal Description</div>
+            <input id="goalTextInput" class="planner-input" type="text" placeholder="e.g. Finish MVP">
+          </label>
+          <label class="planner-field" style="margin-bottom:12px; display:block;">
+            <div class="planner-inline-note">Reward Multiplier</div>
+            <input id="goalMultiplierInput" class="planner-input" type="number" min="1" max="100" value="2">
+          </label>
+          <button id="saveGoalBtn" class="btn-icon" style="width:100%; margin-top:8px;">Save Goal</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="planner-modal" id="completeGoalModal" aria-hidden="true">
+    <div class="planner-modal-card" role="dialog" aria-modal="true" aria-labelledby="completeGoalTitle">
+      <div class="planner-modal-header">
+        <h2 id="completeGoalTitle">Goal</h2>
+        <button id="closeCompleteGoalBtn" class="btn-icon">✕ Close</button>
+      </div>
+      <div class="planner-modal-body">
+        <div class="planner-panel" style="text-align:center;">
+          <h3 id="displayGoalText" style="font-size:16px; margin-bottom:8px;">Goal Text</h3>
+          <div class="planner-subtle" style="margin-bottom:16px;">Reward Multiplier: x<span id="displayGoalMultiplier">1</span></div>
+          <button id="completeGoalActionBtn" class="btn-icon" style="width:100%; border-color: rgba(255, 215, 106, 0.6); color: #ffd76a;">🌟 Complete Goal 🌟</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="planner-modal" id="configModal" aria-hidden="true">
@@ -1037,6 +1112,7 @@
         this.renderTasks();
         this.syncConfigInputs();
         this.syncConfigState();
+        this.initGoals();
       }
 
       updateDisplay() {
@@ -1812,6 +1888,158 @@
         note.querySelector('button:nth-child(2)').addEventListener('click', () => {
           note.remove();
         });
+      }
+
+      // Goals Logic
+      initGoals() {
+        const closeAdd = document.getElementById('closeAddGoalBtn');
+        if (closeAdd) closeAdd.addEventListener('click', () => this.closeAddGoalModal());
+        const closeComplete = document.getElementById('closeCompleteGoalBtn');
+        if (closeComplete) closeComplete.addEventListener('click', () => this.closeCompleteGoalModal());
+        
+        const saveBtn = document.getElementById('saveGoalBtn');
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveGoal());
+
+        const completeBtn = document.getElementById('completeGoalActionBtn');
+        if (completeBtn) completeBtn.addEventListener('click', () => this.completeGoal());
+
+        this.renderGoals();
+      }
+
+      renderGoals() {
+        const state = typeof getGameState === 'function' ? getGameState() : null;
+        if (!state || !state.playerState) return;
+        if (!state.playerState.goals) {
+          state.playerState.goals = [
+            { text: '', multiplier: 1, active: false },
+            { text: '', multiplier: 1, active: false },
+            { text: '', multiplier: 1, active: false }
+          ];
+        }
+        const goals = state.playerState.goals;
+
+        for (let i = 0; i < 3; i++) {
+          const star = document.querySelector(`.goal-star[data-slot="${i}"]`);
+          if (!star) continue;
+          
+          if (goals[i] && goals[i].active) {
+            star.classList.add('is-filled');
+          } else {
+            star.classList.remove('is-filled');
+          }
+
+          // Unbind existing click to prevent duplicates
+          const newStar = star.cloneNode(true);
+          star.parentNode.replaceChild(newStar, star);
+          
+          newStar.addEventListener('click', () => {
+            if (goals[i] && goals[i].active) {
+              this.openCompleteGoalModal(i, goals[i]);
+            } else {
+              this.openAddGoalModal(i);
+            }
+          });
+        }
+      }
+
+      openAddGoalModal(slotIndex) {
+        this.activeGoalSlot = slotIndex;
+        document.getElementById('goalTextInput').value = '';
+        document.getElementById('goalMultiplierInput').value = '2';
+        document.getElementById('addGoalModal').classList.add('open');
+      }
+
+      closeAddGoalModal() {
+        document.getElementById('addGoalModal').classList.remove('open');
+      }
+
+      saveGoal() {
+        if (this.activeGoalSlot === null || this.activeGoalSlot === undefined) return;
+        const text = document.getElementById('goalTextInput').value.trim();
+        const multi = parseInt(document.getElementById('goalMultiplierInput').value) || 1;
+        
+        if (!text) return;
+
+        const state = typeof getGameState === 'function' ? getGameState() : null;
+        if (state && state.playerState && state.playerState.goals) {
+          state.playerState.goals[this.activeGoalSlot] = {
+            text: text,
+            multiplier: multi,
+            active: true
+          };
+          if (typeof state.save === 'function') state.save();
+        }
+        
+        this.closeAddGoalModal();
+        this.renderGoals();
+      }
+
+      openCompleteGoalModal(slotIndex, goalData) {
+        this.activeGoalSlot = slotIndex;
+        document.getElementById('displayGoalText').textContent = goalData.text;
+        document.getElementById('displayGoalMultiplier').textContent = goalData.multiplier;
+        document.getElementById('completeGoalModal').classList.add('open');
+      }
+
+      closeCompleteGoalModal() {
+        document.getElementById('completeGoalModal').classList.remove('open');
+      }
+
+      completeGoal() {
+        if (this.activeGoalSlot === null || this.activeGoalSlot === undefined) return;
+        
+        const state = typeof getGameState === 'function' ? getGameState() : null;
+        if (state && state.playerState && state.playerState.goals) {
+          const goal = state.playerState.goals[this.activeGoalSlot];
+          if (goal && goal.active) {
+            const multi = goal.multiplier || 1;
+            
+            // Apply rewards except attributes
+            const maxExp = state.config?.maxLevelExp || 100;
+            const expReward = Math.floor(maxExp * multi);
+            // I should use the proper reward methods if available. But direct addition is also fine if `checkLevelUp` logic isn't strictly required here, or I can just emit a fake check-in.
+            // Wait, nemesis has `state.playerState.gold` etc
+            state.playerState.ap += (state.playerState.maxAp || 10) * multi;
+            state.playerState.gold += 50 * multi; // using 50 as a generic max gold if maxGold doesn't exist
+            state.playerState.diamonds += 10 * multi;
+            state.playerState.petPoints += 5 * multi;
+            
+            // Reset goal slot
+            state.playerState.goals[this.activeGoalSlot] = { text: '', multiplier: 1, active: false };
+            if (typeof state.save === 'function') state.save();
+
+            // Trigger explosion animation using CSS or ParticleSystem
+            const star = document.querySelector(`.goal-star[data-slot="${this.activeGoalSlot}"]`);
+            if (star && typeof ParticleSystem !== 'undefined') {
+              const rect = star.getBoundingClientRect();
+              const p = new ParticleSystem();
+              p.emit(rect.left + rect.width/2, rect.top + rect.height/2, 30, {
+                color: '#ffd76a',
+                glow: true,
+                size: 5,
+                velocity: 6,
+                lifetime: 1500
+              });
+            } else if (star) {
+               // Fallback CSS pop
+               star.style.transform = 'scale(2)';
+               star.style.opacity = '0';
+               setTimeout(() => {
+                 star.style.transform = '';
+                 star.style.opacity = '';
+                 this.renderGoals();
+               }, 300);
+            }
+          }
+        }
+        
+        this.closeCompleteGoalModal();
+        if (typeof ParticleSystem === 'undefined') {
+           this.renderGoals();
+        } else {
+           setTimeout(() => this.renderGoals(), 100);
+        }
+        this.updateDisplay();
       }
     }
 

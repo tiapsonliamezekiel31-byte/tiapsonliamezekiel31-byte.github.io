@@ -198,6 +198,11 @@ class GameState {
       dodgeCostMultiplier: 1.0,
       corrosiveStacks: 0,
       petPoints: 0,
+      goals: [
+        { text: '', multiplier: 1, active: false },
+        { text: '', multiplier: 1, active: false },
+        { text: '', multiplier: 1, active: false }
+      ],
       petImage: null,
       petEmoji: '🐾',
       petLevel: 1,

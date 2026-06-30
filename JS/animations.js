@@ -382,8 +382,6 @@ class FloatingDamageNumber {
     FXCanvas.init();
     FXCanvas.startTick();
 
-    return { style: {} };
-
     if (!FloatingDamageNumber._running) {
       FloatingDamageNumber._running = true;
       requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
