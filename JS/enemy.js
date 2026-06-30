@@ -213,6 +213,12 @@ class EnemyManager {
 
     // Multiply all enemy damage by 2 (global scaling)
     let final = Math.max(0, damage) * 2;
+
+    // Enraged Buff: scale damage by +35% per day spent on the uncleared level (additive)
+    if (enemy.daysAlive > 0) {
+      const enragedMult = 1 + enemy.daysAlive * 0.35;
+      final *= enragedMult;
+    }
     
     // Rallyist Buff: multiplies damage of all enemies
     const rallyistCount = (state.stageState.enemies || []).filter(e => e && !e.isDead && Array.isArray(e.mutators) && e.mutators.includes('rallyist')).length;

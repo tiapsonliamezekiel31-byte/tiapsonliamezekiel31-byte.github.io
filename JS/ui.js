@@ -7881,6 +7881,7 @@ class UIManager {
     card.classList.toggle('boss', !!enemy.isBoss);
     card.classList.toggle('targeted', !!isTargeted);
     card.classList.toggle('dodge-ready', !!isDodgeReady);
+    card.classList.toggle('enraged', !enemy.isDead && (enemy.daysAlive > 0));
 
     const isPhase2 = !!(enemy.isBoss && (
       (state.stageState.bossData && state.stageState.bossData.phase === 2) ||

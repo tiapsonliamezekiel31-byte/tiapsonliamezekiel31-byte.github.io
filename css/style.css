@@ -981,6 +981,19 @@ body::before {
   overflow: visible;
 }
 
+.enemy-card.enraged {
+  animation: enragedShake 0.25s infinite linear;
+}
+
+@keyframes enragedShake {
+  0% { transform: translate(-50%, -50%) translate(0, 0); }
+  20% { transform: translate(-50%, -50%) translate(-1px, 1px); }
+  40% { transform: translate(-50%, -50%) translate(-1px, -1px); }
+  60% { transform: translate(-50%, -50%) translate(1px, 1px); }
+  80% { transform: translate(-50%, -50%) translate(1px, -1px); }
+  100% { transform: translate(-50%, -50%) translate(0, 0); }
+}
+
 /* Left/right accent borders are handled via border-left-color and border-right-color variables */
 
 .enemy-card:hover {
