@@ -987,10 +987,10 @@ body::before {
 
 @keyframes enragedShake {
   0% { transform: translate(-50%, -50%) translate(0, 0); }
-  20% { transform: translate(-50%, -50%) translate(-1px, 1px); }
-  40% { transform: translate(-50%, -50%) translate(-1px, -1px); }
-  60% { transform: translate(-50%, -50%) translate(1px, 1px); }
-  80% { transform: translate(-50%, -50%) translate(1px, -1px); }
+  20% { transform: translate(-50%, -50%) translate(-0.4px, 0.4px); }
+  40% { transform: translate(-50%, -50%) translate(-0.4px, -0.4px); }
+  60% { transform: translate(-50%, -50%) translate(0.4px, 0.4px); }
+  80% { transform: translate(-50%, -50%) translate(0.4px, -0.4px); }
   100% { transform: translate(-50%, -50%) translate(0, 0); }
 }
 
@@ -1143,27 +1143,16 @@ body::before {
   opacity: 0;
   animation: vampiricParticleAnim 3.5s infinite ease-out;
 }
-
-.vampiric-particles span:nth-child(1) { animation-delay: 0s; --dx: 0px; --dy: -90px; }
-.vampiric-particles span:nth-child(2) { animation-delay: 0.3s; --dx: 45px; --dy: -78px; }
-.vampiric-particles span:nth-child(3) { animation-delay: 0.6s; --dx: 78px; --dy: -45px; }
-.vampiric-particles span:nth-child(4) { animation-delay: 0.9s; --dx: 90px; --dy: 0px; }
-.vampiric-particles span:nth-child(5) { animation-delay: 1.2s; --dx: 78px; --dy: 45px; }
-.vampiric-particles span:nth-child(6) { animation-delay: 1.5s; --dx: 45px; --dy: 78px; }
-.vampiric-particles span:nth-child(7) { animation-delay: 1.8s; --dx: 0px; --dy: 90px; }
-.vampiric-particles span:nth-child(8) { animation-delay: 2.1s; --dx: -45px; --dy: 78px; }
-.vampiric-particles span:nth-child(9) { animation-delay: 2.4s; --dx: -78px; --dy: 45px; }
-.vampiric-particles span:nth-child(10) { animation-delay: 2.7s; --dx: -90px; --dy: 0px; }
-.vampiric-particles span:nth-child(11) { animation-delay: 3.0s; --dx: -78px; --dy: -45px; }
-.vampiric-particles span:nth-child(12) { animation-delay: 3.3s; --dx: -45px; --dy: -78px; }
-
 @keyframes vampiricParticleAnim {
   0% {
     transform: translate(-50%, -50%) scale(0.5);
     opacity: 0;
   }
-  15% {
+  20% {
     opacity: 1;
+  }
+  75% {
+    opacity: 0.8;
   }
   100% {
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.3);
@@ -1286,27 +1275,16 @@ body::before {
   opacity: 0;
   animation: necromancerParticleAnim 4s infinite ease-out;
 }
-
-.necromancer-particles span:nth-child(1) { animation-delay: 0s; --dx: 0px; --dy: -90px; }
-.necromancer-particles span:nth-child(2) { animation-delay: 0.33s; --dx: 45px; --dy: -78px; }
-.necromancer-particles span:nth-child(3) { animation-delay: 0.67s; --dx: 78px; --dy: -45px; }
-.necromancer-particles span:nth-child(4) { animation-delay: 1.0s; --dx: 90px; --dy: 0px; }
-.necromancer-particles span:nth-child(5) { animation-delay: 1.33s; --dx: 78px; --dy: 45px; }
-.necromancer-particles span:nth-child(6) { animation-delay: 1.67s; --dx: 45px; --dy: 78px; }
-.necromancer-particles span:nth-child(7) { animation-delay: 2.0s; --dx: 0px; --dy: 90px; }
-.necromancer-particles span:nth-child(8) { animation-delay: 2.33s; --dx: -45px; --dy: 78px; }
-.necromancer-particles span:nth-child(9) { animation-delay: 2.67s; --dx: -78px; --dy: 45px; }
-.necromancer-particles span:nth-child(10) { animation-delay: 3.0s; --dx: -90px; --dy: 0px; }
-.necromancer-particles span:nth-child(11) { animation-delay: 3.33s; --dx: -78px; --dy: -45px; }
-.necromancer-particles span:nth-child(12) { animation-delay: 3.67s; --dx: -45px; --dy: -78px; }
-
 @keyframes necromancerParticleAnim {
   0% {
     transform: translate(-50%, -50%) scale(0.5);
     opacity: 0;
   }
-  15% {
+  20% {
     opacity: 1;
+  }
+  75% {
+    opacity: 0.8;
   }
   100% {
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.3);

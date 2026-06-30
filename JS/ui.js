@@ -7956,7 +7956,18 @@ class UIManager {
           if (!vampParticles) {
             vampParticles = document.createElement('div');
             vampParticles.className = 'vampiric-particles';
-            vampParticles.innerHTML = '<span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>';
+            for (let i = 0; i < 12; i++) {
+              const span = document.createElement('span');
+              span.textContent = '❤️';
+              const angle = Math.random() * Math.PI * 2;
+              const distance = 50 + Math.random() * 70;
+              const dx = Math.cos(angle) * distance;
+              const dy = Math.sin(angle) * distance;
+              span.style.setProperty('--dx', `${dx.toFixed(1)}px`);
+              span.style.setProperty('--dy', `${dy.toFixed(1)}px`);
+              span.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
+              vampParticles.appendChild(span);
+            }
             card.appendChild(vampParticles);
           }
         } else {
@@ -8000,7 +8011,18 @@ class UIManager {
           if (!necroParticles) {
             necroParticles = document.createElement('div');
             necroParticles.className = 'necromancer-particles';
-            necroParticles.innerHTML = '<span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span>';
+            for (let i = 0; i < 12; i++) {
+              const span = document.createElement('span');
+              span.textContent = '💀';
+              const angle = Math.random() * Math.PI * 2;
+              const distance = 50 + Math.random() * 70;
+              const dx = Math.cos(angle) * distance;
+              const dy = Math.sin(angle) * distance;
+              span.style.setProperty('--dx', `${dx.toFixed(1)}px`);
+              span.style.setProperty('--dy', `${dy.toFixed(1)}px`);
+              span.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
+              necroParticles.appendChild(span);
+            }
             card.appendChild(necroParticles);
           }
         } else {
@@ -8037,9 +8059,11 @@ class UIManager {
 
     const circle = document.querySelector('.enemy-circle-container');
     const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
-    if (canvas.width !== rect.width || canvas.height !== rect.height) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+    const rectWidth = Math.round(rect.width);
+    const rectHeight = Math.round(rect.height);
+    if (canvas.width !== rectWidth || canvas.height !== rectHeight) {
+      canvas.width = rectWidth;
+      canvas.height = rectHeight;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
