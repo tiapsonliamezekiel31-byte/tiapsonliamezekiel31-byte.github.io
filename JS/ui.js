@@ -10035,9 +10035,9 @@ class StatsHUD {
       const nemesisAttrs = state.nemesisState?.attributes || {};
       const attrColors = config.attributeColors || {};
 
-      let maxVal = 10;
+      let maxVal = 5;
       for (const attr of attributes) {
-        maxVal = Math.max(maxVal, playerAttrs[attr]?.points || 0, nemesisAttrs[attr]?.points || 0);
+        maxVal = Math.max(maxVal, playerAttrs[attr]?.level || 1, nemesisAttrs[attr]?.level || 1);
       }
 
       const C_X = 50;
@@ -10070,7 +10070,7 @@ class StatsHUD {
       const playerPts = [];
       for (let i = 0; i < numPoints; i++) {
         const attr = attributes[i];
-        const val = playerAttrs[attr]?.points || 0;
+        const val = playerAttrs[attr]?.level || 1;
         const radius = (val / maxVal) * R;
         const angle = i * angleStep - Math.PI / 2;
         const x = C_X + radius * Math.cos(angle);
@@ -10082,7 +10082,7 @@ class StatsHUD {
       const nemesisPts = [];
       for (let i = 0; i < numPoints; i++) {
         const attr = attributes[i];
-        const val = nemesisAttrs[attr]?.points || 0;
+        const val = nemesisAttrs[attr]?.level || 1;
         const radius = (val / maxVal) * R;
         const angle = i * angleStep - Math.PI / 2;
         const x = C_X + radius * Math.cos(angle);
@@ -10108,8 +10108,8 @@ class StatsHUD {
         else if (Math.sin(angle) > 0.8) dy = '0.8em';
 
         const color = attrColors[attr] || '#f1de97';
-        const pVal = Math.round(playerAttrs[attr]?.points || 0);
-        labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} ${pVal}</text>`;
+        const pVal = playerAttrs[attr]?.level || 1;
+        labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} Lv.${pVal}</text>`;
       }
 
       radarContainer.innerHTML = `
