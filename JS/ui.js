@@ -10035,11 +10035,6 @@ class StatsHUD {
       const nemesisAttrs = state.nemesisState?.attributes || {};
       const attrColors = config.attributeColors || {};
 
-      let maxVal = 5;
-      for (const attr of attributes) {
-        maxVal = Math.max(maxVal, playerAttrs[attr]?.level || 1, nemesisAttrs[attr]?.level || 1);
-      }
-
       const C_X = 50;
       const C_Y = 45;
       const R = 26;
@@ -10070,8 +10065,11 @@ class StatsHUD {
       const playerPts = [];
       for (let i = 0; i < numPoints; i++) {
         const attr = attributes[i];
-        const val = playerAttrs[attr]?.level || 1;
-        const radius = (val / maxVal) * R;
+        const pPoints = playerAttrs[attr]?.points || 0;
+        const nPoints = nemesisAttrs[attr]?.points || 0;
+        const axisLimit = Math.max(1, (pPoints + nPoints) * 0.7);
+        const val = Math.min(pPoints, axisLimit);
+        const radius = (val / axisLimit) * R;
         const angle = i * angleStep - Math.PI / 2;
         const x = C_X + radius * Math.cos(angle);
         const y = C_Y + radius * Math.sin(angle);
@@ -10082,8 +10080,11 @@ class StatsHUD {
       const nemesisPts = [];
       for (let i = 0; i < numPoints; i++) {
         const attr = attributes[i];
-        const val = nemesisAttrs[attr]?.level || 1;
-        const radius = (val / maxVal) * R;
+        const pPoints = playerAttrs[attr]?.points || 0;
+        const nPoints = nemesisAttrs[attr]?.points || 0;
+        const axisLimit = Math.max(1, (pPoints + nPoints) * 0.7);
+        const val = Math.min(nPoints, axisLimit);
+        const radius = (val / axisLimit) * R;
         const angle = i * angleStep - Math.PI / 2;
         const x = C_X + radius * Math.cos(angle);
         const y = C_Y + radius * Math.sin(angle);
@@ -10108,8 +10109,8 @@ class StatsHUD {
         else if (Math.sin(angle) > 0.8) dy = '0.8em';
 
         const color = attrColors[attr] || '#f1de97';
-        const pVal = playerAttrs[attr]?.level || 1;
-        labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} Lv.${pVal}</text>`;
+        const pVal = Math.round(playerAttrs[attr]?.points || 0);
+        labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} ${pVal}</text>`;
       }
 
       radarContainer.innerHTML = `
