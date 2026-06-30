@@ -13,7 +13,7 @@ const DEFAULT_GAME_CONFIG = {
   soundVolume: 0.6,
   maxPlayerLevel: 35,
   maxStages: 7,
-  maxLevelPerStage: 4,
+  maxLevelPerStage: 5,
   
   // ============================================================
   // DAILY CYCLE & CHECK-IN

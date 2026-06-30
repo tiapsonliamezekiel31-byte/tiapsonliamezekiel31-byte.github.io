@@ -1068,6 +1068,229 @@ body::before {
 
 .enemy-card.elite {
   box-shadow: 0 0 14px rgba(200, 107, 255, 0.7);
+  transform: translate(-50%, -50%) scale(1.4);
+  z-index: 1001;
+}
+
+.enemy-card.elite:hover {
+  transform: translate(-50%, -50%) scale(1.45);
+}
+
+/* Brute archetype background saturation scaling */
+.enemy-card.archetype-brute {
+  background: linear-gradient(180deg, 
+    rgba(calc(24 + 18 * var(--brute-combo, 0)), 18, calc(50 - 5 * var(--brute-combo, 0)), 0.98), 
+    rgba(calc(12 + 12 * var(--brute-combo, 0)), 10, calc(26 - 3 * var(--brute-combo, 0)), 0.97)
+  ) !important;
+  box-shadow: 0 0 calc(14px + 3px * var(--brute-combo, 0)) rgba(calc(150 + 20 * var(--brute-combo, 0)), 20, 20, calc(0.3 + 0.1 * var(--brute-combo, 0))),
+              inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Mana Drain archetype blue circle styling */
+.mana-drain-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  border: 2px double rgba(0, 191, 255, 0.85);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0, 191, 255, 0.6), inset 0 0 8px rgba(0, 191, 255, 0.2);
+  box-sizing: border-box;
+  animation: manaDrainSpin 12s linear infinite;
+  z-index: -1;
+}
+
+@keyframes manaDrainSpin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.enemy-card.elite .mana-drain-circle {
+  width: 168px; /* 120px * 1.4 */
+  height: 168px;
+}
+
+/* Vampiric particles styling */
+.vampiric-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1005;
+}
+
+.vampiric-particles span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 12px;
+  opacity: 0;
+  animation: vampiricParticleAnim 3s infinite ease-out;
+}
+
+.vampiric-particles span:nth-child(1) { animation-delay: 0s; --dx: -40px; --dy: -40px; }
+.vampiric-particles span:nth-child(2) { animation-delay: 0.75s; --dx: 40px; --dy: -40px; }
+.vampiric-particles span:nth-child(3) { animation-delay: 1.5s; --dx: -40px; --dy: 40px; }
+.vampiric-particles span:nth-child(4) { animation-delay: 2.25s; --dx: 40px; --dy: 40px; }
+
+@keyframes vampiricParticleAnim {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Regenerator spinning square styling */
+.regenerator-square {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #22c55e;
+  background: rgba(34, 197, 94, 0.2);
+  transform: translate(-50%, -50%) rotate(0deg);
+  transform-origin: center;
+  animation: spinSquare 2.5s linear infinite;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  z-index: 1005;
+}
+
+@keyframes spinSquare {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Rallyist snap animation */
+.enemy-card.mutator-rallyist {
+  animation: rallyistSnap 1.6s ease-in-out infinite;
+}
+
+@keyframes rallyistSnap {
+  0%, 100% {
+    transform: translate(-50%, -50%);
+  }
+  40% {
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+  50% {
+    transform: translate(-50%, calc(-50% + 4px));
+  }
+  60% {
+    transform: translate(-50%, calc(-50% - 2px));
+  }
+  70% {
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* For elite rallyist we override transform */
+.enemy-card.elite.mutator-rallyist {
+  animation: rallyistEliteSnap 1.6s ease-in-out infinite;
+}
+
+@keyframes rallyistEliteSnap {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+  40% {
+    transform: translate(-50%, calc(-50% - 10px)) scale(1.4);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% + 4px)) scale(1.4);
+  }
+  60% {
+    transform: translate(-50%, calc(-50% - 2px)) scale(1.4);
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+/* Swift circle pulse */
+.swift-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #f59e0b;
+  border-radius: 50%;
+  pointer-events: none;
+  box-sizing: border-box;
+  animation: swiftCircleAnim 2s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  z-index: -1;
+}
+
+.enemy-card.elite .swift-circle {
+  width: 140px;
+  height: 140px;
+}
+
+@keyframes swiftCircleAnim {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15);
+    opacity: 0.95;
+  }
+}
+
+/* Necromancer particles styling */
+.necromancer-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1005;
+}
+
+.necromancer-particles span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 12px;
+  opacity: 0;
+  animation: necromancerParticleAnim 3.5s infinite ease-out;
+}
+
+.necromancer-particles span:nth-child(1) { animation-delay: 0s; --dx: -35px; --dy: -35px; }
+.necromancer-particles span:nth-child(2) { animation-delay: 0.88s; --dx: 35px; --dy: -35px; }
+.necromancer-particles span:nth-child(3) { animation-delay: 1.75s; --dx: -35px; --dy: 35px; }
+.necromancer-particles span:nth-child(4) { animation-delay: 2.63s; --dx: 35px; --dy: 35px; }
+
+@keyframes necromancerParticleAnim {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2);
+    opacity: 0;
+  }
 }
 
 .enemy-card.boss {

@@ -7819,40 +7819,25 @@ class UIManager {
     });
 
     // Draw lines between alive enemies on the canvas
-    const canvas = document.getElementById('enemyCanvas');
-    if (canvas) {
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      const alivePositions = [];
-      enemies.forEach((enemy, index) => {
-        if (enemy && !enemy.isDead) {
-          const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
-          const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
-          const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
-          const x = centerX + Math.cos(angle) * currentRadius;
-          let y = centerY + Math.sin(angle) * currentRadius;
-          if (enemy.isBoss) {
-            y += 28;
+    try {
+      this.drawCanvasConnections();
+      
+      // Start dynamic canvas updating loop if not already running
+      if (!window.enemyCanvasLoopActive) {
+        window.enemyCanvasLoopActive = true;
+        const tick = () => {
+          const cv = document.getElementById('enemyCanvas');
+          if (!cv) {
+            window.enemyCanvasLoopActive = false;
+            return;
           }
-          alivePositions.push({ x, y });
-        }
-      });
-
-      if (alivePositions.length > 1) {
-        ctx.strokeStyle = 'rgba(239, 68, 68, 1)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let i = 0; i < alivePositions.length; i++) {
-          for (let j = i + 1; j < alivePositions.length; j++) {
-            ctx.moveTo(alivePositions[i].x, alivePositions[i].y);
-            ctx.lineTo(alivePositions[j].x, alivePositions[j].y);
-          }
-        }
-        ctx.stroke();
+          this.drawCanvasConnections();
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
       }
+    } catch (e) {
+      console.warn('Failed to draw canvas connections', e);
     }
 
     // Bind click handlers to enemy cards for targeting
@@ -7932,6 +7917,221 @@ class UIManager {
     try {
       this.renderMutatorBadges(card, enemy);
     } catch (e) { console.warn('Failed to render mutator badges', e); }
+
+    // Dynamic archetype & mutator indicators
+    try {
+      // 1. Brute archetype
+      if (enemy.archetype === 'Brute') {
+        card.classList.add('archetype-brute');
+        card.style.setProperty('--brute-combo', enemy.consecutiveAttackDays || 0);
+      } else {
+        card.classList.remove('archetype-brute');
+        card.style.removeProperty('--brute-combo');
+      }
+
+      // 2. Mana Drain archetype
+      let blueCircle = card.querySelector('.mana-drain-circle');
+      if (enemy.archetype === 'Mana Drain') {
+        if (!blueCircle) {
+          blueCircle = document.createElement('div');
+          blueCircle.className = 'mana-drain-circle';
+          card.appendChild(blueCircle);
+        }
+      } else {
+        if (blueCircle) blueCircle.remove();
+      }
+
+      // 3. Vampiric mutator
+      let vampParticles = card.querySelector('.vampiric-particles');
+      if (enemy.mutators && enemy.mutators.includes('vampiric')) {
+        if (!vampParticles) {
+          vampParticles = document.createElement('div');
+          vampParticles.className = 'vampiric-particles';
+          vampParticles.innerHTML = '<span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>';
+          card.appendChild(vampParticles);
+        }
+      } else {
+        if (vampParticles) vampParticles.remove();
+      }
+
+      // 4. Regenerator mutator
+      let regenSquare = card.querySelector('.regenerator-square');
+      if (enemy.mutators && enemy.mutators.includes('regenerator')) {
+        if (!regenSquare) {
+          regenSquare = document.createElement('div');
+          regenSquare.className = 'regenerator-square';
+          card.appendChild(regenSquare);
+        }
+      } else {
+        if (regenSquare) regenSquare.remove();
+      }
+
+      // 5. Rallyist mutator
+      if (enemy.mutators && enemy.mutators.includes('rallyist')) {
+        card.classList.add('mutator-rallyist');
+      } else {
+        card.classList.remove('mutator-rallyist');
+      }
+
+      // 6. Swift mutator
+      let swiftCircle = card.querySelector('.swift-circle');
+      if (enemy.mutators && enemy.mutators.includes('swift')) {
+        if (!swiftCircle) {
+          swiftCircle = document.createElement('div');
+          swiftCircle.className = 'swift-circle';
+          card.appendChild(swiftCircle);
+        }
+      } else {
+        if (swiftCircle) swiftCircle.remove();
+      }
+
+      // 7. Necromancer mutator
+      let necroParticles = card.querySelector('.necromancer-particles');
+      if (enemy.mutators && enemy.mutators.includes('necromancer')) {
+        if (!necroParticles) {
+          necroParticles = document.createElement('div');
+          necroParticles.className = 'necromancer-particles';
+          necroParticles.innerHTML = '<span>💀</span><span>💀</span><span>💀</span><span>💀</span>';
+          card.appendChild(necroParticles);
+        }
+      } else {
+        if (necroParticles) necroParticles.remove();
+      }
+    } catch (err) {
+      console.warn('Failed to render dynamic indicators:', err);
+    }
+  }
+
+  static drawCanvasConnections() {
+    const canvas = document.getElementById('enemyCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const state = getGameState();
+    const enemies = state.stageState.enemies || [];
+    if (!enemies.length) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
+
+    const circle = document.querySelector('.enemy-circle-container');
+    const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
+    if (canvas.width !== rect.width || canvas.height !== rect.height) {
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = Math.min(canvas.width, canvas.height) / 2;
+
+    const alivePositions = [];
+    const idToPos = new Map();
+
+    enemies.forEach((enemy, index) => {
+      if (enemy && !enemy.isDead) {
+        const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
+        const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
+        const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+        const x = centerX + Math.cos(angle) * currentRadius;
+        let y = centerY + Math.sin(angle) * currentRadius;
+        if (enemy.isBoss) {
+          y += 28;
+        }
+        const pos = { x, y, id: String(enemy.id), enemy, index };
+        alivePositions.push(pos);
+        idToPos.set(String(enemy.id), pos);
+      }
+    });
+
+    // 1. Draw standard background red web connection line
+    if (alivePositions.length > 1) {
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i < alivePositions.length; i++) {
+        for (let j = i + 1; j < alivePositions.length; j++) {
+          ctx.moveTo(alivePositions[i].x, alivePositions[i].y);
+          ctx.lineTo(alivePositions[j].x, alivePositions[j].y);
+        }
+      }
+      ctx.stroke();
+    }
+
+    // 2. Draw Healer zigzag green lines
+    alivePositions.forEach(pos => {
+      if (pos.enemy.archetype === 'Healer') {
+        let lowestHpEnemy = null;
+        let lowestHp = Infinity;
+        alivePositions.forEach(other => {
+          if (other.id !== pos.id && other.enemy.hp < lowestHp) {
+            lowestHp = other.enemy.hp;
+            lowestHpEnemy = other;
+          }
+        });
+
+        if (lowestHpEnemy) {
+          this.drawZigzagLine(ctx, pos.x, pos.y, lowestHpEnemy.x, lowestHpEnemy.y);
+        }
+      }
+    });
+
+    // 3. Draw Protector thick lines to adjacent living enemies
+    alivePositions.forEach(pos => {
+      if (pos.enemy.archetype === 'Protector') {
+        const adjacent = (typeof EnemyManager !== 'undefined' && EnemyManager.getAdjacentEnemies)
+          ? EnemyManager.getAdjacentEnemies(enemies, pos.index)
+          : [];
+        adjacent.forEach(adjEnemy => {
+          const adjPos = idToPos.get(String(adjEnemy.id));
+          if (adjPos) {
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            ctx.lineTo(adjPos.x, adjPos.y);
+            ctx.stroke();
+          }
+        });
+      }
+    });
+  }
+
+  static drawZigzagLine(ctx, x1, y1, x2, y2) {
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'miter';
+    ctx.beginPath();
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    const segments = Math.max(5, Math.floor(distance / 15));
+    
+    const px = -dy / distance;
+    const py = dx / distance;
+    
+    ctx.moveTo(x1, y1);
+    
+    for (let i = 1; i < segments; i++) {
+      const t = i / segments;
+      const lx = x1 + dx * t;
+      const ly = y1 + dy * t;
+      
+      const timeFactor = Date.now() * 0.008;
+      const offsetAmp = 6;
+      const sign = (i % 2 === 0) ? 1 : -1;
+      const offset = sign * offsetAmp * (0.6 + 0.4 * Math.sin(timeFactor + i));
+      
+      ctx.lineTo(lx + px * offset, ly + py * offset);
+    }
+    
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
   }
 
   static bindEnemyTargeting() {
