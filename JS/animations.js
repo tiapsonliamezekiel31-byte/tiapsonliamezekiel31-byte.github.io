@@ -379,9 +379,6 @@ class FloatingDamageNumber {
       color
     };
     FloatingDamageNumber._list.push(item);
-    FXCanvas.init();
-    FXCanvas.startTick();
-
     if (!FloatingDamageNumber._running) {
       FloatingDamageNumber._running = true;
       requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
