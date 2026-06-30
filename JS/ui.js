@@ -7920,82 +7920,102 @@ class UIManager {
 
     // Dynamic archetype & mutator indicators
     try {
-      // 1. Brute archetype
-      if (enemy.archetype === 'Brute') {
-        card.classList.add('archetype-brute');
-        card.style.setProperty('--brute-combo', enemy.consecutiveAttackDays || 0);
+      const archetypeStr = (enemy.archetype || '').toLowerCase();
+      const hasVampiric = enemy.mutators && enemy.mutators.includes('vampiric');
+      const hasRegen = enemy.mutators && enemy.mutators.includes('regenerator');
+      const hasRallyist = enemy.mutators && enemy.mutators.includes('rallyist');
+      const hasSwift = enemy.mutators && enemy.mutators.includes('swift');
+      const hasNecro = enemy.mutators && enemy.mutators.includes('necromancer');
+
+      if (enemy && !enemy.isDead) {
+        // 1. Brute archetype
+        if (archetypeStr === 'brute') {
+          card.classList.add('archetype-brute');
+          card.style.setProperty('--brute-combo', enemy.consecutiveAttackDays || 0);
+        } else {
+          card.classList.remove('archetype-brute');
+          card.style.removeProperty('--brute-combo');
+        }
+
+        // 2. Mana Drain archetype
+        let blueCircle = card.querySelector('.mana-drain-circle');
+        if (archetypeStr === 'mana drain') {
+          if (!blueCircle) {
+            blueCircle = document.createElement('div');
+            blueCircle.className = 'mana-drain-circle';
+            card.appendChild(blueCircle);
+          }
+        } else {
+          if (blueCircle) blueCircle.remove();
+        }
+
+        // 3. Vampiric mutator (Tripled: 12 heart spans)
+        let vampParticles = card.querySelector('.vampiric-particles');
+        if (hasVampiric) {
+          if (!vampParticles) {
+            vampParticles = document.createElement('div');
+            vampParticles.className = 'vampiric-particles';
+            vampParticles.innerHTML = '<span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>';
+            card.appendChild(vampParticles);
+          }
+        } else {
+          if (vampParticles) vampParticles.remove();
+        }
+
+        // 4. Regenerator mutator
+        let regenSquare = card.querySelector('.regenerator-square');
+        if (hasRegen) {
+          if (!regenSquare) {
+            regenSquare = document.createElement('div');
+            regenSquare.className = 'regenerator-square';
+            card.appendChild(regenSquare);
+          }
+        } else {
+          if (regenSquare) regenSquare.remove();
+        }
+
+        // 5. Rallyist mutator
+        if (hasRallyist) {
+          card.classList.add('mutator-rallyist');
+        } else {
+          card.classList.remove('mutator-rallyist');
+        }
+
+        // 6. Swift mutator
+        let swiftCircle = card.querySelector('.swift-circle');
+        if (hasSwift) {
+          if (!swiftCircle) {
+            swiftCircle = document.createElement('div');
+            swiftCircle.className = 'swift-circle';
+            card.appendChild(swiftCircle);
+          }
+        } else {
+          if (swiftCircle) swiftCircle.remove();
+        }
+
+        // 7. Necromancer mutator (Tripled: 12 skull spans)
+        let necroParticles = card.querySelector('.necromancer-particles');
+        if (hasNecro) {
+          if (!necroParticles) {
+            necroParticles = document.createElement('div');
+            necroParticles.className = 'necromancer-particles';
+            necroParticles.innerHTML = '<span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span><span>💀</span>';
+            card.appendChild(necroParticles);
+          }
+        } else {
+          if (necroParticles) necroParticles.remove();
+        }
       } else {
+        // Clean up everything if dead
         card.classList.remove('archetype-brute');
         card.style.removeProperty('--brute-combo');
-      }
-
-      // 2. Mana Drain archetype
-      let blueCircle = card.querySelector('.mana-drain-circle');
-      if (enemy.archetype === 'Mana Drain') {
-        if (!blueCircle) {
-          blueCircle = document.createElement('div');
-          blueCircle.className = 'mana-drain-circle';
-          card.appendChild(blueCircle);
-        }
-      } else {
-        if (blueCircle) blueCircle.remove();
-      }
-
-      // 3. Vampiric mutator
-      let vampParticles = card.querySelector('.vampiric-particles');
-      if (enemy.mutators && enemy.mutators.includes('vampiric')) {
-        if (!vampParticles) {
-          vampParticles = document.createElement('div');
-          vampParticles.className = 'vampiric-particles';
-          vampParticles.innerHTML = '<span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>';
-          card.appendChild(vampParticles);
-        }
-      } else {
-        if (vampParticles) vampParticles.remove();
-      }
-
-      // 4. Regenerator mutator
-      let regenSquare = card.querySelector('.regenerator-square');
-      if (enemy.mutators && enemy.mutators.includes('regenerator')) {
-        if (!regenSquare) {
-          regenSquare = document.createElement('div');
-          regenSquare.className = 'regenerator-square';
-          card.appendChild(regenSquare);
-        }
-      } else {
-        if (regenSquare) regenSquare.remove();
-      }
-
-      // 5. Rallyist mutator
-      if (enemy.mutators && enemy.mutators.includes('rallyist')) {
-        card.classList.add('mutator-rallyist');
-      } else {
         card.classList.remove('mutator-rallyist');
-      }
 
-      // 6. Swift mutator
-      let swiftCircle = card.querySelector('.swift-circle');
-      if (enemy.mutators && enemy.mutators.includes('swift')) {
-        if (!swiftCircle) {
-          swiftCircle = document.createElement('div');
-          swiftCircle.className = 'swift-circle';
-          card.appendChild(swiftCircle);
-        }
-      } else {
-        if (swiftCircle) swiftCircle.remove();
-      }
-
-      // 7. Necromancer mutator
-      let necroParticles = card.querySelector('.necromancer-particles');
-      if (enemy.mutators && enemy.mutators.includes('necromancer')) {
-        if (!necroParticles) {
-          necroParticles = document.createElement('div');
-          necroParticles.className = 'necromancer-particles';
-          necroParticles.innerHTML = '<span>💀</span><span>💀</span><span>💀</span><span>💀</span>';
-          card.appendChild(necroParticles);
-        }
-      } else {
-        if (necroParticles) necroParticles.remove();
+        const selectors = ['.mana-drain-circle', '.vampiric-particles', '.regenerator-square', '.swift-circle', '.necromancer-particles'];
+        selectors.forEach(sel => {
+          const el = card.querySelector(sel);
+          if (el) el.remove();
+        });
       }
     } catch (err) {
       console.warn('Failed to render dynamic indicators:', err);
@@ -8062,7 +8082,8 @@ class UIManager {
 
     // 2. Draw Healer zigzag green lines
     alivePositions.forEach(pos => {
-      if (pos.enemy.archetype === 'Healer') {
+      const arch = (pos.enemy.archetype || '').toLowerCase();
+      if (arch === 'healer') {
         let lowestHpEnemy = null;
         let lowestHp = Infinity;
         alivePositions.forEach(other => {
@@ -8080,15 +8101,16 @@ class UIManager {
 
     // 3. Draw Protector thick lines to adjacent living enemies
     alivePositions.forEach(pos => {
-      if (pos.enemy.archetype === 'Protector') {
+      const arch = (pos.enemy.archetype || '').toLowerCase();
+      if (arch === 'protector') {
         const adjacent = (typeof EnemyManager !== 'undefined' && EnemyManager.getAdjacentEnemies)
           ? EnemyManager.getAdjacentEnemies(enemies, pos.index)
           : [];
         adjacent.forEach(adjEnemy => {
           const adjPos = idToPos.get(String(adjEnemy.id));
           if (adjPos) {
-            ctx.strokeStyle = '#3b82f6';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.95)'; // Bright blue protection link
+            ctx.lineWidth = 6; // Thick bold line
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(pos.x, pos.y);
@@ -8101,8 +8123,8 @@ class UIManager {
   }
 
   static drawZigzagLine(ctx, x1, y1, x2, y2) {
-    ctx.strokeStyle = '#22c55e';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#4ade80'; // Thicker and brighter lime-green energy color
+    ctx.lineWidth = 3.5; // Bold healer line
     ctx.lineJoin = 'miter';
     ctx.beginPath();
 
