@@ -8821,31 +8821,69 @@ class UIManager {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
 
-    // Take the last 28 check-in entries
-    const recentEntries = history.slice(-28);
+    const today = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
+      ? TaskManager.getCurrentGameDateKey()
+      : new Date().toISOString().split('T')[0];
 
-    // Pad on the left with null so the list length is exactly 28 (today sits at the bottom-right)
-    const cells = Array(28 - recentEntries.length).fill(null).concat(recentEntries);
+    const parts = today.split('-');
+    const todayDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    container.innerHTML = cells.map((entry) => {
-      if (!entry) {
-        return `<div class="heatmap-cell level-0" title="No check-in"></div>`;
+    const cells = [];
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(todayDate);
+      d.setDate(todayDate.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dateVal = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${dateVal}`;
+      cells.push({ date: dateStr, isToday: i === 0 });
+    }
+
+    container.innerHTML = cells.map((cell) => {
+      const entry = history.find(e => e.date === cell.date);
+
+      if (entry) {
+        let rate = 0;
+        if (typeof entry.completionRate === 'number') {
+          rate = entry.completionRate;
+        } else {
+          const comp = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
+          const missed = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
+          const saved = Array.isArray(entry.savedDailies) ? entry.savedDailies.length : 0;
+          const total = comp + missed + saved;
+          rate = total > 0 ? (comp / total) : (entry.allDailiesComplete ? 1.0 : 0.0);
+        }
+
+        const compCount = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
+        const missedCount = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
+        const savedCount = Array.isArray(entry.savedDailies) ? entry.savedDailies.length : 0;
+        const totalCount = compCount + missedCount + savedCount;
+
+        const hue = 240 + Math.round(rate * 120);
+        const color = `hsl(${hue}, 85%, 60%)`;
+        const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
+        const tooltip = `${cell.date}: ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
+
+        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
+      } else if (cell.isToday) {
+        // Today's pending check-in progress
+        const dailies = state.dailiesState?.dailies || [];
+        const scheduledDailies = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function'
+          ? dailies.filter(d => TaskManager.isDailyScheduled(d, today))
+          : dailies;
+        const compCount = scheduledDailies.filter(d => d.completed).length;
+        const totalCount = scheduledDailies.length;
+        const rate = totalCount > 0 ? (compCount / totalCount) : 1.0;
+
+        const hue = 240 + Math.round(rate * 120);
+        const color = `hsl(${hue}, 85%, 60%)`;
+        const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
+        const tooltip = `${cell.date} (Today - Pending): ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
+
+        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
+      } else {
+        return `<div class="heatmap-cell level-0" title="${cell.date}: No check-in"></div>`;
       }
-
-      const comp = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
-      const missed = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
-      const total = comp + missed;
-      const rate = total > 0 ? (comp / total) : (entry.allDailiesComplete ? 1.0 : 0.0);
-
-      // Hue 240 is Blue (0% completed), Hue 360 is Red (100% completed)
-      const hue = 240 + Math.round(rate * 120);
-      const color = `hsl(${hue}, 85%, 60%)`;
-      const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
-
-      const dateStr = entry.date || (entry.timestamp ? new Date(entry.timestamp).toLocaleDateString() : '');
-      const tooltip = `${dateStr}: ${Math.round(rate * 100)}% completed (${comp}/${total})`;
-
-      return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
     }).join('');
   }
 

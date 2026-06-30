@@ -1432,6 +1432,9 @@ function performCheckIn() {
 
   const completedDailies = TaskManager.getCompletedDailies();
   const rawMissedDailies = TaskManager.getMissedDailies();
+  const totalDailiesCount = completedDailies.length + rawMissedDailies.length;
+  const completionRate = totalDailiesCount > 0 ? (completedDailies.length / totalDailiesCount) : 1.0;
+  
   
   const history = state.dailiesState.history || [];
   const lastEntry = history[history.length - 1];
@@ -2224,6 +2227,7 @@ function performCheckIn() {
     state.dailiesState.history.push({
       date: getLocalDateKey(),
       timestamp: nowMs,
+      completionRate,
       allDailiesComplete,
       completedDailies: completedDailies.map(d => ({ id: d.id, name: d.name, difficulty: d.difficulty, attribute: d.attribute })),
       missedDailies: missedDailies.map(d => ({ id: d.id, name: d.name, difficulty: d.difficulty, attribute: d.attribute })),
