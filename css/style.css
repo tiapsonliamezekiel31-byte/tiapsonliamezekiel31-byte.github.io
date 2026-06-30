@@ -1091,8 +1091,8 @@ body::before {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 120px;
-  height: 120px;
+  width: 90px;
+  height: 90px;
   border: 2px double rgba(0, 191, 255, 0.85);
   border-radius: 50%;
   transform: translate(-50%, -50%);
@@ -1106,11 +1106,6 @@ body::before {
 @keyframes manaDrainSpin {
   0% { transform: translate(-50%, -50%) rotate(0deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
-
-.enemy-card.elite .mana-drain-circle {
-  width: 168px; /* 120px * 1.4 */
-  height: 168px;
 }
 
 /* Vampiric particles styling */
@@ -1226,8 +1221,8 @@ body::before {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 100px;
-  height: 100px;
+  width: 86px;
+  height: 86px;
   border: 2px dashed #f59e0b;
   border-radius: 50%;
   pointer-events: none;
@@ -1235,11 +1230,6 @@ body::before {
   animation: swiftCircleAnim 2s ease-in-out infinite;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
   z-index: -1;
-}
-
-.enemy-card.elite .swift-circle {
-  width: 140px;
-  height: 140px;
 }
 
 @keyframes swiftCircleAnim {
