@@ -1082,7 +1082,8 @@ body::before {
     rgba(calc(55 + 20 * var(--brute-combo, 0)), 18, calc(30 - 4 * var(--brute-combo, 0)), 0.98), 
     rgba(calc(35 + 15 * var(--brute-combo, 0)), 10, calc(15 - 2 * var(--brute-combo, 0)), 0.97)
   ) !important;
-  border: 2px solid rgba(239, 68, 68, 0.9) !important; /* Bold red border */
+  border-top-color: rgba(239, 68, 68, 0.9) !important;
+  border-bottom-color: rgba(239, 68, 68, 0.9) !important;
   box-shadow: 0 0 calc(12px + 4px * var(--brute-combo, 0)) rgba(239, 68, 68, calc(0.35 + 0.15 * var(--brute-combo, 0))),
               inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
