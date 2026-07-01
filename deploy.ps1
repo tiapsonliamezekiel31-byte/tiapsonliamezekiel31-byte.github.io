@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: particle trajectory randomisation, healer/protector canvas line indicator reset fix, subtler enraged shake"
+$commitMsg = "feat: add closest-neighbor connections and Focus Mode for Dailies"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

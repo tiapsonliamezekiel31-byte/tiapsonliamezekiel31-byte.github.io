@@ -9634,3 +9634,17 @@ button:hover,
   cursor: not-allowed;
   box-shadow: none;
 }
+
+@keyframes connectionDash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.daily-connection-line {
+  stroke: rgba(255, 215, 0, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 6, 4;
+  animation: connectionDash 1.2s linear infinite;
+  pointer-events: none;
+}

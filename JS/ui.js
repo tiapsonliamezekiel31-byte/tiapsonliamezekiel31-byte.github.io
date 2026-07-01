@@ -1303,6 +1303,8 @@ class UIManager {
           <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
           <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
           <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Edit: off</button>
+          <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
+          <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Focus: off</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
         </div>
@@ -2771,6 +2773,8 @@ class UIManager {
     document.getElementById('completeDayBtn')?.addEventListener('click', () => this.handleCompleteDayClick());
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
     document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
+    document.getElementById('dailiesConnectionsBtn')?.addEventListener('click', () => this.toggleDailyConnections());
+    document.getElementById('dailiesFocusBtn')?.addEventListener('click', () => this.toggleDailyFocus());
     document.getElementById('todosShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('todos'));
     UIManager.isEraserActive = false;
     document.getElementById('todosEraserBtn')?.addEventListener('click', () => {
@@ -4507,10 +4511,42 @@ class UIManager {
     this.refreshGameUI();
   }
 
+  static toggleDailyConnections() {
+    const state = getGameState();
+    if (!state.systemState.taskListFilters) {
+      state.systemState.taskListFilters = {
+        showCompletedDailies: false,
+        showCompletedTodos: false,
+        showDailyConnections: false,
+        focusModeDailies: false
+      };
+    }
+    state.systemState.taskListFilters.showDailyConnections = !state.systemState.taskListFilters.showDailyConnections;
+    state.save();
+    this.refreshGameUI();
+  }
+
+  static toggleDailyFocus() {
+    const state = getGameState();
+    if (!state.systemState.taskListFilters) {
+      state.systemState.taskListFilters = {
+        showCompletedDailies: false,
+        showCompletedTodos: false,
+        showDailyConnections: false,
+        focusModeDailies: false
+      };
+    }
+    state.systemState.taskListFilters.focusModeDailies = !state.systemState.taskListFilters.focusModeDailies;
+    state.save();
+    this.refreshGameUI();
+  }
+
   static updateTaskVisibilityToggleLabels() {
     const state = getGameState();
     const dailiesBtn = document.getElementById('dailiesShowCompletedBtn');
     const dailiesEditBtn = document.getElementById('dailiesEditModeBtn');
+    const connectionsBtn = document.getElementById('dailiesConnectionsBtn');
+    const focusBtn = document.getElementById('dailiesFocusBtn');
     const todosBtn = document.getElementById('todosShowCompletedBtn');
 
     if (dailiesBtn) {
@@ -4532,6 +4568,20 @@ class UIManager {
       dailiesEditBtn.textContent = editMode ? 'Edit: ON' : 'Edit: off';
       dailiesEditBtn.setAttribute('aria-pressed', String(editMode));
       dailiesEditBtn.classList.toggle('active', editMode);
+    }
+
+    if (connectionsBtn) {
+      const show = !!state.systemState?.taskListFilters?.showDailyConnections;
+      connectionsBtn.textContent = show ? 'Connections: ON' : 'Connections: off';
+      connectionsBtn.setAttribute('aria-pressed', String(show));
+      connectionsBtn.classList.toggle('active', show);
+    }
+
+    if (focusBtn) {
+      const show = !!state.systemState?.taskListFilters?.focusModeDailies;
+      focusBtn.textContent = show ? 'Focus: ON' : 'Focus: off';
+      focusBtn.setAttribute('aria-pressed', String(show));
+      focusBtn.classList.toggle('active', show);
     }
   }
 
@@ -5827,6 +5877,9 @@ class UIManager {
       return `#${[r, g, b].map(value => value.toString(16).padStart(2, '0')).join('')}`;
     };
 
+    const focusModeActive = !!getGameState().systemState?.taskListFilters?.focusModeDailies;
+    const sortedByRate = focusModeActive ? [...visibleDailies].sort((a, b) => (a.completionRate || 0) - (b.completionRate || 0)) : [];
+
     let html = '';
     const gs = getGameState();
     const event = gs.systemState.specialEvent;
@@ -5842,7 +5895,17 @@ class UIManager {
         ? (showCompleted ? 0.38 : 0)
         : (isScheduled ? (maxCompletions > 1 ? Math.max(0.5, remainingCompletions / maxCompletions) : 1) : 0.4);
       const sizeScale = Math.max(0.5, Number(daily.size) || 1);
-      const attributeColor = getAttributeColor(daily.attribute);
+
+      let attributeColor = getAttributeColor(daily.attribute);
+      if (focusModeActive && visibleDailies.length > 0) {
+        const rankIndex = sortedByRate.findIndex(d => d.id === daily.id);
+        const normRank = sortedByRate.length > 1 ? rankIndex / (sortedByRate.length - 1) : 1.0;
+        const c = Math.round(normRank * 255);
+        const toHex = (val) => val.toString(16).padStart(2, '0');
+        const hexVal = toHex(c);
+        attributeColor = `#${hexVal}${hexVal}${hexVal}`;
+      }
+
       const textColor = getTextColorForHex(attributeColor);
       const streakClass = streak > 0 ? 'is-positive' : streak < 0 ? 'is-negative' : 'is-neutral';
       const progressText = `${completionsToday}/${maxCompletions}`;
@@ -5852,7 +5915,7 @@ class UIManager {
       let streakSat = 1;
       if (streak > 0) streakSat = +(1 + (Math.min(streak, 20) / 20) * 2.0).toFixed(3);
       if (streak < 0) streakSat = +(1 - (Math.min(Math.abs(streak), 20) / 20) * 0.9).toFixed(3);
-      const particleCount = streak > 0 ? Math.min(streak, 10) : 0;
+      const particleCount = (streak > 0 && !focusModeActive) ? Math.min(streak, 10) : 0;
 
       // Check for surplus multiplier indicator
       let surplusIndicator = '';
@@ -5876,10 +5939,12 @@ class UIManager {
         unscheduledIndicator = '<span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--accent-gold);color:#000;font-size:7px;padding:2px 4px;border-radius:4px;z-index:3;font-weight:bold;white-space:nowrap;">' + text + '</span>';
       }
 
+      const focusBorderStyle = focusModeActive ? 'border-color:#a855f7 !important;' : '';
+
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
       html += '<div class="hold-progress-overlay"></div>';
-      if (daily.bloodOathActive) {
+      if (daily.bloodOathActive && !focusModeActive) {
         html += '<div class="blood-oath-fire-container">';
         html += '<div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>';
         html += '<div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>';
@@ -6013,6 +6078,92 @@ class UIManager {
         streak.style.left = `${cardRect.left - boardRect.left + (cardRect.width / 2)}px`;
         streak.style.top = `${cardRect.top - boardRect.top - offset}px`;
       }
+    });
+
+    this.drawDailyConnections();
+  }
+
+  static drawDailyConnections() {
+    const board = document.getElementById('dailiesList');
+    if (!board) return;
+
+    const panel = document.getElementById('dailiesPanel');
+    if (!panel || !panel.classList.contains('open')) {
+      const existingSvg = document.getElementById('dailiesConnectionsSvg');
+      if (existingSvg) existingSvg.remove();
+      return;
+    }
+
+    const state = getGameState();
+    const showDailyConnections = !!state.systemState?.taskListFilters?.showDailyConnections;
+
+    let svg = document.getElementById('dailiesConnectionsSvg');
+    if (!showDailyConnections) {
+      if (svg) svg.remove();
+      return;
+    }
+
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.id = 'dailiesConnectionsSvg';
+      svg.style.position = 'absolute';
+      svg.style.top = '0';
+      svg.style.left = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      svg.style.zIndex = '0';
+      board.insertBefore(svg, board.firstChild);
+    } else {
+      svg.innerHTML = '';
+    }
+
+    const cards = Array.from(board.querySelectorAll('.task-card-daily'));
+    if (cards.length < 2) return;
+
+    const boardRect = board.getBoundingClientRect();
+
+    const cardCenters = cards.map(card => {
+      const cardRect = card.getBoundingClientRect();
+      const x = cardRect.left - boardRect.left + (cardRect.width / 2) + board.scrollLeft;
+      const y = cardRect.top - boardRect.top + (cardRect.height / 2) + board.scrollTop;
+      return {
+        id: card.dataset.id,
+        element: card,
+        x,
+        y
+      };
+    });
+
+    const drawn = new Set();
+
+    cardCenters.forEach(current => {
+      const targets = cardCenters
+        .filter(other => other.id !== current.id)
+        .map(other => {
+          const dx = other.x - current.x;
+          const dy = other.y - current.y;
+          const dist = Math.hypot(dx, dy);
+          return { card: other, dist };
+        });
+
+      targets.sort((a, b) => a.dist - b.dist);
+
+      const closest = targets.slice(0, 3);
+
+      closest.forEach(target => {
+        const pairKey = [current.id, target.card.id].sort().join('-');
+        if (drawn.has(pairKey)) return;
+        drawn.add(pairKey);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', String(current.x));
+        line.setAttribute('y1', String(current.y));
+        line.setAttribute('x2', String(target.card.x));
+        line.setAttribute('y2', String(target.card.y));
+        line.setAttribute('class', 'daily-connection-line');
+        svg.appendChild(line);
+      });
     });
   }
 
@@ -6905,6 +7056,7 @@ class UIManager {
 
         dragState.card.style.left = `${(nextLeftPx / Math.max(1, boardRect.width)) * 100}%`;
         dragState.card.style.top = `${(nextTopPx / Math.max(1, boardRect.height)) * 100}%`;
+        this.drawDailyConnections();
       }
     };
 

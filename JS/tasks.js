@@ -357,12 +357,38 @@ class TaskManager {
       daily.completed = false;
     }
 
+    // Check if miss chance triggers
+    let isMiss = false;
+    const diff = daily.difficulty;
+    const rand = Math.random();
+    if (diff === 'Ultra' && rand < 1 / 11) isMiss = true;
+    else if (diff === 'Hard' && rand < 1 / 10) isMiss = true;
+    else if (diff === 'Medium' && rand < 1 / 9) isMiss = true;
+    else if (diff === 'Easy' && rand < 1 / 7) isMiss = true;
+
+    if (isMiss) {
+      state.systemState.runStats.tasksCompleted++;
+      return {
+        success: true,
+        rewards: { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 },
+        completed: daily.completed,
+        isMiss: true
+      };
+    }
+
     // Award rewards
     const reward = state.config.taskRewards[daily.difficulty];
     let apReward = reward.ap;
     let goldReward = reward.gold;
     let diamondReward = reward.diamonds;
     let attrReward = reward.attributePoints;
+
+    // Apply +-5 variation for AP and +-1 variation for diamonds
+    const apVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5
+    const diamondVariation = Math.floor(Math.random() * 3) - 1; // -1 to +1
+
+    apReward = Math.max(0, apReward + apVariation);
+    diamondReward = Math.max(0, diamondReward + diamondVariation);
 
     // Apply blood oath multiplier
     if (daily.bloodOathActive) {

@@ -376,7 +376,9 @@ class FloatingDamageNumber {
       fadeDelay: effectiveFadeDelay,
       isCrit,
       baseRotation,
-      color
+      color,
+      cycleText: !!options.cycleText,
+      finalText: String(options.finalText !== undefined ? options.finalText : value)
     };
     FloatingDamageNumber._list.push(item);
     if (!FloatingDamageNumber._running) {
@@ -522,7 +524,9 @@ FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, option
     offsetY: Number(opts.offsetY) || 12,
     isCrit: !!opts.isCrit,
     baseRotation: (Math.random() - 0.5) * 8,
-    baseColor: opts.color
+    baseColor: opts.color,
+    cycleText: !!opts.cycleText,
+    finalText: String(opts.finalText !== undefined ? opts.finalText : value)
   };
 
   FloatingDamageNumber._anchoredList.push(floatObj);
@@ -578,15 +582,39 @@ FloatingDamageNumber._anchoredTick = function () {
       return Math.min(Math.max(baseX, minX), Math.max(minX, maxX));
     })();
 
+    const easeOut = 1 - Math.pow(1 - Math.max(0, Math.min(1, progress)), 3);
     const yPos = baseY - f.offsetY - (slotIndex * f.gap);
     const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
     const wobbleAmplitude = f.isCrit ? 6 : 3;
     const wobble = Math.sin(Math.max(0, Math.min(1, progress)) * Math.PI * 2) * wobbleAmplitude * (1 - Math.max(0, Math.min(1, progress)));
     const driftX = (f.driftX || 0) * Math.min(1, progress);
-    const driftY = (f.driftY || 0) * Math.min(1, progress);
+    const driftY = (f.driftY || 0) * easeOut;
 
     f.div.style.transform = `translate3d(${clampX + driftX}px, ${yPos + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
     f.div.style.opacity = opacity;
+
+    if (f.cycleText) {
+      if (progress < 0.7) {
+        const text = String(f.finalText || '');
+        if (text.includes('AP')) {
+          f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
+        } else if (text.includes('💎')) {
+          f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
+        } else if (text === 'Miss!') {
+          const choices = [
+            `+${Math.floor(Math.random() * 31)} AP`,
+            `+${Math.floor(Math.random() * 4)} 💎`,
+            'Miss!',
+            `+${Math.floor(Math.random() * 15)} AP`
+          ];
+          f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
+        } else {
+          f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
+        }
+      } else {
+        f.div.textContent = f.finalText;
+      }
+    }
 
     if (progress >= 1) {
       try { f.div.remove(); } catch (e) { }
@@ -634,16 +662,40 @@ FloatingDamageNumber._tickNonAnchored = function () {
       f.div.style.webkitTextStroke = `0.5px ${v}`;
     } catch (e) { }
 
+    const easeOut = 1 - Math.pow(1 - progress, 3);
     const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
-    const dy = progress * (f.travelY !== undefined ? f.travelY : -50);
+    const dy = easeOut * (f.travelY !== undefined ? f.travelY : -50);
     const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
     const wobbleAmplitude = f.isCrit ? 6 : 3;
     const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
     const driftX = (f.driftX || 0) * Math.min(1, progress);
-    const driftY = (f.driftY || 0) * Math.min(1, progress);
+    const driftY = (f.driftY || 0) * easeOut;
 
     f.div.style.transform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
     f.div.style.opacity = opacity;
+
+    if (f.cycleText) {
+      if (progress < 0.7) {
+        const text = String(f.finalText || '');
+        if (text.includes('AP')) {
+          f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
+        } else if (text.includes('💎')) {
+          f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
+        } else if (text === 'Miss!') {
+          const choices = [
+            `+${Math.floor(Math.random() * 31)} AP`,
+            `+${Math.floor(Math.random() * 4)} 💎`,
+            'Miss!',
+            `+${Math.floor(Math.random() * 15)} AP`
+          ];
+          f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
+        } else {
+          f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
+        }
+      } else {
+        f.div.textContent = f.finalText;
+      }
+    }
 
     if (progress >= 1) {
       try { f.div.remove(); } catch (e) { }
