@@ -1304,6 +1304,7 @@ class UIManager {
           <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
           <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
           <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Edit: off</button>
+          <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Lock: off</button>
           <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
           <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Focus: off</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
@@ -2766,6 +2767,7 @@ class UIManager {
     document.getElementById('completeDayBtn')?.addEventListener('click', () => this.handleCompleteDayClick());
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
     document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
+    document.getElementById('dailiesLockModeBtn')?.addEventListener('click', () => this.toggleLockMode());
     document.getElementById('dailiesConnectionsBtn')?.addEventListener('click', () => this.toggleDailyConnections());
     document.getElementById('dailiesFocusBtn')?.addEventListener('click', () => this.toggleDailyFocus());
     document.getElementById('todosShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('todos'));
@@ -4511,7 +4513,9 @@ class UIManager {
 
     if (kind === 'dailies') {
       state.systemState.taskListFilters.editModeDailies = !state.systemState.taskListFilters.editModeDailies;
-      if (!state.systemState.taskListFilters.editModeDailies) {
+      if (state.systemState.taskListFilters.editModeDailies) {
+        state.systemState.taskListFilters.lockModeDailies = false;
+        state.systemState.taskListFilters.focusModeDailies = false;
         UIManager.isDrawingRect = false;
         const board = document.getElementById('dailiesList');
         if (board) board.classList.remove('drawing-rect-mode');
@@ -4520,6 +4524,25 @@ class UIManager {
       }
     }
 
+    state.save();
+    this.refreshGameUI();
+  }
+
+  static toggleLockMode() {
+    const state = getGameState();
+    if (!state.systemState.taskListFilters) {
+      state.systemState.taskListFilters = {
+        showCompletedDailies: false,
+        showCompletedTodos: false,
+        editModeDailies: false,
+        lockModeDailies: false
+      };
+    }
+    state.systemState.taskListFilters.lockModeDailies = !state.systemState.taskListFilters.lockModeDailies;
+    if (state.systemState.taskListFilters.lockModeDailies) {
+      state.systemState.taskListFilters.editModeDailies = false;
+      state.systemState.taskListFilters.focusModeDailies = false;
+    }
     state.save();
     this.refreshGameUI();
   }
@@ -4550,6 +4573,10 @@ class UIManager {
       };
     }
     state.systemState.taskListFilters.focusModeDailies = !state.systemState.taskListFilters.focusModeDailies;
+    if (state.systemState.taskListFilters.focusModeDailies) {
+      state.systemState.taskListFilters.editModeDailies = false;
+      state.systemState.taskListFilters.lockModeDailies = false;
+    }
     state.save();
     this.refreshGameUI();
   }
@@ -4581,6 +4608,14 @@ class UIManager {
       dailiesEditBtn.textContent = editMode ? 'Edit: ON' : 'Edit: off';
       dailiesEditBtn.setAttribute('aria-pressed', String(editMode));
       dailiesEditBtn.classList.toggle('active', editMode);
+    }
+
+    const dailiesLockBtn = document.getElementById('dailiesLockModeBtn');
+    if (dailiesLockBtn) {
+      const lockMode = !!state.systemState?.taskListFilters?.lockModeDailies;
+      dailiesLockBtn.textContent = lockMode ? 'Lock: ON' : 'Lock: off';
+      dailiesLockBtn.setAttribute('aria-pressed', String(lockMode));
+      dailiesLockBtn.classList.toggle('active', lockMode);
     }
 
     if (connectionsBtn) {
@@ -7023,6 +7058,26 @@ class UIManager {
       card.dataset.lastTapTime = String(now);
 
       const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+      const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
+      
+      if (lockModeDailies) {
+        // Toggle locked state on click
+        const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+        if (daily) {
+          if (!daily.locked) {
+            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
+              TaskManager.lockDaily(dailyId);
+              this.scheduleUpdateDailiesList();
+            }
+          } else {
+            TaskManager.unlockDaily(dailyId);
+            this.scheduleUpdateDailiesList();
+          }
+          getGameState().save();
+        }
+        return;
+      }
+
       if (!editModeDailies) {
         // Check if locked
         const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
