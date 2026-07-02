@@ -91,13 +91,11 @@ Write-Host "Last 5 commits (remote):"
 git fetch origin $branch
 git log -5 --oneline origin/$branch
 
-# Fetch raw sw.js from repo and live site
+# Fetch raw sw.js from local and live site
 $owner, $repo = Get-RepoInfo
-$rawUrl = "https://raw.githubusercontent.com/$owner/$repo/$branch/sw.js"
 $liveUrl = if ($repo -eq "$owner.github.io") { "https://$owner.github.io/sw.js" } else { "https://$owner.github.io/$repo/sw.js" }
-Write-Host "Fetching raw sw.js from $rawUrl"
-$rawContent = Invoke-WebRequest -Uri $rawUrl -UseBasicParsing | Select-Object -ExpandProperty Content
-$repoTag = Get-CacheTag $rawContent "raw sw.js"
+$localContent = Get-Content sw.js -Raw
+$repoTag = Get-CacheTag $localContent "local sw.js"
 Write-Host "RAW CACHE_NAME: $repoTag"
 Write-Host "Fetching live sw.js from $liveUrl"
 $liveContent = Invoke-WebRequest -Uri $liveUrl -UseBasicParsing | Select-Object -ExpandProperty Content
