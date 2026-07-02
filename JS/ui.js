@@ -5989,7 +5989,8 @@ class UIManager {
 
       const focusBorderStyle = focusModeActive ? '--task-border-color:#a855f7 !important;' : '';
 
-      if (!daily.completed && !focusModeActive) {
+      const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
+      if (!daily.completed && !focusModeActive && (lockModeDailies || daily.locked)) {
         html += '<div class="task-daily-lock-badge" data-daily-id="' + daily.id + '" title="' + (daily.locked ? 'Unlock' : 'Lock') + ' Daily" style="position: absolute; z-index: 1000; cursor: pointer; user-select: none; font-size: 11px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1px solid ' + (daily.locked ? '#a855f7' : 'rgba(255,255,255,0.25)') + '; color: #fff;">' + (daily.locked ? '🔒' : '🔓') + '</div>';
       }
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
@@ -6906,27 +6907,6 @@ class UIManager {
     board.dataset.dragBound = '1';
 
     board.addEventListener('pointerdown', (event) => {
-      const lockBadge = event.target.closest('.task-daily-lock-badge');
-      if (lockBadge) {
-        event.stopPropagation();
-        event.preventDefault();
-        const taskId = lockBadge.dataset.dailyId;
-        const daily = state.dailiesState.dailies.find(d => d.id === taskId);
-        if (daily) {
-          if (!daily.locked) {
-            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
-              TaskManager.lockDaily(taskId);
-              UIManager.scheduleUpdateDailiesList();
-            }
-          } else {
-            TaskManager.unlockDaily(taskId);
-            UIManager.scheduleUpdateDailiesList();
-          }
-          state.save();
-        }
-        return;
-      }
-
       if (UIManager.isDrawingRect) {
         if (event.button !== 0) return;
         event.preventDefault();
@@ -7218,6 +7198,28 @@ class UIManager {
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', endDrag);
     document.addEventListener('pointercancel', endDrag);
+
+    board.addEventListener('click', (event) => {
+      const lockBadge = event.target.closest('.task-daily-lock-badge');
+      if (lockBadge) {
+        event.stopPropagation();
+        event.preventDefault();
+        const taskId = lockBadge.dataset.dailyId;
+        const daily = getGameState().dailiesState.dailies.find(d => d.id === taskId);
+        if (daily) {
+          if (!daily.locked) {
+            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
+              TaskManager.lockDaily(taskId);
+              this.scheduleUpdateDailiesList();
+            }
+          } else {
+            TaskManager.unlockDaily(taskId);
+            this.scheduleUpdateDailiesList();
+          }
+          getGameState().save();
+        }
+      }
+    });
   }
 
   static getTodoBoardMetrics() {
