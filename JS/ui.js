@@ -101,7 +101,7 @@ class UIManager {
       rect.left + rect.width / 2,
       Math.max(12, rect.top - 18),
       `+${Math.ceil(amount)} AP`,
-      { color: UIManager.themeColor('--ap-gold', '#FFB33F') }
+      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true }
     );
   }
 
@@ -110,7 +110,8 @@ class UIManager {
     try {
       FloatingDamageNumber.show(x, y, `+${amount} 💎`, {
         color: '#00e5ff',
-        scale: 1.2
+        scale: 1.2,
+        cycleText: true
       });
       if (typeof ParticleSystem !== 'undefined') {
         const p = new ParticleSystem();
@@ -2050,7 +2051,8 @@ class UIManager {
 
         if (res.rewards && res.rewards.ap) {
           FloatingDamageNumber.show(centerX, centerY - 20, `+${Math.ceil(res.rewards.ap)} AP`, {
-            color: UIManager.themeColor('--ap-gold', '#FFB33F')
+            color: UIManager.themeColor('--ap-gold', '#FFB33F'),
+            cycleText: true
           });
         }
       }
@@ -2087,7 +2089,7 @@ class UIManager {
           type = 'todo';
         }
 
-        if (!task || task.completed) return;
+        if (!task || task.completed || task.locked) return;
         if (type === 'daily' && (task.completionsToday || 0) >= (task.maxCompletionsPerDay || 1)) {
           return;
         }
@@ -2113,19 +2115,13 @@ class UIManager {
 
         el.className = `focus-bubble shape-task shape-${shapeClass}`;
         el.style.cssText = `
-          --task-accent: ${attrColor};
-          --task-accent-strong: ${shadeCol};
-          --task-ink: ${taskInk};
-          --streak-sat: 1;
           width: ${bubbleSize}px;
           height: ${bubbleSize}px;
-          background: linear-gradient(180deg, ${attrColor}, ${shadeCol});
-          border: 2px solid color-mix(in srgb, ${attrColor} 72%, white 28%);
-          color: ${taskInk};
           left: ${startX - r}px;
           top: ${startY - r}px;
           z-index: 20002;
           pointer-events: auto;
+          --focus-border-color: ${attrColor};
         `;
 
         el.innerHTML = `
@@ -2166,9 +2162,6 @@ class UIManager {
       const progressBar = document.getElementById('focusProgressBar');
       if (progressBar) {
         progressBar.style.width = (remainingRatio * 100) + '%';
-        // Shift color as time depletes: green → yellow → red
-        const hue = Math.round(remainingRatio * 120); // 120=green, 0=red
-        progressBar.style.background = `hsl(${hue}, 55%, 40%)`;
       }
     };
 
@@ -3731,8 +3724,28 @@ class UIManager {
           return;
         }
 
-        const interactiveInsideCard = event.target.closest('.subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label');
+        const interactiveInsideCard = event.target.closest('.subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
+        
+        if (event.target.closest('.btn-lock-daily')) {
+          if (taskType === 'daily') {
+            const daily = state.dailiesState.dailies.find(d => d.id === taskId);
+            if (daily) {
+              if (!daily.locked) {
+                if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
+                  TaskManager.lockDaily(taskId);
+                  this.scheduleUpdateDailiesList();
+                }
+              } else {
+                TaskManager.unlockDaily(taskId);
+                this.scheduleUpdateDailiesList();
+              }
+              state.save();
+            }
+          }
+          return;
+        }
+
         if (taskType === 'daily' && editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
           PopupsManager.showEditDaily(taskId);
           return;
@@ -3787,7 +3800,7 @@ class UIManager {
                 if (res.rewards) {
                   const rect = card.getBoundingClientRect();
                   if (res.rewards.ap) {
-                    FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F') });
+                    FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
                   }
                   if (res.rewards.diamonds) {
                     UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
@@ -3813,7 +3826,7 @@ class UIManager {
               if (res.rewards) {
                 const rect = card.getBoundingClientRect();
                 if (res.rewards.ap) {
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F') });
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
                 }
                 if (res.rewards.diamonds) {
                   UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
@@ -5908,7 +5921,7 @@ class UIManager {
 
       const textColor = getTextColorForHex(attributeColor);
       const streakClass = streak > 0 ? 'is-positive' : streak < 0 ? 'is-negative' : 'is-neutral';
-      const progressText = `${completionsToday}/${maxCompletions}`;
+      const progressText = daily.locked ? 'LOCKED' : `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
       // Streak saturation: positive boosts colour, negative washes it out, capped at |streak|=20
@@ -5939,10 +5952,13 @@ class UIManager {
         unscheduledIndicator = '<span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--accent-gold);color:#000;font-size:7px;padding:2px 4px;border-radius:4px;z-index:3;font-weight:bold;white-space:nowrap;">' + text + '</span>';
       }
 
-      const focusBorderStyle = focusModeActive ? 'border-color:#a855f7 !important;' : '';
+      const focusBorderStyle = focusModeActive ? '--task-border-color:#a855f7 !important;' : '';
 
+      if (!daily.completed && !focusModeActive) {
+        html += '<div class="task-daily-lock-badge" data-daily-id="' + daily.id + '" title="' + (daily.locked ? 'Unlock' : 'Lock') + ' Daily" style="position: absolute; z-index: 1000; cursor: pointer; user-select: none; font-size: 11px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1px solid ' + (daily.locked ? '#a855f7' : 'rgba(255,255,255,0.25)') + '; color: #fff;">' + (daily.locked ? '🔒' : '🔓') + '</div>';
+      }
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
-      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
+      html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.locked ? 'locked ' : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
       html += '<div class="hold-progress-overlay"></div>';
       if (daily.bloodOathActive && !focusModeActive) {
         html += '<div class="blood-oath-fire-container">';
@@ -5951,7 +5967,7 @@ class UIManager {
         html += '</div>';
       }
       html += '<div class="task-shape-difficulty">' + (daily.difficulty || '') + '</div>';
-      html += '<div class="task-shape-name">' + (daily.name || '') + '</div>';
+      html += '<div class="task-shape-name">' + (daily.name || '') + (daily.locked ? ' 🔒' : '') + '</div>';
       html += '<div class="task-shape-attr">' + (daily.attribute || '') + '</div>';
       html += '<div class="task-shape-progress">' + progressText + '</div>';
       if (surplusIndicator) html += surplusIndicator;
@@ -6077,6 +6093,13 @@ class UIManager {
         const offset = Math.max(12, Math.round(cardRect.width * 0.12));
         streak.style.left = `${cardRect.left - boardRect.left + (cardRect.width / 2)}px`;
         streak.style.top = `${cardRect.top - boardRect.top - offset}px`;
+      }
+      const lockBadge = metrics.board.querySelector(`.task-daily-lock-badge[data-daily-id="${daily.id}"]`);
+      if (lockBadge) {
+        const cardRect = card.getBoundingClientRect();
+        const boardRect = metrics.board.getBoundingClientRect();
+        lockBadge.style.left = `${cardRect.left - boardRect.left + cardRect.width - 24}px`;
+        lockBadge.style.top = `${cardRect.top - boardRect.top + 4}px`;
       }
     });
 
@@ -6847,6 +6870,27 @@ class UIManager {
     board.dataset.dragBound = '1';
 
     board.addEventListener('pointerdown', (event) => {
+      const lockBadge = event.target.closest('.task-daily-lock-badge');
+      if (lockBadge) {
+        event.stopPropagation();
+        event.preventDefault();
+        const taskId = lockBadge.dataset.dailyId;
+        const daily = state.dailiesState.dailies.find(d => d.id === taskId);
+        if (daily) {
+          if (!daily.locked) {
+            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
+              TaskManager.lockDaily(taskId);
+              UIManager.scheduleUpdateDailiesList();
+            }
+          } else {
+            TaskManager.unlockDaily(taskId);
+            UIManager.scheduleUpdateDailiesList();
+          }
+          state.save();
+        }
+        return;
+      }
+
       if (UIManager.isDrawingRect) {
         if (event.button !== 0) return;
         event.preventDefault();
@@ -6979,6 +7023,16 @@ class UIManager {
 
       const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
       if (!editModeDailies) {
+        // Check if locked
+        const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+        if (daily && daily.locked) {
+          try {
+            FloatingDamageNumber.show(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, 'LOCKED', { color: '#ff5a5a' });
+            if (window.SoundManager) SoundManager.play('miss');
+          } catch (e) {}
+          return;
+        }
+
         // Start hold-to-complete timer (600ms hold)
         clearTimeout(this.dailyHoldTimer);
         const overlay = card.querySelector('.hold-progress-overlay');

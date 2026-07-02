@@ -336,6 +336,14 @@ class TaskManager {
       daily.size = Math.max(0.5, this.roundValue(Number(updates.size) || 1, 2));
     }
 
+    if (updates.locked !== undefined) {
+      daily.locked = !!updates.locked;
+      if (daily.locked) {
+        daily.completed = false;
+        daily.completionsToday = 0;
+      }
+    }
+
     // Refresh name prefix based on surplus and streak
     this.updateDailySurplusState(daily);
 
@@ -347,6 +355,7 @@ class TaskManager {
     const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
 
     if (!daily) return false;
+    if (daily.locked) return false;
     if (!daily.maxCompletionsPerDay) daily.maxCompletionsPerDay = 1;
     if (daily.completionsToday >= daily.maxCompletionsPerDay) return false;
 

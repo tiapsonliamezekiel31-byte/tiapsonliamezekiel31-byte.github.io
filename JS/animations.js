@@ -304,6 +304,13 @@ class FloatingDamageNumber {
     const DEFAULT_FADE = 200;
     const DEFAULT_DURATION = DEFAULT_HOLD + DEFAULT_FADE;
 
+    let targetX = Number(x);
+    let targetY = Number(y);
+    if (isNaN(targetX) || isNaN(targetY)) {
+      targetX = window.innerWidth / 2;
+      targetY = window.innerHeight / 2;
+    }
+
     const {
       color = (typeof UIManager !== 'undefined') ? UIManager.themeColor('--hp-red', '#C00707') : '#ff4444',
       scale = 1,
@@ -333,7 +340,7 @@ class FloatingDamageNumber {
 
     // Estimate width to prevent synchronous layout reads (layout thrashing) on creation
     const rectWidth = String(displayValue).length * (fontSize * scale * sizeMultiplier * 0.65);
-    const clampXVal = Math.min(Math.max(x + xOffset, rectWidth / 2 + 8), Math.max(rectWidth / 2 + 8, window.innerWidth - rectWidth / 2 - 8));
+    const clampXVal = Math.min(Math.max(targetX + xOffset, rectWidth / 2 + 8), Math.max(rectWidth / 2 + 8, window.innerWidth - rectWidth / 2 - 8));
 
     div.style.cssText = `
       position: fixed;
@@ -345,8 +352,9 @@ class FloatingDamageNumber {
       letter-spacing: 0.5px;
       -webkit-text-stroke: 0.5px ${color};
       pointer-events: none;
-      z-index: 13050;
-      transform: translate3d(${clampXVal}px, ${y}px, 0) translateX(-50%) rotate(${baseRotation}deg);
+      z-index: 999999;
+      opacity: 1;
+      transform: translate3d(${clampXVal}px, ${targetY}px, 0) translateX(-50%) rotate(${baseRotation}deg);
       text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8), 0 0 10px rgba(255, 255, 255, 0.16);
       will-change: transform, opacity;
       font-size: ${fontSize * scale * sizeMultiplier}px;
@@ -355,7 +363,7 @@ class FloatingDamageNumber {
     container.appendChild(div);
 
     // Manage stacking by rounded coordinates unless a stackKey is provided
-    const key = stackKey || `coord:${Math.round(x)}_${Math.round(y)}`;
+    const key = stackKey || `coord:${Math.round(targetX)}_${Math.round(targetY)}`;
     if (!FloatingDamageNumber._coordActiveByKey) FloatingDamageNumber._coordActiveByKey = {};
     if (!FloatingDamageNumber._coordActiveByKey[key]) FloatingDamageNumber._coordActiveByKey[key] = [];
     FloatingDamageNumber._coordActiveByKey[key].push(div);
@@ -366,7 +374,7 @@ class FloatingDamageNumber {
     const item = {
       div,
       x: clampXVal,
-      y,
+      y: targetY,
       driftX,
       driftY,
       travelX,
@@ -488,12 +496,18 @@ FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, option
     baseY = anchorElementOrRect.y;
   }
 
+  if (isNaN(baseX) || isNaN(baseY)) {
+    baseX = window.innerWidth / 2;
+    baseY = window.innerHeight / 2;
+  }
+
   const div = FloatingDamageNumber._anchoredPool.length ? FloatingDamageNumber._anchoredPool.pop() : document.createElement('div');
   div.className = 'floating-damage-number anchored';
   div.textContent = String(value);
   div.style.pointerEvents = 'none';
   div.style.position = 'fixed';
-  div.style.zIndex = 10002;
+  div.style.zIndex = 999999;
+  div.style.opacity = '1';
   div.style.whiteSpace = 'nowrap';
   div.style.willChange = 'transform, opacity';
   div.style.fontFamily = "'Orbitron', monospace";
@@ -545,180 +559,196 @@ FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, option
 };
 
 FloatingDamageNumber._anchoredTick = function () {
-  const now = performance.now();
-  const list = FloatingDamageNumber._anchoredList;
+  try {
+    const now = performance.now();
+    const list = FloatingDamageNumber._anchoredList;
 
-  for (let i = list.length - 1; i >= 0; i--) {
-    const f = list[i];
-    const elapsed = now - f.createdAt;
-    const progress = elapsed / f.duration;
-    const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
-    const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
-    // Eased fade so anchored floats remain visible until the final moments
-    const easedFade = Math.pow(fadeRaw, 2.6);
-    const opacity = 1 - easedFade;
-
-    let slotIndex = 0;
-    if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
-      slotIndex = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey].indexOf(f);
-      if (slotIndex < 0) slotIndex = 0;
-    }
-
-    // Apply slight hue shift and darken for stacked floats so they remain visually distinct
-    try {
-      const base = f.baseColor || f.div.style.color || '#ffffff';
-      const v = variantForStack(base, slotIndex);
-      f.div.style.color = v;
-      f.div.style.webkitTextStroke = `0.5px ${v}`;
-    } catch (e) { }
-
-    const baseX = f.baseX;
-    const baseY = f.baseY;
-
-    const clampX = (() => {
-      const w = f.width || 80;
-      const minX = w / 2 + 8;
-      const maxX = window.innerWidth - w / 2 - 8;
-      return Math.min(Math.max(baseX, minX), Math.max(minX, maxX));
-    })();
-
-    const easeOut = 1 - Math.pow(1 - Math.max(0, Math.min(1, progress)), 3);
-    const yPos = baseY - f.offsetY - (slotIndex * f.gap);
-    const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
-    const wobbleAmplitude = f.isCrit ? 6 : 3;
-    const wobble = Math.sin(Math.max(0, Math.min(1, progress)) * Math.PI * 2) * wobbleAmplitude * (1 - Math.max(0, Math.min(1, progress)));
-    const driftX = (f.driftX || 0) * Math.min(1, progress);
-    const driftY = (f.driftY || 0) * easeOut;
-
-    f.div.style.transform = `translate3d(${clampX + driftX}px, ${yPos + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
-    f.div.style.opacity = opacity;
-
-    if (f.cycleText) {
-      if (progress < 0.7) {
-        const text = String(f.finalText || '');
-        if (text.includes('AP')) {
-          f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
-        } else if (text.includes('💎')) {
-          f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
-        } else if (text === 'Miss!') {
-          const choices = [
-            `+${Math.floor(Math.random() * 31)} AP`,
-            `+${Math.floor(Math.random() * 4)} 💎`,
-            'Miss!',
-            `+${Math.floor(Math.random() * 15)} AP`
-          ];
-          f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
-        } else {
-          f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
-        }
-      } else {
-        f.div.textContent = f.finalText;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const f = list[i];
+      if (!f || !f.div) {
+        list.splice(i, 1);
+        continue;
       }
-    }
+      const elapsed = now - f.createdAt;
+      const progress = elapsed / f.duration;
+      const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
+      const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
+      // Eased fade so anchored floats remain visible until the final moments
+      const easedFade = Math.pow(fadeRaw, 2.6);
+      const opacity = 1 - easedFade;
 
-    if (progress >= 1) {
-      try { f.div.remove(); } catch (e) { }
-      list.splice(i, 1);
+      let slotIndex = 0;
       if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
-        const arr = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey];
-        const idx = arr.indexOf(f);
-        if (idx !== -1) arr.splice(idx, 1);
-        if (arr.length === 0) delete FloatingDamageNumber._anchoredActiveByKey[f.anchorKey];
+        slotIndex = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey].indexOf(f);
+        if (slotIndex < 0) slotIndex = 0;
       }
-      FloatingDamageNumber._anchoredPool.push(f.div);
-    }
-  }
 
-  if (FloatingDamageNumber._anchoredList.length > 0) {
-    requestAnimationFrame(FloatingDamageNumber._anchoredTick);
-  } else {
-    FloatingDamageNumber._anchoredRunning = false;
+      // Apply slight hue shift and darken for stacked floats so they remain visually distinct
+      try {
+        const base = f.baseColor || f.div.style.color || '#ffffff';
+        const v = variantForStack(base, slotIndex);
+        f.div.style.color = v;
+        f.div.style.webkitTextStroke = `0.5px ${v}`;
+      } catch (e) { }
+
+      const baseX = f.baseX;
+      const baseY = f.baseY;
+
+      const clampX = (() => {
+        const w = f.width || 80;
+        const minX = w / 2 + 8;
+        const maxX = window.innerWidth - w / 2 - 8;
+        return Math.min(Math.max(baseX, minX), Math.max(minX, maxX));
+      })();
+
+      const easeOut = 1 - Math.pow(1 - Math.max(0, Math.min(1, progress)), 3);
+      const yPos = baseY - f.offsetY - (slotIndex * f.gap);
+      const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
+      const wobbleAmplitude = f.isCrit ? 6 : 3;
+      const wobble = Math.sin(Math.max(0, Math.min(1, progress)) * Math.PI * 2) * wobbleAmplitude * (1 - Math.max(0, Math.min(1, progress)));
+      const driftX = (f.driftX || 0) * Math.min(1, progress);
+      const driftY = (f.driftY || 0) * easeOut;
+
+      f.div.style.transform = `translate3d(${clampX + driftX}px, ${yPos + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+      f.div.style.opacity = opacity;
+
+      if (f.cycleText) {
+        if (progress < 0.7) {
+          const text = String(f.finalText || '');
+          if (text.includes('AP')) {
+            f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
+          } else if (text.includes('💎')) {
+            f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
+          } else if (text === 'Miss!') {
+            const choices = [
+              `+${Math.floor(Math.random() * 31)} AP`,
+              `+${Math.floor(Math.random() * 4)} 💎`,
+              'Miss!',
+              `+${Math.floor(Math.random() * 15)} AP`
+            ];
+            f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
+          } else {
+            f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
+          }
+        } else {
+          f.div.textContent = f.finalText;
+        }
+      }
+
+      if (progress >= 1) {
+        try { f.div.remove(); } catch (e) { }
+        list.splice(i, 1);
+        if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
+          const arr = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey];
+          const idx = arr.indexOf(f);
+          if (idx !== -1) arr.splice(idx, 1);
+          if (arr.length === 0) delete FloatingDamageNumber._anchoredActiveByKey[f.anchorKey];
+        }
+        FloatingDamageNumber._anchoredPool.push(f.div);
+      }
+    }
+  } catch (err) {
+    console.error("Error in FloatingDamageNumber._anchoredTick", err);
+  } finally {
+    if (FloatingDamageNumber._anchoredList.length > 0) {
+      requestAnimationFrame(FloatingDamageNumber._anchoredTick);
+    } else {
+      FloatingDamageNumber._anchoredRunning = false;
+    }
   }
 };
 
-// Non-anchored floats centralized tick
 FloatingDamageNumber._tickNonAnchored = function () {
-  const now = performance.now();
-  const list = FloatingDamageNumber._list || [];
-  for (let i = list.length - 1; i >= 0; i--) {
-    const f = list[i];
-    const elapsed = now - f.createdAt;
-    const progress = elapsed / f.duration;
-    const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
-    const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
-    const easedFade = Math.pow(fadeRaw, 2.6);
-    const opacity = 1 - easedFade;
-
-    // stacked slot index based on coord map
-    let slotIndex = 0;
-    try {
-      const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
-      if (key) slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(f.div) || 0;
-    } catch (e) { }
-
-    try {
-      const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
-      f.div.style.color = v;
-      f.div.style.webkitTextStroke = `0.5px ${v}`;
-    } catch (e) { }
-
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-    const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
-    const dy = easeOut * (f.travelY !== undefined ? f.travelY : -50);
-    const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
-    const wobbleAmplitude = f.isCrit ? 6 : 3;
-    const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
-    const driftX = (f.driftX || 0) * Math.min(1, progress);
-    const driftY = (f.driftY || 0) * easeOut;
-
-    f.div.style.transform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
-    f.div.style.opacity = opacity;
-
-    if (f.cycleText) {
-      if (progress < 0.7) {
-        const text = String(f.finalText || '');
-        if (text.includes('AP')) {
-          f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
-        } else if (text.includes('💎')) {
-          f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
-        } else if (text === 'Miss!') {
-          const choices = [
-            `+${Math.floor(Math.random() * 31)} AP`,
-            `+${Math.floor(Math.random() * 4)} 💎`,
-            'Miss!',
-            `+${Math.floor(Math.random() * 15)} AP`
-          ];
-          f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
-        } else {
-          f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
-        }
-      } else {
-        f.div.textContent = f.finalText;
+  try {
+    const now = performance.now();
+    const list = FloatingDamageNumber._list || [];
+    for (let i = list.length - 1; i >= 0; i--) {
+      const f = list[i];
+      if (!f || !f.div) {
+        list.splice(i, 1);
+        continue;
       }
-    }
+      const elapsed = now - f.createdAt;
+      const progress = elapsed / f.duration;
+      const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
+      const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
+      const easedFade = Math.pow(fadeRaw, 2.6);
+      const opacity = 1 - easedFade;
 
-    if (progress >= 1) {
-      try { f.div.remove(); } catch (e) { }
-      // remove from coord map
+      // stacked slot index based on coord map
+      let slotIndex = 0;
       try {
         const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
-        if (key) {
-          const arr = FloatingDamageNumber._coordActiveByKey[key];
-          const idx = arr.indexOf(f.div);
-          if (idx !== -1) arr.splice(idx, 1);
-          if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
-        }
+        if (key) slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(f.div) || 0;
       } catch (e) { }
 
-      FloatingDamageNumber._pool.push(f.div);
-      list.splice(i, 1);
-    }
-  }
+      try {
+        const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
+        f.div.style.color = v;
+        f.div.style.webkitTextStroke = `0.5px ${v}`;
+      } catch (e) { }
 
-  if (list.length > 0) {
-    requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
-  } else {
-    FloatingDamageNumber._running = false;
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
+      const dy = easeOut * (f.travelY !== undefined ? f.travelY : -50);
+      const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
+      const wobbleAmplitude = f.isCrit ? 6 : 3;
+      const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
+      const driftX = (f.driftX || 0) * Math.min(1, progress);
+      const driftY = (f.driftY || 0) * easeOut;
+
+      f.div.style.transform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+      f.div.style.opacity = opacity;
+
+      if (f.cycleText) {
+        if (progress < 0.7) {
+          const text = String(f.finalText || '');
+          if (text.includes('AP')) {
+            f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
+          } else if (text.includes('💎')) {
+            f.div.textContent = `+${Math.floor(Math.random() * 4)} 💎`;
+          } else if (text === 'Miss!') {
+            const choices = [
+              `+${Math.floor(Math.random() * 31)} AP`,
+              `+${Math.floor(Math.random() * 4)} 💎`,
+              'Miss!',
+              `+${Math.floor(Math.random() * 15)} AP`
+            ];
+            f.div.textContent = choices[Math.floor(Math.random() * choices.length)];
+          } else {
+            f.div.textContent = Math.random() > 0.5 ? text : 'Miss!';
+          }
+        } else {
+          f.div.textContent = f.finalText;
+        }
+      }
+
+      if (progress >= 1) {
+        try { f.div.remove(); } catch (e) { }
+        // remove from coord map
+        try {
+          const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
+          if (key) {
+            const arr = FloatingDamageNumber._coordActiveByKey[key];
+            const idx = arr.indexOf(f.div);
+            if (idx !== -1) arr.splice(idx, 1);
+            if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
+          }
+        } catch (e) { }
+
+        FloatingDamageNumber._pool.push(f.div);
+        list.splice(i, 1);
+      }
+    }
+  } catch (err) {
+    console.error("Error in FloatingDamageNumber._tickNonAnchored", err);
+  } finally {
+    const list = FloatingDamageNumber._list || [];
+    if (list.length > 0) {
+      requestAnimationFrame(FloatingDamageNumber._tickNonAnchored);
+    } else {
+      FloatingDamageNumber._running = false;
+    }
   }
 };
 

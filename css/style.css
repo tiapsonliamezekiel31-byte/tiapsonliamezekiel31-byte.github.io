@@ -2662,11 +2662,54 @@ body::before {
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: linear-gradient(180deg, var(--task-accent), var(--task-accent-strong));
-  border: 2px solid color-mix(in srgb, var(--task-accent) 72%, white 28%);
+  background: none !important;
+  border: none !important;
   color: var(--task-ink);
   filter: saturate(var(--streak-sat, 1));
   overflow: visible;
+}
+
+.task-card-daily.shape-task::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--task-border-color, color-mix(in srgb, var(--task-accent) 72%, white 28%)) !important;
+  z-index: -2;
+  transition: background 0.15s ease;
+}
+
+.task-card-daily.shape-task::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scale(0.95);
+  background: linear-gradient(180deg, var(--task-accent), var(--task-accent-strong)) !important;
+  z-index: -1;
+  transition: transform 0.15s ease;
+}
+
+.task-card-daily.shape-task.shape-easy::before,
+.task-card-daily.shape-task.shape-easy::after {
+  border-radius: 50% !important;
+  clip-path: none !important;
+}
+
+.task-card-daily.shape-task.shape-medium::before,
+.task-card-daily.shape-task.shape-medium::after {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
+}
+
+.task-card-daily.shape-task.shape-hard::before,
+.task-card-daily.shape-task.shape-hard::after {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+
+.task-card-daily.shape-task.shape-ultra::before,
+.task-card-daily.shape-task.shape-ultra::after {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+  border-radius: 0 !important;
 }
 
 .task-card-daily {
@@ -2676,6 +2719,18 @@ body::before {
 .task-card-daily.is-completed-visible {
   opacity: 0.38;
   filter: grayscale(1) saturate(0.35) brightness(0.78);
+}
+
+.task-card-daily.locked {
+  opacity: 0.55 !important;
+}
+
+.task-card-daily.locked::before {
+  background: #7f1d1d !important;
+}
+
+.task-card-daily.locked::after {
+  background: rgba(26, 21, 21, 0.95) !important;
 }
 
 .task-card-daily.shape-task .task-shape-streak,
@@ -2775,26 +2830,22 @@ body::before {
   opacity: 0.82;
 }
 
-.task-card-daily.shape-task.shape-easy,
-.focus-bubble.shape-task.shape-easy {
+.task-card-daily.shape-task.shape-easy {
   border-radius: 50% !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-medium,
-.focus-bubble.shape-task.shape-medium {
+.task-card-daily.shape-task.shape-medium {
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
   border-radius: 0 !important;
 }
 
-.task-card-daily.shape-task.shape-hard,
-.focus-bubble.shape-task.shape-hard {
+.task-card-daily.shape-task.shape-hard {
   border-radius: 0 !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-ultra,
-.focus-bubble.shape-task.shape-ultra {
+.task-card-daily.shape-task.shape-ultra {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
   border-radius: 0 !important;
 }
@@ -7976,8 +8027,7 @@ button:hover,
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(8, 8, 12, 0.92);
-  backdrop-filter: blur(6px);
+  background: #000000 !important;
   z-index: 19998;
   display: none;
   pointer-events: auto;
@@ -7994,7 +8044,7 @@ button:hover,
   align-items: center;
   justify-content: center;
   font-family: 'Orbitron', monospace;
-  color: #d1d5db;
+  color: #ffffff;
   pointer-events: auto;
 }
 
@@ -8017,8 +8067,8 @@ button:hover,
   top: -40px;
   right: 0;
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #9ca3af;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   cursor: pointer;
   font-size: 11px;
   font-family: inherit;
@@ -8028,18 +8078,19 @@ button:hover,
 }
 
 .focus-popup-close:hover {
-  color: #f87171;
-  border-color: rgba(248, 113, 113, 0.4);
+  color: #ffffff;
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Large digit display */
 .focus-fs-timer-label {
   font-size: clamp(52px, 12vw, 80px);
   font-weight: 900;
-  color: #e5e7eb;
+  color: #ffffff;
   letter-spacing: 4px;
   line-height: 1;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
 }
 
 /* Depleting bar */
@@ -8050,7 +8101,7 @@ button:hover,
 .focus-fs-bar-track {
   width: 100%;
   height: 6px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -8058,9 +8109,9 @@ button:hover,
 .focus-fs-bar-fill {
   height: 100%;
   width: 100%;
-  background: hsl(120, 55%, 40%);
+  background: #ffffff !important;
   border-radius: 3px;
-  transition: width 0.9s linear, background 2s ease;
+  transition: width 0.9s linear;
 }
 
 /* Duration buttons */
@@ -8073,9 +8124,9 @@ button:hover,
 
 .focus-duration-btn {
   flex: 1;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
+  background: #000000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #cccccc;
   font-family: inherit;
   font-size: 7px;
   padding: 8px 2px;
@@ -8085,15 +8136,15 @@ button:hover,
 }
 
 .focus-duration-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  color: #ffffff;
 }
 
 .focus-duration-btn.active {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #fff;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 /* Action buttons */
@@ -8104,40 +8155,40 @@ button:hover,
   font-weight: bold;
   border-radius: 4px;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid #ffffff;
   transition: all 0.2s;
   letter-spacing: 1px;
 }
 
 #focusCustomMins:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.35) !important;
+  border-color: #ffffff !important;
 }
 
 .focus-start-btn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e5e7eb;
+  background: #ffffff !important;
+  color: #000000 !important;
 }
 
 .focus-start-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: #e5e5e5 !important;
   transform: translateY(-1px);
 }
 
 .focus-cancel-btn {
-  background: rgba(220, 38, 38, 0.15);
-  color: #fca5a5;
-  border-color: rgba(220, 38, 38, 0.3);
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
 }
 
 .focus-cancel-btn:hover {
-  background: rgba(220, 38, 38, 0.25);
+  background: #111111 !important;
   transform: translateY(-1px);
 }
 
 .focus-cost-warning {
   font-size: 6.5px;
-  color: #6b7280;
+  color: #888888;
   text-align: center;
   line-height: 1.4;
 }
@@ -8147,13 +8198,13 @@ button:hover,
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background: rgba(20, 20, 28, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #000000 !important;
+  border: 1px solid #ffffff !important;
   border-radius: 30px;
   padding: 8px 14px;
   font-family: 'Orbitron', monospace;
   font-size: 7px;
-  color: #d1d5db;
+  color: #ffffff !important;
   z-index: 20001;
   display: flex;
   align-items: center;
@@ -8178,7 +8229,7 @@ button:hover,
 .mini-widget-pulse-dot {
   width: 6px;
   height: 6px;
-  background-color: #f87171;
+  background-color: #ffffff !important;
   border-radius: 50%;
   animation: pulseMiniDot 1s infinite alternate;
 }
@@ -8576,10 +8627,6 @@ button:hover,
   position: absolute;
   width: 90px;
   height: 90px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, rgba(168, 85, 247, 0.25) 50%, rgba(139, 92, 246, 0.4) 100%);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8px 32px 0 rgba(168, 85, 247, 0.37), inset 0 0 15px rgba(255, 255, 255, 0.3), inset -10px -10px 15px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -8597,30 +8644,76 @@ button:hover,
   z-index: 20002;
   transition: transform 0.1s ease, opacity 0.3s ease;
   will-change: transform, opacity;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: auto !important;
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.15));
+}
+
+.focus-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--focus-border-color, #a855f7) !important;
+  z-index: -2;
+  transition: all 0.15s ease;
+}
+
+.focus-bubble::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scale(0.92);
+  background: #000000 !important;
+  z-index: -1;
+  transition: all 0.15s ease;
 }
 
 .focus-bubble:hover {
   transform: scale(1.08);
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.5);
+  filter: drop-shadow(0 6px 20px rgba(255, 255, 255, 0.35));
+}
+
+.focus-bubble:hover::after {
+  background: #111111 !important;
 }
 
 .focus-bubble:active {
   transform: scale(0.9);
 }
 
-.focus-bubble.todo {
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, rgba(59, 130, 246, 0.25) 50%, rgba(37, 99, 235, 0.4) 100%);
-  box-shadow: 0 8px 32px 0 rgba(59, 130, 246, 0.37), inset 0 0 15px rgba(255, 255, 255, 0.3), inset -10px -10px 15px rgba(0, 0, 0, 0.2);
+.focus-bubble.shape-easy::before,
+.focus-bubble.shape-easy::after {
+  border-radius: 50% !important;
+  clip-path: none !important;
+}
+
+.focus-bubble.shape-medium::before,
+.focus-bubble.shape-medium::after {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
+}
+
+.focus-bubble.shape-hard::before,
+.focus-bubble.shape-hard::after {
+  border-radius: 0 !important;
+  clip-path: none !important;
+}
+
+.focus-bubble.shape-ultra::before,
+.focus-bubble.shape-ultra::after {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
+  border-radius: 0 !important;
 }
 
 .focus-bubble .reward-tag {
-  color: #ffb33f;
+  color: #ffffff;
   margin-top: 4px;
   font-size: 5px;
-  text-shadow: 0 0 4px rgba(255, 179, 63, 0.6);
+  text-shadow: none;
 }
 
 .focus-bubble.pop {

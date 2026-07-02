@@ -2719,6 +2719,11 @@ class PopupsManager {
           <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
           <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
         </div>
+        <label>Lock Status</label>
+        <div class="lock-daily-row" style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <input id="editLocked" type="checkbox" ${daily.locked ? 'checked' : ''} />
+          <label for="editLocked" style="font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">Lock this daily (cannot complete, immediately marked as miss)</label>
+        </div>
         <label>Daily Surplus</label>
         <div class="surplus-row" style="margin-bottom: 12px; display: block;">
           <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #a855f7; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
@@ -2853,6 +2858,13 @@ class PopupsManager {
       const weekDays = Array.from(popup.querySelectorAll('.repeat-day-checkbox:checked')).map(cb => parseInt(cb.value));
       const intervalDays = Math.max(1, Number(popup.querySelector('#editIntervalDays').value) || 1);
 
+      const wantLocked = !!popup.querySelector('#editLocked').checked;
+      if (wantLocked && !daily.locked) {
+        if (!confirm("Are you sure you want to lock this daily? It will be immediately marked as a miss and cannot be completed today.")) {
+          return;
+        }
+      }
+
       const updates = {
         name: popup.querySelector('#editName').value,
         attribute: popup.querySelector('#editAttr').value,
@@ -2863,7 +2875,8 @@ class PopupsManager {
         surplusMilestones: currentMilestones,
         repeatMode,
         weekDays: weekDays.length > 0 ? weekDays : [0, 1, 2, 3, 4, 5, 6],
-        intervalDays
+        intervalDays,
+        locked: wantLocked
       };
       // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
       try {
