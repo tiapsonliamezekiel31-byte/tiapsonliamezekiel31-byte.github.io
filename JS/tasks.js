@@ -350,6 +350,14 @@ class TaskManager {
     return true;
   }
 
+  static lockDaily(dailyId) {
+    return this.editDaily(dailyId, { locked: true });
+  }
+
+  static unlockDaily(dailyId) {
+    return this.editDaily(dailyId, { locked: false });
+  }
+
   static completeDaily(dailyId) {
     const state = getGameState();
     const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
@@ -1095,6 +1103,7 @@ class TaskManager {
       daily.bloodOath = false;
       daily.bloodOathActive = false;
       daily.completionsToday = 0;
+      daily.locked = false;
     });
 
     state.rollSpecialEvent();
