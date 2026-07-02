@@ -5989,9 +5989,8 @@ class UIManager {
 
       const focusBorderStyle = focusModeActive ? '--task-border-color:#a855f7 !important;' : '';
 
-      const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
-      if (!daily.completed && !focusModeActive && (lockModeDailies || daily.locked)) {
-        html += '<div class="task-daily-lock-badge" data-daily-id="' + daily.id + '" title="' + (daily.locked ? 'Unlock' : 'Lock') + ' Daily" style="position: absolute; z-index: 1000; cursor: pointer; user-select: none; font-size: 11px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1px solid ' + (daily.locked ? '#a855f7' : 'rgba(255,255,255,0.25)') + '; color: #fff;">' + (daily.locked ? '🔒' : '🔓') + '</div>';
+      if (!daily.completed && !focusModeActive && daily.locked) {
+        html += '<div class="task-daily-lock-badge" data-daily-id="' + daily.id + '" title="Locked Daily" style="position: absolute; z-index: 1000; cursor: pointer; user-select: none; font-size: 11px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1px solid #ff5a5a; color: #fff;">🔒</div>';
       }
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.locked ? 'locked ' : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
