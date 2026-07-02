@@ -7038,6 +7038,7 @@ class UIManager {
 
       const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
       const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
+      console.log("[Pointerdown] dailyId:", dailyId, "editMode:", editModeDailies, "lockMode:", lockModeDailies);
 
       if (!editModeDailies && !lockModeDailies) {
         // Check if locked
@@ -7170,17 +7171,22 @@ class UIManager {
         if (!doubleTapped && !holdCompleted) {
           const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
           const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
+          console.log("[endDrag] click branch, editMode:", editModeDailies, "lockMode:", lockModeDailies, "dailyId:", dragState.dailyId);
           if (editModeDailies) {
             try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
           } else if (lockModeDailies) {
             const daily = getGameState().dailiesState.dailies.find(d => d.id === dragState.dailyId);
+            console.log("[endDrag] lockMode, found daily:", daily);
             if (daily) {
               if (!daily.locked) {
+                console.log("[endDrag] locking daily...");
                 if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
                   TaskManager.lockDaily(dragState.dailyId);
+                  console.log("[endDrag] TaskManager.lockDaily called. locked status now:", daily.locked);
                   this.scheduleUpdateDailiesList();
                 }
               } else {
+                console.log("[endDrag] unlocking daily...");
                 TaskManager.unlockDaily(dragState.dailyId);
                 this.scheduleUpdateDailiesList();
               }
@@ -7204,6 +7210,7 @@ class UIManager {
         event.stopPropagation();
         event.preventDefault();
         const taskId = lockBadge.dataset.dailyId;
+        console.log("[Board Click] Lock badge clicked. dailyId:", taskId);
         const daily = getGameState().dailiesState.dailies.find(d => d.id === taskId);
         if (daily) {
           if (!daily.locked) {
