@@ -1084,6 +1084,9 @@ class TaskManager {
 
   static resetDailies() {
     const state = getGameState();
+    if (state.systemState?.taskListFilters) {
+      state.systemState.taskListFilters.lockModeDailies = false;
+    }
 
     // IMPORTANT: streaks are based on the day that just ended,
     // so compute before we clear completion flags.

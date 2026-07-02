@@ -7059,26 +7059,8 @@ class UIManager {
 
       const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
       const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
-      
-      if (lockModeDailies) {
-        // Toggle locked state on click
-        const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
-        if (daily) {
-          if (!daily.locked) {
-            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
-              TaskManager.lockDaily(dailyId);
-              this.scheduleUpdateDailiesList();
-            }
-          } else {
-            TaskManager.unlockDaily(dailyId);
-            this.scheduleUpdateDailiesList();
-          }
-          getGameState().save();
-        }
-        return;
-      }
 
-      if (!editModeDailies) {
+      if (!editModeDailies && !lockModeDailies) {
         // Check if locked
         const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
         if (daily && daily.locked) {
@@ -7208,8 +7190,23 @@ class UIManager {
 
         if (!doubleTapped && !holdCompleted) {
           const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+          const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
           if (editModeDailies) {
             try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
+          } else if (lockModeDailies) {
+            const daily = getGameState().dailiesState.dailies.find(d => d.id === dragState.dailyId);
+            if (daily) {
+              if (!daily.locked) {
+                if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
+                  TaskManager.lockDaily(dragState.dailyId);
+                  this.scheduleUpdateDailiesList();
+                }
+              } else {
+                TaskManager.unlockDaily(dragState.dailyId);
+                this.scheduleUpdateDailiesList();
+              }
+              getGameState().save();
+            }
           }
         }
       }
