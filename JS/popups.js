@@ -2859,40 +2859,45 @@ class PopupsManager {
       const intervalDays = Math.max(1, Number(popup.querySelector('#editIntervalDays').value) || 1);
 
       const wantLocked = !!popup.querySelector('#editLocked').checked;
+      
+      const saveUpdates = () => {
+        const updates = {
+          name: popup.querySelector('#editName').value,
+          attribute: popup.querySelector('#editAttr').value,
+          difficulty: popup.querySelector('#editDiff').value,
+          maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1),
+          size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1),
+          dailySurplusEnabled: currentMilestones.length > 0,
+          surplusMilestones: currentMilestones,
+          repeatMode,
+          weekDays: weekDays.length > 0 ? weekDays : [0, 1, 2, 3, 4, 5, 6],
+          intervalDays,
+          locked: wantLocked
+        };
+        // Apply blood oath toggle if requested
+        try {
+          const wantBlood = !!popup.querySelector('#editBloodOath').checked;
+          if (wantBlood !== !!daily.bloodOathActive) {
+            const ok = TaskManager.toggleBloodOath(dailyId);
+            if (!ok && wantBlood) {
+              try { alert('Not enough mana to activate Blood Oath'); } catch (e) {}
+            }
+          }
+        } catch (e) { console.warn('Failed to toggle blood oath', e); }
+
+        TaskManager.editDaily(dailyId, updates);
+        try { UIManager.refreshGameUI(); } catch (error) { }
+        this.closePopup();
+      };
+
       if (wantLocked && !daily.locked) {
-        if (!confirm("Are you sure you want to lock this daily? It will be immediately marked as a miss and cannot be completed today.")) {
-          return;
-        }
+        PopupsManager.showConfirm("Lock Daily", "Are you sure you want to lock this daily? It will be immediately marked as a miss and cannot be completed today.", () => {
+          saveUpdates();
+        });
+        return;
       }
 
-      const updates = {
-        name: popup.querySelector('#editName').value,
-        attribute: popup.querySelector('#editAttr').value,
-        difficulty: popup.querySelector('#editDiff').value,
-        maxCompletionsPerDay: Math.max(1, Number(popup.querySelector('#editMax').value) || 1),
-        size: Math.max(0.5, Number(popup.querySelector('#editSize').value) || 1),
-        dailySurplusEnabled: currentMilestones.length > 0,
-        surplusMilestones: currentMilestones,
-        repeatMode,
-        weekDays: weekDays.length > 0 ? weekDays : [0, 1, 2, 3, 4, 5, 6],
-        intervalDays,
-        locked: wantLocked
-      };
-      // Apply blood oath toggle if requested (use TaskManager toggle to respect mana cost)
-      try {
-        const wantBlood = !!popup.querySelector('#editBloodOath').checked;
-        if (wantBlood !== !!daily.bloodOathActive) {
-          const ok = TaskManager.toggleBloodOath(dailyId);
-          if (!ok && wantBlood) {
-            try { alert('Not enough mana to activate Blood Oath'); } catch (e) {}
-          }
-        }
-      } catch (e) { console.warn('Failed to toggle blood oath', e); }
-
-      TaskManager.editDaily(dailyId, updates);
-      this.closeAllPopups();
-      UIManager.updateDailiesList();
-      getGameState().save();
+      saveUpdates();
     });
 
     popup.querySelector('#deleteDaily').addEventListener('click', () => {

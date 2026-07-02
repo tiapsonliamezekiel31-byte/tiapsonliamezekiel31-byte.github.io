@@ -7180,17 +7180,20 @@ class UIManager {
             if (daily) {
               if (!daily.locked) {
                 console.log("[endDrag] locking daily...");
-                if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
-                  TaskManager.lockDaily(dragState.dailyId);
-                  console.log("[endDrag] TaskManager.lockDaily called. locked status now:", daily.locked);
-                  this.scheduleUpdateDailiesList();
-                }
+                try {
+                  PopupsManager.showConfirm("Lock Daily", "Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.", () => {
+                    TaskManager.lockDaily(dragState.dailyId);
+                    console.log("[endDrag] TaskManager.lockDaily called. locked status now:", daily.locked);
+                    UIManager.scheduleUpdateDailiesList();
+                    getGameState().save();
+                  });
+                } catch(e) { console.warn('showConfirm error', e); }
               } else {
                 console.log("[endDrag] unlocking daily...");
                 TaskManager.unlockDaily(dragState.dailyId);
                 this.scheduleUpdateDailiesList();
+                getGameState().save();
               }
-              getGameState().save();
             }
           }
         }
@@ -7214,15 +7217,18 @@ class UIManager {
         const daily = getGameState().dailiesState.dailies.find(d => d.id === taskId);
         if (daily) {
           if (!daily.locked) {
-            if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
-              TaskManager.lockDaily(taskId);
-              this.scheduleUpdateDailiesList();
-            }
+            try {
+              PopupsManager.showConfirm("Lock Daily", "Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.", () => {
+                TaskManager.lockDaily(taskId);
+                UIManager.scheduleUpdateDailiesList();
+                getGameState().save();
+              });
+            } catch(e) { console.warn('showConfirm error', e); }
           } else {
             TaskManager.unlockDaily(taskId);
             this.scheduleUpdateDailiesList();
+            getGameState().save();
           }
-          getGameState().save();
         }
       }
     });
