@@ -6098,8 +6098,9 @@ class UIManager {
       if (lockBadge) {
         const cardRect = card.getBoundingClientRect();
         const boardRect = metrics.board.getBoundingClientRect();
-        lockBadge.style.left = `${cardRect.left - boardRect.left + cardRect.width - 24}px`;
-        lockBadge.style.top = `${cardRect.top - boardRect.top + 4}px`;
+        const offset = Math.max(12, Math.round(cardRect.width * 0.12));
+        lockBadge.style.left = `${cardRect.left - boardRect.left + (cardRect.width / 2) + 12}px`;
+        lockBadge.style.top = `${cardRect.top - boardRect.top - offset - 2}px`;
       }
     });
 
