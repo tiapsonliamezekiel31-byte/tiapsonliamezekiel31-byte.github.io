@@ -2046,15 +2046,23 @@ class UIManager {
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         
-        if (res.rewards && res.rewards.diamonds > 0) {
-          UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
-        }
-
-        if (res.rewards && res.rewards.ap) {
-          FloatingDamageNumber.show(centerX, centerY - 20, `+${Math.ceil(res.rewards.ap)} AP`, {
-            color: UIManager.themeColor('--ap-gold', '#FFB33F'),
-            cycleText: true
+        if (res.isMiss) {
+          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
+          FloatingDamageNumber.show(centerX, centerY - 20, 'MISS', {
+            color: '#bbbbbb',
+            isMiss: true
           });
+        } else {
+          if (res.rewards && res.rewards.diamonds > 0) {
+            UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
+          }
+
+          if (res.rewards && res.rewards.ap) {
+            FloatingDamageNumber.show(centerX, centerY - 20, `+${Math.ceil(res.rewards.ap)} AP`, {
+              color: UIManager.themeColor('--ap-gold', '#FFB33F'),
+              cycleText: true
+            });
+          }
         }
       }
 
@@ -3770,12 +3778,23 @@ class UIManager {
               }, 160);
 
               // Show reward popup numbers
-              if (res.rewards && res.rewards.ap) {
-                UIManager.showDailyApReward(card, res.rewards.ap);
-              }
-              if (res.rewards && res.rewards.diamonds) {
+              if (res.isMiss) {
+                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                 const rect = card.getBoundingClientRect();
-                UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                FloatingDamageNumber.show(
+                  rect.left + rect.width / 2,
+                  Math.max(12, rect.top - 18),
+                  'MISS',
+                  { color: '#bbbbbb', isMiss: true }
+                );
+              } else {
+                if (res.rewards && res.rewards.ap) {
+                  UIManager.showDailyApReward(card, res.rewards.ap);
+                }
+                if (res.rewards && res.rewards.diamonds) {
+                  const rect = card.getBoundingClientRect();
+                  UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                }
               }
 
               if (typeof RetroTaskCompleteAnimation !== 'undefined') {
@@ -7068,12 +7087,23 @@ class UIManager {
                 card.style.transition = 'transform 220ms ease, opacity 400ms ease';
                 const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
                 card.style.transform = `scale(${sizeScale * 1.04})`;
-                if (res.rewards && res.rewards.ap) {
-                  UIManager.showDailyApReward(card, res.rewards.ap);
-                }
-                if (res.rewards && res.rewards.diamonds) {
+                if (res.isMiss) {
+                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                   const rect = card.getBoundingClientRect();
-                  UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                  FloatingDamageNumber.show(
+                    rect.left + rect.width / 2,
+                    Math.max(12, rect.top - 18),
+                    'MISS',
+                    { color: '#bbbbbb', isMiss: true }
+                  );
+                } else {
+                  if (res.rewards && res.rewards.ap) {
+                    UIManager.showDailyApReward(card, res.rewards.ap);
+                  }
+                  if (res.rewards && res.rewards.diamonds) {
+                    const rect = card.getBoundingClientRect();
+                    UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                  }
                 }
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                   RetroTaskCompleteAnimation.play(card);
