@@ -306,7 +306,7 @@ class FloatingDamageNumber {
 
     let targetX = Number(x);
     let targetY = Number(y);
-    if (isNaN(targetX) || isNaN(targetY)) {
+    if (isNaN(targetX) || isNaN(targetY) || (targetX <= 0 && targetY <= 12)) {
       targetX = window.innerWidth / 2;
       targetY = window.innerHeight / 2;
     }
