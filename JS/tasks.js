@@ -378,10 +378,10 @@ class TaskManager {
     let isMiss = false;
     const diff = daily.difficulty;
     const rand = Math.random();
-    if (diff === 'Ultra' && rand < 1 / 11) isMiss = true;
-    else if (diff === 'Hard' && rand < 1 / 10) isMiss = true;
-    else if (diff === 'Medium' && rand < 1 / 9) isMiss = true;
-    else if (diff === 'Easy' && rand < 1 / 7) isMiss = true;
+    if (diff === 'Ultra' && rand < 1 / 9) isMiss = true;
+    else if (diff === 'Hard' && rand < 1 / 8) isMiss = true;
+    else if (diff === 'Medium' && rand < 1 / 7) isMiss = true;
+    else if (diff === 'Easy' && rand < 1 / 5) isMiss = true;
 
     if (isMiss) {
       state.systemState.runStats.tasksCompleted++;
@@ -451,6 +451,15 @@ class TaskManager {
       attrReward *= 2;
     }
 
+    // Check jackpot chance (1/10)
+    let isJackpot = Math.random() < 0.1;
+    if (isJackpot) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
     // Round values to prevent floating point issues
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
@@ -484,7 +493,7 @@ class TaskManager {
       attributePoints: attrReward
     };
 
-    return { success: true, rewards, completed: daily.completed };
+    return { success: true, rewards, completed: daily.completed, isJackpot };
   }
 
   static toggleBloodOath(dailyId) {
@@ -677,6 +686,15 @@ class TaskManager {
       attrReward *= 2;
     }
 
+    // Check jackpot chance (1/10)
+    let isJackpot = Math.random() < 0.1;
+    if (isJackpot) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
@@ -714,7 +732,8 @@ class TaskManager {
     return {
       success: true,
       rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward },
-      completed: true
+      completed: true,
+      isJackpot
     };
   }
 

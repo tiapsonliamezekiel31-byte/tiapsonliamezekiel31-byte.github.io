@@ -9741,3 +9741,18 @@ button:hover,
   animation: connectionDash 1.2s linear infinite;
   pointer-events: none;
 }
+
+@keyframes rainbow-text-animation {
+  0% { color: #ff0000; -webkit-text-stroke-color: #ff0000; }
+  17% { color: #ff8800; -webkit-text-stroke-color: #ff8800; }
+  33% { color: #ffff00; -webkit-text-stroke-color: #ffff00; }
+  50% { color: #00ff00; -webkit-text-stroke-color: #00ff00; }
+  67% { color: #00ffff; -webkit-text-stroke-color: #00ffff; }
+  83% { color: #0000ff; -webkit-text-stroke-color: #0000ff; }
+  100% { color: #ff00ff; -webkit-text-stroke-color: #ff00ff; }
+}
+
+.rainbow-jackpot-text {
+  animation: rainbow-text-animation 0.8s linear infinite !important;
+  text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5) !important;
+}

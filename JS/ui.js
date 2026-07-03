@@ -2053,6 +2053,14 @@ class UIManager {
             isMiss: true
           });
         } else {
+          if (res.isJackpot) {
+            try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+            FloatingDamageNumber.show(centerX, centerY - 40, 'JACKPOT!', {
+              className: 'rainbow-jackpot-text',
+              scale: 1.5,
+              duration: 2000
+            });
+          }
           if (res.rewards && res.rewards.diamonds > 0) {
             UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
           }
@@ -3788,6 +3796,16 @@ class UIManager {
                   { color: '#bbbbbb', isMiss: true }
                 );
               } else {
+                if (res.isJackpot) {
+                  try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+                  const rect = card.getBoundingClientRect();
+                  FloatingDamageNumber.show(
+                    rect.left + rect.width / 2,
+                    Math.max(12, rect.top - 38),
+                    'JACKPOT!',
+                    { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
+                  );
+                }
                 if (res.rewards && res.rewards.ap) {
                   UIManager.showDailyApReward(card, res.rewards.ap);
                 }
@@ -3820,6 +3838,15 @@ class UIManager {
 
                 if (res.rewards) {
                   const rect = card.getBoundingClientRect();
+                  if (res.isJackpot) {
+                    try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+                    FloatingDamageNumber.show(
+                      rect.left + rect.width / 2,
+                      Math.max(12, rect.top - 38),
+                      'JACKPOT!',
+                      { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
+                    );
+                  }
                   if (res.rewards.ap) {
                     FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
                   }
@@ -3846,6 +3873,15 @@ class UIManager {
               card.style.filter = 'brightness(10) contrast(1.5)';
               if (res.rewards) {
                 const rect = card.getBoundingClientRect();
+                if (res.isJackpot) {
+                  try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+                  FloatingDamageNumber.show(
+                    rect.left + rect.width / 2,
+                    Math.max(12, rect.top - 38),
+                    'JACKPOT!',
+                    { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
+                  );
+                }
                 if (res.rewards.ap) {
                   FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
                 }
@@ -7097,6 +7133,16 @@ class UIManager {
                     { color: '#bbbbbb', isMiss: true }
                   );
                 } else {
+                  if (res.isJackpot) {
+                    try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+                    const rect = card.getBoundingClientRect();
+                    FloatingDamageNumber.show(
+                      rect.left + rect.width / 2,
+                      Math.max(12, rect.top - 38),
+                      'JACKPOT!',
+                      { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
+                    );
+                  }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
                   }
