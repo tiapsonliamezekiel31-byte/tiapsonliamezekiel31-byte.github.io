@@ -3663,7 +3663,7 @@ class PopupsManager {
         <div class="lootbox-content">
           <div class="wheel-outer-container">
             <div class="wheel-pointer">▽</div>
-            <canvas id="lootboxWheel" width="300" height="300" style="width: 300px; height: 300px;"></canvas>
+            <canvas id="lootboxWheel" width="600" height="600"></canvas>
           </div>
           <div class="turbo-spin-row" style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
             <input type="checkbox" id="turboSpinToggle" />
@@ -3680,10 +3680,15 @@ class PopupsManager {
 
       // Drawing function
       const drawWheel = (rotationDegrees) => {
-        ctx.clearRect(0, 0, 300, 300);
+        ctx.clearRect(0, 0, 600, 600);
         ctx.save();
-        ctx.translate(150, 150);
+        ctx.translate(300, 300);
         ctx.rotate((rotationDegrees * Math.PI) / 180);
+
+        // Find currently selected segment under the pointer (at top, -90 deg / 270 deg)
+        let pointerWorldAngle = (270 - rotationDegrees) % 360;
+        if (pointerWorldAngle < 0) pointerWorldAngle += 360;
+        const selectedIdx = segments.findIndex(seg => pointerWorldAngle >= seg.startDeg && pointerWorldAngle < seg.endDeg);
 
         segments.forEach((seg, idx) => {
           const startRad = (seg.startDeg * Math.PI) / 180;
@@ -3692,14 +3697,22 @@ class PopupsManager {
           // Draw slice filled background
           ctx.beginPath();
           ctx.moveTo(0, 0);
-          ctx.arc(0, 0, 140, startRad, endRad);
+          ctx.arc(0, 0, 280, startRad, endRad);
           ctx.closePath();
-          ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#eab308' : seg.slice.color;
+          
+          let fillColor = seg.slice.type === 'grand_jackpot' ? '#eab308' : seg.slice.color;
+          ctx.fillStyle = fillColor;
           ctx.fill();
+
+          // Highlight the selected slice
+          if (idx === selectedIdx) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fill();
+          }
 
           // Stroke borders
           ctx.strokeStyle = '#222';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3;
           ctx.stroke();
 
           // Text and Icon representation
@@ -3712,11 +3725,11 @@ class PopupsManager {
           ctx.textAlign = 'right';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#111' : '#fff';
-          ctx.font = 'bold 9px sans-serif';
+          ctx.font = idx === selectedIdx ? 'bold 15px sans-serif' : 'bold 13px sans-serif';
           
           // Draw icon + short text
           const text = `${seg.slice.icon} ${seg.slice.label}`;
-          ctx.fillText(text, 125, 0);
+          ctx.fillText(text, 240, 0);
           ctx.restore();
         });
 

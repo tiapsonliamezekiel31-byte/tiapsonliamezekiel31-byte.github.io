@@ -1186,10 +1186,10 @@ class TaskManager {
   }
 
   static getTaskById(taskId) {
-    let task = this.getAllDailies().find(d => d.id === taskId);
+    let task = this.getAllDailies().find(d => String(d.id) === String(taskId));
     if (task) return task;
 
-    return this.getAllTodos().find(t => t.id === taskId);
+    return this.getAllTodos().find(t => String(t.id) === String(taskId));
   }
 
   static calculateMissedDailyDamage() {
