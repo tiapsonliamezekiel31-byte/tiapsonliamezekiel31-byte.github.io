@@ -2669,17 +2669,6 @@ class UIManager {
     const lootboxBtnEl = document.getElementById('lootboxBtn');
     if (lootboxBtnEl) {
       lootboxBtnEl.addEventListener('click', () => {
-        const gs = getGameState();
-        const keys = gs.playerState.lootboxKeys || 0;
-        if (keys <= 0) {
-          try {
-            if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Requires 1 Lootbox Key 🔑', { color: '#ff6666' });
-            }
-          } catch (e) { }
-          try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-          return;
-        }
         if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showLootbox === 'function') {
           PopupsManager.showLootbox();
         }

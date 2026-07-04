@@ -175,6 +175,7 @@ class GameState {
       gold: 0,
       diamonds: 0,
       lootboxKeys: 0,
+      lootboxDailyMode: false,
       attributes: {
         STR: { points: 0, level: 1 },
         INT: { points: 0, level: 1 },
@@ -316,6 +317,7 @@ class GameState {
     this.playerState.gold = 0;
     this.playerState.diamonds = 0;
     this.playerState.lootboxKeys = 0;
+    this.playerState.lootboxDailyMode = false;
     this.playerState.attributes = {
       STR: { points: 0, level: 1 },
       INT: { points: 0, level: 1 },

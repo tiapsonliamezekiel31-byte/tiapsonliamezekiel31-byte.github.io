@@ -9756,3 +9756,129 @@ button:hover,
   animation: rainbow-text-animation 0.8s linear infinite !important;
   text-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.5) !important;
 }
+
+/* ============================================================
+   LOOTBOX SHOP & SPINNING WHEEL SYSTEM
+   ============================================================ */
+
+.lootbox-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.lootbox-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.lootbox-card.locked {
+  opacity: 0.5;
+  background: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.lootbox-card.common { border-color: rgba(16, 185, 129, 0.3); }
+.lootbox-card.rare { border-color: rgba(59, 130, 246, 0.3); }
+.lootbox-card.epic { border-color: rgba(139, 92, 246, 0.3); }
+.lootbox-card.legendary { border-color: rgba(245, 158, 11, 0.3); }
+
+.lootbox-card-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.lootbox-card h3 {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.95rem;
+  margin: 0;
+  color: #fff;
+}
+
+.lootbox-card p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.btn-shop-open {
+  background: linear-gradient(135deg, var(--accent-gold, #ffd700), #b45309);
+  color: #fff;
+  border: none;
+  font-family: 'Orbitron', monospace;
+  font-weight: bold;
+  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: auto;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-shop-open:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+}
+
+.btn-shop-open:disabled {
+  background: #374151;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.wheel-outer-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: 16px auto 0;
+  border-radius: 50%;
+  box-shadow: 0 0 25px rgba(0,0,0,0.5), 0 0 5px rgba(255,215,0,0.1);
+}
+
+.wheel-pointer {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 36px;
+  color: #ffd700;
+  z-index: 10;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  animation: clapperWiggle 0.15s ease infinite alternate paused;
+}
+
+.wheel-pointer.ticking {
+  animation-play-state: running;
+}
+
+@keyframes clapperWiggle {
+  from { transform: translateX(-50%) rotate(-8deg); }
+  to { transform: translateX(-50%) rotate(8deg); }
+}
+
+#lootboxWheel {
+  border-radius: 50%;
+  background: #111;
+  display: block;
+}
+
+.btn-spin-wheel {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
+}
+
+.btn-spin-wheel:hover {
+  background: linear-gradient(135deg, #facc15, #eab308);
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.6);
+}

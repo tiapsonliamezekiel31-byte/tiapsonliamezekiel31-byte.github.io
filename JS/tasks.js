@@ -395,30 +395,35 @@ class TaskManager {
 
     // Award rewards
     const reward = state.config.taskRewards[daily.difficulty];
-    let apReward = reward.ap;
-    let goldReward = reward.gold;
-    let diamondReward = reward.diamonds;
+    let isLootboxMode = !!state.playerState.lootboxDailyMode;
+
+    let apReward = isLootboxMode ? (daily.difficulty === 'Easy' ? 5 : daily.difficulty === 'Medium' ? 8 : daily.difficulty === 'Hard' ? 10 : 15) : reward.ap;
+    let goldReward = isLootboxMode ? 0 : reward.gold;
+    let diamondReward = isLootboxMode ? 0 : reward.diamonds;
     let attrReward = reward.attributePoints;
 
-    // Apply +-5 variation for AP and +-1 variation for diamonds
-    const apVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5
-    const diamondVariation = Math.floor(Math.random() * 3) - 1; // -1 to +1
-
-    apReward = Math.max(0, apReward + apVariation);
-    diamondReward = Math.max(0, diamondReward + diamondVariation);
+    // Apply +-5 variation for AP and +-1 variation for diamonds ONLY if not in lootbox mode
+    if (!isLootboxMode) {
+      const apVariation = Math.floor(Math.random() * 11) - 5; // -5 to +5
+      const diamondVariation = Math.floor(Math.random() * 3) - 1; // -1 to +1
+      apReward = Math.max(0, apReward + apVariation);
+      diamondReward = Math.max(0, diamondReward + diamondVariation);
+    }
 
     // Apply blood oath multiplier
     if (daily.bloodOathActive) {
       apReward *= state.config.bloodOathRewardMultiplier;
-      goldReward *= state.config.bloodOathRewardMultiplier;
-      diamondReward *= state.config.bloodOathRewardMultiplier;
+      if (!isLootboxMode) {
+        goldReward *= state.config.bloodOathRewardMultiplier;
+        diamondReward *= state.config.bloodOathRewardMultiplier;
+      }
       attrReward *= state.config.bloodOathRewardMultiplier;
     }
 
     // Apply surplus rewards multiplier
     let surplusMultiplier = 1;
+    const streak = this.computeDailyStreak(daily.id);
     if (daily.dailySurplusEnabled) {
-      const streak = this.computeDailyStreak(daily.id);
       const milestones = Array.isArray(daily.surplusMilestones) ? daily.surplusMilestones : [];
       let milestonesReached = 0;
       milestones.forEach(m => {
@@ -433,12 +438,14 @@ class TaskManager {
 
     if (daily.dailySurplusEnabled && surplusMultiplier > 1) {
       apReward *= surplusMultiplier;
-      goldReward *= surplusMultiplier;
-      diamondReward *= surplusMultiplier;
+      if (!isLootboxMode) {
+        goldReward *= surplusMultiplier;
+        diamondReward *= surplusMultiplier;
+      }
     }
 
-    // Apply greed buff multiplier
-    if (state.hasBuff('Greed')) {
+    // Apply greed buff multiplier (only if not lootbox mode since gold is 0)
+    if (!isLootboxMode && state.hasBuff('Greed')) {
       const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
       goldReward *= (1 + greedBonus);
     }
@@ -446,18 +453,23 @@ class TaskManager {
     // Apply Focus Timer doubling multiplier
     if (state.systemState && state.systemState.focusTimerActive) {
       apReward *= 2;
-      goldReward *= 2;
-      diamondReward *= 2;
+      if (!isLootboxMode) {
+        goldReward *= 2;
+        diamondReward *= 2;
+      }
       attrReward *= 2;
     }
 
-    // Check jackpot chance (1/10)
-    let isJackpot = Math.random() < 0.1;
-    if (isJackpot) {
-      apReward *= 2;
-      goldReward *= 2;
-      diamondReward *= 2;
-      attrReward *= 2;
+    // Check jackpot chance (1/10) - skipped in lootbox mode
+    let isJackpot = false;
+    if (!isLootboxMode) {
+      isJackpot = Math.random() < 0.1;
+      if (isJackpot) {
+        apReward *= 2;
+        goldReward *= 2;
+        diamondReward *= 2;
+        attrReward *= 2;
+      }
     }
 
     // Round values to prevent floating point issues
@@ -486,11 +498,39 @@ class TaskManager {
     const petPointsAwarded = petPointsMap[daily.difficulty] || 1;
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
+    // Lootbox key reward logic
+    let keysAwarded = 0;
+    if (isLootboxMode) {
+      if (daily.difficulty === 'Easy') {
+        keysAwarded = 1;
+        if (daily.bloodOathActive) keysAwarded += 1;
+      } else if (daily.difficulty === 'Medium') {
+        keysAwarded = 2;
+        if (state.systemState && state.systemState.focusTimerActive) keysAwarded += 1;
+        if (daily.bloodOathActive) keysAwarded += 1;
+      } else if (daily.difficulty === 'Hard') {
+        keysAwarded = 3;
+        if (state.systemState && state.systemState.focusTimerActive) keysAwarded += 1;
+        if (daily.bloodOathActive) keysAwarded += 2;
+      } else if (daily.difficulty === 'Ultra') {
+        keysAwarded = 5;
+        if (state.systemState && state.systemState.focusTimerActive) keysAwarded += 1;
+        if (daily.bloodOathActive) keysAwarded += 2;
+      }
+      if (streak > 0 && streak % 14 === 0) {
+        keysAwarded *= 2;
+      }
+      if (keysAwarded > 0) {
+        state.addLootboxKeys(keysAwarded);
+      }
+    }
+
     const rewards = {
       ap: apReward,
       gold: goldReward,
       diamonds: diamondReward,
-      attributePoints: attrReward
+      attributePoints: attrReward,
+      keys: keysAwarded
     };
 
     return { success: true, rewards, completed: daily.completed, isJackpot };

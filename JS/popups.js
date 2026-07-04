@@ -1732,6 +1732,7 @@ class PopupsManager {
     const state = getGameState();
     const isPaused = !!state.systemState.isPaused;
     const dialogueEnabled = state.systemState.dialoguePopupsEnabled !== false;
+    const lootboxDailyMode = !!state.playerState.lootboxDailyMode;
 
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -1755,6 +1756,9 @@ class PopupsManager {
         </button>
         <button class="btn-pause-action ${dialogueEnabled ? 'active' : ''}" id="toggleDialogueBtn" style="${dialogueEnabled ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
           💬 Dialogue Popups: ${dialogueEnabled ? 'ON' : 'OFF'}
+        </button>
+        <button class="btn-pause-action ${lootboxDailyMode ? 'active' : ''}" id="toggleLootboxDailyModeBtn" style="${lootboxDailyMode ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
+          🎁 Lootbox Daily Gains: ${lootboxDailyMode ? 'ON' : 'OFF'}
         </button>
         <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
         <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
@@ -1813,6 +1817,27 @@ class PopupsManager {
       }
       try { state.save(); } catch (e) {}
     });
+
+    const toggleLootboxDailyModeBtn = popup.querySelector('#toggleLootboxDailyModeBtn');
+    if (toggleLootboxDailyModeBtn) {
+      toggleLootboxDailyModeBtn.addEventListener('click', () => {
+        const current = !!state.playerState.lootboxDailyMode;
+        state.playerState.lootboxDailyMode = !current;
+        const newVal = !current;
+        toggleLootboxDailyModeBtn.textContent = `🎁 Lootbox Daily Gains: ${newVal ? 'ON' : 'OFF'}`;
+        if (newVal) {
+          toggleLootboxDailyModeBtn.classList.add('active');
+          toggleLootboxDailyModeBtn.style.borderColor = 'var(--accent-gold)';
+          toggleLootboxDailyModeBtn.style.color = 'var(--accent-gold)';
+        } else {
+          toggleLootboxDailyModeBtn.classList.remove('active');
+          toggleLootboxDailyModeBtn.style.borderColor = '';
+          toggleLootboxDailyModeBtn.style.color = '';
+        }
+        try { state.save(); } catch (e) {}
+        try { UIManager.refreshGameUI(); } catch (e) {}
+      });
+    }
 
     popup.querySelector('#closeMenuBtn').addEventListener('click', () => {
       this.closeAllPopups();
@@ -3418,369 +3443,491 @@ class PopupsManager {
 
   static showLootbox() {
     const state = getGameState();
-    // Prevent opening lootbox if player is dead or victory/death popup is showing
     if (state.playerState.hp <= 0) return;
     if (document.querySelector('.death-popup') || document.querySelector('.victory-popup') || document.querySelector('.lootbox-popup')) return;
 
-    // Close any non-critical popups first
     this.closeAllPopups();
 
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup lootbox-popup';
+    popup.style.pointerEvents = 'auto';
 
-    popup.innerHTML = `
-      <h2 class="lootbox-title">🎁 LOOTBOX FOUND!</h2>
-      <div class="lootbox-content">
-        <div class="lootbox-graphic-container">
-          <div class="lootbox-graphic">🎁</div>
+    // Renders the Lootbox Shop Menu
+    const renderShop = () => {
+      const keys = state.playerState.lootboxKeys || 0;
+      popup.innerHTML = `
+        <h2 class="lootbox-title">🎁 LOOTBOX SHOP</h2>
+        <div class="lootbox-content">
+          <p class="lootbox-instruction">Keys Available: <strong style="color: #ffd700;">🔑 ${keys}</strong></p>
+          <div class="lootbox-shop-grid">
+            <div class="lootbox-card common ${keys < 1 ? 'locked' : ''}" data-tier="common">
+              <div class="lootbox-card-icon">🎁</div>
+              <h3>Common Box</h3>
+              <p>Basic resources & potions</p>
+              <button class="btn-shop-open" ${keys < 1 ? 'disabled' : ''}>1 KEY 🔑</button>
+            </div>
+            <div class="lootbox-card rare ${keys < 2 ? 'locked' : ''}" data-tier="rare">
+              <div class="lootbox-card-icon">🔵</div>
+              <h3>Rare Box</h3>
+              <p>Better gold & defensive items</p>
+              <button class="btn-shop-open" ${keys < 2 ? 'disabled' : ''}>2 KEYS 🔑</button>
+            </div>
+            <div class="lootbox-card epic ${keys < 3 ? 'locked' : ''}" data-tier="epic">
+              <div class="lootbox-card-icon">🟣</div>
+              <h3>Epic Box</h3>
+              <p>High AP/Gold & weapon chance</p>
+              <button class="btn-shop-open" ${keys < 3 ? 'disabled' : ''}>3 KEYS 🔑</button>
+            </div>
+            <div class="lootbox-card legendary ${keys < 5 ? 'locked' : ''}" data-tier="legendary">
+              <div class="lootbox-card-icon">👑</div>
+              <h3>Legendary Box</h3>
+              <p>Ultimate rewards & top weapons</p>
+              <button class="btn-shop-open" ${keys < 5 ? 'disabled' : ''}>5 KEYS 🔑</button>
+            </div>
+          </div>
+          <button class="btn-large btn-lootbox-close" style="margin-top: 20px;">CLOSE SHOP</button>
         </div>
-        <p class="lootbox-instruction">You found a mystery chest! Open it to claim your rewards.</p>
-        <button class="btn-large btn-lootbox-open">OPEN CHEST</button>
-      </div>
-    `;
+      `;
+
+      popup.querySelector('.btn-lootbox-close').addEventListener('click', () => {
+        this.closeAllPopups();
+      });
+
+      // Bind shop open click handlers
+      popup.querySelectorAll('.lootbox-card').forEach(card => {
+        const tier = card.dataset.tier;
+        const btn = card.querySelector('.btn-shop-open');
+        if (btn && !btn.disabled) {
+          btn.addEventListener('click', () => {
+            const cost = tier === 'common' ? 1 : tier === 'rare' ? 2 : tier === 'epic' ? 3 : 5;
+            state.spendLootboxKeys(cost);
+            openSpinScreen(tier);
+          });
+        }
+      });
+    };
+
+    // Open spinning wheel screen for selected tier
+    const openSpinScreen = (tier) => {
+      // Define the wheel rewards config
+      const CHEST_TIERS = {
+        common: {
+          name: 'Common Box',
+          slices: [
+            { type: 'gold', value: 10, label: '10 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'gold', value: 15, label: '15 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 20, label: '20 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#10b981', weight: 18 },
+            { type: 'diamonds', value: 1, label: '1 Diamond', icon: '💎', color: '#10b981', weight: 10 },
+            { type: 'diamonds', value: 2, label: '2 Diamonds', icon: '💎', color: '#3b82f6', weight: 5 },
+            { type: 'consumable', value: 'Health Potion', label: 'Health Potion', icon: '🧪', color: '#10b981', weight: 2.5 },
+            { type: 'consumable', value: 'Mana Potion', label: 'Mana Potion', icon: '🧪', color: '#10b981', weight: 2.5 },
+            { type: 'grand_jackpot', value: 100, label: '100 Diamonds', icon: '👑', color: '#eab308', weight: 2 }
+          ]
+        },
+        rare: {
+          name: 'Rare Box',
+          slices: [
+            { type: 'gold', value: 30, label: '30 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'gold', value: 50, label: '50 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
+            { type: 'ap', value: 50, label: '50 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 80, label: '80 AP', icon: '⚡', color: '#3b82f6', weight: 18 },
+            { type: 'diamonds', value: 2, label: '2 Diamonds', icon: '💎', color: '#10b981', weight: 10 },
+            { type: 'diamonds', value: 4, label: '4 Diamonds', icon: '💎', color: '#3b82f6', weight: 5 },
+            { type: 'consumable', value: 'Rage Tonic', label: 'Rage Tonic', icon: '🧪', color: '#3b82f6', weight: 2.5 },
+            { type: 'consumable', value: 'Shield', label: 'Shield', icon: '🛡️', color: '#3b82f6', weight: 2.5 },
+            { type: 'grand_jackpot', value: 'rare_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 2 }
+          ]
+        },
+        epic: {
+          name: 'Epic Box',
+          slices: [
+            { type: 'gold', value: 60, label: '60 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
+            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 90, label: '90 AP', icon: '⚡', color: '#3b82f6', weight: 20 },
+            { type: 'ap', value: 150, label: '150 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'diamonds', value: 4, label: '4 Diamonds', icon: '💎', color: '#3b82f6', weight: 10 },
+            { type: 'diamonds', value: 8, label: '8 Diamonds', icon: '💎', color: '#8b5cf6', weight: 5 },
+            { type: 'consumable', value: 'Mega Instinct', label: 'Mega Instinct', icon: '⚡', color: '#8b5cf6', weight: 5 },
+            { type: 'weapon', value: 'random_shop', label: 'Weapon Drop', icon: '⚔️', color: '#f97316', weight: 5 },
+            { type: 'grand_jackpot', value: 'epic_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 5 }
+          ]
+        },
+        legendary: {
+          name: 'Legendary Box',
+          slices: [
+            { type: 'gold', value: 150, label: '150 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'gold', value: 300, label: '300 Gold', icon: '🪙', color: '#f97316', weight: 15 },
+            { type: 'ap', value: 200, label: '200 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 400, label: '400 AP', icon: '⚡', color: '#f97316', weight: 15 },
+            { type: 'diamonds', value: 8, label: '8 Diamonds', icon: '💎', color: '#8b5cf6', weight: 10 },
+            { type: 'diamonds', value: 20, label: '20 Diamonds', icon: '💎', color: '#f97316', weight: 5 },
+            { type: 'consumable', value: 'Gorillaz Brute Juice', label: 'Brute Juice', icon: '🧪', color: '#f97316', weight: 5 },
+            { type: 'weapon', value: 'random_advanced', label: 'Adv. Weapon', icon: '⚔️', color: '#f97316', weight: 20 },
+            { type: 'grand_jackpot', value: 'legendary_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 5 }
+          ]
+        }
+      };
+
+      const chest = CHEST_TIERS[tier];
+      const slices = chest.slices;
+
+      // Build segment boundaries
+      // Grand Jackpot (index 8) is 12 degrees wide, other 8 slices are 43.5 degrees
+      const segments = [];
+      let angleDegrees = 0;
+      slices.forEach((slice, idx) => {
+        const sweep = (slice.type === 'grand_jackpot') ? 12 : 43.5;
+        segments.push({
+          slice,
+          startDeg: angleDegrees,
+          endDeg: angleDegrees + sweep,
+          centerDeg: angleDegrees + sweep / 2
+        });
+        angleDegrees += sweep;
+      });
+
+      // Roll for winning index based on weights
+      const totalWeight = slices.reduce((sum, s) => sum + s.weight, 0);
+      let rand = Math.random() * totalWeight;
+      let winnerIdx = 0;
+      for (let i = 0; i < slices.length; i++) {
+        if (rand < slices[i].weight) {
+          winnerIdx = i;
+          break;
+        }
+        rand -= slices[i].weight;
+      }
+
+      // Check near-miss logic: 30% chance if won a common/low-tier segment to land right next to index 8 (Grand Jackpot)
+      let stopAngleOffset = 0;
+      const isCommonOutcome = slices[winnerIdx].type === 'gold' || slices[winnerIdx].type === 'ap' || slices[winnerIdx].type === 'diamonds' && slices[winnerIdx].value <= 2;
+      if (isCommonOutcome && Math.random() < 0.30) {
+        // If we won index 0 or index 7 (adjacent to index 8), stop right next to index 8
+        if (winnerIdx === 0) {
+          // stop right near the edge of the jackpot
+          stopAngleOffset = -19; // push closer to the jackpot edge
+        } else if (winnerIdx === 7) {
+          stopAngleOffset = 19;
+        }
+      }
+
+      const winner = slices[winnerIdx];
+
+      // Play start sound
+      try { if (window.SoundManager) SoundManager.play('lootbox_open'); } catch (e) {}
+
+      // Transition screen
+      popup.innerHTML = `
+        <h2 class="lootbox-title">${chest.name}</h2>
+        <div class="lootbox-content">
+          <div class="wheel-outer-container">
+            <div class="wheel-pointer">▽</div>
+            <canvas id="lootboxWheel" width="300" height="300" style="width: 300px; height: 300px;"></canvas>
+          </div>
+          <div class="turbo-spin-row" style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <input type="checkbox" id="turboSpinToggle" />
+            <label for="turboSpinToggle" style="font-size: 14px; color: #aaa; user-select: none;">Turbo Spin (Fast Animation)</label>
+          </div>
+          <div class="wheel-status-text" style="margin-top: 12px; font-weight: bold;">Click SPIN to reveal your fate!</div>
+          <div class="lootbox-result-area" style="opacity: 0; min-height: 80px; transition: opacity 0.5s ease; margin-top: 16px;"></div>
+          <button class="btn-large btn-spin-wheel" style="margin-top: 12px;">SPIN WHEEL</button>
+        </div>
+      `;
+
+      const canvas = popup.querySelector('#lootboxWheel');
+      const ctx = canvas.getContext('2d');
+
+      // Drawing function
+      const drawWheel = (rotationDegrees) => {
+        ctx.clearRect(0, 0, 300, 300);
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate((rotationDegrees * Math.PI) / 180);
+
+        segments.forEach((seg, idx) => {
+          const startRad = (seg.startDeg * Math.PI) / 180;
+          const endRad = (seg.endDeg * Math.PI) / 180;
+
+          // Draw slice filled background
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.arc(0, 0, 140, startRad, endRad);
+          ctx.closePath();
+          ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#eab308' : seg.slice.color;
+          ctx.fill();
+
+          // Stroke borders
+          ctx.strokeStyle = '#222';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Text and Icon representation
+          ctx.save();
+          // Rotate to the center of the segment
+          const midRad = (seg.centerDeg * Math.PI) / 180;
+          ctx.rotate(midRad);
+
+          // Draw text outwards
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#111' : '#fff';
+          ctx.font = 'bold 11px sans-serif';
+          
+          // Draw icon + short text
+          const text = `${seg.slice.icon} ${seg.slice.label}`;
+          ctx.fillText(text, 125, 0);
+          ctx.restore();
+        });
+
+        // Draw center gold pin
+        ctx.beginPath();
+        ctx.arc(0, 0, 15, 0, 2 * Math.PI);
+        ctx.fillStyle = '#ffd700';
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.restore();
+      };
+
+      // Initial draw
+      drawWheel(0);
+
+      const spinBtn = popup.querySelector('.btn-spin-wheel');
+      spinBtn.addEventListener('click', () => {
+        spinBtn.style.display = 'none';
+        popup.querySelector('.turbo-spin-row').style.display = 'none';
+
+        const turbo = popup.querySelector('#turboSpinToggle').checked;
+        const duration = turbo ? 1500 : 4500;
+        const rotations = turbo ? 2 : 5;
+
+        // target angle aligns the center of the winning slice with -90 degrees (12 o'clock pointer)
+        // stopAngleDeg = 270 - centerDeg
+        const stopAngleDeg = 270 - segments[winnerIdx].centerDeg + stopAngleOffset;
+        const targetDeg = rotations * 360 + stopAngleDeg;
+
+        let startTime = null;
+        let lastTickIndex = -1;
+        const statusText = popup.querySelector('.wheel-status-text');
+
+        // Dynamic tick index checker based on angle boundaries
+        const checkTicks = (angle) => {
+          let normalized = angle % 360;
+          if (normalized < 0) normalized += 360;
+          const idx = segments.findIndex(seg => normalized >= seg.startDeg && normalized < seg.endDeg);
+          if (idx !== -1 && idx !== lastTickIndex) {
+            lastTickIndex = idx;
+            try { if (window.SoundManager) SoundManager.play('tick'); } catch (e) {}
+          }
+        };
+
+        const animateSpin = (timestamp) => {
+          if (!startTime) startTime = timestamp;
+          const elapsed = timestamp - startTime;
+          const progress = Math.min(1, elapsed / duration);
+
+          // Ease-out cubic formula
+          const ease = 1 - Math.pow(1 - progress, 3);
+          const currentAngle = ease * targetDeg;
+
+          drawWheel(currentAngle);
+          checkTicks(currentAngle);
+
+          if (progress < 1) {
+            requestAnimationFrame(animateSpin);
+          } else {
+            handleWinnerReveal();
+          }
+        };
+
+        statusText.textContent = 'Deciding your fate... 🎲';
+        requestAnimationFrame(animateSpin);
+      });
+
+      // Handle winning payouts and display
+      const handleWinnerReveal = () => {
+        // Play final sounds
+        try {
+          if (window.SoundManager) {
+            if (winner.type === 'gold') SoundManager.play('coin');
+            else if (winner.type === 'diamonds' || winner.type === 'grand_jackpot') SoundManager.play('revive');
+            else if (winner.type === 'consumable') SoundManager.play('heal');
+            else SoundManager.play('lootbox_open');
+          }
+        } catch (e) {}
+
+        PopupsManager.spawnLootboxParticles(popup);
+
+        // Apply Gold multipliers (Greed buff)
+        let goldVal = 0;
+        let diamondVal = 0;
+        let apVal = 0;
+        let consumableVal = null;
+        let weaponVal = null;
+
+        if (winner.type === 'gold') {
+          goldVal = winner.value;
+          if (state.hasBuff('Greed')) {
+            const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
+            goldVal = Math.round(goldVal * (1 + greedBonus));
+          }
+          state.addGold(goldVal);
+        } else if (winner.type === 'diamonds') {
+          diamondVal = winner.value;
+          state.addDiamonds(diamondVal);
+        } else if (winner.type === 'ap') {
+          apVal = winner.value;
+          state.addAp(apVal);
+        } else if (winner.type === 'consumable') {
+          consumableVal = winner.value;
+          PlayerManager.addConsumable(consumableVal, 1);
+        } else if (winner.type === 'grand_jackpot') {
+          if (typeof winner.value === 'number') {
+            diamondVal = winner.value;
+            state.addDiamonds(diamondVal);
+          } else {
+            // Weapon grand jackpot
+            if (winner.value === 'special_weapon') {
+              weaponVal = 'Aegis';
+            } else if (winner.value === 'epic_grand') {
+              weaponVal = 'Bazooka';
+            } else {
+              weaponVal = 'Lazer';
+            }
+          }
+        } else if (winner.type === 'weapon') {
+          if (winner.value === 'random_shop') {
+            const list = ShopManager.getAvailableWeapons() || ['Thunder Hammer'];
+            weaponVal = list[Math.floor(Math.random() * list.length)];
+          } else {
+            const list = ['Aegis', 'Bazooka', 'Lazer', 'Thunder Hammer'];
+            weaponVal = list[Math.floor(Math.random() * list.length)];
+          }
+        }
+
+        // Setup Claim/Swap Panels
+        let resultHtml = '';
+        let displayLabel = '';
+        let resultColor = winner.color;
+
+        if (goldVal > 0) {
+          displayLabel = `🪙 +${goldVal} Gold (Claimed!)`;
+        } else if (diamondVal > 0) {
+          displayLabel = `💎 +${diamondVal} Diamonds (Claimed!)`;
+        } else if (apVal > 0) {
+          displayLabel = `⚡ +${apVal} AP (Claimed!)`;
+        } else if (consumableVal) {
+          displayLabel = `🧪 +1 ${consumableVal} (Added to Inventory!)`;
+        }
+
+        if (weaponVal) {
+          const emptySlotIndex = state.playerState.weapons.findIndex(w => !w);
+          const wCfg = state.config.weapons?.[weaponVal];
+          const wIcon = wCfg?.icon || '⚔️';
+          resultColor = '#f59e0b'; // Gold rarity
+
+          if (emptySlotIndex !== -1) {
+            PlayerManager.addWeapon(weaponVal);
+            resultHtml = `
+              <div class="lootbox-reward-item weapon" style="justify-content: center; font-weight: bold; font-size: 16px;">
+                ${wIcon} Won +1 ${weaponVal}! (Equipped)
+              </div>
+              <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
+            `;
+          } else {
+            // Swap needed
+            resultHtml = `
+              <div class="lootbox-reward-item weapon-alert" style="justify-content: center; color: #ff6b6b; font-weight: bold;">⚠️ Weapon Slots Full!</div>
+              <div class="lootbox-reward-item weapon" style="justify-content: center; margin-bottom: 12px; font-weight: bold;">🎁 Won: ${wIcon} ${weaponVal}</div>
+              <div class="lootbox-weapon-swap-panel">
+                <p style="font-size: 13px; color: #bbb; margin-bottom: 8px;">Select a slot to replace, or discard the won weapon:</p>
+                <div class="lootbox-swap-buttons" style="display: flex; flex-direction: column; gap: 6px;">
+            `;
+            state.playerState.weapons.forEach((w, idx) => {
+              const currentCfg = state.config.weapons?.[w];
+              const currentIcon = currentCfg?.icon || '⚔️';
+              resultHtml += `
+                <button class="btn-swap-weapon" data-index="${idx}" style="padding: 10px; border: 1px solid #444; background: #222; color: #fff; cursor: pointer; border-radius: 4px;">Replace Slot ${idx + 1} (${currentIcon} ${w})</button>
+              `;
+            });
+            resultHtml += `
+                  <button class="btn-swap-discard" style="padding: 10px; border: 1px solid #852; background: #422; color: #ff8888; cursor: pointer; border-radius: 4px;">Discard Won Weapon</button>
+                </div>
+              </div>
+            `;
+          }
+        } else {
+          resultHtml = `
+            <div class="lootbox-reward-item" style="justify-content: center; font-size: 18px; font-weight: bold;">
+              ${displayLabel}
+            </div>
+            <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
+          `;
+        }
+
+        const statusText = popup.querySelector('.wheel-status-text');
+        statusText.innerHTML = `CONGRATULATIONS!`;
+        statusText.style.color = resultColor;
+
+        const resultArea = popup.querySelector('.lootbox-result-area');
+        resultArea.innerHTML = resultHtml;
+        resultArea.style.opacity = 1;
+
+        // Wire event handlers
+        const finalizeClaim = () => {
+          this.closeAllPopups();
+          state.save();
+          if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
+            UIManager.refreshGameUI();
+          }
+        };
+
+        if (weaponVal) {
+          const swapButtons = resultArea.querySelectorAll('.btn-swap-weapon');
+          swapButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const idx = Number(e.currentTarget.dataset.index);
+              PlayerManager.replaceWeapon(idx, weaponVal);
+              const panel = resultArea.querySelector('.lootbox-weapon-swap-panel');
+              panel.innerHTML = `
+                <div class="lootbox-reward-item weapon-success" style="justify-content: center; margin-bottom: 12px; color: #10b981; font-weight: bold;">
+                  ✅ Swapped Slot ${idx + 1} for ${weaponVal}!
+                </div>
+                <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
+              `;
+              panel.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+            });
+          });
+
+          const discardBtn = resultArea.querySelector('.btn-swap-discard');
+          if (discardBtn) {
+            discardBtn.addEventListener('click', () => {
+              const panel = resultArea.querySelector('.lootbox-weapon-swap-panel');
+              panel.innerHTML = `
+                <div class="lootbox-reward-item weapon-discarded" style="justify-content: center; margin-bottom: 12px; color: #ff6b6b; font-weight: bold;">
+                  ❌ Discarded ${weaponVal}.
+                </div>
+                <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
+              `;
+              panel.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+            });
+          }
+        } else {
+          resultArea.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+        }
+      };
+    };
 
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
     PopupAnimation.scale(popup);
 
-    // Play drop sound
-    try {
-      if (window.SoundManager) {
-        SoundManager.play('lootbox_drop');
-      }
-    } catch (e) {}
-
-    const openBtn = popup.querySelector('.btn-lootbox-open');
-    openBtn.addEventListener('click', () => {
-      const keys = state.playerState.lootboxKeys || 0;
-      if (keys <= 0) return;
-      state.spendLootboxKeys(1);
-
-      openBtn.disabled = true;
-      const graphic = popup.querySelector('.lootbox-graphic');
-      graphic.classList.add('lootbox-opening-shake');
-
-      // Play open sound
-      try {
-        if (window.SoundManager) {
-          SoundManager.play('lootbox_open');
-        }
-      } catch (e) {}
-
-      setTimeout(() => {
-        // Helper to generate a random reward object
-        const generateRewardOption = (isWinner = false) => {
-          const rand = Math.random();
-          // Weapons have a ~15% chance to drop on the winning card, else normal distribution (~8% chance)
-          const isWeapon = isWinner ? (rand < 0.15) : (rand < 0.08);
-          if (isWeapon) {
-            let weaponName = null;
-            if (typeof ShopManager !== 'undefined' && typeof ShopManager.getAvailableWeapons === 'function') {
-              const list = ShopManager.getAvailableWeapons();
-              if (list && list.length) {
-                weaponName = list[Math.floor(Math.random() * list.length)];
-              }
-            }
-            if (!weaponName && state.config && state.config.weapons) {
-              const allWeps = Object.keys(state.config.weapons).filter(w => w !== 'Rusty Sword');
-              weaponName = allWeps[Math.floor(Math.random() * allWeps.length)];
-            }
-            if (!weaponName) weaponName = 'Thunder Hammer';
-            return {
-              type: 'weapon',
-              value: weaponName,
-              label: weaponName,
-              icon: '⚔️',
-              color: '#38bdf8',
-              bg: 'rgba(56, 189, 248, 0.15)'
-            };
-          } else if (rand < 0.45) {
-            // Gold: 50, 100, 150, 200
-            const goldAmounts = [50, 100, 150, 200];
-            const val = goldAmounts[Math.floor(Math.random() * goldAmounts.length)];
-            return {
-              type: 'gold',
-              value: val,
-              label: `+${val} Gold`,
-              icon: '🪙',
-              color: '#ffd700',
-              bg: 'rgba(255, 215, 0, 0.15)'
-            };
-          } else if (rand < 0.70) {
-            // Diamonds: 2, 4, 6, 8
-            const diamondAmounts = [2, 4, 6, 8];
-            const val = diamondAmounts[Math.floor(Math.random() * diamondAmounts.length)];
-            return {
-              type: 'diamonds',
-              value: val,
-              label: `+${val} Diamonds`,
-              icon: '💎',
-              color: '#00e5ff',
-              bg: 'rgba(0, 229, 255, 0.15)'
-            };
-          } else {
-            // Consumable
-            let consumableName = 'Health Potion';
-            if (typeof ShopManager !== 'undefined' && typeof ShopManager.getAvailableConsumables === 'function') {
-              const list = ShopManager.getAvailableConsumables();
-              if (list && list.length) {
-                consumableName = list[Math.floor(Math.random() * list.length)];
-              }
-            } else {
-              const fallbackList = ['Health Potion', 'Mana Potion', 'Rage Tonic', 'Shield'];
-              consumableName = fallbackList[Math.floor(Math.random() * fallbackList.length)];
-            }
-            let icon = '🧪';
-            if (consumableName.toLowerCase().includes('shield')) icon = '🛡️';
-            return {
-              type: 'consumable',
-              value: consumableName,
-              label: consumableName,
-              icon: icon,
-              color: '#a15cff',
-              bg: 'rgba(161, 92, 255, 0.15)'
-            };
-          }
-        };
-
-        // Pre-determine all 40 options
-        const options = [];
-        for (let i = 0; i < 40; i++) {
-          options.push(generateRewardOption(i === 30));
-        }
-
-        const winner = options[30];
-
-        // Transition popup content to the roulette screen
-        const content = popup.querySelector('.lootbox-content');
-        content.innerHTML = `
-          <div class="roulette-container">
-            <div class="roulette-pointer"></div>
-            <div class="roulette-strip" id="rouletteStrip"></div>
-          </div>
-          <div class="roulette-status-text">Rolling mystery rewards...</div>
-          <div class="lootbox-result-area" style="opacity: 0; min-height: 80px; transition: opacity 0.5s ease;"></div>
-        `;
-
-        const strip = content.querySelector('#rouletteStrip');
-        const rContainer = content.querySelector('.roulette-container');
-        
-        // Populate the strip
-        options.forEach((opt, idx) => {
-          const card = document.createElement('div');
-          card.className = `roulette-item`;
-          card.style.borderColor = opt.color;
-          card.style.background = opt.bg;
-          card.style.color = opt.color;
-          card.innerHTML = `
-            <div style="font-size: 28px; margin-bottom: 4px;">${opt.icon}</div>
-            <div style="font-size: 9px; font-weight: bold; line-height: 1.2; word-break: break-word;">${opt.label}</div>
-          `;
-          strip.appendChild(card);
-        });
-
-        // Calculate dynamic translation to center index 30 perfectly
-        const itemWidth = 90 + 8; // card width (90px) + gap (8px)
-        const containerWidth = rContainer.getBoundingClientRect().width || 340; // fallback if 0
-        const randomOffset = (Math.random() - 0.5) * 36; // slight offset to feel natural
-        const targetTranslateX = - (30 * itemWidth) + (containerWidth / 2) - (90 / 2) + randomOffset;
-
-        // Force a layout reflow before triggering transition
-        strip.getBoundingClientRect();
-
-        // Spin it!
-        strip.style.transition = 'transform 4.5s cubic-bezier(0.1, 0.8, 0.15, 1)';
-        strip.style.transform = `translateX(${targetTranslateX}px)`;
-
-        // Play decelerating click sounds
-        let tickDelay = 60;
-        let tickElapsed = 0;
-        const spinDuration = 4500;
-        function playTick() {
-          if (tickElapsed >= spinDuration) return;
-          try {
-            if (window.SoundManager) {
-              SoundManager.play('tick'); // Unregistered key falls back to default 600Hz sine tone
-            }
-          } catch (e) {}
-
-          tickElapsed += tickDelay;
-          tickDelay = tickDelay * 1.13; // geometric slowdown
-          if (tickDelay > 600) tickDelay = 600;
-          if (tickElapsed < spinDuration - 120) {
-            setTimeout(playTick, tickDelay);
-          }
-        }
-        setTimeout(playTick, 50);
-
-        // After spin animation finishes
-        setTimeout(() => {
-          // Highlight winning card
-          const cards = strip.querySelectorAll('.roulette-item');
-          const winningCard = cards[30];
-          if (winningCard) {
-            winningCard.classList.add('winner');
-          }
-
-          // Play win sound based on type
-          try {
-            if (window.SoundManager) {
-              if (winner.type === 'gold') SoundManager.play('coin');
-              else if (winner.type === 'diamonds') SoundManager.play('revive');
-              else if (winner.type === 'consumable') SoundManager.play('heal');
-              else SoundManager.play('lootbox_open');
-            }
-          } catch (e) {}
-
-          // Sparkles particle effect
-          PopupsManager.spawnLootboxParticles(popup);
-
-          // Apply reward to game state (weapons handled separately)
-          if (winner.type === 'gold') {
-            state.addGold(winner.value);
-          } else if (winner.type === 'diamonds') {
-            state.addDiamonds(winner.value);
-          } else if (winner.type === 'consumable') {
-            PlayerManager.addConsumable(winner.value, 1);
-          }
-
-          // Build claim / swap panel HTML
-          let resultHtml = '';
-          let weaponAddedDirectly = false;
-
-          if (winner.type === 'weapon') {
-            const emptySlotIndex = state.playerState.weapons.findIndex(w => !w);
-            const wCfg = state.config.weapons?.[winner.value];
-            const wIcon = wCfg?.icon || state.config.shopItemIcons?.[winner.value] || '⚔️';
-            if (emptySlotIndex !== -1) {
-              PlayerManager.addWeapon(winner.value);
-              weaponAddedDirectly = true;
-              resultHtml = `
-                <div class="lootbox-reward-item weapon" style="justify-content: center;">
-                  ${wIcon} +1 ${winner.value} (New Weapon!)
-                </div>
-                <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
-              `;
-            } else {
-              // Weapon swap needed
-              resultHtml = `
-                <div class="lootbox-reward-item weapon-alert" style="justify-content: center;">⚠️ Weapon Slots Full!</div>
-                <div class="lootbox-reward-item weapon" style="justify-content: center; margin-bottom: 12px;">🎁 Won: ${wIcon} ${winner.value}</div>
-                <div class="lootbox-weapon-swap-panel">
-                  <p>Select an equipped weapon to replace for free, or discard it:</p>
-                  <div class="lootbox-swap-buttons">
-              `;
-              state.playerState.weapons.forEach((w, idx) => {
-                let disp = 'Empty';
-                if (w) {
-                  const currentCfg = state.config.weapons?.[w];
-                  const currentIcon = currentCfg?.icon || state.config.shopItemIcons?.[w] || '⚔️';
-                  disp = `${currentIcon} ${w}`;
-                }
-                resultHtml += `
-                  <button class="btn-swap-weapon" data-index="${idx}">Replace Slot ${idx + 1} (${disp})</button>
-                `;
-              });
-              resultHtml += `
-                    <button class="btn-swap-discard">Discard New Weapon</button>
-                  </div>
-                </div>
-              `;
-            }
-          } else {
-            // Gold, Diamonds, or Consumable
-            let displayLabel = '';
-            if (winner.type === 'gold') displayLabel = `🪙 +${winner.value} Gold`;
-            else if (winner.type === 'diamonds') displayLabel = `💎 +${winner.value} Diamonds`;
-            else displayLabel = `${winner.icon} +1 ${winner.value}`;
-
-            resultHtml = `
-              <div class="lootbox-reward-item" style="justify-content: center; font-size: 18px;">
-                ${displayLabel}
-              </div>
-              <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
-            `;
-          }
-
-          // Update UI
-          const statusText = content.querySelector('.roulette-status-text');
-          statusText.innerHTML = `You won a reward!`;
-          statusText.style.color = winner.color;
-
-          const resultArea = content.querySelector('.lootbox-result-area');
-          resultArea.innerHTML = resultHtml;
-          resultArea.style.opacity = 1;
-
-          // Wire up event listeners
-          if (winner.type === 'weapon' && !weaponAddedDirectly) {
-            const swapButtons = resultArea.querySelectorAll('.btn-swap-weapon');
-            swapButtons.forEach(btn => {
-              btn.addEventListener('click', (e) => {
-                const idx = Number(e.currentTarget.dataset.index);
-                PlayerManager.replaceWeapon(idx, winner.value);
-                const panel = resultArea.querySelector('.lootbox-weapon-swap-panel');
-                panel.innerHTML = `
-                  <div class="lootbox-reward-item weapon-success" style="justify-content: center; margin-bottom: 12px;">
-                    ✅ Swapped Slot ${idx + 1} for ${winner.value}!
-                  </div>
-                  <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
-                `;
-                // Wire claim on the new claim button
-                const newClaim = panel.querySelector('.btn-lootbox-claim');
-                newClaim.addEventListener('click', () => {
-                  PopupsManager.closeAllPopups();
-                  state.save();
-                  if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
-                    UIManager.refreshGameUI();
-                  }
-                });
-                state.save();
-                if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
-                  UIManager.refreshGameUI();
-                }
-              });
-            });
-
-            const discardBtn = resultArea.querySelector('.btn-swap-discard');
-            if (discardBtn) {
-              discardBtn.addEventListener('click', () => {
-                const panel = resultArea.querySelector('.lootbox-weapon-swap-panel');
-                panel.innerHTML = `
-                  <div class="lootbox-reward-item weapon-discarded" style="justify-content: center; margin-bottom: 12px;">
-                    ❌ Discarded ${winner.value}.
-                  </div>
-                  <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
-                `;
-                // Wire claim on the new claim button
-                const newClaim = panel.querySelector('.btn-lootbox-claim');
-                newClaim.addEventListener('click', () => {
-                  PopupsManager.closeAllPopups();
-                  state.save();
-                  if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
-                    UIManager.refreshGameUI();
-                  }
-                });
-              });
-            }
-          } else {
-            // Simple claim button listener
-            const claimBtn = resultArea.querySelector('.btn-lootbox-claim');
-            if (claimBtn) {
-              claimBtn.addEventListener('click', () => {
-                PopupsManager.closeAllPopups();
-                state.save();
-                if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
-                  UIManager.refreshGameUI();
-                }
-              });
-            }
-          }
-
-        }, 4500); // Wait for spin to stop (4.5 seconds)
-
-      }, 800); // 800ms chest shaking
-    });
+    // Initial render of the Lootbox Shop
+    renderShop();
   }
 
   static spawnLootboxParticles(popupElement) {
