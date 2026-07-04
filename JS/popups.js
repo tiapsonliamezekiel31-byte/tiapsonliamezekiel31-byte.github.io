@@ -3515,57 +3515,93 @@ class PopupsManager {
         common: {
           name: 'Common Box',
           slices: [
-            { type: 'gold', value: 10, label: '10 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 12 },
+            { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
+            { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
             { type: 'gold', value: 15, label: '15 Gold', icon: '🪙', color: '#10b981', weight: 20 },
-            { type: 'ap', value: 20, label: '20 AP', icon: '⚡', color: '#10b981', weight: 20 },
-            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#10b981', weight: 18 },
-            { type: 'diamonds', value: 1, label: '1 Diamond', icon: '💎', color: '#10b981', weight: 10 },
-            { type: 'diamonds', value: 2, label: '2 Diamonds', icon: '💎', color: '#3b82f6', weight: 5 },
-            { type: 'consumable', value: 'Health Potion', label: 'Health Potion', icon: '🧪', color: '#10b981', weight: 2.5 },
-            { type: 'consumable', value: 'Mana Potion', label: 'Mana Potion', icon: '🧪', color: '#10b981', weight: 2.5 },
-            { type: 'grand_jackpot', value: 100, label: '100 Diamonds', icon: '👑', color: '#eab308', weight: 2 }
+            { type: 'gold', value: 30, label: '30 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'gold', value: 60, label: '60 Gold', icon: '🪙', color: '#10b981', weight: 15 },
+            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#10b981', weight: 12 },
+            { type: 'gold', value: 150, label: '150 Gold', icon: '🪙', color: '#3b82f6', weight: 10 },
+            { type: 'ap', value: 5, label: '5 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 10, label: '10 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 15, label: '15 AP', icon: '⚡', color: '#10b981', weight: 15 },
+            { type: 'ap', value: 25, label: '25 AP', icon: '⚡', color: '#10b981', weight: 12 },
+            { type: 'ap', value: 33, label: '33 AP', icon: '⚡', color: '#3b82f6', weight: 10 },
+            { type: 'diamonds', value: 1, label: '1 Dia', icon: '💎', color: '#10b981', weight: 15 },
+            { type: 'diamonds', value: 3, label: '3 Dia', icon: '💎', color: '#10b981', weight: 10 },
+            { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#3b82f6', weight: 8 },
+            { type: 'grand_jackpot', value: 100, label: 'Jackpot', icon: '👑', color: '#eab308', weight: 2 }
           ]
         },
         rare: {
           name: 'Rare Box',
           slices: [
+            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 12 },
+            { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
+            { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
             { type: 'gold', value: 30, label: '30 Gold', icon: '🪙', color: '#10b981', weight: 20 },
-            { type: 'gold', value: 50, label: '50 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
-            { type: 'ap', value: 50, label: '50 AP', icon: '⚡', color: '#10b981', weight: 20 },
-            { type: 'ap', value: 80, label: '80 AP', icon: '⚡', color: '#3b82f6', weight: 18 },
-            { type: 'diamonds', value: 2, label: '2 Diamonds', icon: '💎', color: '#10b981', weight: 10 },
-            { type: 'diamonds', value: 4, label: '4 Diamonds', icon: '💎', color: '#3b82f6', weight: 5 },
-            { type: 'consumable', value: 'Rage Tonic', label: 'Rage Tonic', icon: '🧪', color: '#3b82f6', weight: 2.5 },
-            { type: 'consumable', value: 'Shield', label: 'Shield', icon: '🛡️', color: '#3b82f6', weight: 2.5 },
-            { type: 'grand_jackpot', value: 'rare_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 2 }
+            { type: 'gold', value: 75, label: '75 Gold', icon: '🪙', color: '#10b981', weight: 20 },
+            { type: 'gold', value: 120, label: '120 Gold', icon: '🪙', color: '#3b82f6', weight: 15 },
+            { type: 'gold', value: 200, label: '200 Gold', icon: '🪙', color: '#3b82f6', weight: 12 },
+            { type: 'gold', value: 300, label: '300 Gold', icon: '🪙', color: '#8b5cf6', weight: 10 },
+            { type: 'ap', value: 10, label: '10 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 20, label: '20 AP', icon: '⚡', color: '#10b981', weight: 20 },
+            { type: 'ap', value: 35, label: '35 AP', icon: '⚡', color: '#3b82f6', weight: 15 },
+            { type: 'ap', value: 50, label: '50 AP', icon: '⚡', color: '#3b82f6', weight: 12 },
+            { type: 'ap', value: 66, label: '66 AP', icon: '⚡', color: '#8b5cf6', weight: 10 },
+            { type: 'diamonds', value: 2, label: '2 Dia', icon: '💎', color: '#10b981', weight: 15 },
+            { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#3b82f6', weight: 10 },
+            { type: 'diamonds', value: 15, label: '15 Dia', icon: '💎', color: '#8b5cf6', weight: 8 },
+            { type: 'grand_jackpot', value: 'rare_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 2 }
           ]
         },
         epic: {
           name: 'Epic Box',
           slices: [
-            { type: 'gold', value: 60, label: '60 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
-            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
-            { type: 'ap', value: 90, label: '90 AP', icon: '⚡', color: '#3b82f6', weight: 20 },
-            { type: 'ap', value: 150, label: '150 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
-            { type: 'diamonds', value: 4, label: '4 Diamonds', icon: '💎', color: '#3b82f6', weight: 10 },
-            { type: 'diamonds', value: 8, label: '8 Diamonds', icon: '💎', color: '#8b5cf6', weight: 5 },
-            { type: 'consumable', value: 'Mega Instinct', label: 'Mega Instinct', icon: '⚡', color: '#8b5cf6', weight: 5 },
-            { type: 'weapon', value: 'random_shop', label: 'Weapon Drop', icon: '⚔️', color: '#f97316', weight: 5 },
-            { type: 'grand_jackpot', value: 'epic_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 5 }
+            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 10 },
+            { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
+            { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
+            { type: 'gold', value: 50, label: '50 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
+            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#3b82f6', weight: 18 },
+            { type: 'gold', value: 200, label: '200 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'gold', value: 350, label: '350 Gold', icon: '🪙', color: '#8b5cf6', weight: 12 },
+            { type: 'gold', value: 450, label: '450 Gold', icon: '🪙', color: '#f97316', weight: 10 },
+            { type: 'ap', value: 15, label: '15 AP', icon: '⚡', color: '#3b82f6', weight: 20 },
+            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#3b82f6', weight: 18 },
+            { type: 'ap', value: 55, label: '55 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 80, label: '80 AP', icon: '⚡', color: '#8b5cf6', weight: 12 },
+            { type: 'ap', value: 99, label: '99 AP', icon: '⚡', color: '#f97316', weight: 10 },
+            { type: 'diamonds', value: 4, label: '4 Dia', icon: '💎', color: '#3b82f6', weight: 15 },
+            { type: 'diamonds', value: 12, label: '12 Dia', icon: '💎', color: '#8b5cf6', weight: 10 },
+            { type: 'diamonds', value: 24, label: '24 Dia', icon: '💎', color: '#f97316', weight: 8 },
+            { type: 'grand_jackpot', value: 'epic_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 5 }
           ]
         },
         legendary: {
           name: 'Legendary Box',
           slices: [
-            { type: 'gold', value: 150, label: '150 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
-            { type: 'gold', value: 300, label: '300 Gold', icon: '🪙', color: '#f97316', weight: 15 },
-            { type: 'ap', value: 200, label: '200 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
-            { type: 'ap', value: 400, label: '400 AP', icon: '⚡', color: '#f97316', weight: 15 },
-            { type: 'diamonds', value: 8, label: '8 Diamonds', icon: '💎', color: '#8b5cf6', weight: 10 },
-            { type: 'diamonds', value: 20, label: '20 Diamonds', icon: '💎', color: '#f97316', weight: 5 },
-            { type: 'consumable', value: 'Gorillaz Brute Juice', label: 'Brute Juice', icon: '🧪', color: '#f97316', weight: 5 },
-            { type: 'weapon', value: 'random_advanced', label: 'Adv. Weapon', icon: '⚔️', color: '#f97316', weight: 20 },
-            { type: 'grand_jackpot', value: 'legendary_grand', label: 'Grand Jackpot', icon: '👑', color: '#eab308', weight: 5 }
+            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 10 },
+            { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
+            { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
+            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'gold', value: 250, label: '250 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'gold', value: 400, label: '400 Gold', icon: '🪙', color: '#f97316', weight: 12 },
+            { type: 'gold', value: 600, label: '600 Gold', icon: '🪙', color: '#f97316', weight: 12 },
+            { type: 'gold', value: 750, label: '750 Gold', icon: '🪙', color: '#ec4899', weight: 10 },
+            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 60, label: '60 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 90, label: '90 AP', icon: '⚡', color: '#f97316', weight: 12 },
+            { type: 'ap', value: 130, label: '130 AP', icon: '⚡', color: '#f97316', weight: 12 },
+            { type: 'ap', value: 165, label: '165 AP', icon: '⚡', color: '#ec4899', weight: 10 },
+            { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#8b5cf6', weight: 12 },
+            { type: 'diamonds', value: 18, label: '18 Dia', icon: '💎', color: '#f97316', weight: 10 },
+            { type: 'diamonds', value: 36, label: '36 Dia', icon: '💎', color: '#ec4899', weight: 8 },
+            { type: 'grand_jackpot', value: 'legendary_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 5 }
           ]
         }
       };
@@ -3574,11 +3610,16 @@ class PopupsManager {
       const slices = chest.slices;
 
       // Build segment boundaries
-      // Grand Jackpot (index 8) is 12 degrees wide, other 8 slices are 43.5 degrees
+      const totalSlices = slices.length;
+      const jackpotCount = slices.filter(s => s.type === 'grand_jackpot').length;
+      const regularCount = totalSlices - jackpotCount;
+      const jackpotSweep = 10;
+      const regularSweep = (360 - jackpotCount * jackpotSweep) / regularCount;
+
       const segments = [];
       let angleDegrees = 0;
       slices.forEach((slice, idx) => {
-        const sweep = (slice.type === 'grand_jackpot') ? 12 : 43.5;
+        const sweep = (slice.type === 'grand_jackpot') ? jackpotSweep : regularSweep;
         segments.push({
           slice,
           startDeg: angleDegrees,
@@ -3600,16 +3641,14 @@ class PopupsManager {
         rand -= slices[i].weight;
       }
 
-      // Check near-miss logic: 30% chance if won a common/low-tier segment to land right next to index 8 (Grand Jackpot)
+      // Check near-miss logic: 30% chance if won a common/low-tier segment to land right next to index 17 (Grand Jackpot)
       let stopAngleOffset = 0;
-      const isCommonOutcome = slices[winnerIdx].type === 'gold' || slices[winnerIdx].type === 'ap' || slices[winnerIdx].type === 'diamonds' && slices[winnerIdx].value <= 2;
+      const isCommonOutcome = slices[winnerIdx].type === 'gold' || slices[winnerIdx].type === 'ap' || slices[winnerIdx].type === 'diamonds' || slices[winnerIdx].type === 'miss';
       if (isCommonOutcome && Math.random() < 0.30) {
-        // If we won index 0 or index 7 (adjacent to index 8), stop right next to index 8
         if (winnerIdx === 0) {
-          // stop right near the edge of the jackpot
-          stopAngleOffset = -19; // push closer to the jackpot edge
-        } else if (winnerIdx === 7) {
-          stopAngleOffset = 19;
+          stopAngleOffset = -(regularSweep / 2 - 1.5);
+        } else if (winnerIdx === 16) {
+          stopAngleOffset = (regularSweep / 2 - 1.5);
         }
       }
 
@@ -3673,7 +3712,7 @@ class PopupsManager {
           ctx.textAlign = 'right';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#111' : '#fff';
-          ctx.font = 'bold 11px sans-serif';
+          ctx.font = 'bold 9px sans-serif';
           
           // Draw icon + short text
           const text = `${seg.slice.icon} ${seg.slice.label}`;
@@ -3755,7 +3794,8 @@ class PopupsManager {
           if (window.SoundManager) {
             if (winner.type === 'gold') SoundManager.play('coin');
             else if (winner.type === 'diamonds' || winner.type === 'grand_jackpot') SoundManager.play('revive');
-            else if (winner.type === 'consumable') SoundManager.play('heal');
+            else if (winner.type === 'consumable' || winner.type === 'random_consumable') SoundManager.play('heal');
+            else if (winner.type === 'miss') SoundManager.play('miss');
             else SoundManager.play('lootbox_open');
           }
         } catch (e) {}
@@ -3785,6 +3825,11 @@ class PopupsManager {
         } else if (winner.type === 'consumable') {
           consumableVal = winner.value;
           PlayerManager.addConsumable(consumableVal, 1);
+        } else if (winner.type === 'random_consumable') {
+          const list = Object.keys(state.config.consumables || {}).filter(k => k !== 'Health Potion' && k !== 'Mana Potion');
+          const randomName = list[Math.floor(Math.random() * list.length)] || 'Shield';
+          consumableVal = randomName;
+          PlayerManager.addConsumable(randomName, 1);
         } else if (winner.type === 'grand_jackpot') {
           if (typeof winner.value === 'number') {
             diamondVal = winner.value;
@@ -3812,7 +3857,7 @@ class PopupsManager {
         // Setup Claim/Swap Panels
         let resultHtml = '';
         let displayLabel = '';
-        let resultColor = winner.color;
+        let resultColor = winner.type === 'miss' ? '#777777' : winner.color;
 
         if (goldVal > 0) {
           displayLabel = `🪙 +${goldVal} Gold (Claimed!)`;
@@ -3822,6 +3867,8 @@ class PopupsManager {
           displayLabel = `⚡ +${apVal} AP (Claimed!)`;
         } else if (consumableVal) {
           displayLabel = `🧪 +1 ${consumableVal} (Added to Inventory!)`;
+        } else if (winner.type === 'miss') {
+          displayLabel = `❌ MISS... No Rewards Won!`;
         }
 
         if (weaponVal) {
