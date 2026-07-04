@@ -3854,6 +3854,35 @@ class PopupsManager {
           }
         }
 
+        // Spawn a large floating popup showing the reward
+        let floatLabel = '';
+        let floatColor = winner.color || '#fff';
+        if (goldVal > 0) {
+          floatLabel = `+${goldVal} Gold 🪙`;
+        } else if (diamondVal > 0) {
+          floatLabel = `+${diamondVal} Diamonds 💎`;
+        } else if (apVal > 0) {
+          floatLabel = `+${apVal} AP ⚡`;
+        } else if (consumableVal) {
+          floatLabel = `+1 ${consumableVal} 🧪`;
+        } else if (weaponVal) {
+          floatLabel = `+1 ${weaponVal} ⚔️`;
+        } else if (winner.type === 'miss') {
+          floatLabel = `MISS ❌`;
+          floatColor = '#777777';
+        }
+
+        if (floatLabel && typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+          const rect = popup.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          FloatingDamageNumber.show(cx, cy - 30, floatLabel, {
+            color: floatColor,
+            scale: 1.6,
+            duration: 2500
+          });
+        }
+
         // Setup Claim/Swap Panels
         let resultHtml = '';
         let displayLabel = '';
