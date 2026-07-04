@@ -1184,9 +1184,22 @@ class GameState {
           shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
           shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
           damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
           totalDamage += damage;
         } else if (attackType === 'crit') {
-          totalDamage += 15;
+          let damage = 15;
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
+          totalDamage += damage;
         } else if (attackType === 'heavy') {
           let damage = 12;
           damage = Math.max(1, Math.round(damage * reductionFactor));
@@ -1203,6 +1216,12 @@ class GameState {
           shieldAbsorption *= (1.0 - (state.playerState.corrosiveStacks || 0) * 0.10);
           shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
           damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
           totalDamage += damage;
         }
       });
@@ -1676,6 +1695,12 @@ function performCheckIn() {
           shieldMultiplier = Math.max(0.0, 1.0 - shieldAbsorption);
           
           damage = Math.max(1, Math.round(damage * shieldMultiplier));
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
 
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -1690,7 +1715,13 @@ function performCheckIn() {
         }
         else if (attackType === 'crit') {
           // Critical attack: does 15 damage (ignores all shields, etc.)
-          const damage = 15;
+          let damage = 15;
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
           retaliationSteps.push({
             enemyId: bossEnemy.id,
             name: `${bossEnemy.name} (Critical Strike ⚡)`,
@@ -1743,6 +1774,13 @@ function performCheckIn() {
           damage = Math.max(1, Math.round(damage * shieldMultiplier));
           
           state.playerState.dodgeCostMultiplier = (state.playerState.dodgeCostMultiplier || 1.0) * 2.0;
+
+          if (bossEnemy) {
+            const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
+            if (reactiveWeapon && reactiveWeapon.pending) {
+              damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+            }
+          }
 
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -1822,6 +1860,22 @@ function performCheckIn() {
           }
         }
       });
+
+      // Consume boss reactive weapon effect if any attack occurred
+      if (bossEnemy) {
+        const effect = bossEnemy.statusEffects?.reactiveWeapon;
+        if (effect && effect.pending) {
+          if (effect.rewardType === 'ap') {
+            const reward = Math.ceil((state.playerState.maxAp || 0) * (Number(effect.rewardValue) || 0));
+            if (reward > 0) state.addAp(reward);
+          } else if (effect.rewardType === 'mana') {
+            const reward = Math.ceil(Number(effect.rewardValue) || 0);
+            if (reward > 0) state.addMana(reward);
+          }
+          effect.pending = false;
+          delete bossEnemy.statusEffects.reactiveWeapon;
+        }
+      }
     } else {
       const resolveOneAttack = (enemy, damage, { isBoss = false } = {}) => {
         console.debug(`[resolveOneAttack] target=${enemy?.name || 'unknown'} id=${enemy?.id || 'n/a'} damage=${damage} isBoss=${isBoss}`);

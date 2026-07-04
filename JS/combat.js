@@ -586,7 +586,7 @@ class CombatManager {
           vineState.storedDamageByEnemyId[enemyId] = Math.max(0, Number(vineState.storedDamageByEnemyId[enemyId] || 0) + enforcedDamage);
         }
 
-        if ((attackPlan.specialId === 'buckler' || attackPlan.specialId === 'aegis') && !tgt.isDead) {
+        if ((attackPlan.specialId === 'buckler' || attackPlan.specialId === 'aegis') && !tgt.isDead && tgt === target) {
           tgt.statusEffects = tgt.statusEffects || {};
           tgt.statusEffects.reactiveWeapon = {
             type: attackPlan.specialId,
@@ -722,6 +722,7 @@ class CombatManager {
           }
         }
       } else {
+        pushSpecialPopup('FINAL STAND', '#ef4444');
         hitDetails.push({
           enemyId: tgt.id,
           damage: enforcedDamage,

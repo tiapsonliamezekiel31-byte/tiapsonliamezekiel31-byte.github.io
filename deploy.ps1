@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add closest-neighbor connections and Focus Mode for Dailies"
+$commitMsg = "feat: simplify final stand mechanic and fix buckler/aegis damage reduction"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

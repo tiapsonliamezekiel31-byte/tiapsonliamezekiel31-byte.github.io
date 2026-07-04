@@ -137,6 +137,7 @@ class Enemy {
     this.dmgMult = baseData.dmgMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyDamageMultiplier : 1);
     
     this.isDead = false;
+    this.finalStandUsed = false;
   }
   
   setEnemyCount(count) {
@@ -346,31 +347,22 @@ class EnemyManager {
   
   static applyFinalStand(enemy, damage) {
     const state = getGameState();
-    const finalStandThreshold = enemy.maxHp * state.config.finalStandThreshold;
-    console.debug(`[EnemyManager.applyFinalStand] ${enemy.name}(${enemy.id}) damage=${damage} threshold=${finalStandThreshold}`);
-
-    // Do not allow final-stand mechanics to apply to bosses — bosses must be defeated normally
-    if (enemy.isBoss) {
-      console.debug(`[EnemyManager.applyFinalStand] skipping final stand for boss ${enemy.name}(${enemy.id})`);
-      return false;
-    }
-
     // Only apply if the attack is lethal
     if (enemy.hp - damage > 0) {
       return false;
     }
 
-    if (damage >= finalStandThreshold) {
-      console.debug('[EnemyManager.applyFinalStand] damage >= threshold -> no final stand');
+    if (enemy.finalStandUsed) {
       return false;
     }
 
-    // 40% chance to survive with 1 HP
+    // 65% chance to survive with 1 HP
     const roll = Math.random();
     const chance = state.config.finalStandChance;
     console.debug(`[EnemyManager.applyFinalStand] roll=${roll} chance=${chance}`);
     if (roll < chance) {
       enemy.hp = 1;
+      enemy.finalStandUsed = true;
       console.debug(`[EnemyManager.applyFinalStand] final stand TRIGGERED -> set hp=1 for ${enemy.name}(${enemy.id})`);
       return true;
     }
