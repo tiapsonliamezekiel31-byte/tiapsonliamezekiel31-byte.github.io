@@ -415,12 +415,12 @@ class UIManager {
         <!-- Advanced Statistics Grid -->
         <div class="stats-grid">
           <div class="stats-box">
-            <span class="stats-box-label">Gold velocity</span>
-            <span class="stats-box-value" id="statsGoldVelocity">0.0/min</span>
+            <span class="stats-box-label">Max Gold</span>
+            <span class="stats-box-value" id="statsGoldVelocity">0</span>
           </div>
           <div class="stats-box">
-            <span class="stats-box-label">Diamond velocity</span>
-            <span class="stats-box-value" id="statsDiamondVelocity">0.0/min</span>
+            <span class="stats-box-label">Max Diamonds</span>
+            <span class="stats-box-value" id="statsDiamondVelocity">0</span>
           </div>
           <div class="stats-box">
             <span class="stats-box-label">Avg Dealt Hit</span>
@@ -10378,16 +10378,13 @@ class StatsHUD {
     const msElapsed = startTime > 0 ? Date.now() - startTime : 0;
     const minsElapsed = msElapsed / 60000;
 
-    const goldEarned = Number(runStats.totalGoldEarned) || 0;
-    const goldVel = minsElapsed > 0.1 ? (goldEarned / minsElapsed).toFixed(1) : '0.0';
-
-    const diamondsEarned = Number(runStats.totalDiamondsEarned) || 0;
-    const diaVel = minsElapsed > 0.1 ? (diamondsEarned / minsElapsed).toFixed(1) : '0.0';
+    const maxGoldVal = (typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function') ? ShopManager.calculateMaxGold() : 0;
+    const maxDiamondsVal = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function') ? TaskManager.getMaxPotentialDiamonds() : 0;
 
     const elGoldVal = document.getElementById('statsGoldVelocity');
     const elDiaVal = document.getElementById('statsDiamondVelocity');
-    if (elGoldVal) elGoldVal.textContent = `${goldVel}/min`;
-    if (elDiaVal) elDiaVal.textContent = `${diaVel}/min`;
+    if (elGoldVal) elGoldVal.textContent = Math.ceil(maxGoldVal);
+    if (elDiaVal) elDiaVal.textContent = Math.ceil(maxDiamondsVal);
 
     const dmgDealtHits = runStats.last15DealtHits || [];
     const avgDmgDealt = dmgDealtHits.length > 0 
