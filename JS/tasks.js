@@ -375,13 +375,16 @@ class TaskManager {
     }
 
     // Check if miss chance triggers
+    let isLootboxMode = !!state.playerState.lootboxDailyMode;
     let isMiss = false;
-    const diff = daily.difficulty;
-    const rand = Math.random();
-    if (diff === 'Ultra' && rand < 1 / 9) isMiss = true;
-    else if (diff === 'Hard' && rand < 1 / 8) isMiss = true;
-    else if (diff === 'Medium' && rand < 1 / 7) isMiss = true;
-    else if (diff === 'Easy' && rand < 1 / 5) isMiss = true;
+    if (!isLootboxMode) {
+      const diff = daily.difficulty;
+      const rand = Math.random();
+      if (diff === 'Ultra' && rand < 1 / 9) isMiss = true;
+      else if (diff === 'Hard' && rand < 1 / 8) isMiss = true;
+      else if (diff === 'Medium' && rand < 1 / 7) isMiss = true;
+      else if (diff === 'Easy' && rand < 1 / 5) isMiss = true;
+    }
 
     if (isMiss) {
       state.systemState.runStats.tasksCompleted++;
@@ -395,7 +398,6 @@ class TaskManager {
 
     // Award rewards
     const reward = state.config.taskRewards[daily.difficulty];
-    let isLootboxMode = !!state.playerState.lootboxDailyMode;
 
     let apReward = isLootboxMode ? 0 : reward.ap;
     let goldReward = isLootboxMode ? 0 : reward.gold;
