@@ -113,7 +113,7 @@ class UIManager {
       rect.left + rect.width / 2,
       Math.max(12, rect.top - 18),
       `+${amount} Keys 🔑`,
-      { color: '#ffd700', cycleText: true }
+      { color: '#ffd700', cycleText: false }
     );
   }
 
@@ -2087,7 +2087,7 @@ class UIManager {
           if (res.rewards && res.rewards.keys) {
             FloatingDamageNumber.show(centerX, centerY - 20, `+${res.rewards.keys} Keys 🔑`, {
               color: '#ffd700',
-              cycleText: true
+              cycleText: false
             });
           }
         }
