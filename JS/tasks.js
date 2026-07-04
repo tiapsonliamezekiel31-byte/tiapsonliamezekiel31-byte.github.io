@@ -397,7 +397,7 @@ class TaskManager {
     const reward = state.config.taskRewards[daily.difficulty];
     let isLootboxMode = !!state.playerState.lootboxDailyMode;
 
-    let apReward = isLootboxMode ? (daily.difficulty === 'Easy' ? 5 : daily.difficulty === 'Medium' ? 8 : daily.difficulty === 'Hard' ? 10 : 15) : reward.ap;
+    let apReward = isLootboxMode ? 0 : reward.ap;
     let goldReward = isLootboxMode ? 0 : reward.gold;
     let diamondReward = isLootboxMode ? 0 : reward.diamonds;
     let attrReward = reward.attributePoints;

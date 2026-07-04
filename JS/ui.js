@@ -105,6 +105,18 @@ class UIManager {
     );
   }
 
+  static showDailyKeysReward(card, amount) {
+    const rect = card?.getBoundingClientRect?.();
+    if (!rect) return;
+
+    FloatingDamageNumber.show(
+      rect.left + rect.width / 2,
+      Math.max(12, rect.top - 18),
+      `+${amount} Keys 🔑`,
+      { color: '#ffd700', cycleText: true }
+    );
+  }
+
   static spawnDiamondFloatingPopup(x, y, amount) {
     if (!amount || amount <= 0) return;
     try {
@@ -2071,6 +2083,13 @@ class UIManager {
               cycleText: true
             });
           }
+
+          if (res.rewards && res.rewards.keys) {
+            FloatingDamageNumber.show(centerX, centerY - 20, `+${res.rewards.keys} Keys 🔑`, {
+              color: '#ffd700',
+              cycleText: true
+            });
+          }
         }
       }
 
@@ -3797,6 +3816,9 @@ class UIManager {
                 }
                 if (res.rewards && res.rewards.ap) {
                   UIManager.showDailyApReward(card, res.rewards.ap);
+                }
+                if (res.rewards && res.rewards.keys) {
+                  UIManager.showDailyKeysReward(card, res.rewards.keys);
                 }
                 if (res.rewards && res.rewards.diamonds) {
                   const rect = card.getBoundingClientRect();
@@ -7134,6 +7156,9 @@ class UIManager {
                   }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
+                  }
+                  if (res.rewards && res.rewards.keys) {
+                    UIManager.showDailyKeysReward(card, res.rewards.keys);
                   }
                   if (res.rewards && res.rewards.diamonds) {
                     const rect = card.getBoundingClientRect();
