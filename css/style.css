@@ -9897,56 +9897,73 @@ button:hover,
 
 /* Dailies Table View Popup Styles */
 .dailies-table-popup {
-  width: 960px !important;
-  max-width: 95vw !important;
-  max-height: min(90vh, 90dvh) !important;
+  width: 1024px !important;
+  max-width: 96vw !important;
+  max-height: min(92vh, 92dvh) !important;
+  padding: 12px !important;
 }
 
 .dailies-table-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
   width: 100%;
 }
 
 .dailies-table-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.8fr 1fr 1.5fr 80px;
-  gap: 8px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-bottom: 2px solid var(--accent-copper);
+  grid-template-columns: 2.2fr 1fr 1fr 1.6fr 0.8fr 1.4fr 60px;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-family: 'Orbitron', monospace;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: bold;
   color: var(--accent-gold);
+  text-align: center;
+}
+
+.dailies-table-header > div {
+  padding: 2px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+.dailies-table-header > div:last-child {
+  border-right: none;
 }
 
 .dailies-table-rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .dailies-table-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1.8fr 1fr 1.5fr 80px;
-  gap: 8px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  align-items: start;
+  grid-template-columns: 2.2fr 1fr 1fr 1.6fr 0.8fr 1.4fr 60px;
+  gap: 2px;
+  padding: 2px 4px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0px;
+  align-items: center;
 }
 
 .dailies-table-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dailies-table-cell {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  padding: 2px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  height: 100%;
+  justify-content: center;
+}
+.dailies-table-cell:last-child {
+  border-right: none;
 }
 
 .dailies-table-cell label {
@@ -9957,54 +9974,57 @@ button:hover,
 .table-input,
 .table-select {
   width: 100%;
-  padding: 6px;
+  padding: 3px 5px;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   font-family: inherit;
-  font-size: 0.75rem;
-  border-radius: 3px;
+  font-size: 0.7rem;
+  border-radius: 1px;
+  height: 24px;
 }
 
 .table-input:focus,
 .table-select:focus {
-  border-color: var(--accent-copper);
+  border-color: var(--accent-gold);
   outline: none;
 }
 
 .table-input-number {
-  max-width: 60px;
-  padding: 6px;
+  width: 100%;
+  max-width: 100%;
+  padding: 3px 5px;
   box-sizing: border-box;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-align: center;
-  border-radius: 3px;
+  border-radius: 1px;
+  height: 24px;
 }
 
 /* Weekday Pills Styling */
 .weekday-pills-container {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  justify-content: center;
 }
 
 .weekday-pill {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8px;
+  font-size: 7px;
   font-family: 'Orbitron', monospace;
   font-weight: bold;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 50%;
@@ -10013,10 +10033,9 @@ button:hover,
 }
 
 .weekday-pill.active {
-  background: rgba(168, 85, 247, 0.2);
+  background: rgba(168, 85, 247, 0.25);
   border-color: #a855f7;
   color: #fff;
-  text-shadow: 0 0 4px #a855f7;
 }
 
 .weekday-pill:hover {
@@ -10025,10 +10044,12 @@ button:hover,
 
 /* Milestones nested editor */
 .row-milestones-container {
-  margin-top: 4px;
+  margin-top: 2px;
   border-left: 2px solid #a855f7;
-  padding-left: 6px;
-  font-size: 0.7rem;
+  padding-left: 4px;
+  font-size: 0.65rem;
+  background: rgba(0,0,0,0.3);
+  padding: 4px;
 }
 
 .row-milestone-item {
@@ -10036,9 +10057,9 @@ button:hover,
   justify-content: space-between;
   align-items: center;
   background: rgba(255, 255, 255, 0.02);
-  padding: 2px 6px;
+  padding: 1px 4px;
   margin-bottom: 2px;
-  border-radius: 2px;
+  border-radius: 1px;
 }
 
 .btn-remove-row-milestone {
@@ -10046,7 +10067,8 @@ button:hover,
   border: none;
   color: #ef4444;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 9px;
+  padding: 0 2px;
 }
 
 /* Responsive collapse for mobile */
@@ -10057,23 +10079,28 @@ button:hover,
   
   .dailies-table-row {
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.2);
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .dailies-table-cell {
+    border-right: none;
+    height: auto;
+    padding: 0;
   }
 
   .dailies-table-cell label {
     display: block;
-    font-size: 9px;
+    font-size: 8px;
     font-family: 'Orbitron', monospace;
     color: var(--accent-gold);
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     text-transform: uppercase;
   }
   
   .table-input-number {
-    max-width: 100%;
     text-align: left;
   }
 }
