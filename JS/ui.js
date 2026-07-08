@@ -6086,12 +6086,6 @@ class UIManager {
       html += '<div class="task-shape-progress">' + progressText + '</div>';
       if (surplusIndicator) html += surplusIndicator;
       if (unscheduledIndicator) html += unscheduledIndicator;
-      const currentMonthKey = (typeof UIManager.getDailyNoteDateKey === 'function' ? UIManager.getDailyNoteDateKey() : new Date().toISOString().split('T')[0]).slice(0, 7);
-      if (!daily.streakSaversUsed) daily.streakSaversUsed = {};
-      const saversUsed = daily.streakSaversUsed[currentMonthKey] || 0;
-      const saversLeft = Math.max(0, 5 - saversUsed);
-      const saversIndicator = '<span class="task-savers-indicator" title="Streak Savers Left: ' + saversLeft + '" style="position: absolute; bottom: 4px; right: 4px; font-size: 7px; color: #b779ff; font-family: monospace; z-index: 2; text-shadow: 1px 1px 0px #000; letter-spacing: -0.5px;">🛡️' + saversLeft + '</span>';
-      html += saversIndicator;
       // Streak particles: count scales with positive streak (deterministic positions, no Math.random)
       for (let _pi = 0; _pi < particleCount; _pi++) {
         const pDelay = (_pi * 0.22 + (_pi * 17 % 7) * 0.07).toFixed(2);

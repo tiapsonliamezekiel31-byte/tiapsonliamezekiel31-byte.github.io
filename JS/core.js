@@ -1458,22 +1458,27 @@ function performCheckIn() {
   
   
   const history = state.dailiesState.history || [];
-  const lastEntry = history[history.length - 1];
-  const currentMonthKey = getLocalDateKey().slice(0, 7); // 'YYYY-MM'
 
   const savedDailies = [];
   const missedDailies = [];
 
+  // Check the last 7 check-ins in the history.
+  // If the user didn't miss a daily (no missed or saved dailies recorded in those check-ins),
+  // then the streak is saved.
+  let missedInLast7 = false;
+  const startIndex = Math.max(0, history.length - 7);
+  for (let i = startIndex; i < history.length; i++) {
+    const entry = history[i];
+    const numMissed = (entry.missedDailies || []).length;
+    const numSaved = (entry.savedDailies || []).length;
+    if (numMissed > 0 || numSaved > 0) {
+      missedInLast7 = true;
+      break;
+    }
+  }
+
   rawMissedDailies.forEach(daily => {
-    if (!daily.streakSaversUsed) daily.streakSaversUsed = {};
-    const usedThisMonth = daily.streakSaversUsed[currentMonthKey] || 0;
-    
-    // Check if missed last time
-    const missedLastTime = lastEntry && Array.isArray(lastEntry.missedDailies) &&
-      lastEntry.missedDailies.some(d => String(d.id) === String(daily.id));
-      
-    if (usedThisMonth < 5 && !missedLastTime) {
-      daily.streakSaversUsed[currentMonthKey] = usedThisMonth + 1;
+    if (!missedInLast7) {
       daily.streakSaved = true;
       savedDailies.push(daily);
     } else {
