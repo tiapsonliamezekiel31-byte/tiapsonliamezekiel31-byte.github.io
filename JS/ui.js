@@ -23,6 +23,8 @@ class UIManager {
   static _stageBackdropKey = '';
   static circleRectCache = null;
   static enemyPositionsCache = null;
+  static _themeColorCache = new Map();
+  static _refreshScheduled = false;
 
   static getCircleRect() {
     if (!this.circleRectCache) {
@@ -181,13 +183,18 @@ class UIManager {
   }
 
   static themeColor(varName, fallback) {
+    const cached = this._themeColorCache.get(varName);
+    if (cached !== undefined) return cached;
     try {
-      if (typeof document === 'undefined') return fallback;
+      if (typeof document === 'undefined') { this._themeColorCache.set(varName, fallback); return fallback; }
       const v = getComputedStyle(document.documentElement).getPropertyValue(varName);
-      if (v && v.trim()) return v.trim();
+      if (v && v.trim()) { this._themeColorCache.set(varName, v.trim()); return v.trim(); }
     } catch (e) { }
+    this._themeColorCache.set(varName, fallback);
     return fallback;
   }
+
+  static invalidateThemeCache() { this._themeColorCache.clear(); }
 
   static getEnemyElementColor(entry) {
     const state = getGameState();
@@ -7099,6 +7106,8 @@ class UIManager {
       if (now - lastTap < 300) {
         // Double tap: toggle Blood Oath
         clearTimeout(this.dailyHoldTimer);
+        clearTimeout(this.dailyFlashTimer);
+        card.classList.remove('flash-white-imminent');
         const overlay = card.querySelector('.hold-progress-overlay');
         if (overlay) {
           overlay.style.transition = 'none';
@@ -7130,17 +7139,23 @@ class UIManager {
 
         // Start hold-to-complete timer (600ms hold)
         clearTimeout(this.dailyHoldTimer);
+        clearTimeout(this.dailyFlashTimer);
+        card.classList.remove('flash-white-imminent');
         const overlay = card.querySelector('.hold-progress-overlay');
         if (overlay) {
           overlay.style.transition = 'width 600ms linear';
           overlay.style.width = '100%';
         }
+        this.dailyFlashTimer = setTimeout(() => {
+          card.classList.add('flash-white-imminent');
+        }, 450);
         this.dailyHoldTimer = setTimeout(() => {
           const dragState = this.dailyDragState;
           if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
             const res = TaskManager.completeDaily(dailyId);
             if (res && res.success) {
               try {
+                card.classList.remove('flash-white-imminent');
                 card.classList.add('just-completed');
                 card.style.transition = 'transform 220ms ease, opacity 400ms ease';
                 const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
@@ -7206,6 +7221,8 @@ class UIManager {
         if (distance > 6) {
           // Cancel hold-to-complete if finger moved too far
           clearTimeout(this.dailyHoldTimer);
+          clearTimeout(this.dailyFlashTimer);
+          dragState.card.classList.remove('flash-white-imminent');
           const overlay = dragState.card.querySelector('.hold-progress-overlay');
           if (overlay) {
             overlay.style.transition = 'none';
@@ -7236,6 +7253,10 @@ class UIManager {
     const endDrag = (event) => {
       const dragState = this.dailyDragState;
       clearTimeout(this.dailyHoldTimer);
+      clearTimeout(this.dailyFlashTimer);
+      if (dragState && dragState.card) {
+        dragState.card.classList.remove('flash-white-imminent');
+      }
 
       if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
 
@@ -8224,7 +8245,12 @@ class UIManager {
       // Start dynamic canvas updating loop ONLY if not already running and there is a healer alive
       if (hasHealer && !window.enemyCanvasLoopActive) {
         window.enemyCanvasLoopActive = true;
-        const tick = () => {
+        const tick = (ts) => {
+          if (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower && ts - (tick._lastDraw || 0) < 66) {
+            requestAnimationFrame(tick);
+            return;
+          }
+          tick._lastDraw = ts;
           const cv = document.getElementById('enemyCanvas');
           if (!cv) {
             window.enemyCanvasLoopActive = false;
@@ -8890,6 +8916,16 @@ class UIManager {
   }
 
   static refreshGameUI() {
+    // Coalesce multiple consecutive calls into a single microtask
+    if (this._refreshScheduled) return;
+    this._refreshScheduled = true;
+    queueMicrotask(() => {
+      this._refreshScheduled = false;
+      this._doRefreshGameUI();
+    });
+  }
+
+  static _doRefreshGameUI() {
     this.updateStageBackdrop();
     this.updateWeaponIcons();
     try { this.refreshEventBanner(); } catch (e) { }
@@ -10212,6 +10248,9 @@ window.addEventListener('resize', () => {
   if (UIManager.resizeScheduled) return;
   UIManager.resizeScheduled = true;
   requestAnimationFrame(() => {
+    UIManager.invalidateThemeCache();
+    UIManager.circleRectCache = null;
+    UIManager.enemyPositionsCache = null;
     UIManager.updateStageBackdrop();
     UIManager.renderEnemies();
     if (typeof UIManager.positionActionButtons === 'function') UIManager.positionActionButtons();

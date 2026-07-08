@@ -1,5 +1,6 @@
 /* Simple SoundManager using WebAudio for synthesized game sounds */
 class SoundManager {
+  static _bufferCache = new Map();
   static weaponSoundMap = {
     'Rusty Sword': 'assets/sounds/rustysword.mp3',
     'Great Hammer': 'assets/sounds/greathammer.mp3',
@@ -68,6 +69,7 @@ class SoundManager {
         case 'owl_hoot': this._playSequence([340, 340, 440, 440], [0.09, 0.09, 0.09, 0.14], 'sine', 0.13); break;
         case 'cow_moo': this._playSequence([170, 140, 110], [0.18, 0.28, 0.38], 'sine', 0.15); break;
         case 'lion_roar': this._playSequence([100, 80, 60, 40], [0.18, 0.18, 0.28, 0.38], 'sawtooth', 0.22); break;
+        case 'tick': this._playTone(1800, 0.03, 'sine', 0.15); break;
         default: this._playTone(600, 0.05, 'sine', 0.08); break;
       }
     } catch (e) { console.warn('Sound play failed', e); }
@@ -124,8 +126,32 @@ class SoundManager {
     }
   }
 
+  static async _loadBuffer(path) {
+    if (this._bufferCache.has(path)) return this._bufferCache.get(path);
+    try {
+      const resp = await fetch(path);
+      const arrayBuf = await resp.arrayBuffer();
+      const audioBuf = await this.audioCtx.decodeAudioData(arrayBuf);
+      this._bufferCache.set(path, audioBuf);
+      return audioBuf;
+    } catch(e) { return null; }
+  }
+
   static _playFile(path, opts = {}) {
     try {
+      const cached = this._bufferCache.get(path);
+      if (cached && this.audioCtx) {
+        const src = this.audioCtx.createBufferSource();
+        src.buffer = cached;
+        const g = this.audioCtx.createGain();
+        g.gain.value = typeof opts.volume === 'number' ? opts.volume * this.volume : this.volume;
+        src.connect(g);
+        g.connect(this.master);
+        if (opts.loop) src.loop = true;
+        src.start();
+        return;
+      }
+      this._loadBuffer(path);
       const a = new Audio(path);
       a.volume = typeof opts.volume === 'number' ? opts.volume * this.volume : this.volume;
       if (opts.loop) a.loop = true;

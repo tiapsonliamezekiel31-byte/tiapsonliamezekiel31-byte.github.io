@@ -3671,77 +3671,99 @@ class PopupsManager {
           </div>
           <div class="wheel-status-text" style="margin-top: 12px; font-weight: bold;">Click SPIN to reveal your fate!</div>
           <div class="lootbox-result-area" style="opacity: 0; min-height: 80px; transition: opacity 0.5s ease; margin-top: 16px;"></div>
-          <button class="btn-large btn-spin-wheel" style="margin-top: 12px;">SPIN WHEEL</button>
+          <div class="spin-buttons-row" style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; width: 100%;">
+            <button class="btn-large btn-spin-wheel" style="margin-top: 0; flex: 1;">SPIN WHEEL</button>
+            <button class="btn-large btn-stop-wheel" style="display: none; margin-top: 0; flex: 1; background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">STOP WHEEL</button>
+          </div>
         </div>
       `;
 
       const canvas = popup.querySelector('#lootboxWheel');
       const ctx = canvas.getContext('2d');
 
-      // Drawing function
+      // Pre-render the static wheel to an offscreen canvas (drawn once, rotated every frame)
+      const offscreen = document.createElement('canvas');
+      offscreen.width = 600;
+      offscreen.height = 600;
+      const offCtx = offscreen.getContext('2d');
+
+      // Draw all segments once onto the offscreen canvas
+      offCtx.save();
+      offCtx.translate(300, 300);
+
+      segments.forEach((seg, idx) => {
+        const startRad = (seg.startDeg * Math.PI) / 180;
+        const endRad = (seg.endDeg * Math.PI) / 180;
+
+        // Draw slice filled background
+        offCtx.beginPath();
+        offCtx.moveTo(0, 0);
+        offCtx.arc(0, 0, 280, startRad, endRad);
+        offCtx.closePath();
+        
+        let fillColor = seg.slice.type === 'grand_jackpot' ? '#eab308' : seg.slice.color;
+        offCtx.fillStyle = fillColor;
+        offCtx.fill();
+
+        // Stroke borders
+        offCtx.strokeStyle = '#222';
+        offCtx.lineWidth = 3;
+        offCtx.stroke();
+
+        // Text and Icon representation
+        offCtx.save();
+        const midRad = (seg.centerDeg * Math.PI) / 180;
+        offCtx.rotate(midRad);
+
+        offCtx.textAlign = 'right';
+        offCtx.textBaseline = 'middle';
+        offCtx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#111' : '#fff';
+        
+        const fontSize = seg.slice.type === 'grand_jackpot' ? 20 : 26;
+        offCtx.font = `bold ${fontSize}px 'Orbitron', monospace`;
+
+        let outlineColor = '#000';
+        if (seg.slice.type === 'grand_jackpot') {
+          outlineColor = '#ff0055';
+        } else if (seg.slice.color === '#ef4444') {
+          outlineColor = '#00ffff';
+        } else if (seg.slice.color === '#3b82f6') {
+          outlineColor = '#ff9f00';
+        } else if (seg.slice.color === '#8b5cf6') {
+          outlineColor = '#39ff14';
+        } else if (seg.slice.color === '#10b981') {
+          outlineColor = '#ff00ff';
+        } else {
+          outlineColor = '#ff3366';
+        }
+
+        offCtx.strokeStyle = outlineColor;
+        offCtx.lineWidth = 5;
+        offCtx.lineJoin = 'round';
+        
+        const text = `${seg.slice.icon} ${seg.slice.label}`;
+        offCtx.strokeText(text, 255, 0);
+        offCtx.fillText(text, 255, 0);
+        offCtx.restore();
+      });
+
+      // Draw center gold pin on offscreen
+      offCtx.beginPath();
+      offCtx.arc(0, 0, 15, 0, 2 * Math.PI);
+      offCtx.fillStyle = '#ffd700';
+      offCtx.fill();
+      offCtx.strokeStyle = '#222';
+      offCtx.lineWidth = 3;
+      offCtx.stroke();
+      offCtx.restore();
+
+      // Fast drawing function: just rotate the cached image
       const drawWheel = (rotationDegrees) => {
         ctx.clearRect(0, 0, 600, 600);
         ctx.save();
         ctx.translate(300, 300);
         ctx.rotate((rotationDegrees * Math.PI) / 180);
-
-        // Find currently selected segment under the pointer (at top, -90 deg / 270 deg)
-        let pointerWorldAngle = (270 - rotationDegrees) % 360;
-        if (pointerWorldAngle < 0) pointerWorldAngle += 360;
-        const selectedIdx = segments.findIndex(seg => pointerWorldAngle >= seg.startDeg && pointerWorldAngle < seg.endDeg);
-
-        segments.forEach((seg, idx) => {
-          const startRad = (seg.startDeg * Math.PI) / 180;
-          const endRad = (seg.endDeg * Math.PI) / 180;
-
-          // Draw slice filled background
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.arc(0, 0, 280, startRad, endRad);
-          ctx.closePath();
-          
-          let fillColor = seg.slice.type === 'grand_jackpot' ? '#eab308' : seg.slice.color;
-          ctx.fillStyle = fillColor;
-          ctx.fill();
-
-          // Highlight the selected slice
-          if (idx === selectedIdx) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-            ctx.fill();
-          }
-
-          // Stroke borders
-          ctx.strokeStyle = '#222';
-          ctx.lineWidth = 3;
-          ctx.stroke();
-
-          // Text and Icon representation
-          ctx.save();
-          // Rotate to the center of the segment
-          const midRad = (seg.centerDeg * Math.PI) / 180;
-          ctx.rotate(midRad);
-
-          // Draw text outwards
-          ctx.textAlign = 'right';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = seg.slice.type === 'grand_jackpot' ? '#111' : '#fff';
-          ctx.font = idx === selectedIdx ? 'bold 15px sans-serif' : 'bold 13px sans-serif';
-          
-          // Draw icon + short text
-          const text = `${seg.slice.icon} ${seg.slice.label}`;
-          ctx.fillText(text, 240, 0);
-          ctx.restore();
-        });
-
-        // Draw center gold pin
-        ctx.beginPath();
-        ctx.arc(0, 0, 15, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ffd700';
-        ctx.fill();
-        ctx.strokeStyle = '#222';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
+        ctx.drawImage(offscreen, -300, -300);
         ctx.restore();
       };
 
@@ -3749,21 +3771,25 @@ class PopupsManager {
       drawWheel(0);
 
       const spinBtn = popup.querySelector('.btn-spin-wheel');
+      const stopBtn = popup.querySelector('.btn-stop-wheel');
+      
       spinBtn.addEventListener('click', () => {
         spinBtn.style.display = 'none';
         popup.querySelector('.turbo-spin-row').style.display = 'none';
+        stopBtn.style.display = 'block';
 
         const turbo = popup.querySelector('#turboSpinToggle').checked;
-        const duration = turbo ? 1500 : 4500;
-        const rotations = turbo ? 2 : 5;
-
-        // target angle aligns the center of the winning slice with -90 degrees (12 o'clock pointer)
-        // stopAngleDeg = 270 - centerDeg
-        const stopAngleDeg = 270 - segments[winnerIdx].centerDeg + stopAngleOffset;
-        const targetDeg = rotations * 360 + stopAngleDeg;
-
+        
         let startTime = null;
+        let isDecelerating = false;
+        let decelerateStartTime = null;
+        let decelerateStartAngle = 0;
+        let decelerateTargetAngle = 0;
+        const decelerateDuration = turbo ? 1000 : 3000;
+        
+        let lastFrameAngle = 0;
         let lastTickIndex = -1;
+        let lastTickTime = 0;
         const statusText = popup.querySelector('.wheel-status-text');
 
         // Dynamic tick index checker based on angle boundaries
@@ -3773,26 +3799,64 @@ class PopupsManager {
           const idx = segments.findIndex(seg => normalized >= seg.startDeg && normalized < seg.endDeg);
           if (idx !== -1 && idx !== lastTickIndex) {
             lastTickIndex = idx;
-            try { if (window.SoundManager) SoundManager.play('tick'); } catch (e) {}
+            const now = performance.now();
+            if (now - lastTickTime > 60) {
+              lastTickTime = now;
+              try { if (window.SoundManager) SoundManager.play('tick'); } catch (e) {}
+            }
           }
         };
 
+        const triggerStop = (timestamp, currentAngle) => {
+          if (isDecelerating) return;
+          isDecelerating = true;
+          decelerateStartTime = timestamp;
+          decelerateStartAngle = currentAngle;
+          
+          const stopAngleDeg = (270 - segments[winnerIdx].centerDeg + stopAngleOffset) % 360;
+          const minTarget = decelerateStartAngle + (turbo ? 1.5 : 2.5) * 360;
+          decelerateTargetAngle = minTarget + ((stopAngleDeg - (minTarget % 360) + 360) % 360);
+          
+          stopBtn.style.display = 'none';
+        };
+
+        stopBtn.addEventListener('click', () => {
+          triggerStop(performance.now(), lastFrameAngle);
+        });
+
         const animateSpin = (timestamp) => {
           if (!startTime) startTime = timestamp;
-          const elapsed = timestamp - startTime;
-          const progress = Math.min(1, elapsed / duration);
-
-          // Ease-out cubic formula
-          const ease = 1 - Math.pow(1 - progress, 3);
-          const currentAngle = ease * targetDeg;
-
-          drawWheel(currentAngle);
-          checkTicks(currentAngle);
-
-          if (progress < 1) {
+          
+          if (!isDecelerating) {
+            const elapsed = timestamp - startTime;
+            const speed = turbo ? 1.8 : 0.8; // degrees per ms
+            const currentAngle = elapsed * speed;
+            lastFrameAngle = currentAngle;
+            
+            drawWheel(currentAngle);
+            checkTicks(currentAngle);
+            
+            if (elapsed > 8000) {
+              triggerStop(timestamp, currentAngle);
+            }
             requestAnimationFrame(animateSpin);
           } else {
-            handleWinnerReveal();
+            if (!decelerateStartTime) decelerateStartTime = timestamp;
+            const elapsed = timestamp - decelerateStartTime;
+            const progress = Math.min(1, elapsed / decelerateDuration);
+            
+            // Ease-out quintic formula for heavier deceleration
+            const ease = 1 - Math.pow(1 - progress, 5);
+            const currentAngle = decelerateStartAngle + ease * (decelerateTargetAngle - decelerateStartAngle);
+            
+            drawWheel(currentAngle);
+            checkTicks(currentAngle);
+            
+            if (progress < 1) {
+              requestAnimationFrame(animateSpin);
+            } else {
+              handleWinnerReveal();
+            }
           }
         };
 
@@ -3812,8 +3876,6 @@ class PopupsManager {
             else SoundManager.play('lootbox_open');
           }
         } catch (e) {}
-
-        PopupsManager.spawnLootboxParticles(popup);
 
         // Apply Gold multipliers (Greed buff)
         let goldVal = 0;
@@ -3885,10 +3947,11 @@ class PopupsManager {
           floatColor = '#777777';
         }
 
+        const rect = canvas.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
         if (floatLabel && typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
-          const rect = popup.getBoundingClientRect();
-          const cx = rect.left + rect.width / 2;
-          const cy = rect.top + rect.height / 2;
           FloatingDamageNumber.show(cx, cy - 30, floatLabel, {
             color: floatColor,
             scale: 1.6,
@@ -3896,28 +3959,70 @@ class PopupsManager {
           });
         }
 
+        // Determine reward intensity (0-4)
+        let intensity = 1;
+        if (winner.type === 'miss') {
+          intensity = 0;
+        } else if (winner.type === 'grand_jackpot') {
+          intensity = 4;
+        } else {
+          const isWeapon = !!weaponVal;
+          if (isWeapon) {
+            intensity = 3;
+          } else if (goldVal >= 150 || diamondVal >= 15 || apVal >= 66) {
+            intensity = 3;
+          } else if (goldVal >= 60 || diamondVal >= 6 || apVal >= 25 || consumableVal) {
+            intensity = 2;
+          } else {
+            intensity = 1;
+          }
+        }
+
+        PopupsManager.spawnColorfulRewardBurst(cx, cy - 30, intensity);
+
         // Setup Claim/Swap Panels
         let resultHtml = '';
         let displayLabel = '';
+        let rewardText = '';
         let resultColor = winner.type === 'miss' ? '#777777' : winner.color;
 
         if (goldVal > 0) {
-          displayLabel = `🪙 +${goldVal} Gold (Claimed!)`;
+          rewardText = `🪙 +${goldVal} Gold`;
+          displayLabel = `${rewardText} (Claimed!)`;
         } else if (diamondVal > 0) {
-          displayLabel = `💎 +${diamondVal} Diamonds (Claimed!)`;
+          rewardText = `💎 +${diamondVal} Diamonds`;
+          displayLabel = `${rewardText} (Claimed!)`;
         } else if (apVal > 0) {
-          displayLabel = `⚡ +${apVal} AP (Claimed!)`;
+          rewardText = `⚡ +${apVal} AP`;
+          displayLabel = `${rewardText} (Claimed!)`;
         } else if (consumableVal) {
-          displayLabel = `🧪 +1 ${consumableVal} (Added to Inventory!)`;
+          rewardText = `🧪 +1 ${consumableVal}`;
+          displayLabel = `${rewardText} (Added to Inventory!)`;
         } else if (winner.type === 'miss') {
-          displayLabel = `❌ MISS... No Rewards Won!`;
+          rewardText = `❌ MISS... No Rewards Won!`;
+          displayLabel = rewardText;
         }
+
+        const cost = tier === 'common' ? 1 : tier === 'rare' ? 2 : tier === 'epic' ? 3 : 5;
+        
+        const getClaimButtonsHtml = () => {
+          if (state.playerState.lootboxKeys >= cost) {
+            return `
+              <div class="claim-buttons-row" style="display: flex; gap: 12px; justify-content: center; margin-top: 16px; width: 100%;">
+                <button class="btn-large btn-lootbox-claim" style="flex: 1; margin-top: 0; padding: 12px;">CLAIM & CLOSE</button>
+                <button class="btn-large btn-lootbox-spin-again" style="flex: 1; margin-top: 0; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">SPIN AGAIN 🔑${cost}</button>
+              </div>
+            `;
+          }
+          return `<button class="btn-large btn-lootbox-claim" style="margin-top: 16px; width: 100%;">CLAIM REWARDS</button>`;
+        };
 
         if (weaponVal) {
           const emptySlotIndex = state.playerState.weapons.findIndex(w => !w);
           const wCfg = state.config.weapons?.[weaponVal];
           const wIcon = wCfg?.icon || '⚔️';
           resultColor = '#f59e0b'; // Gold rarity
+          rewardText = `${wIcon} +1 ${weaponVal}`;
 
           if (emptySlotIndex !== -1) {
             PlayerManager.addWeapon(weaponVal);
@@ -3925,7 +4030,7 @@ class PopupsManager {
               <div class="lootbox-reward-item weapon" style="justify-content: center; font-weight: bold; font-size: 16px;">
                 ${wIcon} Won +1 ${weaponVal}! (Equipped)
               </div>
-              <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
+              ${getClaimButtonsHtml()}
             `;
           } else {
             // Swap needed
@@ -3954,13 +4059,17 @@ class PopupsManager {
             <div class="lootbox-reward-item" style="justify-content: center; font-size: 18px; font-weight: bold;">
               ${displayLabel}
             </div>
-            <button class="btn-large btn-lootbox-claim" style="margin-top: 16px;">CLAIM REWARDS</button>
+            ${getClaimButtonsHtml()}
           `;
         }
 
         const statusText = popup.querySelector('.wheel-status-text');
-        statusText.innerHTML = `CONGRATULATIONS!`;
-        statusText.style.color = resultColor;
+        if (winner.type === 'miss') {
+          statusText.innerHTML = `<span style="font-size: 14px; color: #94a3b8; letter-spacing: 1px;">BETTER LUCK NEXT TIME!</span><br><span style="font-size: 22px; color: #ff6b6b; font-weight: 800; display: inline-block; margin-top: 4px;">${rewardText}</span>`;
+        } else {
+          statusText.innerHTML = `<span style="font-size: 14px; color: #ffb33f; letter-spacing: 1.5px;">CONGRATULATIONS!</span><br><span style="font-size: 22px; font-weight: 800; display: inline-block; margin-top: 4px; color: ${resultColor === '#ffd700' || resultColor === '#fff' ? '#4ade80' : resultColor};">You won: ${rewardText}</span>`;
+        }
+        statusText.style.color = '';
 
         const resultArea = popup.querySelector('.lootbox-result-area');
         resultArea.innerHTML = resultHtml;
@@ -3975,6 +4084,23 @@ class PopupsManager {
           }
         };
 
+        const handleSpinAgain = () => {
+          state.save();
+          state.spendLootboxKeys(cost);
+          openSpinScreen(tier);
+          if (typeof UIManager !== 'undefined' && UIManager.refreshGameUI) {
+            UIManager.refreshGameUI();
+          }
+        };
+
+        const wireClaimHandlers = (container) => {
+          const claimBtn = container.querySelector('.btn-lootbox-claim');
+          if (claimBtn) claimBtn.addEventListener('click', finalizeClaim);
+          
+          const spinAgainBtn = container.querySelector('.btn-lootbox-spin-again');
+          if (spinAgainBtn) spinAgainBtn.addEventListener('click', handleSpinAgain);
+        };
+
         if (weaponVal) {
           const swapButtons = resultArea.querySelectorAll('.btn-swap-weapon');
           swapButtons.forEach(btn => {
@@ -3986,9 +4112,9 @@ class PopupsManager {
                 <div class="lootbox-reward-item weapon-success" style="justify-content: center; margin-bottom: 12px; color: #10b981; font-weight: bold;">
                   ✅ Swapped Slot ${idx + 1} for ${weaponVal}!
                 </div>
-                <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
+                ${getClaimButtonsHtml()}
               `;
-              panel.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+              wireClaimHandlers(panel);
             });
           });
 
@@ -4000,13 +4126,13 @@ class PopupsManager {
                 <div class="lootbox-reward-item weapon-discarded" style="justify-content: center; margin-bottom: 12px; color: #ff6b6b; font-weight: bold;">
                   ❌ Discarded ${weaponVal}.
                 </div>
-                <button class="btn-large btn-lootbox-claim">CLAIM REWARDS</button>
+                ${getClaimButtonsHtml()}
               `;
-              panel.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+              wireClaimHandlers(panel);
             });
           }
         } else {
-          resultArea.querySelector('.btn-lootbox-claim').addEventListener('click', finalizeClaim);
+          wireClaimHandlers(resultArea);
         }
       };
     };
@@ -4067,6 +4193,105 @@ class PopupsManager {
         life -= decay;
         if (life > 0) {
           p.style.transform = `translate3d(${x - cx}px, ${y - cy}px, 0) scale(${life})`;
+          p.style.opacity = life;
+          requestAnimationFrame(animate);
+        } else {
+          p.remove();
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }
+
+  static spawnColorfulRewardBurst(cx, cy, intensity) {
+    if (intensity === 0) return;
+
+    const colors = {
+      1: ['#cbd5e1', '#94a3b8', '#10b981', '#3b82f6'],
+      2: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#00ffff'],
+      3: ['#8b5cf6', '#ec4899', '#f97316', '#00ffff', '#ff007f', '#ffd700'],
+      4: ['#ffd700', '#ff007f', '#00e5ff', '#39ff14', '#ff00ff', '#ff9f00']
+    }[intensity] || ['#fff'];
+
+    const particleCount = {
+      1: 20,
+      2: 40,
+      3: 65,
+      4: 100
+    }[intensity] || 20;
+
+    // 1. Create expanding shockwave ring
+    const ring = document.createElement('div');
+    ring.style.cssText = `
+      position: fixed;
+      left: ${cx}px;
+      top: ${cy}px;
+      width: 10px;
+      height: 10px;
+      border: 3px solid ${colors[0]};
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 17000;
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.6s ease-out;
+      box-shadow: 0 0 15px ${colors[0]};
+    `;
+    if (intensity === 4) {
+      ring.style.borderImage = 'linear-gradient(45deg, #ffd700, #ff007f, #00e5ff, #39ff14) 1';
+      ring.style.boxShadow = '0 0 30px #ffd700';
+    }
+    document.body.appendChild(ring);
+    
+    requestAnimationFrame(() => {
+      ring.style.transform = `translate(-50%, -50%) scale(${10 + intensity * 6})`;
+      ring.style.opacity = '0';
+      setTimeout(() => ring.remove(), 700);
+    });
+
+    // 2. Spawn colorful particles
+    for (let i = 0; i < particleCount; i++) {
+      const p = document.createElement('div');
+      const isStar = Math.random() < 0.4 && intensity >= 2;
+      const size = (isStar ? 8 : 4) + Math.random() * (4 + intensity * 3);
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      p.style.cssText = `
+        position: fixed;
+        left: ${cx}px;
+        top: ${cy}px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        box-shadow: 0 0 ${4 + intensity * 3}px ${color};
+        border-radius: ${isStar ? '0' : '50%'};
+        pointer-events: none;
+        z-index: 17000;
+        will-change: transform, opacity;
+      `;
+      if (isStar) {
+        p.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+      }
+      document.body.appendChild(p);
+
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = (2 + Math.random() * (4 + intensity * 3.5));
+      let vx = Math.cos(angle) * velocity;
+      let vy = Math.sin(angle) * velocity - (intensity * 0.5);
+
+      let x = cx;
+      let y = cy;
+      let life = 1.0;
+      const decay = 0.01 + Math.random() * 0.02;
+      const gravity = 0.1 + intensity * 0.05;
+
+      const animate = () => {
+        vy += gravity;
+        x += vx;
+        y += vy;
+        life -= decay;
+        if (life > 0) {
+          p.style.transform = `translate3d(${x - cx}px, ${y - cy}px, 0) scale(${life}) rotate(${life * 360}deg)`;
           p.style.opacity = life;
           requestAnimationFrame(animate);
         } else {

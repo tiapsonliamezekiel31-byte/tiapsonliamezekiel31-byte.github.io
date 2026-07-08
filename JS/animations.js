@@ -12,7 +12,7 @@ const AnimationRuntime = (() => {
   return {
     lowPower,
     particleScale: lowPower ? 0.6 : 1,
-    maxBurstParticles: lowPower ? 18 : 60,
+    maxBurstParticles: lowPower ? 10 : 60,
     flashMinInterval: lowPower ? 60 : 70,
     shakeMinInterval: lowPower ? 80 : 40,
     shakeIntensityScale: lowPower ? 0.7 : 1,
@@ -116,23 +116,20 @@ function resolveCssColorToRgb(colorStr) {
       }
     }
 
-    // fallback: ask the browser to resolve the color
-    const el = document.createElement('div');
-    el.style.color = s;
-    el.style.display = 'none';
-    document.body.appendChild(el);
-    const resolved = getComputedStyle(el).color;
-    document.body.removeChild(el);
-    const mm = resolved.match(/rgba?\(([^)]+)\)/);
-    if (mm) {
-      const parts = mm[1].split(',').map(p => p.trim());
-      const r = parseInt(parts[0], 10) || 0;
-      const g = parseInt(parts[1], 10) || 0;
-      const b = parseInt(parts[2], 10) || 0;
-      const a = parts[3] !== undefined ? parseFloat(parts[3]) : 1;
-      _colorCache[s] = { r, g, b, a };
-      return _colorCache[s];
+    // fallback: canvas approach
+    if (!resolveCssColorToRgb._canvas) {
+      resolveCssColorToRgb._canvas = document.createElement('canvas');
+      resolveCssColorToRgb._canvas.width = 1;
+      resolveCssColorToRgb._canvas.height = 1;
+      resolveCssColorToRgb._ctx = resolveCssColorToRgb._canvas.getContext('2d', { willReadFrequently: true });
     }
+    const ctx = resolveCssColorToRgb._ctx;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = s;
+    ctx.fillRect(0, 0, 1, 1);
+    const data = ctx.getImageData(0, 0, 1, 1).data;
+    _colorCache[s] = { r: data[0], g: data[1], b: data[2], a: data[3] / 255 };
+    return _colorCache[s];
   } catch (e) { }
   return null;
 }
@@ -168,6 +165,8 @@ function variantForStack(baseColor, slotIndex) {
   const newL = Math.max(8, hsl.l - slotIndex * 8); // darken ~8% per slot
   return hslToCss(newH, hsl.s, newL);
 }
+
+
 
 class ParticleSystem {
   constructor(config = {}) {
@@ -253,10 +252,23 @@ class ParticleSystem {
   static _tick() {
     const now = performance.now();
     const list = ParticleSystem._active;
+    if (AnimationRuntime.lowPower && list.length > 80) {
+      const excess = list.splice(0, list.length - 80);
+      excess.forEach(p => { try { p.el.remove(); } catch(e){} ParticleSystem._pool.push(p.el); });
+    }
     for (let i = list.length - 1; i >= 0; i--) {
       const p = list[i];
       const elapsed = now - p.start;
-      const progress = elapsed / p.lifetime;
+      if (!p.freezeDuration) {
+        p.freezeDuration = 100 + Math.random() * 200;
+      }
+      if (elapsed < p.freezeDuration) {
+        p.el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(1)`;
+        p.el.style.opacity = 1;
+        continue;
+      }
+      const activeElapsed = elapsed - p.freezeDuration;
+      const progress = activeElapsed / p.lifetime;
       if (progress >= 1) {
         try { p.el.remove(); } catch (e) { }
         // recycle element
@@ -266,7 +278,7 @@ class ParticleSystem {
       }
 
       // Physics model
-      const tFrames = elapsed / 16;
+      const tFrames = activeElapsed / 16;
       let px = p.x + p.vx * tFrames;
       let py = p.y + p.vy * tFrames;
 
@@ -374,6 +386,7 @@ class FloatingDamageNumber {
     const createdAt = performance.now();
     const item = {
       div,
+      coordKey: key,
       x: clampXVal,
       y: targetY,
       driftX,
@@ -572,9 +585,32 @@ FloatingDamageNumber._anchoredTick = function () {
         continue;
       }
       const elapsed = now - f.createdAt;
-      const progress = elapsed / f.duration;
+      if (!f.freezeDuration) {
+        f.freezeDuration = 100 + Math.random() * 200;
+      }
+      if (elapsed < f.freezeDuration) {
+        const baseX = f.baseX;
+        const baseY = f.baseY;
+        const clampX = (() => {
+          const w = f.width || 80;
+          const minX = w / 2 + 8;
+          const maxX = window.innerWidth - w / 2 - 8;
+          return Math.min(Math.max(baseX, minX), Math.max(minX, maxX));
+        })();
+        let slotIndex = 0;
+        if (f.anchorKey && FloatingDamageNumber._anchoredActiveByKey[f.anchorKey]) {
+          slotIndex = FloatingDamageNumber._anchoredActiveByKey[f.anchorKey].indexOf(f);
+          if (slotIndex < 0) slotIndex = 0;
+        }
+        const yPos = baseY - f.offsetY - (slotIndex * f.gap);
+        f.div.style.transform = `translate3d(${clampX}px, ${yPos}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(1)`;
+        f.div.style.opacity = 1;
+        continue;
+      }
+      const activeElapsed = elapsed - f.freezeDuration;
+      const progress = activeElapsed / f.duration;
       const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
-      const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
+      const fadeRaw = activeElapsed <= f.fadeDelay ? 0 : Math.min(1, (activeElapsed - f.fadeDelay) / visibleDuration);
       // Eased fade so anchored floats remain visible until the final moments
       const easedFade = Math.pow(fadeRaw, 2.6);
       const opacity = 1 - easedFade;
@@ -671,24 +707,36 @@ FloatingDamageNumber._tickNonAnchored = function () {
         continue;
       }
       const elapsed = now - f.createdAt;
-      const progress = elapsed / f.duration;
+      if (!f.freezeDuration) {
+        f.freezeDuration = 100 + Math.random() * 200;
+      }
+      if (elapsed < f.freezeDuration) {
+        f.div.style.transform = `translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(1)`;
+        f.div.style.opacity = 1;
+        continue;
+      }
+      const activeElapsed = elapsed - f.freezeDuration;
+      const progress = activeElapsed / f.duration;
       const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
-      const fadeRaw = elapsed <= f.fadeDelay ? 0 : Math.min(1, (elapsed - f.fadeDelay) / visibleDuration);
+      const fadeRaw = activeElapsed <= f.fadeDelay ? 0 : Math.min(1, (activeElapsed - f.fadeDelay) / visibleDuration);
       const easedFade = Math.pow(fadeRaw, 2.6);
       const opacity = 1 - easedFade;
 
       // stacked slot index based on coord map
       let slotIndex = 0;
       try {
-        const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
-        if (key) slotIndex = (FloatingDamageNumber._coordActiveByKey[key] || []).indexOf(f.div) || 0;
+        if (f.coordKey && FloatingDamageNumber._coordActiveByKey && FloatingDamageNumber._coordActiveByKey[f.coordKey]) {
+          slotIndex = Math.max(0, FloatingDamageNumber._coordActiveByKey[f.coordKey].indexOf(f.div));
+        }
       } catch (e) { }
 
-      try {
-        const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
-        f.div.style.color = v;
-        f.div.style.webkitTextStroke = `0.5px ${v}`;
-      } catch (e) { }
+      if (slotIndex > 0) {
+        try {
+          const v = variantForStack(f.color || f.div.style.color || '#ffffff', slotIndex);
+          f.div.style.color = v;
+          f.div.style.webkitTextStroke = `0.5px ${v}`;
+        } catch (e) { }
+      }
 
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
@@ -729,12 +777,11 @@ FloatingDamageNumber._tickNonAnchored = function () {
         try { f.div.remove(); } catch (e) { }
         // remove from coord map
         try {
-          const key = Object.keys(FloatingDamageNumber._coordActiveByKey || {}).find(k => (FloatingDamageNumber._coordActiveByKey[k] || []).indexOf(f.div) !== -1);
-          if (key) {
-            const arr = FloatingDamageNumber._coordActiveByKey[key];
+          if (f.coordKey && FloatingDamageNumber._coordActiveByKey && FloatingDamageNumber._coordActiveByKey[f.coordKey]) {
+            const arr = FloatingDamageNumber._coordActiveByKey[f.coordKey];
             const idx = arr.indexOf(f.div);
             if (idx !== -1) arr.splice(idx, 1);
-            if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[key];
+            if (arr.length === 0) delete FloatingDamageNumber._coordActiveByKey[f.coordKey];
           }
         } catch (e) { }
 
@@ -849,15 +896,23 @@ class ScreenEffects {
 // Popup animations (scale + fade)
 class PopupAnimation {
   static scale(element, duration = 300) {
-    ensureAnimationStyles();
-    element.style.setProperty('--nm-duration', `${duration}ms`);
-    restartAnimationClass(element, 'nm-popup-scale');
+    element.style.opacity = '0';
+    const delay = 100 + Math.random() * 200;
+    setTimeout(() => {
+      ensureAnimationStyles();
+      element.style.setProperty('--nm-duration', `${duration}ms`);
+      restartAnimationClass(element, 'nm-popup-scale');
+    }, delay);
   }
 
   static scaleCentered(element, duration = 300) {
-    ensureAnimationStyles();
-    element.style.setProperty('--nm-duration', `${duration}ms`);
-    restartAnimationClass(element, 'nm-popup-scale-centered');
+    element.style.opacity = '0';
+    const delay = 100 + Math.random() * 200;
+    setTimeout(() => {
+      ensureAnimationStyles();
+      element.style.setProperty('--nm-duration', `${duration}ms`);
+      restartAnimationClass(element, 'nm-popup-scale-centered');
+    }, delay);
   }
 }
 
@@ -1204,10 +1259,17 @@ class RetroHitAnimation {
 
       const startTime = performance.now();
       const duration = 450 + Math.random() * 250;
-
+      const freezeDuration = 100 + Math.random() * 200;
       const animate = () => {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(1, elapsed / duration);
+        const now = performance.now();
+        const elapsed = now - startTime;
+        if (elapsed < freezeDuration) {
+          square.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0) scale(1)`;
+          requestAnimationFrame(animate);
+          return;
+        }
+        const activeElapsed = elapsed - freezeDuration;
+        const progress = Math.min(1, activeElapsed / duration);
         // easeOutCubic
         const easeOut = 1 - Math.pow(1 - progress, 3);
 
@@ -1246,10 +1308,18 @@ class RetroHitAnimation {
 
     const flashStart = performance.now();
     const flashDuration = 200;
+    const flashFreezeDuration = 100 + Math.random() * 200;
 
     const animateFlash = () => {
-      const elapsed = performance.now() - flashStart;
-      const progress = Math.min(1, elapsed / flashDuration);
+      const now = performance.now();
+      const elapsed = now - flashStart;
+      if (elapsed < flashFreezeDuration) {
+        flash.style.transform = `translate3d(${x - 40}px, ${y - 40}px, 0) scale(1)`;
+        requestAnimationFrame(animateFlash);
+        return;
+      }
+      const activeElapsed = elapsed - flashFreezeDuration;
+      const progress = Math.min(1, activeElapsed / flashDuration);
       flash.style.transform = `translate3d(${x - 40}px, ${y - 40}px, 0) scale(${1 + progress * 0.8}) rotate(${progress * 90}deg)`;
       flash.style.opacity = 1 - Math.pow(progress, 1.5);
       if (progress < 1) requestAnimationFrame(animateFlash);
@@ -1299,6 +1369,8 @@ class RetroDodgeAnimation {
       }
     };
 
+    const baseFreeze = 100 + Math.random() * 200;
+
     // 1-second safety fallback: force reset after 1s of inactivity
     cardElement.animResetTimeout = setTimeout(() => {
       cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
@@ -1307,7 +1379,7 @@ class RetroDodgeAnimation {
       cardElement.style.willChange = '';
       delete cardElement.dataset.originalTransform;
       delete cardElement.dataset.activeAnimsCount;
-    }, 1000);
+    }, 1000 + baseFreeze);
 
     // 1. Squares collapse inwards
     for (let i = 0; i < burstCount; i++) {
@@ -1337,8 +1409,15 @@ class RetroDodgeAnimation {
       const collapseDuration = 200 + Math.random() * 100;
 
       const animateCollapse = () => {
-        const elapsed = performance.now() - startTime;
-        const progress = Math.min(1, elapsed / collapseDuration);
+        const now = performance.now();
+        const elapsed = now - startTime;
+        if (elapsed < baseFreeze) {
+          square.style.transform = `translate3d(${cx + startX - size / 2}px, ${cy + startY - size / 2}px, 0) scale(1)`;
+          requestAnimationFrame(animateCollapse);
+          return;
+        }
+        const activeElapsed = elapsed - baseFreeze;
+        const progress = Math.min(1, activeElapsed / collapseDuration);
 
         // easeInCubic to accelerate inwards
         const easeIn = Math.pow(progress, 3);
@@ -1359,7 +1438,7 @@ class RetroDodgeAnimation {
     }
 
     // 2. Card slides sideways and disappears briefly
-    // Wait for collapse to mostly finish (e.g. 150ms)
+    // Wait for collapse to mostly finish (e.g. 150ms + baseFreeze)
     setTimeout(() => {
       const slideDistance = 40; // Slide to the right
       const slideDuration = 150;
@@ -1404,9 +1483,18 @@ class RetroDodgeAnimation {
 
               const outStart = performance.now();
               const outDur = 200;
+              const outFreeze = 100 + Math.random() * 200;
 
               const animateOut = () => {
-                const p2 = Math.min(1, (performance.now() - outStart) / outDur);
+                const now = performance.now();
+                const elapsedOut = now - outStart;
+                if (elapsedOut < outFreeze) {
+                  sq.style.transform = `translate3d(${cx - sqSize / 2}px, ${cy - sqSize / 2}px, 0) scale(1)`;
+                  requestAnimationFrame(animateOut);
+                  return;
+                }
+                const activeElapsedOut = elapsedOut - outFreeze;
+                const p2 = Math.min(1, activeElapsedOut / outDur);
                 sq.style.transform = `translate3d(${cx + tx * Math.pow(p2, 0.5) - sqSize / 2}px, ${cy + ty * Math.pow(p2, 0.5) - sqSize / 2}px, 0) scale(${1 - p2})`;
                 if (p2 < 1) requestAnimationFrame(animateOut);
                 else sq.remove();
@@ -1418,7 +1506,7 @@ class RetroDodgeAnimation {
       };
       requestAnimationFrame(slideAnimate);
 
-    }, 150);
+    }, 150 + baseFreeze);
   }
 }
 
@@ -1542,7 +1630,18 @@ class RetroTaskCompleteAnimation {
         let rot = Math.random() * 360;
         let rotSpeed = -15 + Math.random() * 30;
 
+        const startTime = performance.now();
+        const freezeDuration = 100 + Math.random() * 200;
+
         const animateConfetti = () => {
+          const now = performance.now();
+          const elapsed = now - startTime;
+          if (elapsed < freezeDuration) {
+            conf.style.transform = `translate3d(${cx - sizeW / 2}px, ${cy - sizeH / 2}px, 0) scale(1)`;
+            conf.style.opacity = 1;
+            requestAnimationFrame(animateConfetti);
+            return;
+          }
           vy += gravity;
           x += vx;
           y += vy;
@@ -1584,7 +1683,18 @@ class RetroTaskCompleteAnimation {
         const decay = 0.003 + Math.random() * 0.003;
         const gravity = 0.25;
 
+        const startTime = performance.now();
+        const freezeDuration = 100 + Math.random() * 200;
+
         const animateCoin = () => {
+          const now = performance.now();
+          const elapsed = now - startTime;
+          if (elapsed < freezeDuration) {
+            coin.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1)`;
+            coin.style.opacity = 1;
+            requestAnimationFrame(animateCoin);
+            return;
+          }
           vy += gravity;
           x += vx;
           y += vy;
@@ -2131,8 +2241,18 @@ class RetroLevelUpAnimation {
 
       setTimeout(() => {
         const start = performance.now();
+        const freezeDuration = 100 + Math.random() * 200;
         const animate = () => {
-          const progress = Math.min(1, (performance.now() - start) / duration);
+          const now = performance.now();
+          const elapsed = now - start;
+          if (elapsed < freezeDuration) {
+            p.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+            p.style.opacity = 1;
+            requestAnimationFrame(animate);
+            return;
+          }
+          const activeElapsed = elapsed - freezeDuration;
+          const progress = Math.min(1, activeElapsed / duration);
           const y = window.innerHeight - (progress * window.innerHeight * 1.25); // Shoot past top
           const currentX = startX + drift * Math.sin(progress * Math.PI * 2);
 
@@ -2150,7 +2270,7 @@ class RetroLevelUpAnimation {
     setTimeout(() => {
       pillar.style.opacity = '0';
       setTimeout(() => pillar.remove(), 400);
-    }, 900);
+    }, 900 + 300);
   }
 }
 
@@ -2189,8 +2309,18 @@ class RetroHealAnimation {
 
       setTimeout(() => {
         const start = performance.now();
+        const freezeDuration = 100 + Math.random() * 200;
         const animate = () => {
-          const progress = Math.min(1, (performance.now() - start) / duration);
+          const now = performance.now();
+          const elapsed = now - start;
+          if (elapsed < freezeDuration) {
+            bubble.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+            bubble.style.opacity = 1;
+            requestAnimationFrame(animate);
+            return;
+          }
+          const activeElapsed = elapsed - freezeDuration;
+          const progress = Math.min(1, activeElapsed / duration);
           const currentY = startY - (progress * 150); // float up
           const currentX = startX + drift * Math.sin(progress * Math.PI * 4); // wiggle
 
@@ -2243,17 +2373,27 @@ class RetroCritSlashAnimation {
     wrapper.appendChild(slash2);
     document.body.appendChild(wrapper);
 
+    // Pause CSS animations during the freeze
+    slash1.style.animationPlayState = 'paused';
+    slash2.style.animationPlayState = 'paused';
+
+    const freezeDuration = 100 + Math.random() * 200;
+    setTimeout(() => {
+      slash1.style.animationPlayState = 'running';
+      slash2.style.animationPlayState = 'running';
+    }, freezeDuration);
+
     // Trigger card shake
     cardElement.classList.add('crit-shaking');
 
     // Remove classes and elements after animation finishes
     setTimeout(() => {
       try { cardElement.classList.remove('crit-shaking'); } catch (e) { }
-    }, 260);
+    }, 260 + freezeDuration);
 
     setTimeout(() => {
       try { wrapper.remove(); } catch (e) { }
-    }, 450);
+    }, 450 + freezeDuration);
   }
 }
 

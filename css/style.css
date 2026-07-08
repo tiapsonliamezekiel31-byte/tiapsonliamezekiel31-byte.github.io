@@ -965,6 +965,7 @@ body::before {
   position: absolute;
   width: 80px;
   min-height: 90px;
+  contain: layout style;
   border: 2px solid var(--enemy-border-default);
   border-left-color: var(--enemy-weak-color);
   border-right-color: var(--enemy-resist-color);
@@ -2498,6 +2499,11 @@ body::before {
   pointer-events: none;
   z-index: 0;
   border-radius: inherit;
+}
+
+.task-card-daily.flash-white-imminent {
+  filter: brightness(3) contrast(1.2) !important;
+  transition: filter 150ms ease-out !important;
 }
 
 .daily-note-text {
@@ -6719,7 +6725,6 @@ button:hover,
 
 .lootbox-title {
   color: #ffb33f;
-  text-shadow: 0 0 8px rgba(255, 179, 63, 0.6);
   font-size: 22px;
   margin-top: 0;
   letter-spacing: 1.5px;
@@ -6996,20 +7001,8 @@ button:hover,
 
 .roulette-item.winner {
   transform: scale(1.06);
-  animation: rouletteWinnerGlow 1.5s infinite alternate;
   border-width: 3px !important;
   z-index: 5;
-}
-
-@keyframes rouletteWinnerGlow {
-  0% {
-    box-shadow: 0 0 10px currentColor, inset 0 0 5px currentColor;
-  }
-
-  100% {
-    box-shadow: 0 0 25px currentColor, inset 0 0 12px currentColor;
-    transform: scale(1.1);
-  }
 }
 
 .roulette-status-text {
@@ -7018,7 +7011,6 @@ button:hover,
   margin: 10px 0;
   text-align: center;
   color: #cbd5e1;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .lootbox-result-area {
@@ -9852,7 +9844,7 @@ button:hover,
   aspect-ratio: 1 / 1;
   margin: -60px auto 16px; /* Pops out of the card square */
   border-radius: 50%;
-  box-shadow: 0 0 45px rgba(255,215,0,0.4), 0 0 15px rgba(0,0,0,0.6);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   z-index: 5;
 }
 
@@ -9864,7 +9856,6 @@ button:hover,
   font-size: 36px;
   color: #ffd700;
   z-index: 10;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   animation: clapperWiggle 0.15s ease infinite alternate paused;
 }
 
@@ -9883,6 +9874,17 @@ button:hover,
   border-radius: 50%;
   background: #111;
   display: block;
+}
+
+.wheel-status-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  text-align: center;
+  color: #cbd5e1;
+  margin-top: 12px;
+  font-weight: bold;
+  line-height: 1.4;
+  min-height: 52px;
 }
 
 .btn-spin-wheel {
@@ -10076,4 +10078,79 @@ button:hover,
   cursor: pointer;
   font-size: 9px;
   padding: 0 2px;
+}
+
+/* ============================================================
+   MOBILE WEBVIEW PERFORMANCE OVERRIDES
+   Eliminates GPU-crushing effects that tank frame rates in
+   Android/iOS WebView and low-power mobile browsers.
+   ============================================================ */
+@media (max-width: 900px) {
+  /* --- 1. Kill ALL backdrop-filter blur on mobile --- */
+  /* These are the #1 GPU bottleneck in mobile WebViews. */
+  /* Replaced with solid semi-opaque backgrounds that look identical at mobile scale. */
+  .shop-overlay,
+  .shop-panel,
+  .draggable-hud::before,
+  .weapon-strip::before,
+  .popup-overlay,
+  .popup,
+  .attributes-popup,
+  .satchel-popup,
+  .lootbox-popup,
+  .roulette-popup,
+  .death-popup,
+  .victory-popup,
+  .dialogue-popup,
+  .class-selection-popup,
+  .buff-popup,
+  .floating-wizard,
+  .pull-tab,
+  .daily-board,
+  .todo-board,
+  .run-completion-panel,
+  .weekly-heatmap-panel,
+  .event-banner-panel,
+  .stats-hud-panel,
+  .draggable-stats-hud,
+  .game-top-left,
+  .satchel-panel,
+  .nav-menu,
+  .nav-menu-panel {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* --- 2. Disable CRT scanline overlay --- */
+  /* Full-screen compositing layer redrawn every frame, no visual value on small screens */
+  body::before {
+    display: none !important;
+  }
+
+  /* --- 3. Simplify expensive clip-path + drop-shadow on HUD/weapon strip --- */
+  .draggable-hud {
+    clip-path: none !important;
+    filter: none !important;
+    border-radius: 6px !important;
+    border: 2px solid rgba(232, 184, 74, 0.7) !important;
+  }
+  .draggable-hud::before {
+    clip-path: none !important;
+    border-radius: 4px !important;
+  }
+  .weapon-strip {
+    clip-path: none !important;
+    filter: none !important;
+    border-radius: 6px !important;
+    border: 2px solid rgba(232, 184, 74, 0.7) !important;
+  }
+  .weapon-strip::before {
+    clip-path: none !important;
+    border-radius: 4px !important;
+  }
+
+  /* --- 4. Reduce transition/animation overhead on cards --- */
+  .enemy-card {
+    transition: transform 0.12s ease, opacity 0.12s ease !important;
+  }
 }
