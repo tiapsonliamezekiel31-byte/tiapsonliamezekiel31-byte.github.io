@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "style: make Dailies Table View compact and spreadsheet-like"
+$commitMsg = "style: retain horizontal table grid and enable overflow-x scroll on mobile"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

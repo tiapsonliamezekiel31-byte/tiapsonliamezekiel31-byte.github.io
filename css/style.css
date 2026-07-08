@@ -9908,6 +9908,11 @@ button:hover,
   flex-direction: column;
   gap: 4px;
   width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .dailies-table-header {
@@ -9922,6 +9927,7 @@ button:hover,
   font-weight: bold;
   color: var(--accent-gold);
   text-align: center;
+  min-width: 800px;
 }
 
 .dailies-table-header > div {
@@ -9947,6 +9953,7 @@ button:hover,
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0px;
   align-items: center;
+  min-width: 800px;
 }
 
 .dailies-table-row:hover {
@@ -10069,38 +10076,4 @@ button:hover,
   cursor: pointer;
   font-size: 9px;
   padding: 0 2px;
-}
-
-/* Responsive collapse for mobile */
-@media (max-width: 768px) {
-  .dailies-table-header {
-    display: none;
-  }
-  
-  .dailies-table-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.3);
-  }
-
-  .dailies-table-cell {
-    border-right: none;
-    height: auto;
-    padding: 0;
-  }
-
-  .dailies-table-cell label {
-    display: block;
-    font-size: 8px;
-    font-family: 'Orbitron', monospace;
-    color: var(--accent-gold);
-    margin-bottom: 1px;
-    text-transform: uppercase;
-  }
-  
-  .table-input-number {
-    text-align: left;
-  }
 }
