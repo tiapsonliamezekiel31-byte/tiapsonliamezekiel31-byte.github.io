@@ -311,8 +311,8 @@ class FloatingDamageNumber {
   static _pool = [];
 
   static show(x, y, value, options = {}) {
-    // Defaults: hold for 1000ms, then fade over 200ms (total 1200ms)
-    const DEFAULT_HOLD = 1000;
+    // Defaults: hold for 2000ms, then fade over 200ms (total 2200ms)
+    const DEFAULT_HOLD = 2000;
     const DEFAULT_FADE = 200;
     const DEFAULT_DURATION = DEFAULT_HOLD + DEFAULT_FADE;
 
