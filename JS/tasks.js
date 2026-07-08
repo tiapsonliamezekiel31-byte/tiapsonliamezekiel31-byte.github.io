@@ -474,6 +474,14 @@ class TaskManager {
       }
     }
 
+    const isConsistencyActive = state.systemState && state.systemState.consistencyDaysLeft > 0;
+    if (isConsistencyActive) {
+      apReward *= 3;
+      goldReward *= 3;
+      diamondReward *= 3;
+      attrReward *= 3;
+    }
+
     // Round values to prevent floating point issues
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
@@ -497,7 +505,10 @@ class TaskManager {
 
     // Award pet points silently
     const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
-    const petPointsAwarded = petPointsMap[daily.difficulty] || 1;
+    let petPointsAwarded = petPointsMap[daily.difficulty] || 1;
+    if (isConsistencyActive) {
+      petPointsAwarded *= 3;
+    }
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
     // Lootbox key reward logic
@@ -521,6 +532,9 @@ class TaskManager {
       }
       if (streak > 0 && streak % 14 === 0) {
         keysAwarded *= 2;
+      }
+      if (isConsistencyActive) {
+        keysAwarded *= 3;
       }
       if (keysAwarded > 0) {
         state.addLootboxKeys(keysAwarded);
@@ -572,6 +586,25 @@ class TaskManager {
     const state = getGameState();
     const today = this.getCurrentGameDateKey();
     return state.dailiesState.dailies.filter(d => d.completed && this.isDailyScheduled(d, today));
+  }
+
+  static getDifficultyWeight(difficulty) {
+    const weights = { Easy: 1, Medium: 3, Hard: 5, Ultra: 8 };
+    return weights[difficulty] || 1;
+  }
+
+  static getWeightedCompletionRate(completedDailies, allDailies) {
+    let completedWeight = 0;
+    let totalWeight = 0;
+    completedDailies.forEach(d => {
+      const w = this.getDifficultyWeight(d.difficulty);
+      completedWeight += w;
+    });
+    allDailies.forEach(d => {
+      const w = this.getDifficultyWeight(d.difficulty);
+      totalWeight += w;
+    });
+    return totalWeight > 0 ? (completedWeight / totalWeight) : 1.0;
   }
 
   static getMaxPotentialDiamonds() {
@@ -1204,8 +1237,12 @@ class TaskManager {
     };
 
     let damage = 0;
+    const isConsistencyActive = state.systemState && state.systemState.consistencyDaysLeft > 0;
     missedDailies.forEach(daily => {
-      const baseDamage = missedDailyDamageTable[daily.difficulty] ?? 0;
+      let baseDamage = missedDailyDamageTable[daily.difficulty] ?? 0;
+      if (isConsistencyActive) {
+        baseDamage *= 8;
+      }
       const multiplier = daily.bloodOathActive ? state.config.bloodOathDamageMultiplier : 1;
       damage += baseDamage * multiplier;
     });

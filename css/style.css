@@ -8281,6 +8281,49 @@ button:hover,
   }
 }
 
+
+/* Consistency button trigger */
+.btn-consistency-challenge {
+  position: fixed;
+  top: 16px;
+  right: 120px;
+  z-index: 10000;
+  background: rgba(20, 20, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #d1d5db;
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+.btn-consistency-challenge:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: scale(1.04);
+}
+
+.btn-consistency-challenge.active {
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fef08a;
+  animation: consistencyGlowPulse 1.5s infinite alternate;
+}
+
+@keyframes consistencyGlowPulse {
+  from {
+    box-shadow: 0 0 4px rgba(234, 179, 8, 0.2);
+  }
+  to {
+    box-shadow: 0 0 14px rgba(234, 179, 8, 0.6);
+  }
+}
+
 /* ============================================================
    STAGE NOTES WIDGET (PARCHMENT STYLE)
    ============================================================ */

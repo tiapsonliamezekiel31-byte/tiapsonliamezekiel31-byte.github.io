@@ -1147,9 +1147,8 @@
           const scheduledDailies = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function' 
             ? dailies.filter(d => TaskManager.isDailyScheduled(d, TaskManager.getCurrentGameDateKey()))
             : dailies;
-          const completed = scheduledDailies.filter(d => d.completed).length;
-          const total = scheduledDailies.length;
-          completionRate = total > 0 ? (completed / total) : 1.0;
+          const completed = scheduledDailies.filter(d => d.completed);
+          completionRate = TaskManager.getWeightedCompletionRate(completed, scheduledDailies);
         }
       } catch(e) {}
       return completionRate;

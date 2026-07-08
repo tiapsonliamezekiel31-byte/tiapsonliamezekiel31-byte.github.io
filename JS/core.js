@@ -1453,8 +1453,7 @@ function performCheckIn() {
 
   const completedDailies = TaskManager.getCompletedDailies();
   const rawMissedDailies = TaskManager.getMissedDailies();
-  const totalDailiesCount = completedDailies.length + rawMissedDailies.length;
-  const completionRate = totalDailiesCount > 0 ? (completedDailies.length / totalDailiesCount) : 1.0;
+  const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, completedDailies.concat(rawMissedDailies));
   
   
   const history = state.dailiesState.history || [];
@@ -2284,6 +2283,14 @@ function performCheckIn() {
 
   // 8) Reset dailies, update streaks and record last check-in
   try {
+    if (state.systemState) {
+      if (state.systemState.consistencyDaysLeft === undefined) {
+        state.systemState.consistencyDaysLeft = 0;
+      }
+      if (state.systemState.consistencyDaysLeft > 0) {
+        state.systemState.consistencyDaysLeft--;
+      }
+    }
     state.dailiesState.history = state.dailiesState.history || [];
     state.dailiesState.history.push({
       date: getLocalDateKey(),

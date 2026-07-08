@@ -564,6 +564,7 @@ class UIManager {
           </svg>
         </div>
           <button id="focusTimerBtn" class="btn-focus-timer" title="Focus Timer">⏱️ FOCUS</button>
+          <button id="consistencyChallengeBtn" class="btn-consistency-challenge" title="Consistency Challenge">⚖️ CONSISTENCY</button>
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
@@ -625,6 +626,29 @@ class UIManager {
             <button class="focus-action-btn focus-cancel-btn" id="focusStopBtn" style="flex: 1; display: none;">STOP</button>
           </div>
           <div class="focus-cost-warning">Costs 15 Mana · Doubles all task rewards</div>
+        </div>
+      </div>
+      <!-- Consistency Challenge Popup -->
+      <div class="focus-overlay" id="consistencyOverlay" style="display: none; z-index: 19996;"></div>
+      <div id="consistency-popup" style="display: none; position: fixed; z-index: 19997; top: 0; left: 0; width: 100vw; height: 100vh; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; color: #ffffff; pointer-events: auto;">
+        <div class="focus-fullscreen-inner" style="background: rgba(10, 10, 14, 0.96); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 320px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;">
+          <button class="focus-popup-close" id="consistencyPopupClose" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer;">✕</button>
+          <div style="font-size: 14px; color: #fef08a; font-weight: bold; margin-bottom: 8px; text-shadow: 0 0 8px rgba(234, 179, 8, 0.4);">CONSISTENCY COMMITMENT</div>
+          <div style="font-size: 8px; color: #9ca3af; text-align: center; margin-bottom: 16px; line-height: 1.4;">Commit to a number of days. Dailies completed during this time yield <strong style="color:#fef08a;">3x rewards</strong>, but each missed daily inflicts <strong style="color:#ef4444;">6x damage</strong>.</div>
+          
+          <div style="display: flex; flex-direction: column; width: 100%; gap: 8px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 9px; color: #d1d5db;">Active Commitment:</span>
+              <span id="currentConsistencyCommitment" style="font-size: 10px; color: #fef08a; font-weight: bold;">0 days</span>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: center;">
+              <span style="font-size: 9px; color: #d1d5db;">Commit to:</span>
+              <input type="number" id="consistencyCommitDays" min="1" max="365" value="7" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-family: inherit; font-size: 10px; padding: 4px; text-align: center; border-radius: 4px;" />
+              <span style="font-size: 9px; color: #d1d5db;">days</span>
+            </div>
+          </div>
+          
+          <button class="focus-action-btn focus-start-btn" id="consistencyCommitBtn" style="width: 100%; padding: 10px; background: #eab308; color: #000; border: none; font-family: inherit; font-size: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s;">COMMIT TO CHALLENGE</button>
         </div>
       </div>
       <div id="focus-mini-widget" style="display: none;">
@@ -2523,10 +2547,104 @@ class UIManager {
     }
   }
 
+  static setupConsistencyChallenge() {
+    const state = getGameState();
+    const btn = document.getElementById('consistencyChallengeBtn');
+    const overlay = document.getElementById('consistencyOverlay');
+    const popup = document.getElementById('consistency-popup');
+    const closeBtn = document.getElementById('consistencyPopupClose');
+    const commitBtn = document.getElementById('consistencyCommitBtn');
+    const daysInput = document.getElementById('consistencyCommitDays');
+    const activeLabel = document.getElementById('currentConsistencyCommitment');
+
+    if (!btn || !overlay || !popup || !closeBtn || !commitBtn || !daysInput || !activeLabel) return;
+
+    if (state.systemState.consistencyDaysLeft === undefined) {
+      state.systemState.consistencyDaysLeft = 0;
+    }
+
+    const openPopup = () => {
+      const currentDays = state.systemState.consistencyDaysLeft || 0;
+      activeLabel.textContent = `${currentDays} day${currentDays === 1 ? '' : 's'}`;
+      overlay.style.display = 'block';
+      popup.style.display = 'flex';
+
+      const draggableHud = document.getElementById('draggableHud');
+      const statsHudWidget = document.getElementById('statsHudWidget');
+      if (draggableHud) draggableHud.style.display = 'none';
+      if (statsHudWidget) statsHudWidget.style.display = 'none';
+    };
+
+    const closePopup = () => {
+      overlay.style.display = 'none';
+      popup.style.display = 'none';
+
+      const draggableHud = document.getElementById('draggableHud');
+      const statsHudWidget = document.getElementById('statsHudWidget');
+      if (draggableHud) draggableHud.style.display = '';
+      if (statsHudWidget) statsHudWidget.style.display = '';
+    };
+
+    btn.addEventListener('click', (e) => {
+      if (e) e.stopPropagation();
+      openPopup();
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+      if (e) e.stopPropagation();
+      closePopup();
+    });
+
+    overlay.addEventListener('click', closePopup);
+
+    commitBtn.addEventListener('click', (e) => {
+      if (e) e.stopPropagation();
+      const val = parseInt(daysInput.value, 10);
+      if (isNaN(val) || val < 1) {
+        alert("Please enter a valid number of days (at least 1).");
+        return;
+      }
+      
+      state.systemState.consistencyDaysLeft = (state.systemState.consistencyDaysLeft || 0) + val;
+      state.save();
+      
+      closePopup();
+      UIManager.updateConsistencyBtn();
+      
+      try {
+        FloatingDamageNumber.show(
+          window.innerWidth / 2,
+          window.innerHeight / 2,
+          `Consistency challenge active: +${val} days! ⚖️`,
+          { color: '#eab308', duration: 3000 }
+        );
+      } catch (err) {}
+    });
+
+    UIManager.updateConsistencyBtn();
+  }
+
+  static updateConsistencyBtn() {
+    const btn = document.getElementById('consistencyChallengeBtn');
+    if (!btn) return;
+    const state = getGameState();
+    const days = state.systemState ? (state.systemState.consistencyDaysLeft || 0) : 0;
+    if (days > 0) {
+      btn.classList.add('active');
+      btn.textContent = `⚖️ CONSISTENCY: ${days}d`;
+      btn.title = `Consistency Challenge active: ${days} days remaining. Dailies award 3x rewards, but missed dailies deal 6x damage.`;
+    } else {
+      btn.classList.remove('active');
+      btn.textContent = `⚖️ CONSISTENCY`;
+      btn.title = `Commit to Consistency. Set a number of days: dailies award 3x rewards, but missed dailies deal 6x damage.`;
+    }
+  }
+
   static bindEventListeners() {
     if (this.eventListenersBound) return;
     this.eventListenersBound = true;
     this.setupFocusTimer();
+    this.setupConsistencyChallenge();
     const state = getGameState();
 
     // Global listener to clear note selections on clicking outside
@@ -8934,6 +9052,7 @@ class UIManager {
     this.renderEnemies();
     this.updateRunCompletionGraph();
     try { this.updateWeeklyHeatmap(); } catch (e) { }
+    try { this.updateConsistencyBtn(); } catch (e) { }
     try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
@@ -9065,21 +9184,21 @@ class UIManager {
     const runStartTime = Number(state.systemState?.gameStartTime) || 0;
     const runHistory = history.filter(entry => (entry.timestamp || 0) >= runStartTime);
     const currentDailies = state.dailiesState?.dailies || [];
-    const currentCompleted = currentDailies.filter(daily => (daily.completionsToday || 0) >= (daily.maxCompletionsPerDay || 1)).length;
-    const currentTotal = currentDailies.length;
-    const currentPct = currentTotal > 0 ? currentCompleted / currentTotal : 0;
+    const completedDailies = currentDailies.filter(daily => (daily.completionsToday || 0) >= (daily.maxCompletionsPerDay || 1));
+    const currentPct = TaskManager.getWeightedCompletionRate(completedDailies, currentDailies);
 
     const series = runHistory.map(entry => {
-      const completedCount = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
-      const attemptedCount = completedCount + (Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0);
+      const completedDailiesHist = Array.isArray(entry.completedDailies) ? entry.completedDailies : [];
+      const missedDailiesHist = Array.isArray(entry.missedDailies) ? entry.missedDailies : [];
+      const allDailiesHist = completedDailiesHist.concat(missedDailiesHist);
       return {
         completed: !!entry.allDailiesComplete,
-        pct: attemptedCount > 0 ? completedCount / attemptedCount : 0
+        pct: TaskManager.getWeightedCompletionRate(completedDailiesHist, allDailiesHist)
       };
     });
 
     series.push({
-      completed: currentTotal > 0 && currentCompleted === currentTotal,
+      completed: currentDailies.length > 0 && completedDailies.length === currentDailies.length,
       pct: currentPct,
       live: true
     });
