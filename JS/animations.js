@@ -475,8 +475,9 @@ FloatingDamageNumber.showAnchored = function (anchorElementOrRect, value, option
 
     // Check if positioning dataset is available to avoid layouts
     if (el.dataset.x) {
-      const circle = document.querySelector('.enemy-circle-container');
-      const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+      const circleRect = (window.UIManager && typeof UIManager.getCircleRect === 'function')
+        ? UIManager.getCircleRect()
+        : (document.querySelector('.enemy-circle-container')?.getBoundingClientRect() || { left: 0, top: 0 });
       baseX = circleRect.left + Number(el.dataset.x);
       baseY = circleRect.top + Number(el.dataset.y);
     } else {

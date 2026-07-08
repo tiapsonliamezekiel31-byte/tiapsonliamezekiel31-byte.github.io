@@ -21,6 +21,22 @@ class UIManager {
   static _dailyHistoryCache = {};
   static _updateDailiesTimer = null;
   static _stageBackdropKey = '';
+  static circleRectCache = null;
+  static enemyPositionsCache = null;
+
+  static getCircleRect() {
+    if (!this.circleRectCache) {
+      const circle = document.querySelector('.enemy-circle-container');
+      const rect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0, width: 620, height: 620 };
+      this.circleRectCache = {
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height)
+      };
+    }
+    return this.circleRectCache;
+  }
 
   static getAttributeColor(attribute) {
     const palette = getGameState()?.config?.attributeColors || {};
@@ -1224,7 +1240,7 @@ class UIManager {
     const circle = document.querySelector('.enemy-circle-container');
     if (!ring || !circle) return;
 
-    const rect = circle.getBoundingClientRect();
+    const rect = UIManager.getCircleRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     // Position buttons relative to the circle
@@ -1996,15 +2012,25 @@ class UIManager {
     const startDriftLoop = () => {
       if (driftAnimationId) cancelAnimationFrame(driftAnimationId);
       
+      let overlayWidth = overlay.offsetWidth || window.innerWidth;
+      let overlayHeight = overlay.offsetHeight || window.innerHeight;
+      
+      const handleDriftResize = () => {
+        overlayWidth = overlay.offsetWidth || window.innerWidth;
+        overlayHeight = overlay.offsetHeight || window.innerHeight;
+      };
+      
+      window.addEventListener('resize', handleDriftResize);
+      
       const updateDrift = () => {
         if (!state.systemState.focusTimerActive) {
           driftAnimationId = null;
+          window.removeEventListener('resize', handleDriftResize);
           return;
         }
 
-        const overlayRect = overlay.getBoundingClientRect();
-        const width = overlayRect.width || window.innerWidth;
-        const height = overlayRect.height || window.innerHeight;
+        const width = overlayWidth;
+        const height = overlayHeight;
 
         activeFocusBubbles.forEach(b => {
           b.x += b.vx;
@@ -3072,6 +3098,8 @@ class UIManager {
     this.setupDragTargeting();
 
     window.addEventListener('resize', () => {
+      UIManager.circleRectCache = null;
+      UIManager.enemyPositionsCache = null;
       if (this.resizeScheduled) return;
       this.resizeScheduled = true;
       requestAnimationFrame(() => {
@@ -4354,8 +4382,7 @@ class UIManager {
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2;
         if (card.dataset.x) {
-          const circle = document.querySelector('.enemy-circle-container');
-          const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+          const circleRect = UIManager.getCircleRect();
           x = circleRect.left + Number(card.dataset.x);
           y = circleRect.top + Number(card.dataset.y);
         } else {
@@ -4504,8 +4531,7 @@ class UIManager {
         let y = window.innerHeight / 2;
         if (card) {
           if (card.dataset.x) {
-            const circleContainer = document.querySelector('.enemy-circle-container');
-            const circleRect = circleContainer ? circleContainer.getBoundingClientRect() : { left: 0, top: 0 };
+            const circleRect = UIManager.getCircleRect();
             x = circleRect.left + Number(card.dataset.x);
             y = circleRect.top + Number(card.dataset.y);
           } else {
@@ -4848,8 +4874,7 @@ class UIManager {
                 const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${echoTarget.id}"]`);
                 if (targetCard) {
                   if (targetCard.dataset.x) {
-                    const circle = document.querySelector('.enemy-circle-container');
-                    const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                    const circleRect = UIManager.getCircleRect();
                     targetX = circleRect.left + Number(targetCard.dataset.x);
                     targetY = circleRect.top + Number(targetCard.dataset.y);
                   } else {
@@ -4901,8 +4926,7 @@ class UIManager {
           const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
           if (targetCard) {
             if (targetCard.dataset.x) {
-              const circle = document.querySelector('.enemy-circle-container');
-              const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+              const circleRect = UIManager.getCircleRect();
               targetX = circleRect.left + Number(targetCard.dataset.x);
               targetY = circleRect.top + Number(targetCard.dataset.y);
             } else {
@@ -5124,8 +5148,7 @@ class UIManager {
                   const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
                   if (targetCard) {
                     if (targetCard.dataset.x) {
-                      const circle = document.querySelector('.enemy-circle-container');
-                      const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                      const circleRect = UIManager.getCircleRect();
                       FloatingDamageNumber.show(circleRect.left + Number(targetCard.dataset.x), circleRect.top + Number(targetCard.dataset.y) - 45, 'REVERSED & COATED 🧪', { color: '#84cc16', scale: 1.1, duration: 1500 });
                     } else {
                       const rect = targetCard.getBoundingClientRect();
@@ -5151,8 +5174,7 @@ class UIManager {
                             const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
                             if (adjCard) {
                               if (adjCard.dataset.x) {
-                                const circle = document.querySelector('.enemy-circle-container');
-                                const circleRect = circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
+                                const circleRect = UIManager.getCircleRect();
                                 FloatingDamageNumber.show(circleRect.left + Number(adjCard.dataset.x), circleRect.top + Number(adjCard.dataset.y) - 45, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
                               } else {
                                 const rect = adjCard.getBoundingClientRect();
@@ -5481,10 +5503,7 @@ class UIManager {
       const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
       if (enemies.length === 0) return null;
 
-      const rect = circleRect || (() => {
-        const circle = document.querySelector('.enemy-circle-container');
-        return circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
-      })();
+      const rect = circleRect || UIManager.getCircleRect();
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const radius = Math.min(rect.width, rect.height) / 2;
@@ -5690,10 +5709,7 @@ class UIManager {
                 try {
                   const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
                   if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                    const rect = circleRect || (() => {
-                      const circle = document.querySelector('.enemy-circle-container');
-                      return circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
-                    })();
+                    const rect = circleRect || UIManager.getCircleRect();
                     const sx = rect.left + buttonCenterX;
                     const sy = rect.top + buttonCenterY;
                     DodgeTetherAnimation.play(sx, sy, card);
@@ -5766,10 +5782,7 @@ class UIManager {
               try {
                 const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
                 if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                  const rect = circleRect || (() => {
-                    const circle = document.querySelector('.enemy-circle-container');
-                    return circle ? circle.getBoundingClientRect() : { left: 0, top: 0 };
-                  })();
+                  const rect = circleRect || UIManager.getCircleRect();
                   const sx = rect.left + buttonCenterX;
                   const sy = rect.top + buttonCenterY;
                   DodgeTetherAnimation.play(sx, sy, card);
@@ -8101,12 +8114,22 @@ class UIManager {
     const enemies = state.stageState.enemies || [];
     const circle = document.querySelector('.enemy-circle-container');
     const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
+    
+    // Invalidate and update the circle rect cache
+    this.circleRectCache = {
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    };
+
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
     // Position enemies relative to circle border
     const radius = Math.min(rect.width, rect.height) / 2;
 
     if (!enemies.length) {
+      this.enemyPositionsCache = [];
       layer.innerHTML = '<div class="enemy-empty">No enemies yet</div>';
       return;
     }
@@ -8128,6 +8151,9 @@ class UIManager {
       Array.from(layer.querySelectorAll('.enemy-card')).map(card => [String(card.dataset.enemyId), card])
     );
     const activeEnemyIds = new Set();
+    
+    // Clear and prepare enemy positions cache
+    this.enemyPositionsCache = [];
 
     enemies.forEach((enemy, index) => {
       const enemyId = String(enemy.id);
@@ -8142,6 +8168,16 @@ class UIManager {
       if (enemy.isBoss) {
         y += 28;
       }
+
+      // Add to positions cache
+      this.enemyPositionsCache.push({
+        id: enemyId,
+        x,
+        y,
+        enemy,
+        index,
+        isDead: !!enemy.isDead
+      });
 
       let card = existingCards.get(enemyId);
       if (!card) {
@@ -8185,8 +8221,10 @@ class UIManager {
     try {
       this.drawCanvasConnections();
       
-      // Start dynamic canvas updating loop if not already running
-      if (!window.enemyCanvasLoopActive) {
+      const hasHealer = enemies.some(enemy => enemy && !enemy.isDead && (enemy.archetype || '').toLowerCase() === 'healer');
+      
+      // Start dynamic canvas updating loop ONLY if not already running and there is a healer alive
+      if (hasHealer && !window.enemyCanvasLoopActive) {
         window.enemyCanvasLoopActive = true;
         const tick = () => {
           const cv = document.getElementById('enemyCanvas');
@@ -8195,7 +8233,17 @@ class UIManager {
             return;
           }
           this.drawCanvasConnections();
-          requestAnimationFrame(tick);
+          
+          // Continue animating only if healers are still present
+          const curState = getGameState();
+          const curEnemies = curState.stageState.enemies || [];
+          const stillHasHealer = curEnemies.some(enemy => enemy && !enemy.isDead && (enemy.archetype || '').toLowerCase() === 'healer');
+          
+          if (stillHasHealer) {
+            requestAnimationFrame(tick);
+          } else {
+            window.enemyCanvasLoopActive = false;
+          }
         };
         requestAnimationFrame(tick);
       }
@@ -8413,17 +8461,9 @@ class UIManager {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    const state = getGameState();
-    const enemies = state.stageState.enemies || [];
-    if (!enemies.length) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      return;
-    }
-
-    const circle = document.querySelector('.enemy-circle-container');
-    const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
-    const rectWidth = Math.round(rect.width);
-    const rectHeight = Math.round(rect.height);
+    const rect = this.getCircleRect();
+    const rectWidth = rect.width;
+    const rectHeight = rect.height;
     if (canvas.width !== rectWidth || canvas.height !== rectHeight) {
       canvas.width = rectWidth;
       canvas.height = rectHeight;
@@ -8431,28 +8471,21 @@ class UIManager {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = Math.min(canvas.width, canvas.height) / 2;
-
     const alivePositions = [];
     const idToPos = new Map();
 
-    enemies.forEach((enemy, index) => {
-      if (enemy && !enemy.isDead) {
-        const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
-        const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
-        const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
-        const x = centerX + Math.cos(angle) * currentRadius;
-        let y = centerY + Math.sin(angle) * currentRadius;
-        if (enemy.isBoss) {
-          y += 28;
+    if (this.enemyPositionsCache) {
+      this.enemyPositionsCache.forEach(pos => {
+        if (!pos.isDead) {
+          alivePositions.push(pos);
+          idToPos.set(pos.id, pos);
         }
-        const pos = { x, y, id: String(enemy.id), enemy, index };
-        alivePositions.push(pos);
-        idToPos.set(String(enemy.id), pos);
-      }
-    });
+      });
+    }
+
+    if (!alivePositions.length) {
+      return;
+    }
 
     // 1. Draw standard background red web connection line
     if (alivePositions.length > 1) {
@@ -8491,6 +8524,8 @@ class UIManager {
     alivePositions.forEach(pos => {
       const arch = (pos.enemy.archetype || '').toLowerCase();
       if (arch === 'protector') {
+        const state = getGameState();
+        const enemies = state.stageState.enemies || [];
         const adjacent = (typeof EnemyManager !== 'undefined' && EnemyManager.getAdjacentEnemies)
           ? EnemyManager.getAdjacentEnemies(enemies, pos.index)
           : [];
