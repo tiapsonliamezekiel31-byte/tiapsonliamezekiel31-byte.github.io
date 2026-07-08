@@ -4716,5 +4716,321 @@ class PopupsManager {
       PopupAnimation.scale(popup);
     }
   }
+
+  static showDailiesTable() {
+    const state = getGameState();
+    this.closeAllPopups();
+    
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup dailies-table-popup';
+    
+    let html = `
+      <h2>DAILIES TABLE VIEW</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body" style="padding-bottom: 20px;">
+        <div class="dailies-table-container">
+          <div class="dailies-table-header">
+            <div>Daily Task Name</div>
+            <div>Attribute</div>
+            <div>Difficulty</div>
+            <div>Schedule</div>
+            <div>Streak</div>
+            <div>Milestones</div>
+            <div>Action</div>
+          </div>
+          <div class="dailies-table-rows" id="dailiesTableRowsList">
+    `;
+
+    const dailies = TaskManager.getAllDailies();
+    if (dailies.length === 0) {
+      html += `<div style="text-align: center; color: var(--text-muted); padding: 20px 0; font-family: monospace; font-size: 0.8rem;">No dailies found. Close this and add some using the ＋ button!</div>`;
+    } else {
+      dailies.forEach(daily => {
+        const attributeOptions = state.config.attributes.map(a => 
+          `<option value="${a}" ${a === daily.attribute ? 'selected' : ''}>${a}</option>`
+        ).join('');
+
+        const difficultyOptions = ['Easy', 'Medium', 'Hard', 'Ultra'].map(d =>
+          `<option value="${d}" ${d === daily.difficulty ? 'selected' : ''}>${d}</option>`
+        ).join('');
+
+        const repeatModeOptions = [
+          { val: 'daily', label: 'Daily' },
+          { val: 'weekly', label: 'Weekly' },
+          { val: 'interval', label: 'Interval' }
+        ].map(m =>
+          `<option value="${m.val}" ${daily.repeatMode === m.val || (!daily.repeatMode && m.val === 'daily') ? 'selected' : ''}>${m.label}</option>`
+        ).join('');
+
+        // Generate weekday pills S, M, T, W, T, F, S
+        const daysShort = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const activeDays = daily.weekDays || [0, 1, 2, 3, 4, 5, 6];
+        const weekdayPills = daysShort.map((day, idx) => {
+          const isActive = activeDays.includes(idx);
+          return `<div class="weekday-pill ${isActive ? 'active' : ''}" data-day="${idx}">${day}</div>`;
+        }).join('');
+
+        const isWeekly = daily.repeatMode === 'weekly';
+        const isInterval = daily.repeatMode === 'interval';
+
+        // Milestone summary
+        const milestoneCount = (daily.surplusMilestones || []).length;
+        const milestoneLabel = milestoneCount > 0 ? `⭐ ${milestoneCount} Milestones` : '＋ Milestones';
+
+        html += `
+          <div class="dailies-table-row" data-id="${daily.id}">
+            <!-- Task Name -->
+            <div class="dailies-table-cell">
+              <label>Daily Task Name</label>
+              <input type="text" class="table-input daily-name-input" value="${daily.baseName || daily.name}" />
+            </div>
+
+            <!-- Attribute -->
+            <div class="dailies-table-cell">
+              <label>Attribute</label>
+              <select class="table-select daily-attr-select">${attributeOptions}</select>
+            </div>
+
+            <!-- Difficulty -->
+            <div class="dailies-table-cell">
+              <label>Difficulty</label>
+              <select class="table-select daily-diff-select">${difficultyOptions}</select>
+            </div>
+
+            <!-- Schedule -->
+            <div class="dailies-table-cell">
+              <label>Schedule</label>
+              <select class="table-select daily-repeat-select">${repeatModeOptions}</select>
+              
+              <div class="weekday-pills-container" style="display: ${isWeekly ? 'flex' : 'none'};">
+                ${weekdayPills}
+              </div>
+
+              <div class="interval-input-container" style="display: ${isInterval ? 'flex' : 'none'}; align-items: center; gap: 4px; margin-top: 4px;">
+                <span style="font-size: 0.65rem; color: var(--text-muted);">Every</span>
+                <input type="number" min="1" class="table-input-number daily-interval-input" value="${daily.intervalDays || 3}" style="padding: 2px 4px; font-size: 0.65rem; width: 40px;" />
+                <span style="font-size: 0.65rem; color: var(--text-muted);">Days</span>
+              </div>
+            </div>
+
+            <!-- Streak -->
+            <div class="dailies-table-cell">
+              <label>Streak</label>
+              <input type="number" min="0" class="table-input-number daily-streak-input" value="${daily.currentStreak || 0}" />
+            </div>
+
+            <!-- Milestones (Surpluses) -->
+            <div class="dailies-table-cell">
+              <label>Milestones</label>
+              <button class="btn-toggle-pill btn-toggle-ghost btn-toggle-surplus" style="font-size: 0.65rem; padding: 4px 6px; width: 100%; text-align: center;">${milestoneLabel}</button>
+              
+              <!-- Hidden Sub-editor -->
+              <div class="row-milestones-container" style="display: none;">
+                <div class="row-milestones-list"></div>
+                <div style="display: flex; gap: 4px; margin-top: 4px; align-items: center;">
+                  <input type="number" min="1" placeholder="Days" class="new-ms-streak" style="width: 32px; font-size: 0.65rem; padding: 2px;" />
+                  <input type="text" placeholder="New Name" class="new-ms-name" style="flex: 1; font-size: 0.65rem; padding: 2px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color:#fff;" />
+                  <button type="button" class="btn-add-row-milestone" style="font-size: 0.65rem; padding: 2px 4px; background: rgba(168,85,247,0.2); border: 1px solid #a855f7; color:#fff; cursor:pointer;">＋</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action -->
+            <div class="dailies-table-cell">
+              <label>Action</label>
+              <button class="btn-toggle-pill btn-toggle-ghost btn-danger btn-delete-row" style="font-size: 0.65rem; padding: 6px; width: 100%; text-align: center;">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+          </div>
+        </div>
+      </div>
+    `;
+
+    popup.innerHTML = html;
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+
+    // Attach Event Listeners for each Row
+    const rows = popup.querySelectorAll('.dailies-table-row');
+    rows.forEach(row => {
+      const dailyId = row.dataset.id;
+      const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
+      if (!daily) return;
+
+      const nameInput = row.querySelector('.daily-name-input');
+      const attrSelect = row.querySelector('.daily-attr-select');
+      const diffSelect = row.querySelector('.daily-diff-select');
+      const repeatSelect = row.querySelector('.daily-repeat-select');
+      const streakInput = row.querySelector('.daily-streak-input');
+      const intervalInput = row.querySelector('.daily-interval-input');
+      
+      const weekdayContainer = row.querySelector('.weekday-pills-container');
+      const intervalContainer = row.querySelector('.interval-input-container');
+
+      const saveRow = () => {
+        const nameVal = nameInput.value.trim() || daily.name;
+        const attrVal = attrSelect.value;
+        const diffVal = diffSelect.value;
+        const repeatVal = repeatSelect.value;
+        const streakVal = Math.max(0, parseInt(streakInput.value) || 0);
+        const intervalVal = Math.max(1, parseInt(intervalInput?.value) || 1);
+        const weekDaysVal = Array.from(row.querySelectorAll('.weekday-pill.active')).map(pill => parseInt(pill.dataset.day));
+
+        const updates = {
+          name: nameVal,
+          attribute: attrVal,
+          difficulty: diffVal,
+          repeatMode: repeatVal,
+          currentStreak: streakVal,
+          intervalDays: intervalVal,
+          weekDays: weekDaysVal.length > 0 ? weekDaysVal : [0, 1, 2, 3, 4, 5, 6]
+        };
+
+        if (streakVal > (daily.longestStreak || 0)) {
+          updates.longestStreak = streakVal;
+        }
+
+        TaskManager.editDaily(dailyId, updates);
+        state.save();
+        UIManager.updateDailiesList();
+      };
+
+      // Inline controls change save
+      nameInput.addEventListener('blur', saveRow);
+      nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          nameInput.blur();
+        }
+      });
+      attrSelect.addEventListener('change', saveRow);
+      diffSelect.addEventListener('change', saveRow);
+      
+      repeatSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        weekdayContainer.style.display = val === 'weekly' ? 'flex' : 'none';
+        intervalContainer.style.display = val === 'interval' ? 'flex' : 'none';
+        saveRow();
+      });
+
+      if (intervalInput) {
+        intervalInput.addEventListener('change', saveRow);
+      }
+
+      streakInput.addEventListener('change', saveRow);
+
+      // Weekday Pills clicks
+      row.querySelectorAll('.weekday-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          pill.classList.toggle('active');
+          saveRow();
+        });
+      });
+
+      // Milestone expander toggle and sub-editor logic
+      const btnToggleSurplus = row.querySelector('.btn-toggle-surplus');
+      const milestonesContainer = row.querySelector('.row-milestones-container');
+      const milestonesList = row.querySelector('.row-milestones-list');
+      
+      const renderRowMilestones = () => {
+        const msList = daily.surplusMilestones || [];
+        msList.sort((a, b) => a.streak - b.streak);
+        
+        btnToggleSurplus.textContent = msList.length > 0 ? `⭐ ${msList.length} Milestones` : '＋ Milestones';
+        
+        milestonesList.innerHTML = msList.map((m, idx) => `
+          <div class="row-milestone-item">
+            <span>Streak ${m.streak}d ➔ ${m.name}</span>
+            <button type="button" class="btn-remove-row-milestone" data-idx="${idx}">✕</button>
+          </div>
+        `).join('');
+
+        milestonesList.querySelectorAll('.btn-remove-row-milestone').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            const currentMs = Array.isArray(daily.surplusMilestones) ? [...daily.surplusMilestones] : [];
+            currentMs.splice(idx, 1);
+            
+            TaskManager.editDaily(dailyId, { 
+              dailySurplusEnabled: currentMs.length > 0,
+              surplusMilestones: currentMs 
+            });
+            state.save();
+            renderRowMilestones();
+            UIManager.updateDailiesList();
+          });
+        });
+      };
+
+      btnToggleSurplus.addEventListener('click', () => {
+        const isHidden = milestonesContainer.style.display === 'none';
+        milestonesContainer.style.display = isHidden ? 'block' : 'none';
+        if (isHidden) {
+          renderRowMilestones();
+        }
+      });
+
+      // Add Milestone handler
+      const btnAddRowMs = row.querySelector('.btn-add-row-milestone');
+      const inputMsStreak = row.querySelector('.new-ms-streak');
+      const inputMsName = row.querySelector('.new-ms-name');
+
+      btnAddRowMs.addEventListener('click', () => {
+        const streakVal = parseInt(inputMsStreak.value);
+        const nameVal = inputMsName.value.trim();
+        if (!streakVal || streakVal < 1 || !nameVal) return;
+
+        const currentMs = Array.isArray(daily.surplusMilestones) ? [...daily.surplusMilestones] : [];
+        const existingIdx = currentMs.findIndex(m => m.streak === streakVal);
+        if (existingIdx !== -1) {
+          currentMs[existingIdx].name = nameVal;
+        } else {
+          currentMs.push({ streak: streakVal, name: nameVal });
+        }
+
+        TaskManager.editDaily(dailyId, { 
+          dailySurplusEnabled: true,
+          surplusMilestones: currentMs 
+        });
+        state.save();
+        
+        inputMsStreak.value = '';
+        inputMsName.value = '';
+        renderRowMilestones();
+        UIManager.updateDailiesList();
+      });
+
+      // Delete Row Button
+      row.querySelector('.btn-delete-row').addEventListener('click', () => {
+        const dailyName = daily.name || 'this daily';
+        if (!confirm(`Delete ${dailyName}?`)) return;
+
+        const removed = TaskManager.removeDaily(dailyId);
+        if (removed) {
+          row.remove();
+          // If no more rows are left, display "No dailies" message
+          if (popup.querySelectorAll('.dailies-table-row').length === 0) {
+            const rowsList = popup.querySelector('#dailiesTableRowsList');
+            if (rowsList) {
+              rowsList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 20px 0; font-family: monospace; font-size: 0.8rem;">No dailies found. Close this and add some using the ＋ button!</div>`;
+            }
+          }
+          UIManager.updateDailiesList();
+          UIManager.renderEnemies();
+          state.save();
+        }
+      });
+    });
+  }
 }
 

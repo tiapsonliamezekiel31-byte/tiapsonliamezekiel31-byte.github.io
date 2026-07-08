@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "refactor: remove monthly streak savers and implement 7 check-in save rule"
+$commitMsg = "feat: add Dailies Table View popup with inline edit and mobile responsiveness"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

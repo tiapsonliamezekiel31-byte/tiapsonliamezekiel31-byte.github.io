@@ -1335,6 +1335,7 @@ class UIManager {
           <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Lock: off</button>
           <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
           <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Focus: off</button>
+          <button id="dailiesTableViewBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">📋 Table</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
         </div>
@@ -2820,6 +2821,9 @@ class UIManager {
     document.getElementById('dailiesLockModeBtn')?.addEventListener('click', () => this.toggleLockMode());
     document.getElementById('dailiesConnectionsBtn')?.addEventListener('click', () => this.toggleDailyConnections());
     document.getElementById('dailiesFocusBtn')?.addEventListener('click', () => this.toggleDailyFocus());
+    document.getElementById('dailiesTableViewBtn')?.addEventListener('click', () => {
+      try { PopupsManager.showDailiesTable(); } catch (e) { console.warn('Failed to open dailies table popup', e); }
+    });
     document.getElementById('todosShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('todos'));
     UIManager.isEraserActive = false;
     document.getElementById('todosEraserBtn')?.addEventListener('click', () => {
