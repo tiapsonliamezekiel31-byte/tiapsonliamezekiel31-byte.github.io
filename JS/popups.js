@@ -1532,6 +1532,8 @@ class PopupsManager {
           <select id="newDailyAttr">${attrsOptions}</select>
           <label>Max completions per day</label>
           <input id="newDailyMax" type="number" min="1" value="1" />
+          <label>Deadline (Optional hh:mm)</label>
+          <input id="newDailyDeadline" type="time" style="width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 6px; font-family: inherit; font-size: 11px; border-radius: 4px;" />
           <button id="addDailyBtn" class="btn-large" style="margin-top: 10px;">ADD DAILY</button>
         </div>
       </div>
@@ -1546,8 +1548,9 @@ class PopupsManager {
       const diff = popup.querySelector('#newDailyDiff').value;
       const attr = popup.querySelector('#newDailyAttr').value;
       const max = Math.max(1, Number(popup.querySelector('#newDailyMax').value) || 1);
+      const deadline = popup.querySelector('#newDailyDeadline').value || null;
 
-      const d = TaskManager.addDaily(name, diff, attr, max);
+      const d = TaskManager.addDaily(name, diff, attr, max, deadline);
       if (d) {
         this.closeAllPopups();
         state.save();
@@ -2748,6 +2751,8 @@ class PopupsManager {
           <input id="editLocked" type="checkbox" ${daily.locked ? 'checked' : ''} />
           <label for="editLocked" style="font-size: 11px; color: #cbd5e1; cursor: pointer; user-select: none;">Lock this daily (cannot complete, immediately marked as miss)</label>
         </div>
+        <label>Deadline (Optional hh:mm)</label>
+        <input id="editDeadline" type="time" value="${daily.deadline || ''}" style="margin-bottom: 8px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 6px; font-family: inherit; font-size: 11px; border-radius: 4px;" />
         <label>Daily Surplus</label>
         <div class="surplus-row" style="margin-bottom: 12px; display: block;">
           <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #a855f7; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
@@ -2896,7 +2901,8 @@ class PopupsManager {
           repeatMode,
           weekDays: weekDays.length > 0 ? weekDays : [0, 1, 2, 3, 4, 5, 6],
           intervalDays,
-          locked: wantLocked
+          locked: wantLocked,
+          deadline: popup.querySelector('#editDeadline').value || null
         };
         // Apply blood oath toggle if requested
         try {
@@ -2911,7 +2917,7 @@ class PopupsManager {
 
         TaskManager.editDaily(dailyId, updates);
         try { UIManager.refreshGameUI(); } catch (error) { }
-        this.closePopup();
+        this.closeAllPopups();
       };
 
       if (wantLocked && !daily.locked) {
@@ -4945,6 +4951,8 @@ class PopupsManager {
     const state = getGameState();
     this.closeAllPopups();
     
+    const activeSetId = state.dailiesState.activeSetId || 'A';
+
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup dailies-table-popup';
@@ -4952,6 +4960,14 @@ class PopupsManager {
     let html = `
       <h2>DAILIES TABLE VIEW</h2>
       <button class="btn-close">✕</button>
+      
+      <!-- Day Set Selector -->
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center;">
+        <span style="color: var(--text-muted);">ACTIVE DAY:</span>
+        <button class="day-selector-btn ${activeSetId === 'A' ? 'active' : ''}" data-set-id="A">DAY A</button>
+        <button class="day-selector-btn ${activeSetId === 'B' ? 'active' : ''}" data-set-id="B">DAY B</button>
+      </div>
+
       <div class="popup-scrollable-body" style="padding-bottom: 20px;">
         <div class="dailies-table-container">
           <div class="dailies-table-header">
@@ -4959,6 +4975,7 @@ class PopupsManager {
             <div>Attribute</div>
             <div>Difficulty</div>
             <div>Schedule</div>
+            <div>Deadline</div>
             <div>Streak</div>
             <div>Milestones</div>
             <div>Action</div>
@@ -5038,6 +5055,12 @@ class PopupsManager {
               </div>
             </div>
 
+            <!-- Deadline -->
+            <div class="dailies-table-cell">
+              <label>Deadline</label>
+              <input type="time" class="table-input daily-deadline-input" value="${daily.deadline || ''}" />
+            </div>
+
             <!-- Streak -->
             <div class="dailies-table-cell">
               <label>Streak</label>
@@ -5085,6 +5108,18 @@ class PopupsManager {
       PopupAnimation.scale(popup);
     }
 
+    // Bind active set buttons
+    popup.querySelectorAll('.day-selector-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const targetSetId = e.currentTarget.dataset.setId;
+        if (targetSetId !== (state.dailiesState.activeSetId || 'A')) {
+          TaskManager.switchDaySet(targetSetId);
+          PopupsManager.showDailiesTable();
+          UIManager.updateDailiesList();
+        }
+      });
+    });
+
     // Attach Event Listeners for each Row
     const rows = popup.querySelectorAll('.dailies-table-row');
     rows.forEach(row => {
@@ -5098,6 +5133,7 @@ class PopupsManager {
       const repeatSelect = row.querySelector('.daily-repeat-select');
       const streakInput = row.querySelector('.daily-streak-input');
       const intervalInput = row.querySelector('.daily-interval-input');
+      const deadlineInput = row.querySelector('.daily-deadline-input');
       
       const weekdayContainer = row.querySelector('.weekday-pills-container');
       const intervalContainer = row.querySelector('.interval-input-container');
@@ -5110,6 +5146,7 @@ class PopupsManager {
         const streakVal = Math.max(0, parseInt(streakInput.value) || 0);
         const intervalVal = Math.max(1, parseInt(intervalInput?.value) || 1);
         const weekDaysVal = Array.from(row.querySelectorAll('.weekday-pill.active')).map(pill => parseInt(pill.dataset.day));
+        const deadlineVal = deadlineInput?.value || '';
 
         const updates = {
           name: nameVal,
@@ -5118,7 +5155,8 @@ class PopupsManager {
           repeatMode: repeatVal,
           currentStreak: streakVal,
           intervalDays: intervalVal,
-          weekDays: weekDaysVal.length > 0 ? weekDaysVal : [0, 1, 2, 3, 4, 5, 6]
+          weekDays: weekDaysVal.length > 0 ? weekDaysVal : [0, 1, 2, 3, 4, 5, 6],
+          deadline: deadlineVal || null
         };
 
         if (streakVal > (daily.longestStreak || 0)) {
@@ -5153,6 +5191,10 @@ class PopupsManager {
 
       streakInput.addEventListener('change', saveRow);
 
+      if (deadlineInput) {
+        deadlineInput.addEventListener('change', saveRow);
+      }
+
       // Weekday Pills clicks
       row.querySelectorAll('.weekday-pill').forEach(pill => {
         pill.addEventListener('click', () => {
@@ -5186,8 +5228,8 @@ class PopupsManager {
             currentMs.splice(idx, 1);
             
             TaskManager.editDaily(dailyId, { 
-              dailySurplusEnabled: currentMs.length > 0,
-              surplusMilestones: currentMs 
+               dailySurplusEnabled: currentMs.length > 0,
+               surplusMilestones: currentMs 
             });
             state.save();
             renderRowMilestones();

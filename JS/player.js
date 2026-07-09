@@ -57,6 +57,8 @@ class PlayerManager {
   
   static recalculateMaxAp() {
     const state = getGameState();
+    const oldMaxAp = state.playerState.maxAp || 0;
+    const oldAp = state.playerState.ap || 0;
     
     // MAX_AP = average sum of AP from dailies based on their schedule
     let totalAp = 0;
@@ -80,11 +82,59 @@ class PlayerManager {
     const completeDayBonus = Number(state.systemState?.completeDayApBonus) || 0;
     maxAp += completeDayBonus;
     
+    // Ensure maxAp is at least 1 to avoid division by zero or 0 AP state
+    maxAp = Math.max(1, maxAp);
+
     state.playerState.maxAp = maxAp;
     
-    // Also update AP to not exceed new max
-    if (state.playerState.ap > maxAp) {
-      state.playerState.ap = maxAp;
+    // Scale active enemies' health and player's current AP in proportion to the new max ap
+    if (oldMaxAp > 0 && maxAp > 0 && oldMaxAp !== maxAp) {
+      const ratio = maxAp / oldMaxAp;
+      
+      // Proportionally scale player current AP
+      state.playerState.ap = Math.round(oldAp * ratio);
+      if (state.playerState.ap > maxAp) {
+        state.playerState.ap = maxAp;
+      }
+      if (state.playerState.ap < 0) {
+        state.playerState.ap = 0;
+      }
+
+      // Scale active enemies' health
+      const enemies = state.stageState?.enemies || [];
+      enemies.forEach(enemy => {
+        if (enemy) {
+          enemy.baseMaxHp = Math.round(enemy.baseMaxHp * ratio);
+          enemy.maxHp = Math.round(enemy.maxHp * ratio);
+          enemy.hp = Math.round(enemy.hp * ratio);
+          
+          if (enemy.hp <= 0 && !enemy.isDead) {
+            enemy.hp = 1;
+          }
+          if (enemy.hp > enemy.maxHp) {
+            enemy.hp = enemy.maxHp;
+          }
+        }
+      });
+    } else {
+      // Fallback: Also update AP to not exceed new max if no scaling occurred
+      if (state.playerState.ap > maxAp) {
+        state.playerState.ap = maxAp;
+      }
+    }
+
+    // Always emit AP_CHANGED if maxAp or current ap changed
+    if (oldMaxAp !== maxAp || oldAp !== state.playerState.ap) {
+      state.eventBus.emit(EVENTS.AP_CHANGED, {
+        oldAp: oldAp,
+        newAp: state.playerState.ap,
+        maxAp: state.playerState.maxAp
+      });
+    }
+
+    // Refresh active enemies visually on screen if UIManager is defined
+    if (typeof UIManager !== 'undefined' && typeof UIManager.renderEnemies === 'function') {
+      try { UIManager.renderEnemies(); } catch (e) { console.warn('[recalculateMaxAp] renderEnemies failed', e); }
     }
   }
   

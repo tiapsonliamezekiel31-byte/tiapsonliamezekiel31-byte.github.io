@@ -222,7 +222,14 @@ class GameState {
       todos: [], // array of { id, name, difficulty, attribute, deadline, completed, bloodOath, subtasks }
       streakCompletion: 0, // consecutive perfect days
       streakNonCompletion: 0, // consecutive days with any missed daily
-      history: [] // array of daily completion records
+      history: [], // array of daily completion records
+      activeSetId: 'A',
+      sets: {
+        'A': {
+          dailies: [],
+          dailyNotes: []
+        }
+      }
     };
     
     this.stageState = {
@@ -678,6 +685,16 @@ class GameState {
   
   // Persistence
   save() {
+    if (this.dailiesState) {
+      const currentSetId = this.dailiesState.activeSetId || 'A';
+      if (!this.dailiesState.sets) {
+        this.dailiesState.sets = {};
+      }
+      this.dailiesState.sets[currentSetId] = {
+        dailies: JSON.parse(JSON.stringify(this.dailiesState.dailies || [])),
+        dailyNotes: JSON.parse(JSON.stringify(this.systemState?.dailyNotes || []))
+      };
+    }
     const data = {
       playerState: this.playerState,
       dailiesState: this.dailiesState,
@@ -937,6 +954,19 @@ class GameState {
       });
 
       this.systemState = data.systemState;
+      if (this.dailiesState) {
+        if (!this.dailiesState.activeSetId) {
+          this.dailiesState.activeSetId = 'A';
+        }
+        if (!this.dailiesState.sets) {
+          this.dailiesState.sets = {
+            'A': {
+              dailies: JSON.parse(JSON.stringify(this.dailiesState.dailies || [])),
+              dailyNotes: JSON.parse(JSON.stringify(this.systemState?.dailyNotes || []))
+            }
+          };
+        }
+      }
       if (this.systemState) {
         this.systemState.isCheckInRunning = false;
         if (this.systemState.dialoguePopupsEnabled === undefined) {
@@ -1123,10 +1153,6 @@ class GameState {
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
     const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
     const passive = PlayerManager.getClassPassive();
-
-    if (state.stageState.stageClearedToday) {
-      return 0;
-    }
 
     const D = TaskManager.calculateMissedDailyDamage();
     const N = D * 5;
@@ -1561,30 +1587,7 @@ function performCheckIn() {
     const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
     const passive = PlayerManager.getClassPassive();
 
-    if (state.stageState.stageClearedToday) {
-      aliveNormalEnemies.forEach(enemy => {
-        retaliationSteps.push({
-          enemyId: enemy.id,
-          name: enemy.name,
-          isBoss: false,
-          damage: 0,
-          hpBefore: state.playerState.hp,
-          hpAfter: state.playerState.hp,
-          isImmune: true
-        });
-      });
-      if (bossEnemy && !bossEnemy.isDead) {
-        retaliationSteps.push({
-          enemyId: bossEnemy.id,
-          name: bossEnemy.name,
-          isBoss: true,
-          damage: 0,
-          hpBefore: state.playerState.hp,
-          hpAfter: state.playerState.hp,
-          isImmune: true
-        });
-      }
-    } else if (bossEnemy && !bossEnemy.isDead) {
+    if (bossEnemy && !bossEnemy.isDead) {
       // BOSS FIGHT TURN RESOLUTION
       const stage = state.stageState.stage;
       const bossData = state.stageState.bossData || {};

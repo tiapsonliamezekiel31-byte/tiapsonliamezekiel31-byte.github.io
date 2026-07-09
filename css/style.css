@@ -9962,7 +9962,7 @@ button:hover,
 
 .dailies-table-header {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1.6fr 0.8fr 1.4fr 60px;
+  grid-template-columns: 2fr 0.8fr 0.8fr 1.3fr 1.1fr 0.6fr 1.2fr 60px;
   gap: 2px;
   padding: 4px;
   background: rgba(255, 255, 255, 0.08);
@@ -9991,7 +9991,7 @@ button:hover,
 
 .dailies-table-row {
   display: grid;
-  grid-template-columns: 2.2fr 1fr 1fr 1.6fr 0.8fr 1.4fr 60px;
+  grid-template-columns: 2fr 0.8fr 0.8fr 1.3fr 1.1fr 0.6fr 1.2fr 60px;
   gap: 2px;
   padding: 2px 4px;
   background: rgba(255, 255, 255, 0.01);
@@ -10123,6 +10123,84 @@ button:hover,
   padding: 0 2px;
 }
 
+/* Day Set Selector button styles */
+.day-selector-btn {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem;
+  padding: 5px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+.day-selector-btn.active {
+  background: var(--accent-gold, #FFD700);
+  border-color: var(--accent-gold, #FFD700);
+  color: #000;
+  font-weight: bold;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+.day-selector-btn:hover:not(.active) {
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+/* Nemesis Taunt HUD */
+.draggable-taunt-hud {
+  position: fixed;
+  z-index: 1999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(18, 12, 38, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(161, 92, 255, 0.4) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+  color: #f3f4f6;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  max-width: 250px;
+  touch-action: none;
+}
+
+.draggable-taunt-hud.is-dragging {
+  cursor: grabbing;
+  border-color: rgba(161, 92, 255, 0.8) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7), 0 0 10px rgba(161, 92, 255, 0.3);
+}
+
+.taunt-avatar {
+  font-size: 18px;
+  animation: bounce 2s infinite ease-in-out;
+  display: inline-block;
+}
+
+.taunt-body {
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.taunt-highlight {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 /* ============================================================
    MOBILE WEBVIEW PERFORMANCE OVERRIDES
    Eliminates GPU-crushing effects that tank frame rates in
@@ -10156,6 +10234,7 @@ button:hover,
   .event-banner-panel,
   .stats-hud-panel,
   .draggable-stats-hud,
+  .draggable-taunt-hud,
   .game-top-left,
   .satchel-panel,
   .nav-menu,

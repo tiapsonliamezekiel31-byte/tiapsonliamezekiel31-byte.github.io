@@ -280,6 +280,7 @@ class UIManager {
     document.body.innerHTML = '';
     this.createHudWidget();
     this.createStatsHudWidget();
+    this.createNemesisTauntHud();
     this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
@@ -289,6 +290,28 @@ class UIManager {
     this.adjustLayout();
     this.ensureSpinnerLoop();
     this.refreshGameUI();
+
+    // Request notification permissions if supported
+    if ('Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission();
+      } catch (e) {
+        console.warn("Failed to request notification permission:", e);
+      }
+    }
+
+    // Start deadline check loop if not already running
+    if (!window.deadlineCheckInterval) {
+      window.deadlineCheckInterval = setInterval(() => {
+        try {
+          if (typeof TaskManager !== 'undefined' && typeof TaskManager.checkDailyDeadlines === 'function') {
+            TaskManager.checkDailyDeadlines();
+          }
+        } catch (e) {
+          console.error("Error checking deadlines", e);
+        }
+      }, 10000); // Every 10 seconds
+    }
   }
 
   static adjustLayout() {
@@ -412,6 +435,149 @@ class UIManager {
     };
 
     hud.addEventListener('pointerdown', onPointerDown);
+  }
+
+  static createNemesisTauntHud() {
+    const hud = document.createElement('div');
+    hud.id = 'nemesisTauntHud';
+    hud.className = 'draggable-taunt-hud';
+    hud.innerHTML = `
+      <div class="taunt-avatar">👾</div>
+      <div class="taunt-body" id="nemesisTauntContent">I'm preparing...</div>
+    `;
+    document.body.appendChild(hud);
+
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
+
+    const savedPos = localStorage.getItem('nemesis_taunt_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) { }
+    } else {
+      hud.style.left = '20px';
+      hud.style.top = '75px';
+    }
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      latestX = e.clientX;
+      latestY = e.clientY;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+
+          const maxX = window.innerWidth - hud.offsetWidth;
+          const maxY = window.innerHeight - hud.offsetHeight;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      hud.classList.remove('is-dragging');
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_taunt_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      hud.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    };
+
+    hud.addEventListener('pointerdown', onPointerDown);
+  }
+
+  static updateNemesisTauntHud() {
+    const hud = document.getElementById('nemesisTauntHud');
+    if (!hud) return;
+
+    const state = getGameState();
+    if (!state) return;
+
+    const nemesisAttrs = state.nemesisState?.attributes || {};
+    const playerAttrs = state.playerState?.attributes || {};
+    const attributes = state.config?.attributes || ['STR', 'DISC', 'RESP', 'SOC', 'CAP', 'CREA', 'INT'];
+    const colors = state.config?.attributeColors || {};
+
+    const tauntPhrases = {
+      STR: 'bigger',
+      DISC: 'tougher',
+      RESP: 'more responsible',
+      SOC: 'more connected',
+      CAP: 'richer',
+      CREA: 'more creative',
+      INT: 'smarter'
+    };
+
+    let leadingAttrs = [];
+    attributes.forEach(attr => {
+      const key = attr.toUpperCase();
+      const nVal = nemesisAttrs[key]?.points || 0;
+      const pVal = playerAttrs[key]?.points || 0;
+      if (nVal > pVal) {
+        leadingAttrs.push({
+          attr: key,
+          diff: nVal - pVal
+        });
+      }
+    });
+
+    const contentEl = document.getElementById('nemesisTauntContent');
+    if (!contentEl) return;
+
+    if (leadingAttrs.length > 0) {
+      leadingAttrs.sort((a, b) => b.diff - a.diff);
+      const leading = leadingAttrs[0];
+      const attr = leading.attr;
+      const phrase = tauntPhrases[attr] || 'better';
+      const color = colors[attr] || '#a15cff';
+
+      contentEl.innerHTML = `I'm <span class="taunt-highlight" style="color: ${color}; text-shadow: 0 0 6px ${color}80;">${phrase}</span> than you`;
+    } else {
+      contentEl.innerHTML = `<span style="opacity: 0.7; font-style: italic;">Enjoy it while it lasts...</span>`;
+    }
   }
 
   static createStatsHudWidget() {
@@ -9054,6 +9220,7 @@ class UIManager {
     try { this.updateWeeklyHeatmap(); } catch (e) { }
     try { this.updateConsistencyBtn(); } catch (e) { }
     try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
+    try { this.updateNemesisTauntHud(); } catch (e) { console.warn('Nemesis taunt update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
     try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) { }

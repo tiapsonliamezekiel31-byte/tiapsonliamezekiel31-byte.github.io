@@ -246,7 +246,7 @@ class TaskManager {
   // DAILIES
   // ============================================================
 
-  static addDaily(name, difficulty, attribute, maxCompletions = 1) {
+  static addDaily(name, difficulty, attribute, maxCompletions = 1, deadline = null) {
     const state = getGameState();
 
     if (!['Easy', 'Medium', 'Hard', 'Ultra'].includes(difficulty)) {
@@ -271,7 +271,8 @@ class TaskManager {
       size: 1,
       layout: null,
       dailySurplusEnabled: false,
-      surplusMilestones: []
+      surplusMilestones: [],
+      deadline: deadline || null
     };
 
     state.dailiesState.dailies.push(daily);
@@ -346,6 +347,8 @@ class TaskManager {
 
     // Refresh name prefix based on surplus and streak
     this.updateDailySurplusState(daily);
+
+    PlayerManager.recalculateMaxAp();
 
     return true;
   }
@@ -1201,9 +1204,37 @@ class TaskManager {
       daily.bloodOathActive = false;
       daily.completionsToday = 0;
       daily.locked = false;
+      daily.notified30MinToday = false;
     });
 
     state.rollSpecialEvent();
+
+    // Toggle/alternate active day sets after resetting the current set
+    const currentSetId = state.dailiesState.activeSetId || 'A';
+    const nextSetId = currentSetId === 'A' ? 'B' : 'A';
+    
+    // Save current active state (which has just been reset)
+    if (!state.dailiesState.sets) state.dailiesState.sets = {};
+    state.dailiesState.sets[currentSetId] = {
+      dailies: JSON.parse(JSON.stringify(state.dailiesState.dailies || [])),
+      dailyNotes: JSON.parse(JSON.stringify(state.systemState.dailyNotes || []))
+    };
+    
+    // Load next set
+    if (state.dailiesState.sets[nextSetId]) {
+      state.dailiesState.dailies = state.dailiesState.sets[nextSetId].dailies;
+      state.systemState.dailyNotes = state.dailiesState.sets[nextSetId].dailyNotes || [];
+    } else {
+      state.dailiesState.dailies = [];
+      state.systemState.dailyNotes = [];
+      state.dailiesState.sets[nextSetId] = {
+        dailies: [],
+        dailyNotes: []
+      };
+    }
+    state.dailiesState.activeSetId = nextSetId;
+    
+    PlayerManager.recalculateMaxAp();
 
     state.eventBus.emit(EVENTS.DAILY_RESET, {
       dailies: state.dailiesState.dailies
@@ -1336,5 +1367,112 @@ class TaskManager {
     });
 
     state.save();
+  }
+
+  static switchDaySet(newSetId) {
+    const state = getGameState();
+    const currentSetId = state.dailiesState.activeSetId || 'A';
+    if (currentSetId === newSetId) return;
+
+    if (!state.dailiesState.sets) {
+      state.dailiesState.sets = {};
+    }
+
+    // Save current active state into the old set slot
+    state.dailiesState.sets[currentSetId] = {
+      dailies: JSON.parse(JSON.stringify(state.dailiesState.dailies || [])),
+      dailyNotes: JSON.parse(JSON.stringify(state.systemState.dailyNotes || []))
+    };
+
+    // Load state from the new set slot
+    if (state.dailiesState.sets[newSetId]) {
+      state.dailiesState.dailies = state.dailiesState.sets[newSetId].dailies;
+      state.systemState.dailyNotes = state.dailiesState.sets[newSetId].dailyNotes || [];
+    } else {
+      state.dailiesState.dailies = [];
+      state.systemState.dailyNotes = [];
+      state.dailiesState.sets[newSetId] = {
+        dailies: [],
+        dailyNotes: []
+      };
+    }
+
+    state.dailiesState.activeSetId = newSetId;
+    PlayerManager.recalculateMaxAp();
+    state.save();
+  }
+
+  static checkDailyDeadlines() {
+    const state = getGameState();
+    if (!state || !state.dailiesState || !state.dailiesState.dailies) return;
+
+    const now = new Date();
+    const today = this.getCurrentGameDateKey();
+    let changed = false;
+
+    state.dailiesState.dailies.forEach(daily => {
+      if (!daily.deadline) return;
+      if (!this.isDailyScheduled(daily, today)) return;
+
+      const parts = daily.deadline.split(':');
+      if (parts.length !== 2) return;
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      if (isNaN(hours) || isNaN(minutes)) return;
+
+      // Deadline date for today
+      const deadlineDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+      const timeRemainingMs = deadlineDate.getTime() - now.getTime();
+
+      // 1. Lock daily if past deadline
+      if (timeRemainingMs <= 0) {
+        if (!daily.completed && !daily.locked) {
+          daily.locked = true;
+          changed = true;
+          // Visual alert
+          try {
+            FloatingDamageNumber.show(
+              window.innerWidth / 2,
+              window.innerHeight / 2,
+              `⚠️ Daily "${daily.name}" locked (Deadline passed)!`,
+              { color: '#ef4444', duration: 3000 }
+            );
+          } catch (e) {}
+        }
+      } 
+      // 2. Notify 30 minutes before
+      else if (timeRemainingMs > 0 && timeRemainingMs <= 30 * 60 * 1000) {
+        if (!daily.completed && !daily.locked && !daily.notified30MinToday) {
+          daily.notified30MinToday = true;
+          changed = true;
+          // In-game warning
+          try {
+            FloatingDamageNumber.show(
+              window.innerWidth / 2,
+              window.innerHeight / 2 - 50,
+              `⏳ "${daily.name}" deadline in 30 minutes!`,
+              { color: '#e8b84a', duration: 4000 }
+            );
+          } catch (e) {}
+          
+          // Browser push notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification('Daily Task Deadline Alert', {
+                body: `"${daily.name}" is due in 30 minutes!`,
+                icon: 'icon.svg'
+              });
+            } catch (e) {}
+          }
+        }
+      }
+    });
+
+    if (changed) {
+      state.save();
+      if (typeof UIManager !== 'undefined' && typeof UIManager.updateDailiesList === 'function') {
+        UIManager.updateDailiesList();
+      }
+    }
   }
 }
