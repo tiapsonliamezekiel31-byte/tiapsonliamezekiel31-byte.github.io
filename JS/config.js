@@ -515,7 +515,7 @@ const DEFAULT_GAME_CONFIG = {
       type: 'Heavy/AoE',
       icon: '🚀',
       baseApCost: 33,
-      damageMultiplier: 2.8,
+      damageMultiplier: 2.2,
       critChance: 0.0,
       fireRate: 1,
       price: 6,

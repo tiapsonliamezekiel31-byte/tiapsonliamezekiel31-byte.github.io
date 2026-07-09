@@ -98,6 +98,7 @@ const USER_DATA_STORAGE_KEYS = [
   'nemesis_planner_data', 
   'nemesis_shop_data',
   'nemesis_hud_pos',
+  'nemesis_taunt_hud_pos',
   'nemesis_satchel_pos',
   'nemesis_weapon_pos',
   'nemesis_center_pos',
@@ -2389,8 +2390,8 @@ function performCheckIn() {
 
       // Nemesis gains attribute points
       try {
-        // Daily Dailies: Nemesis gets 70% of max possible attribute gain
-        const dailyGainFactor = 0.7;
+        // Daily Dailies: Nemesis gets 60-100% of max possible attribute gain randomly each day
+        const dailyGainFactor = 0.6 + Math.random() * 0.4;
         (state.dailiesState.dailies || []).forEach(daily => {
           const reward = state.config.taskRewards?.[daily.difficulty];
           const pts = (reward?.attributePoints ?? 0) * dailyGainFactor;

@@ -328,22 +328,18 @@ class UIManager {
     hud.innerHTML = `
       <div class="hud-resources">
         <div class="hud-resource">
-          <label>HP</label>
           <div class="hud-bar hp-bar"><div id="hpFill" class="fill" style="width: 100%"></div></div>
           <div class="hud-resource-text"><span id="hpValue">100</span>/<span id="hpMax">100</span></div>
         </div>
         <div class="hud-resource">
-          <label>Mana</label>
           <div class="hud-bar mana-bar"><div id="manaFill" class="fill" style="width: 100%"></div></div>
           <div class="hud-resource-text"><span id="manaValue">0</span>/<span id="manaMax">0</span></div>
         </div>
         <div class="hud-resource">
-          <label>AP</label>
           <div class="hud-bar ap-bar"><div id="apFill" class="fill" style="width: 100%"></div></div>
           <div class="hud-resource-text"><span id="apValue">0</span>/<span id="apMax">0</span></div>
         </div>
         <div class="hud-resource" id="pendingDmgRow" style="display: none;">
-          <label style="color: #ff5a5a;">PENDING</label>
           <div class="hud-bar" style="background: rgba(255, 90, 90, 0.15); border-color: rgba(255, 90, 90, 0.3);"><div id="pendingDmgFill" class="fill" style="width: 0%; background: linear-gradient(90deg, #ff5a5a, #ff3333);"></div></div>
           <div class="hud-resource-text" style="color: #ff9b9b;"><span id="pendingDmgValue">0</span> DMG</div>
         </div>
@@ -384,8 +380,9 @@ class UIManager {
           let newLeft = initialLeft + dx;
           let newTop = initialTop + dy;
 
-          const maxX = window.innerWidth - hud.offsetWidth;
-          const maxY = window.innerHeight - hud.offsetHeight;
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
           newLeft = Math.max(0, Math.min(newLeft, maxX));
           newTop = Math.max(0, Math.min(newTop, maxY));
 
@@ -477,8 +474,9 @@ class UIManager {
           let newLeft = initialLeft + dx;
           let newTop = initialTop + dy;
 
-          const maxX = window.innerWidth - hud.offsetWidth;
-          const maxY = window.innerHeight - hud.offsetHeight;
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
           newLeft = Math.max(0, Math.min(newLeft, maxX));
           newTop = Math.max(0, Math.min(newTop, maxY));
 
@@ -821,18 +819,6 @@ class UIManager {
         <div class="mini-widget-pulse-dot"></div>
         <span id="focusMiniTime">25:00</span>
       </div>
-      
-      <!-- Stage Notes Widget -->
-      <div id="stageNotesWidget" class="stage-notes-widget" style="display: none;">
-        <div class="stage-notes-header" id="stageNotesHeader">
-          <span class="stage-notes-title">📜 STAGE NOTES</span>
-          <button class="stage-notes-collapse-btn" id="stageNotesCollapseBtn">－</button>
-        </div>
-        <div class="stage-notes-body">
-          <textarea id="stageNotesTextarea" class="stage-notes-textarea" placeholder="Write stage notes here..."></textarea>
-        </div>
-      </div>
-      <button id="stageNotesMinimized" class="stage-notes-minimized" style="display: none;" title="Open Stage Notes">📜</button>
     `;
     document.body.appendChild(gameArea);
 
@@ -1280,143 +1266,6 @@ class UIManager {
       };
       resizeHandle.addEventListener('pointerup', onResizeEnd);
       resizeHandle.addEventListener('pointercancel', onResizeEnd);
-    }
-
-    // === Initialize Stage Notes Widget ===
-    const notesWidget = gameArea.querySelector('#stageNotesWidget');
-    const notesMinimized = gameArea.querySelector('#stageNotesMinimized');
-    const notesTextarea = gameArea.querySelector('#stageNotesTextarea');
-    const notesCollapseBtn = gameArea.querySelector('#stageNotesCollapseBtn');
-
-    // Load saved text and handle auto-resizing
-    const resizeTextarea = () => {
-      if (notesTextarea) {
-        notesTextarea.style.height = 'auto';
-        const scrollHeight = notesTextarea.scrollHeight;
-        if (scrollHeight > 250) {
-          notesTextarea.style.height = '250px';
-          notesTextarea.style.overflowY = 'auto';
-        } else {
-          notesTextarea.style.height = (scrollHeight > 50 ? scrollHeight : 50) + 'px';
-          notesTextarea.style.overflowY = 'hidden';
-        }
-      }
-    };
-
-    if (notesTextarea) {
-      notesTextarea.value = localStorage.getItem('nemesis_stage_notes_text') || '';
-      notesTextarea.addEventListener('input', () => {
-        localStorage.setItem('nemesis_stage_notes_text', notesTextarea.value);
-        resizeTextarea();
-      });
-      setTimeout(resizeTextarea, 0);
-    }
-
-    // Load collapsed state
-    const isCollapsed = localStorage.getItem('nemesis_stage_notes_collapsed') === 'true';
-    if (isCollapsed) {
-      if (notesWidget) notesWidget.style.display = 'none';
-      if (notesMinimized) notesMinimized.style.display = 'flex';
-    } else {
-      if (notesWidget) notesWidget.style.display = 'flex';
-      if (notesMinimized) notesMinimized.style.display = 'none';
-    }
-
-    // Toggle minimize/collapse
-    if (notesCollapseBtn) {
-      notesCollapseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (notesWidget) notesWidget.style.display = 'none';
-        if (notesMinimized) notesMinimized.style.display = 'flex';
-        localStorage.setItem('nemesis_stage_notes_collapsed', 'true');
-      });
-    }
-
-    if (notesMinimized) {
-      notesMinimized.addEventListener('click', (e) => {
-        if (notesWidget) notesWidget.style.display = 'flex';
-        notesMinimized.style.display = 'none';
-        localStorage.setItem('nemesis_stage_notes_collapsed', 'false');
-        
-        const savedPos = localStorage.getItem('nemesis_stage_notes_pos');
-        if (savedPos && notesWidget) {
-          try {
-            const { left, top } = JSON.parse(savedPos);
-            notesWidget.style.left = left + 'px';
-            notesWidget.style.top = top + 'px';
-          } catch(err){}
-        }
-        setTimeout(resizeTextarea, 0);
-      });
-    }
-
-    // Load positions
-    const savedWidgetPos = localStorage.getItem('nemesis_stage_notes_pos');
-    if (savedWidgetPos && notesWidget) {
-      try {
-        const { left, top } = JSON.parse(savedWidgetPos);
-        notesWidget.style.left = left + 'px';
-        notesWidget.style.top = top + 'px';
-      } catch(err){}
-    }
-
-    // Draggability helper
-    const setupDraggableNotes = (element, handleElement, storageKey) => {
-      let isDragging = false;
-      let startX = 0, startY = 0;
-      let initialLeft = 0, initialTop = 0;
-
-      const onPointerMove = (e) => {
-        if (!isDragging) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        let newLeft = initialLeft + dx;
-        let newTop = initialTop + dy;
-
-        const maxLeft = gameArea.clientWidth - element.offsetWidth;
-        const maxTop = gameArea.clientHeight - element.offsetHeight;
-        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-        newTop = Math.max(0, Math.min(newTop, maxTop));
-
-        element.style.left = newLeft + 'px';
-        element.style.top = newTop + 'px';
-      };
-
-      const onPointerUp = (e) => {
-        if (!isDragging) return;
-        isDragging = false;
-        document.removeEventListener('pointermove', onPointerMove);
-        document.removeEventListener('pointerup', onPointerUp);
-        document.removeEventListener('pointercancel', onPointerUp);
-        try { handleElement.releasePointerCapture(e.pointerId); } catch(err){}
-        localStorage.setItem(storageKey, JSON.stringify({
-          left: parseInt(element.style.left, 10) || 0,
-          top: parseInt(element.style.top, 10) || 0
-        }));
-      };
-
-      const onPointerDown = (e) => {
-        if (e.target.closest('textarea, button, input')) return; // Avoid drag when interacting with text area or buttons
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        const rect = element.getBoundingClientRect();
-        const areaRect = gameArea.getBoundingClientRect();
-        initialLeft = rect.left - areaRect.left;
-        initialTop = rect.top - areaRect.top;
-        try { handleElement.setPointerCapture(e.pointerId); } catch(err){}
-
-        document.addEventListener('pointermove', onPointerMove);
-        document.addEventListener('pointerup', onPointerUp);
-        document.addEventListener('pointercancel', onPointerUp);
-      };
-
-      handleElement.addEventListener('pointerdown', onPointerDown);
-    };
-
-    if (notesWidget) {
-      const header = notesWidget.querySelector('#stageNotesHeader');
-      setupDraggableNotes(notesWidget, header, 'nemesis_stage_notes_pos');
     }
 
     this.updateStageBackdrop();
@@ -9058,8 +8907,9 @@ class UIManager {
           let newLeft = initialLeft + dx;
           let newTop = initialTop + dy;
 
-          const maxX = window.innerWidth - container.offsetWidth;
-          const maxY = window.innerHeight - container.offsetHeight;
+          const rect = container.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
           newLeft = Math.max(0, Math.min(newLeft, maxX));
           newTop = Math.max(0, Math.min(newTop, maxY));
 
@@ -10329,8 +10179,9 @@ class UIManager {
           let newLeft = initialLeft + dx;
           let newTop = initialTop + dy;
 
-          const maxX = window.innerWidth - panel.offsetWidth;
-          const maxY = window.innerHeight - panel.offsetHeight;
+          const rect = panel.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
           newLeft = Math.max(0, Math.min(newLeft, maxX));
           newTop = Math.max(0, Math.min(newTop, maxY));
 
@@ -10620,8 +10471,9 @@ class StatsHUD {
           let newLeft = initialLeft + dx;
           let newTop = initialTop + dy;
 
-          const maxX = window.innerWidth - hud.offsetWidth;
-          const maxY = window.innerHeight - hud.offsetHeight;
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
           newLeft = Math.max(0, Math.min(newLeft, maxX));
           newTop = Math.max(0, Math.min(newTop, maxY));
 
