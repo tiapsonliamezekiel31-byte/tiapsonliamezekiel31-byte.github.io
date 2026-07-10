@@ -6333,7 +6333,8 @@ class UIManager {
         : this.getDefaultDailyLayout(index, metrics, tileSize);
 
       card.style.width = `${tileSize.width}px`;
-      const globalSizeMod = Math.max(0.5, Number(state.dailiesState?.globalSizeModifier) || 1.0);
+      const _gs = getGameState();
+      const globalSizeMod = Math.max(0.5, Number(_gs.dailiesState?.globalSizeModifier) || 1.0);
       const computedScale = Math.max(0.5, (Number(daily.size) || 1) * globalSizeMod);
       card.dataset.sizeScale = String(computedScale);
       if (!card.classList.contains('just-completed')) {
