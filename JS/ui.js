@@ -6436,15 +6436,7 @@ class UIManager {
         const pX = (12 + (_pi * 31 + 11) % 76).toFixed(1);
         html += '<span class="streak-particle" style="--p-delay:' + pDelay + 's;--p-x:' + pX + '%;"></span>';
       }
-      if (daily.difficulty === 'Ultra' && !daily.completed) {
-        const skullCount = 3;
-        for (let _si = 0; _si < skullCount; _si++) {
-          const pDelay = (_si * 0.8 + 0.2).toFixed(2);
-          const pX = (20 + _si * 30).toFixed(1);
-          const pSway = (_si % 2 === 0 ? 12 : -12);
-          html += '<span class="ultra-skull-particle" style="--p-delay:' + pDelay + 's;--p-x:' + pX + '%;--p-sway:' + pSway + 'px;">☠</span>';
-        }
-      }
+
       html += '</div>';
     });
     container.innerHTML = html;
@@ -6461,6 +6453,101 @@ class UIManager {
     this.positionDailyCards();
     this.renderDailyNotes();
     this.updateRunCompletionGraph();
+    this.startUltraSkullEmitters();
+  }
+
+  // ============================================================
+  // ULTRA SKULL PARTICLE EMITTER
+  // Spawns skull silhouettes drifting in random directions around
+  // Ultra daily/todo cards. Uses a single shared rAF loop.
+  // ============================================================
+  static _ultraSkullRAF = null;
+  static _ultraSkulls = [];
+  static _ultraSkullIntervals = [];
+
+  static stopUltraSkullEmitters() {
+    if (this._ultraSkullRAF) { cancelAnimationFrame(this._ultraSkullRAF); this._ultraSkullRAF = null; }
+    this._ultraSkulls.forEach(s => { try { s.el.remove(); } catch(e) {} });
+    this._ultraSkulls = [];
+    this._ultraSkullIntervals.forEach(id => clearInterval(id));
+    this._ultraSkullIntervals = [];
+  }
+
+  static startUltraSkullEmitters() {
+    this.stopUltraSkullEmitters();
+
+    const cards = document.querySelectorAll(
+      '.task-card-daily[data-difficulty="Ultra"]:not(.completed):not(.is-completed-visible),' +
+      '.task-card-todo[data-difficulty="Ultra"]:not(.completed)'
+    );
+    if (!cards.length) return;
+
+    const maxPerCard = 4;
+    const spawnMs = 900;
+
+    cards.forEach(card => {
+      const spawn = () => {
+        if (!document.body.contains(card)) return;
+        const alive = this._ultraSkulls.filter(s => s.card === card).length;
+        if (alive >= maxPerCard) return;
+
+        const el = document.createElement('div');
+        el.textContent = '☠';
+        const accent = getComputedStyle(card).getPropertyValue('--task-accent').trim() || '#9933ff';
+        const sz = 9 + Math.random() * 5;
+        el.style.cssText = 'position:fixed;font-size:' + sz + 'px;color:' + accent +
+          ';pointer-events:none;z-index:5;opacity:0;will-change:transform,opacity;text-shadow:0 0 4px ' + accent + ';';
+        document.body.appendChild(el);
+
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.25 + Math.random() * 0.45;
+        this._ultraSkulls.push({
+          el, card,
+          ox: 0.2 + Math.random() * 0.6,
+          oy: 0.2 + Math.random() * 0.6,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          rot: Math.random() * 360,
+          rs: -1.5 + Math.random() * 3,
+          t: 0,
+          maxT: 110 + Math.random() * 70
+        });
+      };
+
+      spawn();
+      this._ultraSkullIntervals.push(setInterval(spawn, spawnMs));
+    });
+
+    const tick = () => {
+      for (let i = this._ultraSkulls.length - 1; i >= 0; i--) {
+        const s = this._ultraSkulls[i];
+        if (!document.body.contains(s.card)) {
+          try { s.el.remove(); } catch(e) {}
+          this._ultraSkulls.splice(i, 1);
+          continue;
+        }
+        s.t++;
+        const p = s.t / s.maxT;
+        const r = s.card.getBoundingClientRect();
+        const bx = r.left + r.width * s.ox + s.vx * s.t;
+        const by = r.top + r.height * s.oy + s.vy * s.t;
+        s.rot += s.rs;
+        const op = p < 0.15 ? (p / 0.15) * 0.6 : p > 0.65 ? ((1 - p) / 0.35) * 0.6 : 0.6;
+        const sc = 0.5 + 0.5 * Math.sin(p * Math.PI);
+        s.el.style.transform = 'translate3d(' + bx + 'px,' + by + 'px,0) rotate(' + s.rot + 'deg) scale(' + sc + ')';
+        s.el.style.opacity = op;
+        if (s.t >= s.maxT) {
+          try { s.el.remove(); } catch(e) {}
+          this._ultraSkulls.splice(i, 1);
+        }
+      }
+      if (this._ultraSkulls.length > 0 || this._ultraSkullIntervals.length > 0) {
+        this._ultraSkullRAF = requestAnimationFrame(tick);
+      } else {
+        this._ultraSkullRAF = null;
+      }
+    };
+    this._ultraSkullRAF = requestAnimationFrame(tick);
   }
 
   static getDailyBoardMetrics() {
@@ -8417,16 +8504,7 @@ class UIManager {
 
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
-      let ultraParticles = '';
-      if (todo.difficulty === 'Ultra' && !todo.completed) {
-        const skullCount = 3;
-        for (let _si = 0; _si < skullCount; _si++) {
-          const pDelay = (_si * 0.8 + 0.2).toFixed(2);
-          const pX = (20 + _si * 30).toFixed(1);
-          const pSway = (_si % 2 === 0 ? 12 : -12);
-          ultraParticles += `<span class="ultra-skull-particle" style="--p-delay:${pDelay}s;--p-x:${pX}%;--p-sway:${pSway}px;">☠</span>`;
-        }
-      }
+
 
       return `
       <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" data-difficulty="${todo.difficulty || ''}" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
@@ -8464,7 +8542,7 @@ class UIManager {
           <button class="btn-edit" title="Edit">✎</button>
           <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
         </div>
-        ${ultraParticles}
+
       </div>
       `;
     }).join('');
@@ -8473,6 +8551,7 @@ class UIManager {
     this.bindTodoBoardInteractions();
     this.positionTodoCards();
     this.renderTodoNotes();
+    this.startUltraSkullEmitters();
   }
 
   static getRingInfo(index, totalCount) {

@@ -10305,34 +10305,3 @@ body:has(.popup-overlay) .draggable-challenge-hud {
     filter: drop-shadow(0 0 6px var(--task-accent, #9933ff)) brightness(1.3);
   }
 }
-
-.ultra-skull-particle {
-  position: absolute;
-  font-size: 10px;
-  color: var(--task-accent, #9933ff);
-  left: var(--p-x, 50%);
-  bottom: 8%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 6;
-  opacity: 0;
-  animation: skull-rise 2.5s ease-out var(--p-delay, 0s) infinite;
-}
-
-@keyframes skull-rise {
-  0% {
-    transform: translateX(-50%) translateY(0) scale(0.6) rotate(0deg);
-    opacity: 0;
-  }
-  15% {
-    opacity: 0.8;
-  }
-  50% {
-    transform: translateX(calc(-50% + var(--p-sway, 10px))) translateY(-25px) scale(1) rotate(15deg);
-    opacity: 0.6;
-  }
-  100% {
-    transform: translateX(calc(-50% - var(--p-sway, 10px))) translateY(-55px) scale(0.5) rotate(-15deg);
-    opacity: 0;
-  }
-}
