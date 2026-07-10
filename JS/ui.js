@@ -6464,17 +6464,19 @@ class UIManager {
   static _ultraSkullRAF = null;
   static _ultraSkulls = [];
   static _ultraSkullIntervals = [];
+  static _ultraSkullRetry = null;
 
   static stopUltraSkullEmitters() {
-    if (this._ultraSkullRAF) { cancelAnimationFrame(this._ultraSkullRAF); this._ultraSkullRAF = null; }
-    this._ultraSkulls.forEach(s => { try { s.el.remove(); } catch(e) {} });
-    this._ultraSkulls = [];
-    this._ultraSkullIntervals.forEach(id => clearInterval(id));
-    this._ultraSkullIntervals = [];
+    if (UIManager._ultraSkullRAF) { cancelAnimationFrame(UIManager._ultraSkullRAF); UIManager._ultraSkullRAF = null; }
+    UIManager._ultraSkulls.forEach(s => { try { s.el.remove(); } catch(e) {} });
+    UIManager._ultraSkulls = [];
+    UIManager._ultraSkullIntervals.forEach(id => clearInterval(id));
+    UIManager._ultraSkullIntervals = [];
+    if (UIManager._ultraSkullRetry) { clearTimeout(UIManager._ultraSkullRetry); UIManager._ultraSkullRetry = null; }
   }
 
   static startUltraSkullEmitters() {
-    this.stopUltraSkullEmitters();
+    UIManager.stopUltraSkullEmitters();
 
     const cards = document.querySelectorAll(
       '.task-card-daily[data-difficulty="Ultra"]:not(.completed):not(.is-completed-visible),' +
@@ -6482,13 +6484,23 @@ class UIManager {
     );
     if (!cards.length) return;
 
+    // Check if any card has size — if all are zero, panel probably isn't open yet, retry later
+    let anyVisible = false;
+    cards.forEach(c => { if (c.getBoundingClientRect().width > 0) anyVisible = true; });
+    if (!anyVisible) {
+      UIManager._ultraSkullRetry = setTimeout(() => UIManager.startUltraSkullEmitters(), 500);
+      return;
+    }
+
     const maxPerCard = 4;
     const spawnMs = 900;
 
     cards.forEach(card => {
       const spawn = () => {
         if (!document.body.contains(card)) return;
-        const alive = this._ultraSkulls.filter(s => s.card === card).length;
+        const r = card.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
+        const alive = UIManager._ultraSkulls.filter(s => s.card === card).length;
         if (alive >= maxPerCard) return;
 
         const el = document.createElement('div');
@@ -6496,12 +6508,12 @@ class UIManager {
         const accent = getComputedStyle(card).getPropertyValue('--task-accent').trim() || '#9933ff';
         const sz = 9 + Math.random() * 5;
         el.style.cssText = 'position:fixed;font-size:' + sz + 'px;color:' + accent +
-          ';pointer-events:none;z-index:5;opacity:0;will-change:transform,opacity;text-shadow:0 0 4px ' + accent + ';';
+          ';pointer-events:none;z-index:99999;opacity:0;will-change:transform,opacity;text-shadow:0 0 4px ' + accent + ';';
         document.body.appendChild(el);
 
         const angle = Math.random() * Math.PI * 2;
         const speed = 0.25 + Math.random() * 0.45;
-        this._ultraSkulls.push({
+        UIManager._ultraSkulls.push({
           el, card,
           ox: 0.2 + Math.random() * 0.6,
           oy: 0.2 + Math.random() * 0.6,
@@ -6515,20 +6527,21 @@ class UIManager {
       };
 
       spawn();
-      this._ultraSkullIntervals.push(setInterval(spawn, spawnMs));
+      UIManager._ultraSkullIntervals.push(setInterval(spawn, spawnMs));
     });
 
     const tick = () => {
-      for (let i = this._ultraSkulls.length - 1; i >= 0; i--) {
-        const s = this._ultraSkulls[i];
+      for (let i = UIManager._ultraSkulls.length - 1; i >= 0; i--) {
+        const s = UIManager._ultraSkulls[i];
         if (!document.body.contains(s.card)) {
           try { s.el.remove(); } catch(e) {}
-          this._ultraSkulls.splice(i, 1);
+          UIManager._ultraSkulls.splice(i, 1);
           continue;
         }
         s.t++;
         const p = s.t / s.maxT;
         const r = s.card.getBoundingClientRect();
+        if (r.width === 0) { continue; }
         const bx = r.left + r.width * s.ox + s.vx * s.t;
         const by = r.top + r.height * s.oy + s.vy * s.t;
         s.rot += s.rs;
@@ -6538,16 +6551,16 @@ class UIManager {
         s.el.style.opacity = op;
         if (s.t >= s.maxT) {
           try { s.el.remove(); } catch(e) {}
-          this._ultraSkulls.splice(i, 1);
+          UIManager._ultraSkulls.splice(i, 1);
         }
       }
-      if (this._ultraSkulls.length > 0 || this._ultraSkullIntervals.length > 0) {
-        this._ultraSkullRAF = requestAnimationFrame(tick);
+      if (UIManager._ultraSkulls.length > 0 || UIManager._ultraSkullIntervals.length > 0) {
+        UIManager._ultraSkullRAF = requestAnimationFrame(tick);
       } else {
-        this._ultraSkullRAF = null;
+        UIManager._ultraSkullRAF = null;
       }
     };
-    this._ultraSkullRAF = requestAnimationFrame(tick);
+    UIManager._ultraSkullRAF = requestAnimationFrame(tick);
   }
 
   static getDailyBoardMetrics() {
