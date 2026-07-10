@@ -9642,6 +9642,12 @@ button:hover,
   pointer-events: none;
 }
 
+.daily-completion-connection-line {
+  stroke: #00d2ff;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
 @keyframes rainbow-text-animation {
   0% { color: #ff0000; -webkit-text-stroke-color: #ff0000; }
   17% { color: #ff8800; -webkit-text-stroke-color: #ff8800; }

@@ -6492,8 +6492,8 @@ class UIManager {
       return;
     }
 
-    const maxPerCard = 4;
-    const spawnMs = 900;
+    const maxPerCard = 32;
+    const spawnMs = 112.5;
 
     cards.forEach(card => {
       const spawn = () => {
@@ -6507,9 +6507,9 @@ class UIManager {
         el.textContent = '☠';
         const accent = getComputedStyle(card).getPropertyValue('--task-accent').trim() || '#9933ff';
         const sz = 9 + Math.random() * 5;
-        el.style.cssText = 'position:fixed;font-size:' + sz + 'px;color:' + accent +
-          ';pointer-events:none;z-index:99999;opacity:0;will-change:transform,opacity;text-shadow:0 0 4px ' + accent + ';';
-        document.body.appendChild(el);
+        el.style.cssText = 'position:absolute;font-size:' + sz + 'px;color:' + accent +
+          ';pointer-events:none;z-index:1;opacity:0;will-change:transform,opacity;font-weight:900;-webkit-text-stroke:1.2px ' + accent + ';text-shadow:0 0 5px ' + accent + ', 0 0 10px ' + accent + ';';
+        card.parentNode.appendChild(el);
 
         const angle = Math.random() * Math.PI * 2;
         const speed = 0.25 + Math.random() * 0.45;
@@ -6531,6 +6531,32 @@ class UIManager {
     });
 
     const tick = () => {
+      const cardRects = new Map();
+      const activeCards = new Set();
+      for (let i = 0; i < UIManager._ultraSkulls.length; i++) {
+        const card = UIManager._ultraSkulls[i].card;
+        if (document.body.contains(card)) {
+          activeCards.add(card);
+        }
+      }
+      activeCards.forEach(card => {
+        const parent = card.parentNode;
+        if (parent) {
+          const parentRect = parent.getBoundingClientRect();
+          const cardRect = card.getBoundingClientRect();
+          cardRects.set(card, {
+            parentLeft: parentRect.left,
+            parentTop: parentRect.top,
+            parentScrollLeft: parent.scrollLeft || 0,
+            parentScrollTop: parent.scrollTop || 0,
+            cardLeft: cardRect.left,
+            cardTop: cardRect.top,
+            cardWidth: cardRect.width,
+            cardHeight: cardRect.height
+          });
+        }
+      });
+
       for (let i = UIManager._ultraSkulls.length - 1; i >= 0; i--) {
         const s = UIManager._ultraSkulls[i];
         if (!document.body.contains(s.card)) {
@@ -6540,12 +6566,14 @@ class UIManager {
         }
         s.t++;
         const p = s.t / s.maxT;
-        const r = s.card.getBoundingClientRect();
-        if (r.width === 0) { continue; }
-        const bx = r.left + r.width * s.ox + s.vx * s.t;
-        const by = r.top + r.height * s.oy + s.vy * s.t;
+        const info = cardRects.get(s.card);
+        if (!info || info.cardWidth === 0) { continue; }
+        const ox_rel = info.cardLeft - info.parentLeft + info.parentScrollLeft;
+        const oy_rel = info.cardTop - info.parentTop + info.parentScrollTop;
+        const bx = ox_rel + info.cardWidth * s.ox + s.vx * s.t;
+        const by = oy_rel + info.cardHeight * s.oy + s.vy * s.t;
         s.rot += s.rs;
-        const op = p < 0.15 ? (p / 0.15) * 0.6 : p > 0.65 ? ((1 - p) / 0.35) * 0.6 : 0.6;
+        const op = p < 0.15 ? (p / 0.15) : p > 0.65 ? ((1 - p) / 0.35) : 1.0;
         const sc = 0.5 + 0.5 * Math.sin(p * Math.PI);
         s.el.style.transform = 'translate3d(' + bx + 'px,' + by + 'px,0) rotate(' + s.rot + 'deg) scale(' + sc + ')';
         s.el.style.opacity = op;
@@ -6724,7 +6752,6 @@ class UIManager {
     });
 
     const drawn = new Set();
-
     cardCenters.forEach(current => {
       const targets = cardCenters
         .filter(other => other.id !== current.id)
@@ -6753,6 +6780,32 @@ class UIManager {
         svg.appendChild(line);
       });
     });
+
+    const cardCentersWithRate = cardCenters.map((cc, index) => {
+      const dailyObj = state.dailiesState?.dailies?.find(d => d.id === cc.id);
+      const rate = dailyObj ? (dailyObj.completionRate || 0) : 0;
+      return { ...cc, rate, index };
+    });
+
+    cardCentersWithRate.sort((a, b) => {
+      if (b.rate !== a.rate) {
+        return b.rate - a.rate;
+      }
+      return a.index - b.index;
+    });
+
+    for (let i = 0; i < cardCentersWithRate.length - 1; i++) {
+      const current = cardCentersWithRate[i];
+      const next = cardCentersWithRate[i + 1];
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(current.x));
+      line.setAttribute('y1', String(current.y));
+      line.setAttribute('x2', String(next.x));
+      line.setAttribute('y2', String(next.y));
+      line.setAttribute('class', 'daily-completion-connection-line');
+      svg.appendChild(line);
+    }
   }
 
   static renderDailyNotes() {

@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: skull emitter this-context, z-index, and zero-rect retry"
+$commitMsg = "feat: connect dailies by completion rate and enhance/optimize Ultra skull emitters"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
