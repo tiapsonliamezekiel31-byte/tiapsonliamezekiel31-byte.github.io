@@ -126,10 +126,12 @@ class Enemy {
     this.daysAlive = 0;
     
     // HP scaling: MAX_AP × stage_HP% × enemy_HP_multiplier
-    const stagePercentage = DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] / 100;
+    const stagePctVal = DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] ?? 70;
+    const stagePercentage = stagePctVal / 100;
     const hpMultiplier = baseData.hpMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyHpMultiplier : 1);
     
-    this.baseMaxHp = maxAp * stagePercentage * hpMultiplier;
+    const effectiveMaxAp = Math.max(1, Number(maxAp) || 1);
+    this.baseMaxHp = Math.max(1, Math.round(effectiveMaxAp * stagePercentage * hpMultiplier));
     this.maxHp = this.baseMaxHp;
     this.hp = this.maxHp;
     

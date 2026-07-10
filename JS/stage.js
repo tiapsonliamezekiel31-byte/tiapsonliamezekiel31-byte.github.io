@@ -387,12 +387,14 @@ class StageManager {
       if (enemy.isBoss) {
         const bossName = enemy.name || (state.stageState.bossData && state.stageState.bossData.name) || 'Boss';
         const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
+        const maxHpVal = Math.max(1, enemy.maxHp ?? (state.stageState.bossData && state.stageState.bossData.maxHp) ?? 1);
+        const hpVal = enemy.isDead ? 0 : Math.max(1, enemy.hp ?? (state.stageState.bossData && state.stageState.bossData.hp) ?? 1);
         const bossObj = {
           id: enemy.id || 'boss',
           name: bossName,
           isBoss: true,
-          hp: enemy.hp ?? (state.stageState.bossData && state.stageState.bossData.hp) ?? 0,
-          maxHp: enemy.maxHp ?? (state.stageState.bossData && state.stageState.bossData.maxHp) ?? 0,
+          hp: hpVal,
+          maxHp: maxHpVal,
           isDead: !!enemy.isDead,
           dmgMult: enemy.dmgMult || 1.0,
           consecutiveAttackDays: enemy.consecutiveAttackDays || 0,
@@ -431,13 +433,15 @@ class StageManager {
 
       // Rebuild bomb objects
       if (enemy.isBomb) {
+        const maxHpVal = Math.max(1, enemy.maxHp ?? 1);
+        const hpVal = enemy.isDead ? 0 : Math.max(1, enemy.hp ?? 1);
         const bombObj = {
           id: enemy.id || ('bomb_' + Math.random().toString(36).substr(2, 9)),
           name: 'Bomb',
           isBoss: false,
           isBomb: true,
-          hp: enemy.hp ?? 0,
-          maxHp: enemy.maxHp ?? 0,
+          hp: hpVal,
+          maxHp: maxHpVal,
           isDead: !!enemy.isDead,
           dmgMult: 0.0,
           consecutiveAttackDays: 0,
@@ -468,8 +472,10 @@ class StageManager {
 
       rebuilt.id = enemy.id || rebuilt.id;
       // Preserve saved HP values if present; otherwise keep computed
-      rebuilt.hp = (typeof enemy.hp === 'number') ? enemy.hp : rebuilt.hp;
-      rebuilt.maxHp = (typeof enemy.maxHp === 'number') ? enemy.maxHp : rebuilt.maxHp;
+      const maxHpVal = Math.max(1, (typeof enemy.maxHp === 'number') ? enemy.maxHp : rebuilt.maxHp);
+      const hpVal = enemy.isDead ? 0 : Math.max(1, (typeof enemy.hp === 'number') ? enemy.hp : rebuilt.hp);
+      rebuilt.maxHp = maxHpVal;
+      rebuilt.hp = Math.min(hpVal, maxHpVal);
       rebuilt.isDead = !!enemy.isDead;
       rebuilt.consecutiveAttackDays = enemy.consecutiveAttackDays || 0;
       // Restore mutator state and days alive if saved

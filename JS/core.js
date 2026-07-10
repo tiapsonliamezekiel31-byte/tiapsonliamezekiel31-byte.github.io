@@ -1400,7 +1400,8 @@ function getRandomMinionNameForStage(stage, variation) {
 }
 
 function createBombEnemy(playerMaxAp) {
-  const bombHp = Math.round(playerMaxAp * 0.30);
+  const effectiveMaxAp = Math.max(1, Number(playerMaxAp) || 1);
+  const bombHp = Math.max(1, Math.round(effectiveMaxAp * 0.30));
   return {
     id: 'bomb_' + Math.random().toString(36).substr(2, 9),
     name: 'Bomb',
