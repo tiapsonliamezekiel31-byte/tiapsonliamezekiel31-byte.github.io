@@ -744,7 +744,7 @@ class UIManager {
     }
 
     const titleColor = allCompleted ? '#22c55e' : '#f87171';
-    const statusText = allCompleted ? 'Challenge Safe! ✨' : 'Nemesis Threat! 👾';
+    const statusText = allCompleted ? 'SAFE ✨' : 'NEMESIS 👾';
 
     hud.innerHTML = `
       <div class="challenge-hud-header">
@@ -752,23 +752,22 @@ class UIManager {
         <span class="drag-handle">≡</span>
       </div>
       <div class="challenge-hud-content">
-        <div class="challenge-section-title">Complete Dailies:</div>
         <div class="challenge-dailies-list">${dailiesHtml}</div>
         
-        <div class="challenge-section-separator">OR STEALS AT CHECK-IN:</div>
+        <div class="challenge-section-separator">STEALS:</div>
         
         <div class="challenge-penalties-list">
           <div class="challenge-penalty-item">
-            <span>💰 Gold:</span>
-            <span class="penalty-value">${challenge.goldPenaltyPct}% (${goldDeduction})</span>
+            <span>💰 ${challenge.goldPenaltyPct}%</span>
+            <span class="penalty-value">-${goldDeduction}</span>
           </div>
           <div class="challenge-penalty-item">
-            <span>💎 Diamonds:</span>
-            <span class="penalty-value">${challenge.diamondPenaltyPct}% (${diamondDeduction})</span>
+            <span>💎 ${challenge.diamondPenaltyPct}%</span>
+            <span class="penalty-value">-${diamondDeduction}</span>
           </div>
           <div class="challenge-penalty-item">
-            <span>⚡ AP:</span>
-            <span class="penalty-value">${challenge.apPenaltyPct}% (${apDeduction})</span>
+            <span>⚡ ${challenge.apPenaltyPct}%</span>
+            <span class="penalty-value">-${apDeduction}</span>
           </div>
         </div>
       </div>
