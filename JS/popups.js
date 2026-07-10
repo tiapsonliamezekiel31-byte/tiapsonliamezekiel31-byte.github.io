@@ -4968,6 +4968,13 @@ class PopupsManager {
         <button class="day-selector-btn ${activeSetId === 'B' ? 'active' : ''}" data-set-id="B">DAY B</button>
       </div>
 
+      <!-- Global Size Slider -->
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+        <span style="color: var(--text-muted);">GLOBAL DAILIES SIZE:</span>
+        <input type="range" id="globalDailiesSizeSlider" min="0.5" max="2.0" step="0.05" value="${state.dailiesState.globalSizeModifier ?? 1.0}" style="cursor: pointer; accent-color: #a855f7;" />
+        <span id="globalDailiesSizeVal" style="color: var(--accent-gold); font-weight: bold; width: 40px; text-align: left;">${Math.round((state.dailiesState.globalSizeModifier ?? 1.0) * 100)}%</span>
+      </div>
+
       <div class="popup-scrollable-body" style="padding-bottom: 20px;">
         <div class="dailies-table-container">
           <div class="dailies-table-header">
@@ -5119,6 +5126,21 @@ class PopupsManager {
         }
       });
     });
+
+    // Bind global size slider
+    const slider = popup.querySelector('#globalDailiesSizeSlider');
+    const sliderVal = popup.querySelector('#globalDailiesSizeVal');
+    if (slider && sliderVal) {
+      slider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value) || 1.0;
+        sliderVal.textContent = `${Math.round(val * 100)}%`;
+        if (state.dailiesState) {
+          state.dailiesState.globalSizeModifier = val;
+        }
+        state.save();
+        UIManager.updateDailiesList();
+      });
+    }
 
     // Attach Event Listeners for each Row
     const rows = popup.querySelectorAll('.dailies-table-row');

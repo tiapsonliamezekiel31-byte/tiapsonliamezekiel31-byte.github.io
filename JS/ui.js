@@ -6165,7 +6165,8 @@ class UIManager {
       const opacity = daily.completed
         ? (showCompleted ? 0.38 : 0)
         : (isScheduled ? (maxCompletions > 1 ? Math.max(0.5, remainingCompletions / maxCompletions) : 1) : 0.4);
-      const sizeScale = Math.max(0.5, Number(daily.size) || 1);
+      const globalSizeMod = Math.max(0.5, Number(gs.dailiesState?.globalSizeModifier) || 1.0);
+      const sizeScale = Math.max(0.5, (Number(daily.size) || 1) * globalSizeMod);
 
       let attributeColor = getAttributeColor(daily.attribute);
       if (focusModeActive && visibleDailies.length > 0) {
@@ -6332,9 +6333,11 @@ class UIManager {
         : this.getDefaultDailyLayout(index, metrics, tileSize);
 
       card.style.width = `${tileSize.width}px`;
-      card.dataset.sizeScale = String(Math.max(0.5, Number(daily.size) || 1));
+      const globalSizeMod = Math.max(0.5, Number(state.dailiesState?.globalSizeModifier) || 1.0);
+      const computedScale = Math.max(0.5, (Number(daily.size) || 1) * globalSizeMod);
+      card.dataset.sizeScale = String(computedScale);
       if (!card.classList.contains('just-completed')) {
-        card.style.transform = `scale(${Math.max(0.5, Number(daily.size) || 1)})`;
+        card.style.transform = `scale(${computedScale})`;
       }
       card.style.left = `${layout.x}%`;
       card.style.top = `${layout.y}%`;

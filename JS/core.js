@@ -225,6 +225,7 @@ class GameState {
       streakNonCompletion: 0, // consecutive days with any missed daily
       history: [], // array of daily completion records
       activeSetId: 'A',
+      globalSizeModifier: 1.0,
       sets: {
         'A': {
           dailies: [],
@@ -926,6 +927,21 @@ class GameState {
         this.playerState.weaponRunes = {};
       }
       this.dailiesState = data.dailiesState;
+      if (!this.dailiesState) {
+        this.dailiesState = {
+          dailies: [],
+          todos: [],
+          streakCompletion: 0,
+          streakNonCompletion: 0,
+          history: [],
+          activeSetId: 'A',
+          globalSizeModifier: 1.0,
+          sets: { 'A': { dailies: [], dailyNotes: [] } }
+        };
+      }
+      if (this.dailiesState.globalSizeModifier === undefined) {
+        this.dailiesState.globalSizeModifier = 1.0;
+      }
       if (this.dailiesState && Array.isArray(this.dailiesState.todos)) {
         this.dailiesState.todos.forEach(todo => {
           if (todo.deadline) {
