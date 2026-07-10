@@ -1996,6 +1996,60 @@ class RetroTaskCompleteAnimation {
         requestAnimationFrame(animateParticle);
       }
     }
+
+    if (difficulty === 'Ultra') {
+      let taskAccent = '#9933ff';
+      if (task && task.attribute) {
+        try {
+          const state = getGameState();
+          taskAccent = state.config.attributeColors[task.attribute] || taskAccent;
+        } catch (e) {}
+      }
+      const skullBurstCount = Math.round(15 * scaleFactor);
+      for (let i = 0; i < skullBurstCount; i++) {
+        const skull = document.createElement('div');
+        skull.textContent = '☠';
+        skull.style.cssText = `
+          position: fixed; left: 0; top: 0;
+          font-size: ${Math.round((14 + Math.random() * 12) * scaleFactor)}px;
+          color: ${taskAccent};
+          pointer-events: none; z-index: 999999;
+          will-change: transform, opacity;
+          text-shadow: 0 0 6px ${taskAccent}, 0 0 12px ${taskAccent};
+        `;
+        container.appendChild(skull);
+
+        const angle = (Math.PI * 2 * i) / skullBurstCount + (Math.random() * 0.4 - 0.2);
+        const velocity = (5 + Math.random() * 8) * (difficultyMultiplier * 0.5 + 0.5);
+        let vx = Math.cos(angle) * velocity;
+        let vy = Math.sin(angle) * velocity - 5;
+
+        let x = cx;
+        let y = cy;
+        let life = 1.0;
+        const decay = 0.005 + Math.random() * 0.005;
+        const gravity = 0.18;
+        let rot = Math.random() * 360;
+        let rotSpeed = -10 + Math.random() * 20;
+
+        const animateSkull = () => {
+          vy += gravity;
+          x += vx;
+          y += vy;
+          rot += rotSpeed;
+          life -= decay;
+
+          if (life > 0) {
+            skull.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scale(${life * 1.5})`;
+            skull.style.opacity = life;
+            requestAnimationFrame(animateSkull);
+          } else {
+            try { skull.remove(); } catch (e) {}
+          }
+        };
+        requestAnimationFrame(animateSkull);
+      }
+    }
   }
 }
 

@@ -23,7 +23,7 @@ const DEFAULT_GAME_CONFIG = {
     Easy: 1,
     Medium: 1.5,
     Hard: 2,
-    Ultra: 3
+    Ultra: 15
   },
   
   // ============================================================
@@ -41,7 +41,7 @@ const DEFAULT_GAME_CONFIG = {
     Easy: { gold: 10, ap: 25, diamonds: 1, attributePoints: 1 },
     Medium: { gold: 15, ap: 35, diamonds: 2, attributePoints: 2 },
     Hard: { gold: 20, ap: 40, diamonds: 3, attributePoints: 3 },
-    Ultra: { gold: 30, ap: 55, diamonds: 4, attributePoints: 4 }
+    Ultra: { gold: 75, ap: 120, diamonds: 15, attributePoints: 4 }
   },
   
   // ============================================================
@@ -804,7 +804,7 @@ const DEFAULT_GAME_CONFIG = {
     Easy: { diamonds: 1, gold: 0 },
     Medium: { diamonds: 2, gold: 5 },
     Hard: { diamonds: 3, gold: 10 },
-    Ultra: { diamonds: 4, gold: 20 }
+    Ultra: { diamonds: 15, gold: 75 }
   },
   deathEffects: {
     'Default': { name: 'Default', desc: 'Standard rainbow particle burst', tier: 'regular', previewIcon: '🌈' },

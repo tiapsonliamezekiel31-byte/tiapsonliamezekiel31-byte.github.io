@@ -6415,6 +6415,9 @@ class UIManager {
       html += '<div class="task-daily-streak-badge ' + streakClass + '" data-daily-id="' + daily.id + '" title="Streak">' + streak + '</div>';
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.locked ? 'locked ' : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
       html += '<div class="hold-progress-overlay"></div>';
+      if (daily.difficulty === 'Ultra') {
+        html += '<div class="ultra-badge-overlay">👑☠️</div>';
+      }
       if (daily.bloodOathActive && !focusModeActive) {
         html += '<div class="blood-oath-fire-container">';
         html += '<div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>';
@@ -6432,6 +6435,15 @@ class UIManager {
         const pDelay = (_pi * 0.22 + (_pi * 17 % 7) * 0.07).toFixed(2);
         const pX = (12 + (_pi * 31 + 11) % 76).toFixed(1);
         html += '<span class="streak-particle" style="--p-delay:' + pDelay + 's;--p-x:' + pX + '%;"></span>';
+      }
+      if (daily.difficulty === 'Ultra' && !daily.completed) {
+        const skullCount = 3;
+        for (let _si = 0; _si < skullCount; _si++) {
+          const pDelay = (_si * 0.8 + 0.2).toFixed(2);
+          const pX = (20 + _si * 30).toFixed(1);
+          const pSway = (_si % 2 === 0 ? 12 : -12);
+          html += '<span class="ultra-skull-particle" style="--p-delay:' + pDelay + 's;--p-x:' + pX + '%;--p-sway:' + pSway + 'px;">☠</span>';
+        }
       }
       html += '</div>';
     });
@@ -8405,8 +8417,20 @@ class UIManager {
 
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
+      let ultraParticles = '';
+      if (todo.difficulty === 'Ultra' && !todo.completed) {
+        const skullCount = 3;
+        for (let _si = 0; _si < skullCount; _si++) {
+          const pDelay = (_si * 0.8 + 0.2).toFixed(2);
+          const pX = (20 + _si * 30).toFixed(1);
+          const pSway = (_si % 2 === 0 ? 12 : -12);
+          ultraParticles += `<span class="ultra-skull-particle" style="--p-delay:${pDelay}s;--p-x:${pX}%;--p-sway:${pSway}px;">☠</span>`;
+        }
+      }
+
       return `
-      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
+      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" data-difficulty="${todo.difficulty || ''}" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
+        ${todo.difficulty === 'Ultra' ? '<div class="ultra-badge-overlay">👑☠️</div>' : ''}
         ${todo.bloodOathActive ? `
           <div class="blood-oath-fire-container">
             <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
@@ -8440,6 +8464,7 @@ class UIManager {
           <button class="btn-edit" title="Edit">✎</button>
           <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
         </div>
+        ${ultraParticles}
       </div>
       `;
     }).join('');

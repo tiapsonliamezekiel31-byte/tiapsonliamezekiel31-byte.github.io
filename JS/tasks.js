@@ -529,7 +529,7 @@ class TaskManager {
         if (state.systemState && state.systemState.focusTimerActive) keysAwarded += 1;
         if (daily.bloodOathActive) keysAwarded += 2;
       } else if (daily.difficulty === 'Ultra') {
-        keysAwarded = 5;
+        keysAwarded = 10;
         if (state.systemState && state.systemState.focusTimerActive) keysAwarded += 1;
         if (daily.bloodOathActive) keysAwarded += 2;
       }
@@ -1264,7 +1264,7 @@ class TaskManager {
       Easy: 1,
       Medium: 1.5,
       Hard: 2,
-      Ultra: 3
+      Ultra: 15
     };
 
     let damage = 0;

@@ -1188,7 +1188,7 @@ class GameState {
       const isPhase2 = (bossData.phase === 2) || (bossEnemy.hp / bossEnemy.maxHp <= 0.4);
       let W = 0;
       missedDailies.forEach(daily => {
-        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 }[daily.difficulty] || 1;
+        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[daily.difficulty] || 1;
         W += baseWeight + (isPhase2 ? 1 : 0);
       });
 
@@ -1715,7 +1715,7 @@ function performCheckIn() {
       // Calculate total weight W from missed dailies
       let W = 0;
       missedDailies.forEach(daily => {
-        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 }[daily.difficulty] || 1;
+        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[daily.difficulty] || 1;
         W += baseWeight + (isPhase2 ? 1 : 0);
       });
 
