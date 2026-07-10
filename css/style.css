@@ -7675,6 +7675,7 @@ button:hover,
 #gameArea,
 #gameContainer,
 .draggable-hud,
+.draggable-challenge-hud,
 .weapon-strip,
 .floating-shop-btn,
 .floating-lootbox-btn,
@@ -10065,6 +10066,140 @@ button:hover,
   50% { transform: translateY(-3px); }
 }
 
+/* Nemesis Challenge HUD */
+.draggable-challenge-hud {
+  position: fixed;
+  z-index: 1999;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  background: rgba(18, 12, 38, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(232, 184, 74, 0.5) !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0.5px 0 rgba(255, 255, 255, 0.15);
+  color: #f3f4f6;
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 105px;
+  touch-action: none;
+}
+
+.draggable-challenge-hud.is-dragging {
+  cursor: grabbing;
+  border-color: rgba(232, 184, 74, 0.9) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 10px rgba(232, 184, 74, 0.4);
+}
+
+.challenge-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.challenge-hud-title {
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-size: 8px;
+}
+
+.challenge-hud-header .drag-handle {
+  opacity: 0.6;
+  font-size: 14px;
+}
+
+.challenge-hud-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.challenge-section-title {
+  color: #9ca3af;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+.challenge-dailies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+.challenge-daily-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.challenge-daily-item.completed {
+  border-color: rgba(34, 197, 94, 0.2);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.challenge-status-icon {
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.challenge-daily-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 65px;
+  font-size: 8px;
+}
+
+.challenge-section-separator {
+  color: #ef4444;
+  font-size: 8px;
+  text-align: center;
+  font-weight: bold;
+  border-top: 1px dashed rgba(239, 68, 68, 0.3);
+  padding-top: 6px;
+  margin-top: 4px;
+}
+
+.challenge-penalties-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 8px;
+}
+
+.challenge-penalty-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #d1d5db;
+}
+
+.challenge-penalty-item .penalty-value {
+  color: #fca5a5;
+  font-weight: bold;
+}
+
+/* Hide challenge HUD when popups are active */
+body:has(.popup) .draggable-challenge-hud,
+body:has(.popup-overlay) .draggable-challenge-hud {
+  display: none !important;
+}
+
 /* ============================================================
    MOBILE WEBVIEW PERFORMANCE OVERRIDES
    Eliminates GPU-crushing effects that tank frame rates in
@@ -10099,6 +10234,7 @@ button:hover,
   .stats-hud-panel,
   .draggable-stats-hud,
   .draggable-taunt-hud,
+  .draggable-challenge-hud,
   .game-top-left,
   .satchel-panel,
   .nav-menu,
@@ -10114,7 +10250,8 @@ button:hover,
   }
 
   /* --- 3. Simplify expensive clip-path + drop-shadow on HUD/weapon strip --- */
-  .draggable-hud {
+  .draggable-hud,
+  .draggable-challenge-hud {
     clip-path: none !important;
     filter: none !important;
     border-radius: 6px !important;

@@ -278,6 +278,7 @@ class GameState {
         triggeredTodayByEnemyId: {}
       },
       specialEvent: null, // { type, claimed, targets }
+      dailyChallenge: null,
       deathDefiance: {
         available: true,
         active: false,
@@ -1053,6 +1054,11 @@ class GameState {
           showCompletedTodos: false
         };
       }
+      if (!this.systemState.dailyChallenge) {
+        if (typeof generateDailyChallenge === 'function') {
+          generateDailyChallenge();
+        }
+      }
       if (!Array.isArray(this.systemState.diamondRewards)) {
         this.systemState.diamondRewards = [];
       }
@@ -1444,6 +1450,55 @@ function createBombEnemy(playerMaxAp) {
   };
 }
 
+function generateDailyChallenge() {
+  const state = getGameState();
+  if (!state.systemState) return;
+
+  const today = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
+    ? TaskManager.getCurrentGameDateKey()
+    : (new Date().toISOString().split('T')[0]);
+
+  const allDailies = state.dailiesState?.dailies || [];
+  const scheduledDailies = allDailies.filter(d => {
+    if (typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function') {
+      return TaskManager.isDailyScheduled(d, today);
+    }
+    return true;
+  });
+
+  if (scheduledDailies.length === 0) {
+    state.systemState.dailyChallenge = { active: false };
+    return;
+  }
+
+  // Sort scheduled dailies by completionRate ascending
+  const sortedDailies = [...scheduledDailies].sort((a, b) => {
+    const rateA = a.completionRate !== undefined ? a.completionRate : 0;
+    const rateB = b.completionRate !== undefined ? b.completionRate : 0;
+    return rateA - rateB;
+  });
+
+  const numToPick = Math.min(1 + Math.floor(Math.random() * 3), sortedDailies.length);
+  const pickedDailies = sortedDailies.slice(0, numToPick);
+
+  // Penalties:
+  // 10-40% max gold
+  // 30-50% max diamonds
+  // 1-70% max ap
+  const goldPenaltyPct = 10 + Math.floor(Math.random() * 31);
+  const diamondPenaltyPct = 30 + Math.floor(Math.random() * 21);
+  const apPenaltyPct = 1 + Math.floor(Math.random() * 70);
+
+  state.systemState.dailyChallenge = {
+    active: true,
+    dailies: pickedDailies.map(d => d.id),
+    goldPenaltyPct,
+    diamondPenaltyPct,
+    apPenaltyPct,
+    failed: null
+  };
+}
+
 function performCheckIn() {
   const state = getGameState();
   const clearCheckInRunning = () => {
@@ -1497,6 +1552,47 @@ function performCheckIn() {
 
   const completedDailies = TaskManager.getCompletedDailies();
   const rawMissedDailies = TaskManager.getMissedDailies();
+
+  // Resolve Nemesis Challenge
+  let challengePenaltyMessage = '';
+  if (state.systemState && state.systemState.dailyChallenge && state.systemState.dailyChallenge.active) {
+    const chal = state.systemState.dailyChallenge;
+    let challengeDailiesCompleted = true;
+    if (Array.isArray(chal.dailies) && chal.dailies.length > 0) {
+      chal.dailies.forEach(id => {
+        const daily = (state.dailiesState.dailies || []).find(d => d.id === id);
+        if (!daily || !daily.completed) {
+          challengeDailiesCompleted = false;
+        }
+      });
+    } else {
+      challengeDailiesCompleted = false;
+    }
+
+    if (!challengeDailiesCompleted) {
+      const maxGold = typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function' 
+        ? ShopManager.calculateMaxGold() 
+        : 100;
+      const maxDiamonds = typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function'
+        ? TaskManager.getMaxPotentialDiamonds()
+        : 10;
+      const maxAp = state.playerState.maxAp || 100;
+
+      const goldDeduction = Math.round(maxGold * (chal.goldPenaltyPct / 100));
+      const diamondDeduction = Math.round(maxDiamonds * (chal.diamondPenaltyPct / 100));
+      const apDeduction = Math.round(maxAp * (chal.apPenaltyPct / 100));
+
+      state.setGold(Math.max(0, state.playerState.gold - goldDeduction));
+      state.setDiamonds(Math.max(0, state.playerState.diamonds - diamondDeduction));
+      state.setAp(Math.max(0, state.playerState.ap - apDeduction));
+
+      challengePenaltyMessage = `Nemesis challenge failed! Stole:\n💰 ${goldDeduction} Gold (${chal.goldPenaltyPct}%)\n💎 ${diamondDeduction} Diamonds (${chal.diamondPenaltyPct}%)\n⚡ ${apDeduction} AP (${chal.apPenaltyPct}%)`;
+    } else {
+      challengePenaltyMessage = `Nemesis challenge complete! Your resources are safe. ✨`;
+    }
+    state.systemState.lastChallengeMessage = challengePenaltyMessage;
+  }
+
   const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, completedDailies.concat(rawMissedDailies));
   
   
@@ -2352,6 +2448,9 @@ function performCheckIn() {
     });
 
     TaskManager.resetDailies();
+    if (typeof generateDailyChallenge === 'function') {
+      generateDailyChallenge();
+    }
     state.playerState.corrosiveStacks = 0;
     state.playerState.dodgeCostMultiplier = 1.0;
     state.systemState.lastCheckInTime = nowMs;
@@ -2444,6 +2543,17 @@ function performCheckIn() {
       clearCheckInRunning();
       state.save();
       if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+
+      // Nemesis challenge popup warning if applicable
+      if (state.systemState.lastChallengeMessage) {
+        const msg = state.systemState.lastChallengeMessage;
+        delete state.systemState.lastChallengeMessage;
+        setTimeout(() => {
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+            PopupsManager.showAlert('NEMESIS CHALLENGE RESULT', msg);
+          }
+        }, 1000);
+      }
 
       // Show pet hunger warning if pet is under 30% hunger and player is alive
       if (state.playerState.hp > 0 && state.playerState.petHunger !== undefined && state.playerState.petHunger < 30) {

@@ -278,9 +278,19 @@ class UIManager {
 
   static initializeUI() {
     document.body.innerHTML = '';
+    
+    // Ensure daily challenge is initialized
+    const state = getGameState();
+    if (state.systemState && !state.systemState.dailyChallenge) {
+      if (typeof generateDailyChallenge === 'function') {
+        generateDailyChallenge();
+      }
+    }
+
     this.createHudWidget();
     this.createStatsHudWidget();
     this.createNemesisTauntHud();
+    this.createChallengeHud();
     this.createNavigationMenu();
     this.createGameArea();
     this.createActionButtons();
@@ -576,6 +586,193 @@ class UIManager {
     } else {
       contentEl.innerHTML = `<span style="opacity: 0.7; font-style: italic;">Enjoy it while it lasts...</span>`;
     }
+  }
+
+  static createChallengeHud() {
+    let hud = document.getElementById('nemesisChallengeHud');
+    if (hud) return hud;
+
+    hud = document.createElement('div');
+    hud.id = 'nemesisChallengeHud';
+    hud.className = 'draggable-challenge-hud';
+    document.body.appendChild(hud);
+
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
+
+    const savedPos = localStorage.getItem('nemesis_challenge_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) { }
+    } else {
+      hud.style.left = '20px';
+      hud.style.top = '140px';
+    }
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      latestX = e.clientX;
+      latestY = e.clientY;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      hud.classList.remove('is-dragging');
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_challenge_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      hud.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    };
+
+    hud.addEventListener('pointerdown', onPointerDown);
+    return hud;
+  }
+
+  static updateChallengeHud() {
+    const state = getGameState();
+    let hud = document.getElementById('nemesisChallengeHud');
+    
+    const challenge = state.systemState?.dailyChallenge;
+    if (!challenge || !challenge.active) {
+      if (hud) hud.style.display = 'none';
+      return;
+    }
+
+    if (!hud) {
+      hud = this.createChallengeHud();
+    }
+
+    // Hide if popups or overlays are active
+    if (document.querySelector('.popup') || document.querySelector('.popup-overlay')) {
+      hud.style.display = 'none';
+      return;
+    }
+
+    hud.style.display = '';
+
+    const maxGold = (typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function') 
+      ? ShopManager.calculateMaxGold() 
+      : 100;
+    const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
+      ? TaskManager.getMaxPotentialDiamonds()
+      : 10;
+    const maxAp = state.playerState?.maxAp || 100;
+
+    const goldDeduction = Math.round(maxGold * (challenge.goldPenaltyPct / 100));
+    const diamondDeduction = Math.round(maxDiamonds * (challenge.diamondPenaltyPct / 100));
+    const apDeduction = Math.round(maxAp * (challenge.apPenaltyPct / 100));
+
+    let dailiesHtml = '';
+    let allCompleted = true;
+
+    if (challenge.dailies && challenge.dailies.length > 0) {
+      challenge.dailies.forEach(dailyId => {
+        const daily = state.dailiesState?.dailies?.find(d => d.id === dailyId);
+        if (daily) {
+          const isCompleted = !!daily.completed;
+          if (!isCompleted) allCompleted = false;
+          dailiesHtml += `
+            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}">
+              <span class="challenge-status-icon">${isCompleted ? '✅' : '❌'}</span>
+              <span class="challenge-daily-name" title="${daily.name}">${daily.name}</span>
+            </div>
+          `;
+        } else {
+          dailiesHtml += `
+            <div class="challenge-daily-item completed">
+              <span class="challenge-status-icon">✅</span>
+              <span class="challenge-daily-name" style="text-decoration: line-through; opacity: 0.5;">[Deleted]</span>
+            </div>
+          `;
+        }
+      });
+    } else {
+      dailiesHtml = '<div style="opacity: 0.6;">No tasks</div>';
+    }
+
+    const titleColor = allCompleted ? '#22c55e' : '#f87171';
+    const statusText = allCompleted ? 'Challenge Safe! ✨' : 'Nemesis Threat! 👾';
+
+    hud.innerHTML = `
+      <div class="challenge-hud-header">
+        <span class="challenge-hud-title" style="color: ${titleColor};">${statusText}</span>
+        <span class="drag-handle">≡</span>
+      </div>
+      <div class="challenge-hud-content">
+        <div class="challenge-section-title">Complete Dailies:</div>
+        <div class="challenge-dailies-list">${dailiesHtml}</div>
+        
+        <div class="challenge-section-separator">OR STEALS AT CHECK-IN:</div>
+        
+        <div class="challenge-penalties-list">
+          <div class="challenge-penalty-item">
+            <span>💰 Gold:</span>
+            <span class="penalty-value">${challenge.goldPenaltyPct}% (${goldDeduction})</span>
+          </div>
+          <div class="challenge-penalty-item">
+            <span>💎 Diamonds:</span>
+            <span class="penalty-value">${challenge.diamondPenaltyPct}% (${diamondDeduction})</span>
+          </div>
+          <div class="challenge-penalty-item">
+            <span>⚡ AP:</span>
+            <span class="penalty-value">${challenge.apPenaltyPct}% (${apDeduction})</span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   static createStatsHudWidget() {
@@ -9075,6 +9272,7 @@ class UIManager {
     try { this.updateConsistencyBtn(); } catch (e) { }
     try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
     try { this.updateNemesisTauntHud(); } catch (e) { console.warn('Nemesis taunt update failed', e); }
+    try { this.updateChallengeHud(); } catch (e) { console.warn('Challenge HUD update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
     try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) { }
