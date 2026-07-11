@@ -1598,7 +1598,7 @@ class PopupsManager {
     return true;
   }
 
-  static showConfirm(title, message, onConfirm) {
+  static showConfirm(title, message, onConfirm, onCancel) {
     this.closeAllPopups();
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
@@ -1613,7 +1613,10 @@ class PopupsManager {
       </div>
     `;
 
-    popup.querySelector('.btn-cancel').addEventListener('click', () => this.closeAllPopups());
+    popup.querySelector('.btn-cancel').addEventListener('click', () => {
+      try { if (typeof onCancel === 'function') onCancel(); } catch (e) { console.error('Cancel error:', e); }
+      this.closeAllPopups();
+    });
     popup.querySelector('.btn-confirm').addEventListener('click', () => {
       try { if (typeof onConfirm === 'function') onConfirm(); } catch (e) { console.error('Confirm error:', e); }
       this.closeAllPopups();
@@ -4962,10 +4965,12 @@ class PopupsManager {
       <button class="btn-close">✕</button>
       
       <!-- Day Set Selector -->
-      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center;">
+      <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center;">
         <span style="color: var(--text-muted);">ACTIVE DAY:</span>
-        <button class="day-selector-btn ${activeSetId === 'A' ? 'active' : ''}" data-set-id="A">DAY A</button>
-        <button class="day-selector-btn ${activeSetId === 'B' ? 'active' : ''}" data-set-id="B">DAY B</button>
+        <span style="color: var(--accent-gold); font-weight: bold; font-size: 0.9rem; padding: 2px 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);">DAY ${activeSetId}</span>
+        <button id="switchActiveDayBtn" class="btn-toggle-pill" style="font-size: 0.75rem; padding: 4px 10px; background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #fff; cursor: pointer; border-radius: 4px;">
+          Switch to DAY ${activeSetId === 'A' ? 'B' : 'A'}
+        </button>
       </div>
 
       <!-- Global Size Slider -->
@@ -5115,17 +5120,28 @@ class PopupsManager {
       PopupAnimation.scale(popup);
     }
 
-    // Bind active set buttons
-    popup.querySelectorAll('.day-selector-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const targetSetId = e.currentTarget.dataset.setId;
-        if (targetSetId !== (state.dailiesState.activeSetId || 'A')) {
-          TaskManager.switchDaySet(targetSetId);
-          PopupsManager.showDailiesTable();
-          UIManager.updateDailiesList();
-        }
+    // Bind active set switch button
+    const switchBtn = popup.querySelector('#switchActiveDayBtn');
+    if (switchBtn) {
+      switchBtn.addEventListener('click', () => {
+        const targetSetId = activeSetId === 'A' ? 'B' : 'A';
+        PopupsManager.showConfirm(
+          'Switch Active Day Set',
+          `Are you sure you want to switch your active dailies to Day ${targetSetId}? This will save your current Day ${activeSetId} progress.`,
+          () => {
+            TaskManager.switchDaySet(targetSetId);
+            PopupsManager.showDailiesTable();
+            if (typeof UIManager !== 'undefined' && typeof UIManager.updateDailiesList === 'function') {
+              UIManager.updateDailiesList();
+            }
+          },
+          () => {
+            // Re-open dailies table popup if canceled
+            PopupsManager.showDailiesTable();
+          }
+        );
       });
-    });
+    }
 
     // Bind global size slider
     const slider = popup.querySelector('#globalDailiesSizeSlider');

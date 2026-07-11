@@ -1209,30 +1209,13 @@ class TaskManager {
 
     state.rollSpecialEvent();
 
-    // Toggle/alternate active day sets after resetting the current set
-    const currentSetId = state.dailiesState.activeSetId || 'A';
-    const nextSetId = currentSetId === 'A' ? 'B' : 'A';
-    
     // Save current active state (which has just been reset)
+    const currentSetId = state.dailiesState.activeSetId || 'A';
     if (!state.dailiesState.sets) state.dailiesState.sets = {};
     state.dailiesState.sets[currentSetId] = {
       dailies: JSON.parse(JSON.stringify(state.dailiesState.dailies || [])),
       dailyNotes: JSON.parse(JSON.stringify(state.systemState.dailyNotes || []))
     };
-    
-    // Load next set
-    if (state.dailiesState.sets[nextSetId]) {
-      state.dailiesState.dailies = state.dailiesState.sets[nextSetId].dailies;
-      state.systemState.dailyNotes = state.dailiesState.sets[nextSetId].dailyNotes || [];
-    } else {
-      state.dailiesState.dailies = [];
-      state.systemState.dailyNotes = [];
-      state.dailiesState.sets[nextSetId] = {
-        dailies: [],
-        dailyNotes: []
-      };
-    }
-    state.dailiesState.activeSetId = nextSetId;
     
     PlayerManager.recalculateMaxAp();
 

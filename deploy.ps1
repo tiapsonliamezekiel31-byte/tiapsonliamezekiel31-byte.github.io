@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: connect dailies by completion rate and enhance/optimize Ultra skull emitters"
+$commitMsg = "fix: fix check-in day set toggle bug and add manual switch confirm popup"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
