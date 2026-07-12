@@ -185,6 +185,7 @@ class StageManager {
     
     state.stageState.level = level;
     state.stageState.enemies = [];
+    state.stageState.daysOnLevel = 0;
     
     if (formationData.isBoss) {
       this.generateBossLevel(formationData.bossName, formationData.special);

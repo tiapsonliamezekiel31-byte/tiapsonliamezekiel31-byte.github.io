@@ -26,6 +26,10 @@ class PopupsManager {
         console.warn("Failed to refresh tycoon tasks list on closeAllPopups", e);
       }
     }
+
+    if (typeof UIManager !== 'undefined' && typeof UIManager.refreshGameUI === 'function') {
+      UIManager.refreshGameUI();
+    }
   }
   
   static createPopupOverlay() {
@@ -1587,6 +1591,9 @@ class PopupsManager {
       overlay.classList.add('fade-out');
       setTimeout(() => {
         try { overlay.remove(); } catch (e) {}
+        if (typeof UIManager !== 'undefined' && typeof UIManager.refreshGameUI === 'function') {
+          UIManager.refreshGameUI();
+        }
       }, 220);
     };
 

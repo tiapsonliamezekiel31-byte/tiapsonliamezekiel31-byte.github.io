@@ -1515,6 +1515,7 @@ function performCheckIn() {
     return;
   }
   state.systemState.isCheckInRunning = true;
+  state.stageState.daysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
 
   // start-of-checkin Bomb check
   const aliveBomb = (state.stageState.enemies || []).find(e => e && e.isBomb && !e.isDead);
@@ -1631,6 +1632,77 @@ function performCheckIn() {
   // 1) Calculate missed-daily damage D and scale to N
   const D = TaskManager.calculateMissedDailyDamage();
   const N = D * 5; // per blueprint: D × 5 = N
+
+  // --- Check-in enemy respawns ---
+  const stageVal = state.stageState.stage || 1;
+  const maxStagesVal = state.config.maxStages || 7;
+  const respawnChance = maxStagesVal > 1
+    ? 0.20 + (stageVal - 1) * (0.50 / (maxStagesVal - 1))
+    : 0.20;
+
+  const deadNormalEnemies = (state.stageState.enemies || []).filter(e => e && e.isDead && !e.isBoss && !e.isBomb);
+  const respawnedGains = [];
+  const maxPer = state.config.maxMutatorsPerEnemy ?? 3;
+
+  deadNormalEnemies.forEach(enemy => {
+    if (Math.random() < respawnChance) {
+      // Revive
+      enemy.isDead = false;
+      enemy.hp = enemy.maxHp;
+      enemy.consecutiveAttackDays = 0;
+      enemy.daysAlive = 0;
+
+      // Gain 1 mutation (Mutator Stacking is supported)
+      enemy.mutators = Array.isArray(enemy.mutators) ? enemy.mutators : [];
+      let gainedMutator = null;
+      if (enemy.mutators.length < maxPer) {
+        gainedMutator = EnemyManager.pickMutatorForEnemy(enemy);
+        if (gainedMutator) {
+          enemy.mutators.push(gainedMutator);
+          try { state.eventBus.emit(EVENTS.ENEMY_MUTATED, { enemyId: enemy.id, mutator: gainedMutator, source: 'checkin' }); } catch (e) {}
+        }
+      }
+
+      respawnedGains.push({
+        enemyId: enemy.id,
+        enemyName: enemy.name,
+        mutator: gainedMutator,
+        source: 'respawn'
+      });
+
+      try { state.eventBus.emit(EVENTS.ENEMY_REVIVED, { enemyId: enemy.id, amount: enemy.maxHp, source: 'respawn' }); } catch (e) { }
+
+      // Chain mutation: 30% chance to infect an adjacent living enemy
+      if (Math.random() < 0.30) {
+        const targetIndex = state.stageState.enemies.indexOf(enemy);
+        const adjacent = EnemyManager.getAdjacentEnemies(state.stageState.enemies, targetIndex);
+        const adjacentLiving = adjacent.filter(e => e && !e.isDead && !e.isBoss && !e.isBomb);
+        if (adjacentLiving.length > 0) {
+          const victim = adjacentLiving[Math.floor(Math.random() * adjacentLiving.length)];
+          victim.mutators = Array.isArray(victim.mutators) ? victim.mutators : [];
+          if (victim.mutators.length < maxPer) {
+            const chainMut = EnemyManager.pickMutatorForEnemy(victim);
+            if (chainMut) {
+              victim.mutators.push(chainMut);
+              respawnedGains.push({
+                enemyId: victim.id,
+                enemyName: victim.name,
+                mutator: chainMut,
+                source: 'chain',
+                chainFromId: enemy.id
+              });
+              try { state.eventBus.emit(EVENTS.ENEMY_MUTATED, { enemyId: victim.id, mutator: chainMut, source: 'chain' }); } catch (e) {}
+            }
+          }
+        }
+      }
+    }
+  });
+
+  state._lastCheckinRespawns = respawnedGains;
+
+  const isAggressive = (state.stageState.daysOnLevel >= 3);
+  const checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
 
   // Madman: miss any daily -> die at check-in, no death defiance
   if (state.playerState.className === 'Madman' && !allDailiesComplete) {
@@ -1824,6 +1896,7 @@ function performCheckIn() {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
 
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -1845,6 +1918,7 @@ function performCheckIn() {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
           retaliationSteps.push({
             enemyId: bossEnemy.id,
             name: `${bossEnemy.name} (Critical Strike ⚡)`,
@@ -1904,6 +1978,7 @@ function performCheckIn() {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
 
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -2169,6 +2244,8 @@ function performCheckIn() {
         const bruteMult = EnemyManager.applyBrutePassive(enemy, state.stageState.stage) || 1.0;
         damage *= bruteMult;
 
+        damage *= checkinDamageMultiplier;
+
         resolveOneAttack(enemy, damage, { isBoss: false });
 
         // Archetype effects trigger when the enemy attacks (after damage)
@@ -2184,6 +2261,9 @@ function performCheckIn() {
   try {
     lateTodoDamage = TaskManager.calculateLateTodoDamage();
     if (lateTodoDamage > 0) {
+      if (isAggressive) {
+        lateTodoDamage *= 1.5;
+      }
       // Unblockable flat damage
       state.takeDamage(lateTodoDamage);
       state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: lateTodoDamage, source: 'late-todos', unblockable: true });
@@ -2608,7 +2688,10 @@ function performCheckIn() {
     incantations,
     retaliationSteps,
     petAttacks,
-    mutatorGains: state._lastCheckinMutatorGains || []
+    mutatorGains: state._lastCheckinMutatorGains || [],
+    respawns: state._lastCheckinRespawns || [],
+    daysOnLevel: state.stageState.daysOnLevel,
+    isAggressive: isAggressive
   });
 
   return true;

@@ -4713,6 +4713,65 @@ class UIManager {
       ScreenEffects.shake(12 + missedCount * 2, 280);
     }
 
+    // Nemesis Aggression check-in alert
+    if (detail?.isAggressive) {
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 120, 'NEMESIS AGGRESSION: DAMAGE +50%! 💀', { color: '#ef4444', duration: 2500, scale: 1.3 });
+      ScreenEffects.shake(15, 350);
+      await wait(1200);
+    }
+
+    // Animate enemy check-in respawns and chain mutations
+    if (Array.isArray(detail?.respawns) && detail.respawns.length > 0) {
+      for (const respawn of detail.respawns) {
+        if (token !== this.checkInSequenceToken) return;
+
+        if (respawn.source === 'chain') {
+          // Chain mutation animation
+          await UIManager.playChainMutationAnimation(respawn.chainFromId, respawn.enemyId);
+          const card = document.querySelector(`.enemy-card[data-enemy-id="${respawn.enemyId}"]`);
+          if (card) {
+            const meta = UIManager.MUTATOR_META[respawn.mutator] || { icon: '❗', label: respawn.mutator, color: '#a15cff' };
+            UIManager.showFloatingText(respawn.enemyId, `CHAIN MUTATION! ${meta.icon} ${meta.label}`, { color: '#a15cff', duration: 2200 });
+            const enemy = StageManager.getEnemyById(respawn.enemyId);
+            if (enemy) {
+              UIManager.renderMutatorBadges(card, enemy);
+            }
+          }
+        } else {
+          // Respawn revival animation
+          const card = document.querySelector(`.enemy-card[data-enemy-id="${respawn.enemyId}"]`);
+          if (card) {
+            card.classList.remove('dead');
+            card.querySelectorAll('.enemy-name, .enemy-hpbar, .mutator-badges').forEach(el => el.style.setProperty('display', '', 'important'));
+            try { SoundManager.play('revive'); } catch (e) {}
+            if (typeof RetroWarpAnimation !== 'undefined') {
+              RetroWarpAnimation.play(card);
+            }
+            let x = window.innerWidth / 2;
+            let y = window.innerHeight / 2;
+            if (card.dataset.x) {
+              const circleRect = UIManager.getCircleRect();
+              x = circleRect.left + Number(card.dataset.x);
+              y = circleRect.top + Number(card.dataset.y);
+            }
+            FloatingDamageNumber.show(x, y - 20, 'RESPAWNED! 👾', { color: '#a15cff', duration: 2000, scale: 1.2 });
+            
+            await wait(800);
+
+            if (respawn.mutator) {
+              const meta = UIManager.MUTATOR_META[respawn.mutator] || { icon: '❗', label: respawn.mutator, color: '#a15cff' };
+              UIManager.showFloatingText(respawn.enemyId, `MUTATED: ${meta.icon} ${meta.label}`, { color: '#a15cff', duration: 2200 });
+              const enemy = StageManager.getEnemyById(respawn.enemyId);
+              if (enemy) {
+                UIManager.renderMutatorBadges(card, enemy);
+              }
+              await wait(600);
+            }
+          }
+        }
+      }
+    }
+
     for (let i = 0; i < steps.length; i++) {
       if (token !== this.checkInSequenceToken) return;
       const step = steps[i];
@@ -9419,6 +9478,91 @@ class UIManager {
     // Stage indicator removed from UI
   }
 
+  static updateNemesisAggressionRings() {
+    const container = document.querySelector('.enemy-circle-container');
+    if (!container) return;
+
+    // Remove existing rings to rebuild them
+    container.querySelectorAll('.nemesis-aggression-ring').forEach(el => el.remove());
+
+    const state = getGameState();
+    const days = state.stageState?.daysOnLevel || 0;
+    
+    // Each day gets a thin outline ring, say up to 5 rings
+    for (let i = 1; i <= Math.min(days, 5); i++) {
+      const ring = document.createElement('div');
+      ring.className = 'nemesis-aggression-ring';
+      const spacing = i * 12; // 12px, 24px, 36px, etc.
+      ring.style.cssText = `
+        position: absolute;
+        inset: -${spacing}px;
+        border: 1px solid rgba(161, 92, 255, ${0.8 - i * 0.12});
+        border-radius: 50%;
+        pointer-events: none;
+        box-shadow: 0 0 8px rgba(161, 92, 255, ${0.4 - i * 0.06});
+        animation: aggressionGlow 3s ease-in-out infinite alternate;
+        z-index: 1;
+      `;
+      container.appendChild(ring);
+    }
+  }
+
+  static async playChainMutationAnimation(sourceId, targetId) {
+    const sourceCard = document.querySelector(`.enemy-card[data-enemy-id="${sourceId}"]`);
+    const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${targetId}"]`);
+    if (!sourceCard || !targetCard) return;
+
+    const getCenter = (card) => {
+      const rect = card.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2 + window.scrollX,
+        y: rect.top + rect.height / 2 + window.scrollY
+      };
+    };
+
+    const start = getCenter(sourceCard);
+    const end = getCenter(targetCard);
+
+    const orb = document.createElement('div');
+    orb.className = 'chain-mutation-orb';
+    orb.style.cssText = `
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border: 3px solid #a15cff;
+      background: rgba(161, 92, 255, 0.45);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 100000;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 15px #a15cff, inset 0 0 8px #a15cff;
+      left: ${start.x}px;
+      top: ${start.y}px;
+    `;
+    document.body.appendChild(orb);
+
+    const duration = 400; // ms per trip
+    
+    try { SoundManager.play('mutate'); } catch (e) {}
+
+    const animateTrip = (from, to) => {
+      return orb.animate([
+        { left: `${from.x}px`, top: `${from.y}px`, transform: 'translate(-50%, -50%) scale(1)' },
+        { left: `${(from.x + to.x)/2}px`, top: `${(from.y + to.y)/2}px`, transform: 'translate(-50%, -50%) scale(1.4)' },
+        { left: `${to.x}px`, top: `${to.y}px`, transform: 'translate(-50%, -50%) scale(1)' }
+      ], {
+        duration: duration,
+        easing: 'ease-in-out'
+      }).finished;
+    };
+
+    await animateTrip(start, end);
+    await animateTrip(end, start);
+    await animateTrip(start, end);
+
+    orb.remove();
+  }
+
   static refreshGameUI() {
     // Coalesce multiple consecutive calls into a single microtask
     if (this._refreshScheduled) return;
@@ -9436,6 +9580,7 @@ class UIManager {
     this.updateDateDisplay();
     this.updateStageIndicator();
     this.renderEnemies();
+    try { this.updateNemesisAggressionRings(); } catch (e) { }
     this.updateRunCompletionGraph();
     try { this.updateWeeklyHeatmap(); } catch (e) { }
     try { this.updateConsistencyBtn(); } catch (e) { }
