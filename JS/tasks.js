@@ -1458,4 +1458,243 @@ class TaskManager {
       }
     }
   }
+
+  static completeSubtask(todoId, subtaskId) {
+    const state = getGameState();
+    const todo = state.dailiesState.todos.find(t => t.id === todoId);
+    if (!todo || todo.completed) return { success: false };
+
+    const subtask = (todo.subtasks || []).find(st => st.id === subtaskId);
+    if (!subtask || subtask.completed) return { success: false };
+
+    subtask.completed = true;
+
+    const baseReward = state.config.taskRewards[todo.difficulty] || state.config.taskRewards['Easy'];
+    const totalSubtasks = (todo.subtasks || []).length;
+    const share = 1 / (totalSubtasks || 1);
+
+    let apReward = baseReward.ap * share;
+    let goldReward = baseReward.gold * share;
+    let diamondReward = baseReward.diamonds * share;
+    let attrReward = baseReward.attributePoints * share;
+
+    // Apply blood oath multiplier
+    if (todo.bloodOathActive) {
+      apReward *= state.config.bloodOathRewardMultiplier;
+      goldReward *= state.config.bloodOathRewardMultiplier;
+      diamondReward *= state.config.bloodOathRewardMultiplier;
+      attrReward *= state.config.bloodOathRewardMultiplier;
+    }
+
+    // Apply Tasker's Boon todo reward multiplier
+    if (state.hasBuff("Tasker's Boon")) {
+      const boonMult = state.config.buffs?.["Tasker's Boon"]?.effect?.todoRewardMultiplier || 1.8;
+      apReward *= boonMult;
+      goldReward *= boonMult;
+      diamondReward *= boonMult;
+      attrReward *= boonMult;
+    }
+
+    // Apply greed buff multiplier
+    if (state.hasBuff('Greed')) {
+      const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
+      goldReward *= (1 + greedBonus);
+    }
+
+    // Apply Focus Timer doubling multiplier
+    if (state.systemState && state.systemState.focusTimerActive) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
+    // Check jackpot chance (1/10)
+    let isJackpot = Math.random() < 0.1;
+    if (isJackpot) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
+    apReward = this.roundValue(apReward, 1);
+    goldReward = this.roundValue(goldReward, 1);
+    diamondReward = this.roundValue(diamondReward, 1);
+    attrReward = this.roundValue(attrReward, 2);
+
+    state.addAp(apReward);
+    state.addGold(goldReward);
+    state.addDiamonds(diamondReward);
+
+    if (todo.clusterAttributes) {
+      for (const attr in todo.clusterAttributes) {
+        const ratio = todo.clusterAttributes[attr] || 0;
+        const proportionalAttrReward = this.roundValue(attrReward * ratio, 2);
+        state.addAttributePoints(attr, proportionalAttrReward);
+      }
+    } else {
+      state.addAttributePoints(todo.attribute, attrReward);
+    }
+
+    state.systemState.runStats.tasksCompleted++;
+
+    // Proportional pet points
+    const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
+    const petPointsBase = petPointsMap[todo.difficulty] || 1;
+    const petPointsAwarded = this.roundValue(petPointsBase * share, 2);
+    state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
+
+    // Automatically complete the parent To-Do silently if all its subtasks are now completed
+    const allCompleted = todo.subtasks.every(st => st.completed);
+    if (allCompleted) {
+      todo.completed = true;
+      state.eventBus.emit(EVENTS.TODO_COMPLETED, {
+        taskId: todoId,
+        type: 'todo',
+        rewards: { ap: 0, gold: 0, diamonds: 0 }
+      });
+    }
+
+    return {
+      success: true,
+      rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward },
+      completed: allCompleted,
+      isJackpot
+    };
+  }
+
+  static completeStep(stepId) {
+    const state = getGameState();
+    const parts = stepId.split('-step-');
+    const taskId = parts[0];
+    const stepIndex = parseInt(parts[1], 10);
+
+    // Find parent task (could be a daily or a todo)
+    let parentTask = state.dailiesState.dailies.find(d => d.id === taskId);
+    let parentType = 'daily';
+    if (!parentTask) {
+      parentTask = state.dailiesState.todos.find(t => t.id === taskId);
+      parentType = 'todo';
+    }
+
+    if (!parentTask || parentTask.completed) return { success: false };
+
+    // Mark step completed
+    if (!state.systemState.completedSteps) {
+      state.systemState.completedSteps = [];
+    }
+    if (!state.systemState.completedSteps.includes(stepId)) {
+      state.systemState.completedSteps.push(stepId);
+    }
+
+    const rawSteps = state.systemState.temporaryFocusSteps?.[taskId] || '';
+    const steps = rawSteps.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    const totalSteps = steps.length || 1;
+    const share = 1 / totalSteps;
+
+    // Base reward from parent difficulty
+    const baseReward = state.config.taskRewards[parentTask.difficulty] || state.config.taskRewards['Easy'];
+
+    let apReward = baseReward.ap * share;
+    let goldReward = baseReward.gold * share;
+    let diamondReward = baseReward.diamonds * share;
+    let attrReward = baseReward.attributePoints * share;
+
+    let isLootboxMode = parentType === 'daily' && !!state.playerState.lootboxDailyMode;
+    if (isLootboxMode) {
+      apReward = 0;
+      goldReward = 0;
+      diamondReward = 0;
+    }
+
+    // Apply Blood Oath
+    if (parentTask.bloodOathActive) {
+      apReward *= state.config.bloodOathRewardMultiplier;
+      if (!isLootboxMode) {
+        goldReward *= state.config.bloodOathRewardMultiplier;
+        diamondReward *= state.config.bloodOathRewardMultiplier;
+      }
+      attrReward *= state.config.bloodOathRewardMultiplier;
+    }
+
+    // Apply Tasker's Boon (for todos only)
+    if (parentType === 'todo' && state.hasBuff("Tasker's Boon")) {
+      const boonMult = state.config.buffs?.["Tasker's Boon"]?.effect?.todoRewardMultiplier || 1.8;
+      apReward *= boonMult;
+      goldReward *= boonMult;
+      diamondReward *= boonMult;
+      attrReward *= boonMult;
+    }
+
+    // Apply Greed
+    if (!isLootboxMode && state.hasBuff('Greed')) {
+      const greedBonus = state.config.buffs?.Greed?.effect?.goldBonus || 0.3;
+      goldReward *= (1 + greedBonus);
+    }
+
+    // Apply Focus 2x
+    if (state.systemState && state.systemState.focusTimerActive) {
+      apReward *= 2;
+      if (!isLootboxMode) {
+        goldReward *= 2;
+        diamondReward *= 2;
+      }
+      attrReward *= 2;
+    }
+
+    // Apply Jackpot
+    let isJackpot = Math.random() < 0.1;
+    if (isJackpot) {
+      apReward *= 2;
+      goldReward *= 2;
+      diamondReward *= 2;
+      attrReward *= 2;
+    }
+
+    apReward = this.roundValue(apReward, 1);
+    goldReward = this.roundValue(goldReward, 1);
+    diamondReward = this.roundValue(diamondReward, 1);
+    attrReward = this.roundValue(attrReward, 2);
+
+    state.addAp(apReward);
+    state.addGold(goldReward);
+    state.addDiamonds(diamondReward);
+    state.addAttributePoints(parentTask.attribute, attrReward);
+
+    state.systemState.runStats.tasksCompleted++;
+
+    // Proportional pet points
+    const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
+    const petPointsBase = petPointsMap[parentTask.difficulty] || 1;
+    const petPointsAwarded = this.roundValue(petPointsBase * share, 2);
+    state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
+
+    // Check if all steps of this parent task are now completed
+    const allCompleted = steps.every((_, idx) => 
+      state.systemState.completedSteps.includes(`${taskId}-step-${idx}`)
+    );
+
+    if (allCompleted) {
+      if (parentType === 'daily') {
+        parentTask.completed = true;
+        parentTask.completionsToday = parentTask.maxCompletionsPerDay || 1;
+      } else {
+        parentTask.completed = true;
+      }
+      // Emit completed event silently
+      state.eventBus.emit(parentType === 'daily' ? EVENTS.DAILY_COMPLETED : EVENTS.TODO_COMPLETED, {
+        taskId: taskId,
+        type: parentType,
+        rewards: { ap: 0, gold: 0, diamonds: 0 }
+      });
+    }
+
+    return {
+      success: true,
+      rewards: { ap: apReward, gold: goldReward, diamonds: diamondReward },
+      completed: allCompleted,
+      isJackpot
+    };
+  }
 }

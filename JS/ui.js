@@ -743,6 +743,16 @@ class UIManager {
       dailiesHtml = '<div style="opacity: 0.6;">No tasks</div>';
     }
 
+    if (allCompleted && !challenge.completed) {
+      challenge.completed = true;
+      state.save();
+      setTimeout(() => {
+        if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
+          PopupsManager.showAlert('NEMESIS CHALLENGE RESULT', 'Nemesis challenge complete! Your resources are safe. ✨');
+        }
+      }, 500);
+    }
+
     const titleColor = allCompleted ? '#22c55e' : '#f87171';
     const statusText = allCompleted ? 'SAFE ✨' : 'NEMESIS 👾';
 
@@ -2158,6 +2168,60 @@ class UIManager {
     });
   }
 
+  static enterFocusMode() {
+    document.body.classList.add('focus-mode-active');
+    const whitelist = [
+      'focusOverlay',
+      'focus-clock-popup',
+      'focus-mini-widget',
+      'navHamburgerBtn',
+      'navRefreshBtn',
+      'navMenuPanel',
+      'gameContainer'
+    ];
+
+    const hideEl = (el) => {
+      if (!el || whitelist.includes(el.id)) return;
+      if (el.dataset.originalDisplay === undefined) {
+        el.dataset.originalDisplay = el.style.display || '';
+      }
+      el.style.display = 'none';
+    };
+
+    const processHierarchy = (el) => {
+      if (!el) return;
+      if (whitelist.includes(el.id)) return;
+      
+      const containsWhitelisted = whitelist.some(id => el.querySelector('#' + id) !== null);
+      if (containsWhitelisted) {
+        Array.from(el.children).forEach(processHierarchy);
+      } else {
+        hideEl(el);
+      }
+    };
+
+    Array.from(document.body.children).forEach(processHierarchy);
+    const gameContainer = document.getElementById('gameContainer');
+    if (gameContainer) {
+      Array.from(gameContainer.children).forEach(processHierarchy);
+    }
+  }
+
+  static exitFocusMode() {
+    document.body.classList.remove('focus-mode-active');
+
+    const restoreEl = (el) => {
+      if (!el) return;
+      if (el.dataset.originalDisplay !== undefined) {
+        el.style.display = el.dataset.originalDisplay;
+        delete el.dataset.originalDisplay;
+      }
+      Array.from(el.children).forEach(restoreEl);
+    };
+
+    Array.from(document.body.children).forEach(restoreEl);
+  }
+
   static setupFocusTimer() {
     const state = getGameState();
     const btn = document.getElementById('focusTimerBtn');
@@ -2217,27 +2281,59 @@ class UIManager {
 
       incompleteDailies.forEach(d => {
         const isChecked = selectedFocusTaskIds.has(d.id) ? 'checked' : '';
+        const savedSteps = (state.systemState.temporaryFocusSteps && state.systemState.temporaryFocusSteps[d.id]) || '';
+        const dailyLabel = d.maxCompletionsPerDay > 1 
+          ? `[Daily] ${d.name} (${d.completionsToday || 0}/${d.maxCompletionsPerDay})`
+          : `[Daily] ${d.name}`;
         html += `
-          <label class="focus-task-item">
-            <input type="checkbox" class="focus-task-checkbox" data-id="${d.id}" data-type="daily" ${isChecked} />
-            <span class="focus-task-title">[Daily] ${d.name}</span>
-          </label>
+          <div class="focus-task-item-group" style="margin-bottom: 6px;">
+            <label class="focus-task-item" style="display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${d.id}" data-type="daily" ${isChecked} />
+              <span class="focus-task-title">${dailyLabel}</span>
+            </label>
+            <div style="padding-left: 20px; margin-top: 2px;">
+              <input type="text" class="focus-task-steps-input" data-id="${d.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-family: inherit;" />
+            </div>
+          </div>
         `;
       });
 
       incompleteTodos.forEach(t => {
         const isChecked = selectedFocusTaskIds.has(t.id) ? 'checked' : '';
+        const savedSteps = (state.systemState.temporaryFocusSteps && state.systemState.temporaryFocusSteps[t.id]) || '';
         html += `
-          <label class="focus-task-item">
-            <input type="checkbox" class="focus-task-checkbox" data-id="${t.id}" data-type="todo" ${isChecked} />
-            <span class="focus-task-title">[To-Do] ${t.name}</span>
-          </label>
+          <div class="focus-task-item-group" style="margin-bottom: 6px;">
+            <label class="focus-task-item" style="display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${t.id}" data-type="todo" ${isChecked} />
+              <span class="focus-task-title">[To-Do] ${t.name}</span>
+            </label>
+        `;
+        
+        // Incomplete subtasks
+        const incompleteSubtasks = (t.subtasks || []).filter(st => !st.completed);
+        incompleteSubtasks.forEach(st => {
+          const subtaskSelectionId = `${t.id}-subtask-${st.id}`;
+          const isSubtaskChecked = selectedFocusTaskIds.has(subtaskSelectionId) ? 'checked' : '';
+          html += `
+            <label class="focus-task-item focus-subtask-item" style="padding-left: 20px; font-size: 0.9em; opacity: 0.85; margin-left: 10px; display: flex; align-items: center; gap: 6px; margin-top: 2px; margin-bottom: 2px;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${subtaskSelectionId}" data-type="subtask" ${isSubtaskChecked} />
+              <span class="focus-task-title">[Subtask] ${st.name}</span>
+            </label>
+          `;
+        });
+
+        html += `
+            <div style="padding-left: 20px; margin-top: 2px;">
+              <input type="text" class="focus-task-steps-input" data-id="${t.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-family: inherit;" />
+            </div>
+          </div>
         `;
       });
 
       selectionList.innerHTML = html;
       selectionContainer.style.display = 'block';
 
+      // Bind checkbox changes
       selectionList.querySelectorAll('.focus-task-checkbox').forEach(cb => {
         cb.addEventListener('change', (e) => {
           const id = e.target.dataset.id;
@@ -2247,6 +2343,18 @@ class UIManager {
             selectedFocusTaskIds.delete(id);
           }
           state.systemState.selectedFocusTaskIds = Array.from(selectedFocusTaskIds);
+          state.save();
+        });
+      });
+
+      // Bind custom breakdown text input
+      selectionList.querySelectorAll('.focus-task-steps-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+          const id = e.target.dataset.id;
+          if (!state.systemState.temporaryFocusSteps) {
+            state.systemState.temporaryFocusSteps = {};
+          }
+          state.systemState.temporaryFocusSteps[id] = e.target.value;
           state.save();
         });
       });
@@ -2316,8 +2424,16 @@ class UIManager {
       el.classList.add('pop');
 
       let res = null;
-      if (type === 'daily') {
-        res = TaskManager.completeDaily(id);
+      if (id.includes('-step-')) {
+        res = TaskManager.completeStep(id);
+      } else if (type === 'subtask') {
+        const parts = id.split('-subtask-');
+        const todoId = parts[0];
+        const subtaskId = parts[1];
+        res = TaskManager.completeSubtask(todoId, subtaskId);
+      } else if (type === 'daily') {
+        const dailyId = id.includes('-comp-') ? id.split('-comp-')[0] : id;
+        res = TaskManager.completeDaily(dailyId);
       } else {
         res = TaskManager.completeTodo(id);
       }
@@ -2360,6 +2476,40 @@ class UIManager {
             });
           }
         }
+
+        // If parent task is completed, automatically clear any remaining bubbles belonging to it
+        if (res.completed) {
+          let parentId = id;
+          if (id.includes('-step-')) {
+            parentId = id.split('-step-')[0];
+          } else if (type === 'subtask') {
+            parentId = id.split('-subtask-');
+            parentId = parentId[0];
+          } else if (type === 'daily' && id.includes('-comp-')) {
+            parentId = id.split('-comp-')[0];
+          }
+
+          // Clean up step bubbles, subtask bubbles, or parent task bubble
+          activeFocusBubbles.forEach(b => {
+            if (b.id !== id && (
+              b.id === parentId ||
+              b.id.startsWith(parentId + '-comp-') ||
+              b.id.startsWith(parentId + '-subtask-') ||
+              b.id.startsWith(parentId + '-step-')
+            )) {
+              b.el.remove();
+            }
+          });
+
+          activeFocusBubbles = activeFocusBubbles.filter(b => 
+            b.id === id || !(
+              b.id === parentId ||
+              b.id.startsWith(parentId + '-comp-') ||
+              b.id.startsWith(parentId + '-subtask-') ||
+              b.id.startsWith(parentId + '-step-')
+            )
+          );
+        }
       }
 
       try { state.save(); } catch (err) {}
@@ -2369,7 +2519,32 @@ class UIManager {
       setTimeout(() => {
         el.remove();
         activeFocusBubbles = activeFocusBubbles.filter(b => b.id !== id);
-        selectedFocusTaskIds.delete(id);
+
+        // Delete from selection checklist only when fully completed
+        let shouldDeleteSelection = true;
+        let originalTaskId = id;
+
+        if (id.includes('-step-')) {
+          originalTaskId = id.split('-step-')[0];
+          const parentDaily = state.dailiesState.dailies.find(d => d.id === originalTaskId);
+          const parentTodo = state.dailiesState.todos.find(t => t.id === originalTaskId);
+          const completed = parentDaily ? parentDaily.completed : (parentTodo ? parentTodo.completed : true);
+          shouldDeleteSelection = completed;
+        } else if (type === 'subtask') {
+          originalTaskId = id.split('-subtask-')[0];
+          selectedFocusTaskIds.delete(id); // remove the specific subtask checkbox
+          const parentTodo = state.dailiesState.todos.find(t => t.id === originalTaskId);
+          shouldDeleteSelection = parentTodo ? parentTodo.completed : true;
+        } else if (type === 'daily' && id.includes('-comp-')) {
+          originalTaskId = id.split('-comp-')[0];
+          const daily = state.dailiesState.dailies.find(d => d.id === originalTaskId);
+          shouldDeleteSelection = !daily || daily.completed;
+        }
+
+        if (shouldDeleteSelection) {
+          selectedFocusTaskIds.delete(originalTaskId);
+        }
+
         state.systemState.selectedFocusTaskIds = Array.from(selectedFocusTaskIds);
         state.save();
       }, 200);
@@ -2386,26 +2561,78 @@ class UIManager {
       const width = overlayRect.width || window.innerWidth;
       const height = overlayRect.height || window.innerHeight;
 
+      // Ensure systemState has completedSteps array initialized
+      if (!state.systemState.completedSteps) {
+        state.systemState.completedSteps = [];
+      }
+
       selectedFocusTaskIds.forEach(id => {
-        let task = state.dailiesState.dailies.find(d => d.id === id);
-        let type = 'daily';
-        if (!task) {
-          task = state.dailiesState.todos.find(t => t.id === id);
-          type = 'todo';
+        let task = null;
+        let type = '';
+        let subtaskObj = null;
+
+        if (id.includes('-subtask-')) {
+          const parts = id.split('-subtask-');
+          const todoId = parts[0];
+          const subtaskId = parts[1];
+          const todo = state.dailiesState.todos.find(t => t.id === todoId);
+          if (todo && !todo.completed) {
+            const subtask = (todo.subtasks || []).find(st => st.id === subtaskId);
+            if (subtask && !subtask.completed) {
+              task = todo;
+              type = 'subtask';
+              subtaskObj = subtask;
+            }
+          }
+        } else {
+          task = state.dailiesState.dailies.find(d => d.id === id);
+          type = 'daily';
+          if (!task) {
+            task = state.dailiesState.todos.find(t => t.id === id);
+            type = 'todo';
+          }
         }
 
         if (!task || task.completed || task.locked) return;
-        if (type === 'daily' && (task.completionsToday || 0) >= (task.maxCompletionsPerDay || 1)) {
-          return;
-        }
 
+        // Check if there are custom breakdown steps entered for this task
+        const rawSteps = state.systemState.temporaryFocusSteps?.[task.id] || '';
+        const steps = rawSteps.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+        if (steps.length > 0 && type !== 'subtask') {
+          // Spawn separate bubbles for each uncompleted step instead of spawning the main task bubble
+          steps.forEach((stepName, stepIndex) => {
+            const stepId = `${task.id}-step-${stepIndex}`;
+            if (state.systemState.completedSteps.includes(stepId)) return;
+
+            createBubble(stepId, stepName, type, task, 1.0);
+          });
+        } else if (type === 'daily' && (task.maxCompletionsPerDay || 1) > 1) {
+          // Spawn multiple individual bubbles (one for each remaining completion: max - current)
+          const max = task.maxCompletionsPerDay;
+          const current = task.completionsToday || 0;
+          for (let i = current + 1; i <= max; i++) {
+            const bubbleId = `${task.id}-comp-${i}`;
+            const bubbleTitle = `${task.name} (${i}/${max})`;
+            createBubble(bubbleId, bubbleTitle, 'daily', task, 1.0);
+          }
+        } else if (type === 'subtask') {
+          // Spawn separate bubble for subtask, slightly smaller
+          createBubble(id, subtaskObj.name, 'subtask', task, 0.85);
+        } else {
+          // Standard single daily or todo bubble
+          createBubble(task.id, task.name, type, task, 1.0);
+        }
+      });
+
+      function createBubble(bubbleId, bubbleTitle, bubbleType, parentTask, customSizeScale) {
         const el = document.createElement('div');
 
         // Derive shape, color, and size from the task
-        const shapeClass = UIManager.shapeClassForDifficulty ? UIManager.shapeClassForDifficulty(task.difficulty) : 'easy';
-        const attrColor = UIManager.getAttributeColor(task.attribute);
+        const shapeClass = UIManager.shapeClassForDifficulty ? UIManager.shapeClassForDifficulty(parentTask.difficulty) : 'easy';
+        const attrColor = UIManager.getAttributeColor(parentTask.attribute);
         const taskInk = UIManager.getTextColorForHex(attrColor);
-        const sizeScale = Math.max(0.7, Number(task.size) || 1);
+        let sizeScale = Math.max(0.7, Number(parentTask.size) || 1) * customSizeScale;
         const bubbleSize = Math.round(80 * sizeScale);
         const shadeCol = UIManager.shadeColor(attrColor, -20);
 
@@ -2414,7 +2641,7 @@ class UIManager {
         const startY = r + Math.random() * (height - r * 2);
 
         const angle = Math.random() * Math.PI * 2;
-        const speed = 0.5 + Math.random() * 0.7;
+        const speed = (0.5 + Math.random() * 0.7) * 1.5;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
 
@@ -2430,15 +2657,15 @@ class UIManager {
         `;
 
         el.innerHTML = `
-          <div class="focus-task-title">${task.name}</div>
+          <div class="focus-task-title">${bubbleTitle}</div>
           <div class="reward-tag">2x 💎</div>
         `;
 
         popup.appendChild(el);
 
         const bubbleObj = {
-          id,
-          type,
+          id: bubbleId,
+          type: bubbleType,
           el,
           r,
           x: startX,
@@ -2453,7 +2680,7 @@ class UIManager {
         });
 
         activeFocusBubbles.push(bubbleObj);
-      });
+      }
 
       if (activeFocusBubbles.length > 0) {
         startDriftLoop();
@@ -2482,6 +2709,9 @@ class UIManager {
     };
 
     const syncPopupUI = () => {
+      const timerOptions = popup.querySelector('.focus-timer-options');
+      const customInputGroup = document.getElementById('focusCustomInputGroup');
+
       if (state.systemState.focusTimerActive) {
         if (isTimerPaused) {
           startBtn.textContent = 'RESUME';
@@ -2491,10 +2721,22 @@ class UIManager {
         if (stopBtn) stopBtn.style.display = 'block';
         const selectionContainer = document.getElementById('focusTaskSelectionContainer');
         if (selectionContainer) selectionContainer.style.display = 'none';
+
+        if (timerOptions) timerOptions.style.display = 'none';
+        if (customInputGroup) customInputGroup.style.display = 'none';
       } else {
         startBtn.textContent = 'START';
         if (stopBtn) stopBtn.style.display = 'none';
         populateFocusTaskList();
+
+        if (timerOptions) timerOptions.style.display = 'flex';
+        // Only show custom group if the custom button itself is active
+        const customBtn = document.getElementById('focusCustomBtn');
+        if (customBtn && customBtn.classList.contains('active')) {
+          if (customInputGroup) customInputGroup.style.display = 'flex';
+        } else {
+          if (customInputGroup) customInputGroup.style.display = 'none';
+        }
       }
       updateDisplay();
     };
@@ -2547,6 +2789,8 @@ class UIManager {
       const statsHudWidget = document.getElementById('statsHudWidget');
       if (draggableHud) draggableHud.style.display = 'none';
       if (statsHudWidget) statsHudWidget.style.display = 'none';
+
+      UIManager.enterFocusMode();
     };
 
     const hidePopup = () => {
@@ -2563,6 +2807,8 @@ class UIManager {
       const statsHudWidget = document.getElementById('statsHudWidget');
       if (draggableHud) draggableHud.style.display = '';
       if (statsHudWidget) statsHudWidget.style.display = '';
+
+      UIManager.exitFocusMode();
     };
 
     closeBtn.addEventListener('click', hidePopup);
@@ -2617,6 +2863,7 @@ class UIManager {
       updateDisplay();
       hidePopup();
       miniWidget.style.display = 'none';
+      UIManager.exitFocusMode();
       UIManager.refreshGameUI();
     };
 
@@ -2643,6 +2890,7 @@ class UIManager {
           localStorage.removeItem('nemesis_focus_end');
           state.save();
           btn.classList.remove('active');
+          UIManager.exitFocusMode();
           try {
             if (window.SoundManager) SoundManager.play('heal');
             PopupsManager.showConfirm('Focus Complete! ⏱️', 'Awesome focus session completed! Doubled rewards have ended.', () => {
@@ -2676,12 +2924,14 @@ class UIManager {
         btn.classList.add('active');
         syncPopupUI();
         spawnFocusBubbles();
+        hidePopup();
       } else if (end > now) {
         isTimerPaused = false;
         secondsLeft = Math.ceil((end - now) / 1000);
         btn.classList.add('active');
         syncPopupUI();
         spawnFocusBubbles();
+        hidePopup();
         startTimerCountdown();
       } else {
         // Completed while away
@@ -2746,6 +2996,7 @@ class UIManager {
         const selectionContainer = document.getElementById('focusTaskSelectionContainer');
         if (selectionContainer) selectionContainer.style.display = 'none';
 
+        UIManager.enterFocusMode();
         startTimerCountdown();
       }
     });
