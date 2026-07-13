@@ -762,6 +762,29 @@ class CombatManager {
       console.warn('applyMutatorsOnPlayerAttack failed', e);
     }
 
+    // Death check in case mutators (e.g., turret) killed player
+    if (state.playerState.hp <= 0) {
+      const survived = PlayerManager.checkDeathDefiance();
+      if (!survived) {
+        state.eventBus.emit(EVENTS.DEATH, {
+          stage: state.stageState.stage,
+          level: state.stageState.level
+        });
+        if (typeof PopupsManager !== 'undefined') {
+          PopupsManager.showDeathScreen({
+            class: state.playerState.className,
+            stage: state.stageState.stage,
+            level: state.stageState.level,
+            enemiesDefeated: state.systemState.runStats?.enemiesDefeated || 0,
+            bossesSailed: state.systemState.runStats?.bossesSailed || 0,
+            goldEarned: state.systemState.runStats?.totalGoldEarned || 0
+          });
+        }
+        state.save();
+        return { success: false, damage: 0, hitDetails: [], error: 'Player died' };
+      }
+    }
+
     // Show big CRITICAL popup when a critical hit occurred
     if (isCrit) {
       try {
