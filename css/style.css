@@ -10351,3 +10351,97 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 15px #a15cff, inset 0 0 8px #a15cff;
 }
+
+/* =========================================================================
+   FLOATING BOTTOM JOYSTICK MODE TOGGLE
+   ========================================================================= */
+.nemesis-joystick-container {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 19999;
+  user-select: none;
+  touch-action: none;
+}
+
+.nemesis-joystick-track {
+  position: relative;
+  width: 156px;
+  height: 38px;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 
+              0 0 15px rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+}
+
+.nemesis-joystick-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 1px;
+  pointer-events: none;
+  transition: color 0.2s ease;
+  width: 32px;
+  text-align: center;
+}
+
+.nemesis-joystick-label.active-lock {
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.nemesis-joystick-label.active-default {
+  color: #3b82f6;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.nemesis-joystick-label.active-edit {
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.nemesis-joystick-handle {
+  position: absolute;
+  top: 4px;
+  left: 64.5px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none;
+  background: radial-gradient(circle, #60a5fa, #3b82f6);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6), inset 0 2px 2px rgba(255,255,255,0.4);
+  transition: transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s;
+  z-index: 2;
+}
+
+.nemesis-joystick-handle:active {
+  cursor: grabbing;
+  transform: scale(0.95);
+}
+
+/* Handle colors for different snap states */
+.nemesis-joystick-handle.state-lock {
+  background: radial-gradient(circle, #f87171, #ef4444);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
+}
+
+.nemesis-joystick-handle.state-default {
+  background: radial-gradient(circle, #60a5fa, #3b82f6);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
+}
+
+.nemesis-joystick-handle.state-edit {
+  background: radial-gradient(circle, #fbbf24, #f59e0b);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
+}

@@ -296,6 +296,7 @@ class UIManager {
     this.createActionButtons();
     this.createPullTabs();
     this.createShopPanel();
+    this.setupJoystickModeToggle();
     this.bindEventListeners();
     this.adjustLayout();
     this.ensureSpinnerLoop();
@@ -1583,10 +1584,10 @@ class UIManager {
           <button id="addDailyNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
           <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
           <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
-          <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Edit: off</button>
-          <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Lock: off</button>
+          <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Edit: off</button>
+          <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Lock: off</button>
           <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
-          <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Focus: off</button>
+          <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Focus: off</button>
           <button id="dailiesTableViewBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">📋 Table</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
@@ -2222,6 +2223,155 @@ class UIManager {
     Array.from(document.body.children).forEach(restoreEl);
   }
 
+  static setupJoystickModeToggle() {
+    let container = document.getElementById('nemesisJoystick');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'nemesisJoystick';
+      container.className = 'nemesis-joystick-container';
+      container.innerHTML = `
+        <div class="nemesis-joystick-track">
+          <div class="nemesis-joystick-label" id="jsLabelLock" style="cursor: pointer;">LOCK</div>
+          <div class="nemesis-joystick-label" id="jsLabelDefault" style="cursor: pointer;">DEF</div>
+          <div class="nemesis-joystick-label" id="jsLabelEdit" style="cursor: pointer;">EDIT</div>
+          <div class="nemesis-joystick-handle" id="jsHandle"></div>
+        </div>
+      `;
+      document.body.appendChild(container);
+    }
+
+    const handle = container.querySelector('#jsHandle');
+    const labelLock = container.querySelector('#jsLabelLock');
+    const labelDefault = container.querySelector('#jsLabelDefault');
+    const labelEdit = container.querySelector('#jsLabelEdit');
+
+    const setJoystickMode = (mode) => {
+      const state = getGameState();
+      if (!state.systemState.taskListFilters) {
+        state.systemState.taskListFilters = {};
+      }
+
+      if (mode === 'lock') {
+        state.systemState.taskListFilters.lockModeDailies = true;
+        state.systemState.taskListFilters.editModeDailies = false;
+      } else if (mode === 'edit') {
+        state.systemState.taskListFilters.lockModeDailies = false;
+        state.systemState.taskListFilters.editModeDailies = true;
+      } else {
+        // default
+        state.systemState.taskListFilters.lockModeDailies = false;
+        state.systemState.taskListFilters.editModeDailies = false;
+      }
+
+      state.save();
+      this.updateJoystickUI();
+      this.refreshGameUI();
+    };
+
+    labelLock.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('lock'); });
+    labelDefault.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('default'); });
+    labelEdit.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('edit'); });
+
+    // Pointer events for dragging
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+
+      let isDragging = true;
+      let startX = e.clientX;
+
+      const state = getGameState();
+      const filters = state.systemState?.taskListFilters || {};
+      let initialTx = 0;
+      if (filters.lockModeDailies) initialTx = -58.5;
+      else if (filters.editModeDailies) initialTx = 58.5;
+
+      handle.style.transition = 'none';
+
+      const onPointerMove = (moveEv) => {
+        if (!isDragging) return;
+        let dx = moveEv.clientX - startX;
+        let tx = initialTx + dx;
+        tx = Math.max(-58.5, Math.min(58.5, tx));
+        handle.style.transform = `translateX(${tx}px)`;
+      };
+
+      const onPointerUp = (upEv) => {
+        if (!isDragging) return;
+        isDragging = false;
+        try { handle.releasePointerCapture(upEv.pointerId); } catch (err) {}
+
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+        document.removeEventListener('pointercancel', onPointerUp);
+
+        const transformStr = handle.style.transform || 'translateX(0px)';
+        const match = transformStr.match(/translateX\(([-\d.]+)px\)/);
+        const currentTx = match ? parseFloat(match[1]) : 0;
+
+        handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
+
+        if (currentTx < -29.25) {
+          setJoystickMode('lock');
+        } else if (currentTx > 29.25) {
+          setJoystickMode('edit');
+        } else {
+          setJoystickMode('default');
+        }
+      };
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    });
+
+    this.updateJoystickUI();
+  }
+
+  static updateJoystickUI() {
+    const state = getGameState();
+    const filters = state.systemState?.taskListFilters || {};
+
+    const handle = document.getElementById('jsHandle');
+    const labelLock = document.getElementById('jsLabelLock');
+    const labelDefault = document.getElementById('jsLabelDefault');
+    const labelEdit = document.getElementById('jsLabelEdit');
+    const container = document.getElementById('nemesisJoystick');
+
+    if (!container || !handle || !labelLock || !labelDefault || !labelEdit) return;
+
+    const dailiesPanel = document.getElementById('dailiesPanel');
+    if (dailiesPanel && dailiesPanel.classList.contains('open')) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+
+    // Enable transitioning for programmatic updates
+    handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
+
+    if (filters.lockModeDailies) {
+      handle.className = 'nemesis-joystick-handle state-lock';
+      labelLock.className = 'nemesis-joystick-label active-lock';
+      labelDefault.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(-58.5px)';
+    } else if (filters.editModeDailies) {
+      handle.className = 'nemesis-joystick-handle state-edit';
+      labelLock.className = 'nemesis-joystick-label';
+      labelDefault.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label active-edit';
+      handle.style.transform = 'translateX(58.5px)';
+    } else {
+      handle.className = 'nemesis-joystick-handle state-default';
+      labelLock.className = 'nemesis-joystick-label';
+      labelDefault.className = 'nemesis-joystick-label active-default';
+      labelEdit.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(0px)';
+    }
+  }
+
   static setupFocusTimer() {
     const state = getGameState();
     const btn = document.getElementById('focusTimerBtn');
@@ -2790,6 +2940,11 @@ class UIManager {
       if (draggableHud) draggableHud.style.display = 'none';
       if (statsHudWidget) statsHudWidget.style.display = 'none';
 
+      const nemesisTauntHud = document.getElementById('nemesisTauntHud');
+      const challengeHud = document.getElementById('challengeHud');
+      if (nemesisTauntHud) nemesisTauntHud.style.display = 'none';
+      if (challengeHud) challengeHud.style.display = 'none';
+
       UIManager.enterFocusMode();
     };
 
@@ -2807,6 +2962,11 @@ class UIManager {
       const statsHudWidget = document.getElementById('statsHudWidget');
       if (draggableHud) draggableHud.style.display = '';
       if (statsHudWidget) statsHudWidget.style.display = '';
+
+      const nemesisTauntHud = document.getElementById('nemesisTauntHud');
+      const challengeHud = document.getElementById('challengeHud');
+      if (nemesisTauntHud) nemesisTauntHud.style.display = '';
+      if (challengeHud) challengeHud.style.display = '';
 
       UIManager.exitFocusMode();
     };
@@ -2867,6 +3027,23 @@ class UIManager {
       UIManager.refreshGameUI();
     };
 
+    const lockIncompleteFocusDailies = () => {
+      let lockedNames = [];
+      const focusTaskIds = state.systemState.selectedFocusTaskIds || [];
+      focusTaskIds.forEach(id => {
+        const daily = state.dailiesState.dailies.find(d => d.id === id);
+        if (daily) {
+          const max = daily.maxCompletionsPerDay || 1;
+          const current = daily.completionsToday || 0;
+          if (current < max && !daily.completed && !daily.locked) {
+            TaskManager.lockDaily(id);
+            lockedNames.push(daily.name);
+          }
+        }
+      });
+      return lockedNames;
+    };
+
     const startTimerCountdown = () => {
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
@@ -2884,6 +3061,9 @@ class UIManager {
         if (secondsLeft <= 0) {
           clearInterval(timerInterval);
           timerInterval = null;
+          
+          const lockedNames = lockIncompleteFocusDailies();
+          
           state.systemState.focusTimerActive = false;
           state.systemState.focusTimerEndTimestamp = 0;
           state.systemState.focusTimerSecondsLeft = 0;
@@ -2891,13 +3071,19 @@ class UIManager {
           state.save();
           btn.classList.remove('active');
           UIManager.exitFocusMode();
+          
+          let message = 'Awesome focus session completed! Doubled rewards have ended.';
+          if (lockedNames.length > 0) {
+            message += `<br/><br/><span style="color:#ff5a5a;font-weight:bold;">⚠️ The following incomplete focus targets were locked:</span><br/>` + lockedNames.map(n => `- ${n}`).join('<br/>');
+          }
+          
           try {
             if (window.SoundManager) SoundManager.play('heal');
-            PopupsManager.showConfirm('Focus Complete! ⏱️', 'Awesome focus session completed! Doubled rewards have ended.', () => {
+            PopupsManager.showConfirm('Focus Complete! ⏱️', message, () => {
               resetTimer();
             });
           } catch (e) {
-            alert('Focus Session Complete!');
+            alert('Focus Session Complete! Incomplete focus targets locked.');
             resetTimer();
           }
         }
@@ -2935,11 +3121,30 @@ class UIManager {
         startTimerCountdown();
       } else {
         // Completed while away
+        const lockedNames = lockIncompleteFocusDailies();
+        
         state.systemState.focusTimerActive = false;
         state.systemState.focusTimerEndTimestamp = 0;
         state.systemState.focusTimerSecondsLeft = 0;
+        localStorage.removeItem('nemesis_focus_end');
         state.save();
-        resetTimer();
+        
+        let message = 'Your focus session completed while you were away! Doubled rewards have ended.';
+        if (lockedNames.length > 0) {
+          message += `<br/><br/><span style="color:#ff5a5a;font-weight:bold;">⚠️ The following incomplete focus targets were locked:</span><br/>` + lockedNames.map(n => `- ${n}`).join('<br/>');
+        }
+        
+        setTimeout(() => {
+          try {
+            if (window.SoundManager) SoundManager.play('heal');
+            PopupsManager.showConfirm('Focus Complete! ⏱️', message, () => {
+              resetTimer();
+            });
+          } catch (e) {
+            alert('Focus Session Complete while away! Incomplete focus targets locked.');
+            resetTimer();
+          }
+        }, 800);
       }
     }
 
@@ -3035,6 +3240,11 @@ class UIManager {
       const statsHudWidget = document.getElementById('statsHudWidget');
       if (draggableHud) draggableHud.style.display = 'none';
       if (statsHudWidget) statsHudWidget.style.display = 'none';
+
+      const nemesisTauntHud = document.getElementById('nemesisTauntHud');
+      const challengeHud = document.getElementById('challengeHud');
+      if (nemesisTauntHud) nemesisTauntHud.style.display = 'none';
+      if (challengeHud) challengeHud.style.display = 'none';
     };
 
     const closePopup = () => {
@@ -3045,6 +3255,11 @@ class UIManager {
       const statsHudWidget = document.getElementById('statsHudWidget');
       if (draggableHud) draggableHud.style.display = '';
       if (statsHudWidget) statsHudWidget.style.display = '';
+
+      const nemesisTauntHud = document.getElementById('nemesisTauntHud');
+      const challengeHud = document.getElementById('challengeHud');
+      if (nemesisTauntHud) nemesisTauntHud.style.display = '';
+      if (challengeHud) challengeHud.style.display = '';
     };
 
     btn.addEventListener('click', (e) => {
@@ -3742,6 +3957,7 @@ class UIManager {
         } catch (e) { /* ignore */ }
       }, 260);
     }
+    this.updateJoystickUI();
   }
 
   static closeTaskPanel(which) {
@@ -3751,6 +3967,7 @@ class UIManager {
           which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
+    this.updateJoystickUI();
   }
 
   static achievementsSortBy = 'rate';
@@ -7908,85 +8125,55 @@ class UIManager {
         startY: event.clientY
       };
 
-      // Check double tap for Blood Oath
+      // Check double tap for mode actions
       const now = Date.now();
       const lastTap = Number(card.dataset.lastTapTime || 0);
       if (now - lastTap < 300) {
-        // Double tap: toggle Blood Oath
-        clearTimeout(this.dailyHoldTimer);
-        clearTimeout(this.dailyFlashTimer);
-        card.classList.remove('flash-white-imminent');
-        const overlay = card.querySelector('.hold-progress-overlay');
-        if (overlay) {
-          overlay.style.transition = 'none';
-          overlay.style.width = '0%';
-        }
         card.dataset.doubleTapped = '1';
-        try { TaskManager.toggleBloodOath(dailyId); } catch (e) { }
-        try { getGameState().save(); } catch (e) { }
-        this.scheduleUpdateDailiesList();
         card.dataset.lastTapTime = '0';
-        return;
-      }
-      card.dataset.lastTapTime = String(now);
+        
+        const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+        const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
 
-      const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-      const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
-      console.log("[Pointerdown] dailyId:", dailyId, "editMode:", editModeDailies, "lockMode:", lockModeDailies);
-
-      if (!editModeDailies && !lockModeDailies) {
-        // Check if locked
-        const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
-        if (daily && daily.locked) {
-          try {
-            FloatingDamageNumber.show(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, 'LOCKED', { color: '#ff5a5a' });
-            if (window.SoundManager) SoundManager.play('miss');
-          } catch (e) {}
-          return;
-        }
-
-        // Start hold-to-complete timer (600ms hold)
-        clearTimeout(this.dailyHoldTimer);
-        clearTimeout(this.dailyFlashTimer);
-        card.classList.remove('flash-white-imminent');
-        const overlay = card.querySelector('.hold-progress-overlay');
-        if (overlay) {
-          overlay.style.transition = 'width 600ms linear';
-          overlay.style.width = '100%';
-        }
-        this.dailyFlashTimer = setTimeout(() => {
-          card.classList.add('flash-white-imminent');
-        }, 450);
-        this.dailyHoldTimer = setTimeout(() => {
-          const dragState = this.dailyDragState;
-          if (dragState && !dragState.moved && dragState.dailyId === dailyId) {
+        if (editModeDailies) {
+          try { PopupsManager.showEditDaily(dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
+        } else if (lockModeDailies) {
+          const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+          if (daily) {
+            if (daily.locked) {
+              TaskManager.unlockDaily(dailyId);
+            } else {
+              TaskManager.lockDaily(dailyId);
+            }
+            this.scheduleUpdateDailiesList();
+            getGameState().save();
+          }
+        } else {
+          // Default Mode: double tap to complete
+          const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+          if (daily && daily.locked) {
+            try {
+              FloatingDamageNumber.show(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, 'LOCKED', { color: '#ff5a5a' });
+              if (window.SoundManager) SoundManager.play('miss');
+            } catch (e) {}
+          } else {
             const res = TaskManager.completeDaily(dailyId);
             if (res && res.success) {
               try {
-                card.classList.remove('flash-white-imminent');
                 card.classList.add('just-completed');
                 card.style.transition = 'transform 220ms ease, opacity 400ms ease';
                 const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
                 card.style.transform = `scale(${sizeScale * 1.04})`;
+                const rect = card.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
                 if (res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  const rect = card.getBoundingClientRect();
-                  FloatingDamageNumber.show(
-                    rect.left + rect.width / 2,
-                    Math.max(12, rect.top - 18),
-                    'MISS',
-                    { color: '#bbbbbb', isMiss: true }
-                  );
+                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'MISS', { color: '#bbbbbb', isMiss: true });
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-                    const rect = card.getBoundingClientRect();
-                    FloatingDamageNumber.show(
-                      rect.left + rect.width / 2,
-                      Math.max(12, rect.top - 38),
-                      'JACKPOT!',
-                      { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
-                    );
+                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
                   }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
@@ -7995,8 +8182,7 @@ class UIManager {
                     UIManager.showDailyKeysReward(card, res.rewards.keys);
                   }
                   if (res.rewards && res.rewards.diamonds) {
-                    const rect = card.getBoundingClientRect();
-                    UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                    UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
                   }
                 }
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
@@ -8011,10 +8197,11 @@ class UIManager {
               try { getGameState().save(); } catch (saveError) { }
               this.renderEnemies();
             }
-            card.dataset.holdCompleted = '1';
           }
-        }, 600);
+        }
+        return;
       }
+      card.dataset.lastTapTime = String(now);
     });
 
     const onMove = (event) => {
@@ -8027,15 +8214,6 @@ class UIManager {
       if (!dragState.moved) {
         const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
         if (distance > 6) {
-          // Cancel hold-to-complete if finger moved too far
-          clearTimeout(this.dailyHoldTimer);
-          clearTimeout(this.dailyFlashTimer);
-          dragState.card.classList.remove('flash-white-imminent');
-          const overlay = dragState.card.querySelector('.hold-progress-overlay');
-          if (overlay) {
-            overlay.style.transition = 'none';
-            overlay.style.width = '0%';
-          }
           // Only allow repositioning in edit mode
           const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
           if (editModeDailies) {
@@ -8060,21 +8238,9 @@ class UIManager {
 
     const endDrag = (event) => {
       const dragState = this.dailyDragState;
-      clearTimeout(this.dailyHoldTimer);
-      clearTimeout(this.dailyFlashTimer);
-      if (dragState && dragState.card) {
-        dragState.card.classList.remove('flash-white-imminent');
-      }
-
       if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
 
       const card = dragState.card;
-      const overlay = card.querySelector('.hold-progress-overlay');
-      if (overlay) {
-        overlay.style.transition = 'none';
-        overlay.style.width = '0%';
-      }
-
       const boardRect = dragState.board.getBoundingClientRect();
       const cardRect = dragState.card.getBoundingClientRect();
       dragState.card.classList.remove('dragging');
@@ -8091,42 +8257,8 @@ class UIManager {
         try { getGameState().save(); } catch (error) { }
         this.dailyDragSuppressUntil = Date.now() + 250;
       } else {
-        const dailyId = dragState.dailyId;
-        const doubleTapped = card.dataset.doubleTapped === '1';
-        const holdCompleted = card.dataset.holdCompleted === '1';
-
         delete card.dataset.doubleTapped;
         delete card.dataset.holdCompleted;
-
-        if (!doubleTapped && !holdCompleted) {
-          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-          const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
-          console.log("[endDrag] click branch, editMode:", editModeDailies, "lockMode:", lockModeDailies, "dailyId:", dragState.dailyId);
-          if (editModeDailies) {
-            try { PopupsManager.showEditDaily(dragState.dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
-          } else if (lockModeDailies) {
-            const daily = getGameState().dailiesState.dailies.find(d => d.id === dragState.dailyId);
-            console.log("[endDrag] lockMode, found daily:", daily);
-            if (daily) {
-              if (!daily.locked) {
-                console.log("[endDrag] locking daily...");
-                try {
-                  PopupsManager.showConfirm("Lock Daily", "Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.", () => {
-                    TaskManager.lockDaily(dragState.dailyId);
-                    console.log("[endDrag] TaskManager.lockDaily called. locked status now:", daily.locked);
-                    UIManager.scheduleUpdateDailiesList();
-                    getGameState().save();
-                  });
-                } catch(e) { console.warn('showConfirm error', e); }
-              } else {
-                console.log("[endDrag] unlocking daily...");
-                TaskManager.unlockDaily(dragState.dailyId);
-                this.scheduleUpdateDailiesList();
-                getGameState().save();
-              }
-            }
-          }
-        }
       }
 
       this.dailyDragState = null;
@@ -8146,19 +8278,13 @@ class UIManager {
         console.log("[Board Click] Lock badge clicked. dailyId:", taskId);
         const daily = getGameState().dailiesState.dailies.find(d => d.id === taskId);
         if (daily) {
-          if (!daily.locked) {
-            try {
-              PopupsManager.showConfirm("Lock Daily", "Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.", () => {
-                TaskManager.lockDaily(taskId);
-                UIManager.scheduleUpdateDailiesList();
-                getGameState().save();
-              });
-            } catch(e) { console.warn('showConfirm error', e); }
-          } else {
+          if (daily.locked) {
             TaskManager.unlockDaily(taskId);
-            this.scheduleUpdateDailiesList();
-            getGameState().save();
+          } else {
+            TaskManager.lockDaily(taskId);
           }
+          this.scheduleUpdateDailiesList();
+          getGameState().save();
         }
       }
     });
@@ -9872,6 +9998,7 @@ class UIManager {
     this.updateDeathDefianceBadge();
     this.updatePauseBtn();
     this.updateTaskVisibilityToggleLabels();
+    try { this.updateJoystickUI(); } catch (e) { }
     this.updateTabIndicators();
   }
 
