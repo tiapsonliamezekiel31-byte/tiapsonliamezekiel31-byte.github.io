@@ -1768,9 +1768,9 @@ function performCheckIn() {
   const retaliationSteps = [];
   try {
     const aliveEnemies = StageManager.getAliveEnemies();
-    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb);
+    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb && !respawnedGains.some(rg => rg.enemyId === e.id && rg.source === 'respawn'));
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
-    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
+    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb && !respawnedGains.some(rg => rg.enemyId === e.id && rg.source === 'respawn')).length || 1;
     const passive = PlayerManager.getClassPassive();
 
     if (bossEnemy && !bossEnemy.isDead) {
