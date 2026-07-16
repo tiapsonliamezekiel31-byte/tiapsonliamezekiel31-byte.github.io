@@ -2071,8 +2071,7 @@ function performCheckIn() {
         // Apply thorns if player hit
         if (attackType === 'regular' || attackType === 'crit' || attackType === 'heavy') {
           if (state.hasBuff('Thorns')) {
-            const thorn = state.config.buffs?.Thorns?.effect?.thornsDamage;
-            const thornDamage = typeof thorn === 'number' ? thorn : 2;
+            const thornDamage = Math.max(1, Math.round((state.playerState.maxAp || 100) / 4));
             if (typeof bossEnemy.takeDamage === 'function') {
               bossEnemy.takeDamage(thornDamage);
             }
@@ -2232,8 +2231,7 @@ function performCheckIn() {
 
         // Buff: Thorns
         if (state.hasBuff('Thorns')) {
-          const thorn = state.config.buffs?.Thorns?.effect?.thornsDamage;
-          const thornDamage = typeof thorn === 'number' ? thorn : 2;
+          const thornDamage = Math.max(1, Math.round((state.playerState.maxAp || 100) / 4));
           if (typeof enemy.takeDamage === 'function') {
             enemy.takeDamage(thornDamage);
             console.debug(`[resolveOneAttack] thorns hit ${enemy.name}(${enemy.id}) for ${thornDamage}, enemyHP=${enemy.hp}`);
@@ -2241,6 +2239,8 @@ function performCheckIn() {
             enemy.hp = Math.max(0, enemy.hp - thornDamage);
             if (enemy.hp === 0) enemy.isDead = true;
           }
+        }
+
         // Mutators that trigger when this enemy attacks
         try {
           if (typeof EnemyManager !== 'undefined' && typeof EnemyManager.applyMutatorsOnAttack === 'function') {
@@ -2248,7 +2248,6 @@ function performCheckIn() {
           }
         } catch (e) {
           console.warn('Mutator apply failed on attack', e);
-        }
         }
       };
 
@@ -2536,6 +2535,7 @@ function performCheckIn() {
     }
     state.playerState.corrosiveStacks = 0;
     state.playerState.dodgeCostMultiplier = 1.0;
+    state.playerState.furyFirstAttackUsed = false;
     state.systemState.lastCheckInTime = nowMs;
     state.systemState.runStats.daysSurvived = (state.systemState.runStats.daysSurvived || 0) + 1;
     state.stageState.stageClearedToday = false;
@@ -2647,6 +2647,9 @@ function performCheckIn() {
       // Clear check-in running state, persist and reload UI
       state.stageState.bossRolledAttacks = null;
       clearCheckInRunning();
+      if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+        PlayerManager.recalculateMaxAp();
+      }
       state.save();
       if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
 

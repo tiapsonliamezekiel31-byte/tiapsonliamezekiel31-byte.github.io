@@ -344,6 +344,26 @@ class StageManager {
     state.stageState.stageVariation = this.pickStageVariation(state.stageState.stage);
     state.stageState.stageClearedToday = true;
     
+    // Resilience: gets +1 death defy every time move up a stage
+    if (state.hasBuff('Resilience')) {
+      if (!state.systemState.deathDefiance) {
+        state.systemState.deathDefiance = { available: false, active: false, triggeredAt: null, charges: 0 };
+      }
+      if (state.systemState.deathDefiance.charges === undefined) {
+        state.systemState.deathDefiance.charges = state.systemState.deathDefiance.available ? 1 : 0;
+      }
+      state.systemState.deathDefiance.charges++;
+      state.systemState.deathDefiance.available = true;
+      state.eventBus.emit(EVENTS.DEATH_DEFIANCE, {
+        survived: false,
+        hp: state.playerState.hp,
+        available: state.systemState.deathDefiance.available,
+        active: state.systemState.deathDefiance.active,
+        triggeredAt: state.systemState.deathDefiance.triggeredAt,
+        charges: state.systemState.deathDefiance.charges
+      });
+    }
+
     state.eventBus.emit(EVENTS.STAGE_COMPLETE, {
       stage: state.stageState.stage - 1,
       nextStage: state.stageState.stage

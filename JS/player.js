@@ -77,6 +77,12 @@ class PlayerManager {
       totalAp += baseAp * weight;
     });
 
+    // Add Todo AP contribution
+    const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
+      ? TaskManager.getTodoContributions()
+      : { ap: 0, gold: 0, diamonds: 0 };
+    totalAp += todoCont.ap;
+
     let maxAp = Math.round(totalAp);
 
     const completeDayBonus = Number(state.systemState?.completeDayApBonus) || 0;
@@ -541,7 +547,8 @@ class PlayerManager {
     
     // Apply Regeneration buff
     if (state.hasBuff('Regeneration')) {
-      state.addHp(5);
+      const dailyHeal = state.config.buffs?.['Regeneration']?.effect?.dailyHealAmount ?? 20;
+      state.addHp(dailyHeal);
     }
   }
   
@@ -569,23 +576,35 @@ class PlayerManager {
     const state = getGameState();
     
     // Can only happen at check-in when HP <= 0
-    const deathDefiance = state.systemState.deathDefiance || (state.systemState.deathDefiance = { available: true, active: false, triggeredAt: null });
-    if (state.playerState.hp > 0 || !deathDefiance.available) {
+    const deathDefiance = state.systemState.deathDefiance || (state.systemState.deathDefiance = { available: true, active: false, triggeredAt: null, charges: 1 });
+    if (deathDefiance.charges === undefined) {
+      deathDefiance.charges = deathDefiance.available ? 1 : 0;
+    }
+
+    if (state.playerState.hp > 0 || deathDefiance.charges <= 0) {
       return null; // No death defiance active
     }
 
-    deathDefiance.available = false;
+    deathDefiance.charges--;
+    deathDefiance.available = (deathDefiance.charges > 0);
     deathDefiance.active = true;
     deathDefiance.triggeredAt = Date.now();
     state.systemState.isDeathDefiance = true;
-    state.setHp(1); // Survive with 1 HP
+
+    // Buff Phoenix: death defiance returns you to max hp
+    if (state.hasBuff('Phoenix')) {
+      state.setHp(state.playerState.maxHp);
+    } else {
+      state.setHp(1); // Survive with 1 HP
+    }
     
     state.eventBus.emit(EVENTS.DEATH_DEFIANCE, {
       survived: true,
       hp: state.playerState.hp,
       available: deathDefiance.available,
       active: deathDefiance.active,
-      triggeredAt: deathDefiance.triggeredAt
+      triggeredAt: deathDefiance.triggeredAt,
+      charges: deathDefiance.charges
     });
     
     return true;
@@ -593,7 +612,7 @@ class PlayerManager {
   
   static failDeathDefiance() {
     const state = getGameState();
-    const deathDefiance = state.systemState.deathDefiance || (state.systemState.deathDefiance = { available: false, active: false, triggeredAt: null });
+    const deathDefiance = state.systemState.deathDefiance || (state.systemState.deathDefiance = { available: false, active: false, triggeredAt: null, charges: 0 });
     deathDefiance.active = false;
     state.systemState.isDeathDefiance = false;
     state.setHp(0);

@@ -334,8 +334,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Critical Precision': {
       icon: '💀',
-      description: '+5% crit',
-      effect: { critBonus: 0.05 }
+      description: 'Critical precision:+50% crit rate',
+      effect: { critBonus: 0.50 }
     },
     'Overkill': {
       icon: '💥',
@@ -349,31 +349,31 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Fury': {
       icon: '🔥',
-      description: 'after taking dmg, +8% max potential AP',
-      effect: { furyApBonus: 0.08 }
+      description: 'Fury: Multiply damage for 2x the first attack of the day',
+      effect: { furyFirstAttackDouble: true }
     },
     'Iron Skin': {
       icon: '🛡️',
-      description: '-5 enemy dmg',
-      effect: { damageReduction: 5 }
+      description: 'iron skin: -10 enemy damage from every enemy',
+      effect: { damageReduction: 10 }
     },
   
     // ============================================================
     // AUDIO / SOUND
     'Regeneration': {
       icon: '💚',
-      description: '+5 HP daily',
-      effect: { dailyHealAmount: 5 }
+      description: 'regeneration: +20 hp daily',
+      effect: { dailyHealAmount: 20 }
     },
     'Resilience': {
       icon: '💪',
-      description: 'survive lethal hit once/stage',
+      description: 'Resilience: use death defy system, gets +1 death defy every time move up a stage',
       effect: { surviveLethal: true }
     },
     'Thorns': {
       icon: '🌹',
-      description: 'enemies take 2 dmg on attack',
-      effect: { thornsDamage: 2 }
+      description: 'thorns: enemies take 1/4 maxap on attack',
+      effect: { thornsMaxApFraction: 0.25 }
     },
     'Barrier': {
       icon: '🔷',
@@ -397,7 +397,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Quick Learner': {
       icon: '📚',
-      description: 'base task rewards treated as one tier higher',
+      description: 'quick learner: streaks increase gains by more',
       effect: { taskTierUpgrade: true }
     },
     'Pacifist': {
@@ -407,8 +407,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Echo Strike': {
       icon: '🔔',
-      description: 'every 3rd AP double',
-      effect: { everyThirdApDouble: true }
+      description: 'echo strike: every 3rd attack deals double damage',
+      effect: { everyThirdAttackDouble: true }
     },
     'Scavenger': {
       icon: '🦅',
@@ -417,17 +417,17 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Vampiric Touch': {
       icon: '🧛',
-      description: '10% lifesteal',
-      effect: { lifeStealPercentage: 0.1 }
+      description: 'vampiric touch: +10 health per kill',
+      effect: { lifeStealPercentage: 0.0 }
     },
     'Lightning Speed': {
       icon: '⚡',
-      description: 'each perfect day permanently increases MAX_AP by +10% (multiplicative)',
+      description: 'Lightning speed: each perfect day increases permanently gain of every task',
       effect: { perfectDayApMultiplier: 1.1 }
     },
     'Phoenix': {
       icon: '🔥',
-      description: 'revive 50% HP once/run',
+      description: 'phoenix: death defiance returns you to max hp',
       effect: { phoenixRevive: true }
     }
   },
@@ -455,7 +455,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0.05,
       fireRate: 1,
       price: 3,
-      special: null
+      special: 'removes the enemy and its adjacent enemy\'s mutations upon hit'
     },
     'Dagger': {
       type: 'Light',
@@ -565,8 +565,8 @@ const DEFAULT_GAME_CONFIG = {
       fireRate: 2,
       price: 5,
       specialId: 'vine',
-      special: 'Stores damage dealt to each enemy and replays 1/3 on the first hit each day',
-      detail: 'Tracks total damage dealt to each exact enemy. On the first Vine Spell hit each day against that enemy, it deals an extra 1/3 of the stored damage, then resets that enemy’s stored total for the new day.'
+      special: 'stores damage dealt to EVERY enemy on a day then replays 1/3 of that damage on the first hit',
+      detail: 'stores damage dealt to EVERY enemy on a day then replays 1/3 of that damage on the first hit'
     },
     'Death Spell': {
       type: 'Legendary',
@@ -586,7 +586,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0.15,
       fireRate: 1,
       price: 5,
-      special: null
+      special: 'removes the enemy and its adjacent enemy\'s mutations upon hit'
     },
     'Echo Bow': {
       type: 'Light/Spec',
@@ -596,7 +596,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0.1,
       fireRate: 3,
       price: 5,
-      special: 'Every 3rd attack deals double damage'
+      special: 'every 3rd attack gives 20 mana'
     },
     'Aegis': {
       type: 'Shield/Leg',

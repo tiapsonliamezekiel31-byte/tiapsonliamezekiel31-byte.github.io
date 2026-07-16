@@ -114,6 +114,12 @@ const ShopManager = (function() {
       const reward = state.config && state.config.taskRewards && state.config.taskRewards[d.difficulty];
       if (reward && reward.gold) maxGold += reward.gold;
     });
+
+    const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
+      ? TaskManager.getTodoContributions()
+      : { ap: 0, gold: 0, diamonds: 0 };
+    maxGold += todoCont.gold;
+
     return maxGold;
   }
 

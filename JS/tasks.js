@@ -437,7 +437,11 @@ class TaskManager {
         }
       });
       if (milestonesReached > 0) {
-        surplusMultiplier = Math.pow(1.5, milestonesReached);
+        let base = 1.5;
+        if (state.hasBuff('Quick Learner')) {
+          base = 2.2;
+        }
+        surplusMultiplier = Math.pow(base, milestonesReached);
       }
     }
 
@@ -483,6 +487,15 @@ class TaskManager {
       goldReward *= 3;
       diamondReward *= 3;
       attrReward *= 3;
+    }
+
+    if (state.hasBuff('Lightning Speed')) {
+      const perfectDays = state.dailiesState.perfectDaysCount || 0;
+      const mult = 1 + 0.10 * perfectDays;
+      apReward *= mult;
+      goldReward *= mult;
+      diamondReward *= mult;
+      attrReward *= mult;
     }
 
     // Round values to prevent floating point issues
@@ -610,6 +623,66 @@ class TaskManager {
     return totalWeight > 0 ? (completedWeight / totalWeight) : 1.0;
   }
 
+  static getTodoContributions() {
+    const state = getGameState();
+    let todoAp = 0;
+    let todoGold = 0;
+    let todoDiamonds = 0;
+
+    if (!state || !state.dailiesState || !state.dailiesState.todos) {
+      return { ap: 0, gold: 0, diamonds: 0 };
+    }
+
+    const now = Date.now();
+    const subtaskMultiplierConfig = state.config?.subtaskMultiplier || 1.2;
+    const lateMultiplier = state.config?.lateTaskRewardMultiplier || 0.5;
+    const bloodOathMultiplier = state.config?.bloodOathRewardMultiplier || 1.3;
+
+    state.dailiesState.todos.forEach(todo => {
+      if (todo.completed) return;
+
+      const baseReward = state.config?.taskRewards?.[todo.difficulty] || { ap: 0, gold: 0, diamonds: 0 };
+      const completedSubtasks = (todo.subtasks || []).filter(st => st.completed).length;
+      const subtaskMultiplier = Math.pow(subtaskMultiplierConfig, completedSubtasks);
+
+      let apReward = (baseReward.ap || 0) * subtaskMultiplier;
+      let goldReward = (baseReward.gold || 0) * subtaskMultiplier;
+      let diamondReward = (baseReward.diamonds || 0) * subtaskMultiplier;
+
+      // Check if late (overdue)
+      if (todo.deadline && now > todo.deadline) {
+        apReward *= lateMultiplier;
+        goldReward *= lateMultiplier;
+        diamondReward *= lateMultiplier;
+      }
+
+      // Apply blood oath multiplier
+      if (todo.bloodOathActive) {
+        apReward *= bloodOathMultiplier;
+        goldReward *= bloodOathMultiplier;
+        diamondReward *= bloodOathMultiplier;
+      }
+
+      // Calculate days remaining
+      let daysRemaining = 7;
+      if (todo.deadline) {
+        const diffMs = Number(todo.deadline) - now;
+        daysRemaining = diffMs / (24 * 60 * 60 * 1000);
+      }
+      const divisor = Math.max(1, daysRemaining);
+
+      todoAp += apReward / divisor;
+      todoGold += goldReward / divisor;
+      todoDiamonds += diamondReward / divisor;
+    });
+
+    return {
+      ap: todoAp,
+      gold: todoGold,
+      diamonds: todoDiamonds
+    };
+  }
+
   static getMaxPotentialDiamonds() {
     const state = getGameState();
     let maxDiamonds = 0;
@@ -618,6 +691,9 @@ class TaskManager {
       const reward = state.config.taskRewards?.[daily.difficulty];
       maxDiamonds += reward?.diamonds || 0;
     });
+
+    const todoCont = this.getTodoContributions();
+    maxDiamonds += todoCont.diamonds;
 
     return maxDiamonds;
   }
@@ -666,6 +742,9 @@ class TaskManager {
     };
 
     state.dailiesState.todos.push(todo);
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return todo;
   }
 
@@ -690,6 +769,9 @@ class TaskManager {
     if (index === -1) return false;
 
     state.dailiesState.todos.splice(index, 1);
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return true;
   }
 
@@ -700,6 +782,9 @@ class TaskManager {
     if (!todo) return false;
 
     Object.assign(todo, updates);
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return true;
   }
 
@@ -773,6 +858,15 @@ class TaskManager {
       attrReward *= 2;
     }
 
+    if (state.hasBuff('Lightning Speed')) {
+      const perfectDays = state.dailiesState.perfectDaysCount || 0;
+      const mult = 1 + 0.10 * perfectDays;
+      apReward *= mult;
+      goldReward *= mult;
+      diamondReward *= mult;
+      attrReward *= mult;
+    }
+
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
@@ -806,6 +900,10 @@ class TaskManager {
     const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
     const petPointsAwarded = petPointsMap[todo.difficulty] || 1;
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
+
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
 
     return {
       success: true,
@@ -979,6 +1077,9 @@ class TaskManager {
       todo.bloodOath = false;
     }
 
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return true;
   }
 
@@ -996,6 +1097,9 @@ class TaskManager {
 
     if (!todo.subtasks) todo.subtasks = [];
     todo.subtasks.push(subtask);
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return subtask;
   }
 
@@ -1009,6 +1113,9 @@ class TaskManager {
     if (!subtask) return false;
 
     subtask.completed = !subtask.completed;
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return true;
   }
 
@@ -1022,6 +1129,9 @@ class TaskManager {
     if (index === -1) return false;
 
     todo.subtasks.splice(index, 1);
+    if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
+      PlayerManager.recalculateMaxAp();
+    }
     return true;
   }
 
@@ -1084,6 +1194,7 @@ class TaskManager {
     if (resolvedAllComplete) {
       state.dailiesState.streakCompletion++;
       state.dailiesState.streakNonCompletion = 0;
+      state.dailiesState.perfectDaysCount = (state.dailiesState.perfectDaysCount || 0) + 1;
 
       if (state.playerState.talismans?.includes('Verdant Heart')) {
         state.playerState.maxHp += 3;
@@ -1118,7 +1229,11 @@ class TaskManager {
 
   static getDailyStreakDamageBonus() {
     const state = getGameState();
-    return state.dailiesState.streakCompletion * state.config.perfectDayStreakDamageBonus;
+    let bonusMult = state.config.perfectDayStreakDamageBonus;
+    if (state.hasBuff('Quick Learner')) {
+      bonusMult *= 2;
+    }
+    return state.dailiesState.streakCompletion * bonusMult;
   }
 
   static computeDailyStreak(dailyId) {

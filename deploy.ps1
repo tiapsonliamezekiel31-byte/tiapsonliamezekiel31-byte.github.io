@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "perf: comprehensive mobile performance optimization (CSS, DOM, animations)"
+$commitMsg = "feat: implement Todo rewards and deadlines scaling system"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

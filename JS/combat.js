@@ -231,8 +231,11 @@ class CombatManager {
     const precisionRoll = Number.isFinite(attackOptions.precisionRoll) ? attackOptions.precisionRoll : Math.random();
 
     let isCrit = critRoll < (attackPlan.critChance + (PlayerManager.getClassPassive()?.critBonus || 0) + critUp);
-    if (state.hasBuff('Critical Precision') && precisionRoll < 0.05) {
-      isCrit = true;
+    if (state.hasBuff('Critical Precision')) {
+      const precisionBonus = state.config.buffs?.['Critical Precision']?.effect?.critBonus ?? 0.50;
+      if (precisionRoll < precisionBonus) {
+        isCrit = true;
+      }
     }
     if (state.playerState.talismans?.includes('Starweave') && state.combatState.starweaveCritsLeft > 0) {
       isCrit = true;
@@ -310,8 +313,20 @@ class CombatManager {
     if (weapon.name === 'Echo Bow') {
       state.combatState.echoBowCount = (state.combatState.echoBowCount || 0) + 1;
       if (state.combatState.echoBowCount % 3 === 0) {
-        attackPlan._echoBowMultiplier = 2;
+        state.addMana(20);
+        pushSpecialPopup('+20 MANA (Echo Bow)', '#4ea3ff');
       }
+    }
+
+    if (state.hasBuff('Echo Strike')) {
+      state.combatState.echoStrikeCount = (state.combatState.echoStrikeCount || 0) + 1;
+      if (state.combatState.echoStrikeCount % 3 === 0) {
+        attackPlan._echoStrikeMultiplier = 2;
+      }
+    }
+
+    if (state.hasBuff('Fury') && !state.playerState.furyFirstAttackUsed) {
+      attackPlan._furyMultiplier = 2;
     }
 
     // Check combo window and update combo state (combo affects next attack bonuses)
@@ -336,7 +351,8 @@ class CombatManager {
     // Add buff-based crit
     if (state.hasBuff('Critical Precision')) {
       const precisionRoll = Number.isFinite(attackOptions.precisionRoll) ? attackOptions.precisionRoll : Math.random();
-      if (precisionRoll < 0.05) {
+      const precisionBonus = state.config.buffs?.['Critical Precision']?.effect?.critBonus ?? 0.50;
+      if (precisionRoll < precisionBonus) {
         isCrit = true;
       }
     }
@@ -387,8 +403,11 @@ class CombatManager {
       targets.push({ enemy: target, damageMultiplier: 1 });
     }
 
-    if (weapon.name === 'Echo Bow' && attackPlan._echoBowMultiplier === 2) {
-      pushSpecialPopup('ECHO x2', '#ff55ff');
+    if (state.hasBuff('Echo Strike') && attackPlan._echoStrikeMultiplier === 2) {
+      pushSpecialPopup('ECHO STRIKE x2', '#ff55ff');
+    }
+    if (state.hasBuff('Fury') && attackPlan._furyMultiplier === 2) {
+      pushSpecialPopup('FURY x2', '#ef4444');
     }
 
     let anyKilled = false;
@@ -410,8 +429,11 @@ class CombatManager {
         damage *= entry.damageMultiplier;
       }
 
-      if (attackPlan._echoBowMultiplier) {
-        damage *= attackPlan._echoBowMultiplier;
+      if (attackPlan._echoStrikeMultiplier) {
+        damage *= attackPlan._echoStrikeMultiplier;
+      }
+      if (attackPlan._furyMultiplier) {
+        damage *= attackPlan._furyMultiplier;
       }
 
       if (state.playerState.talismans?.includes('Void Lens')) {
@@ -429,23 +451,39 @@ class CombatManager {
       if (attackPlan.specialId === 'vine') {
         const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
           dayKey: getLocalDayKey(),
-          storedDamageByEnemyId: {},
-          triggeredTodayByEnemyId: {}
+          storedDamage: 0,
+          triggeredToday: false
         });
         const today = getLocalDayKey();
         if (vineState.dayKey !== today) {
           vineState.dayKey = today;
-          vineState.triggeredTodayByEnemyId = {};
+          vineState.triggeredToday = false;
         }
-        const enemyId = String(tgt.id);
-        const stored = Number(vineState.storedDamageByEnemyId[enemyId] || 0);
-        if (!vineState.triggeredTodayByEnemyId[enemyId]) {
+        if (!vineState.triggeredToday) {
+          const stored = Number(vineState.storedDamage || 0);
           if (stored > 0) {
             damage += stored / 3;
-              pushSpecialPopup(`VINE +${Math.ceil(stored / 3)}`, '#30c85a');
+            pushSpecialPopup(`VINE +${Math.ceil(stored / 3)}`, '#30c85a');
           }
-          vineState.triggeredTodayByEnemyId[enemyId] = true;
-          vineState.storedDamageByEnemyId[enemyId] = 0;
+          vineState.triggeredToday = true;
+          vineState.storedDamage = 0;
+        }
+      }
+
+      if (weapon.name === 'Heavy Hammer' || weapon.name === 'Great Hammer') {
+        if (Array.isArray(tgt.mutators) && tgt.mutators.length > 0) {
+          tgt.mutators = [];
+          pushSpecialPopup('MUTATIONS CLEARED', '#e11d48');
+        }
+        const all = StageManager.getAllEnemies();
+        const idx = all.indexOf(tgt);
+        if (idx > -1) {
+          const adj = EnemyManager.getAdjacentEnemies(all, idx);
+          adj.forEach(a => {
+            if (a && Array.isArray(a.mutators) && a.mutators.length > 0) {
+              a.mutators = [];
+            }
+          });
         }
       }
 
@@ -561,7 +599,7 @@ class CombatManager {
                   state.addGold(hasHoardRune ? Math.round(splashGold * 1.25) : splashGold);
                   PlayerManager.incrementKillTags(weapon.name);
                   if (state.hasBuff('Bloodlust')) state.addHp(5);
-                  if (state.hasBuff('Vampiric Touch')) state.addHp(splashDmg * 0.1);
+                  if (state.hasBuff('Vampiric Touch')) state.addHp(10);
                   
                   state.eventBus.emit(EVENTS.KILL_ENEMY, {
                     enemyId: a.id,
@@ -576,15 +614,12 @@ class CombatManager {
           }
         }
 
-        if (attackPlan.specialId === 'vine') {
-          const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
-            dayKey: getLocalDayKey(),
-            storedDamageByEnemyId: {},
-            triggeredTodayByEnemyId: {}
-          });
-          const enemyId = String(tgt.id);
-          vineState.storedDamageByEnemyId[enemyId] = Math.max(0, Number(vineState.storedDamageByEnemyId[enemyId] || 0) + enforcedDamage);
-        }
+        const vineState = state.systemState.vineSpellState || (state.systemState.vineSpellState = {
+          dayKey: getLocalDayKey(),
+          storedDamage: 0,
+          triggeredToday: false
+        });
+        vineState.storedDamage = (vineState.storedDamage || 0) + enforcedDamage;
 
         if ((attackPlan.specialId === 'buckler' || attackPlan.specialId === 'aegis') && !tgt.isDead && tgt === target) {
           tgt.statusEffects = tgt.statusEffects || {};
@@ -686,8 +721,7 @@ class CombatManager {
           }
 
           if (state.hasBuff('Vampiric Touch')) {
-            const lifeSteal = damage * 0.1;
-            state.addHp(lifeSteal);
+            state.addHp(10);
           }
 
           if (weapon.name === 'Grimoire') {
@@ -740,6 +774,10 @@ class CombatManager {
         }
       }
     });
+    
+    if (state.hasBuff('Fury') && !state.playerState.furyFirstAttackUsed) {
+      state.playerState.furyFirstAttackUsed = true;
+    }
     
     const damage = primaryDamage;
 

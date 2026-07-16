@@ -362,6 +362,37 @@ class UIManager {
     `;
     document.body.appendChild(hud);
 
+    const apResource = hud.querySelector('.ap-bar')?.closest('.hud-resource');
+    if (apResource) {
+      apResource.style.cursor = 'pointer';
+      apResource.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBreakdownAlert === 'function') {
+          const state = getGameState();
+          const scheduledDailies = TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, TaskManager.getCurrentGameDateKey()));
+          const dailyApTotal = scheduledDailies.reduce((sum, daily) => {
+            const reward = state.config.taskRewards[daily.difficulty];
+            return sum + (reward?.ap || 0);
+          }, 0);
+
+          const completeDayBonus = Number(state.systemState?.completeDayApBonus) || 0;
+          const todoCont = TaskManager.getTodoContributions();
+
+          const message = `
+            <div style="margin-bottom: 8px;">• <strong>From Dailies:</strong> ${Math.round(dailyApTotal)} AP</div>
+            <div style="margin-bottom: 8px;">• <strong>Day Completion Bonus:</strong> ${Math.round(completeDayBonus)} AP</div>
+            <div style="margin-bottom: 8px;">• <strong>From Active Todos:</strong> ${Math.round(todoCont.ap)} AP/day</div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <div style="font-size: 12px; color: #FFB33F;">⚡ <strong>Total Max AP:</strong> ${state.playerState.maxAp} AP</div>
+            <p style="margin-top: 12px; font-size: 9px; color: var(--text-muted); line-height: 1.3;">
+              * Pending Todo contribution is calculated as: <code>Todo Reward / max(1, Days Remaining)</code>. Complete them before deadlines to increase your max capacity!
+            </p>
+          `;
+          PopupsManager.showBreakdownAlert('⚡ MAX AP BREAKDOWN', message);
+        }
+      });
+    }
+
     let isDragging = false;
     let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
 
@@ -830,6 +861,73 @@ class UIManager {
       </div>
     `;
     document.body.appendChild(statsHud);
+
+    const goldVel = statsHud.querySelector('#statsGoldVelocity')?.closest('.stats-box');
+    if (goldVel) {
+      goldVel.style.cursor = 'pointer';
+      goldVel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBreakdownAlert === 'function') {
+          const state = getGameState();
+          
+          let dailyGold = 0;
+          (state.dailiesState.dailies || []).forEach(d => {
+            const reward = state.config && state.config.taskRewards && state.config.taskRewards[d.difficulty];
+            if (reward && reward.gold) dailyGold += reward.gold;
+          });
+
+          const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
+            ? TaskManager.getTodoContributions()
+            : { ap: 0, gold: 0, diamonds: 0 };
+          const totalGold = dailyGold + todoCont.gold;
+
+          const message = `
+            <div style="margin-bottom: 8px;">• <strong>From Dailies:</strong> ${Math.ceil(dailyGold)} Gold</div>
+            <div style="margin-bottom: 8px;">• <strong>From Active Todos:</strong> ${Math.ceil(todoCont.gold)} Gold/day</div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <div style="font-size: 12px; color: #ffd700;">💰 <strong>Total Max Gold:</strong> ${Math.ceil(totalGold)} Gold</div>
+            <p style="margin-top: 12px; font-size: 9px; color: var(--text-muted); line-height: 1.3;">
+              * Max Gold represents your potential daily gold capacity. This value scales shop weapons and consumable prices.
+            </p>
+          `;
+          PopupsManager.showBreakdownAlert('💰 MAX GOLD BREAKDOWN', message);
+        }
+      });
+    }
+
+    const diaVel = statsHud.querySelector('#statsDiamondVelocity')?.closest('.stats-box');
+    if (diaVel) {
+      diaVel.style.cursor = 'pointer';
+      diaVel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBreakdownAlert === 'function') {
+          const state = getGameState();
+          
+          let dailyDiamonds = 0;
+          (state.dailiesState.dailies || []).forEach(d => {
+            const reward = state.config.taskRewards?.[d.difficulty];
+            if (reward && reward.diamonds) dailyDiamonds += reward.diamonds;
+          });
+
+          const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
+            ? TaskManager.getTodoContributions()
+            : { ap: 0, gold: 0, diamonds: 0 };
+          const totalDiamonds = dailyDiamonds + todoCont.diamonds;
+
+          const message = `
+            <div style="margin-bottom: 8px;">• <strong>From Dailies:</strong> ${Math.ceil(dailyDiamonds)} Diamonds</div>
+            <div style="margin-bottom: 8px;">• <strong>From Active Todos:</strong> ${Math.ceil(todoCont.diamonds)} Diamonds/day</div>
+            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
+            <div style="font-size: 12px; color: #00e5ff;">💎 <strong>Total Max Diamonds:</strong> ${Math.ceil(totalDiamonds)} Diamonds</div>
+            <p style="margin-top: 12px; font-size: 9px; color: var(--text-muted); line-height: 1.3;">
+              * Max Diamonds determines premium shop pricing and daily penalty ratios.
+            </p>
+          `;
+          PopupsManager.showBreakdownAlert('💎 MAX DIAMONDS BREAKDOWN', message);
+        }
+      });
+    }
+
     try {
       StatsHUD.init();
     } catch (e) {
@@ -5011,15 +5109,16 @@ class UIManager {
 
     const state = getGameState();
     const deathDefiance = state.systemState?.deathDefiance || {};
+    const charges = deathDefiance.charges !== undefined ? deathDefiance.charges : (deathDefiance.available ? 1 : 0);
 
     if (deathDefiance.active) {
-      badge.textContent = 'DEFIANCE ACTIVE';
+      badge.textContent = `DEFIANCE ACTIVE (${charges})`;
       badge.className = 'death-defiance-badge active';
       return;
     }
 
-    if (deathDefiance.available) {
-      badge.textContent = 'DEFIANCE READY';
+    if (charges > 0) {
+      badge.textContent = `DEFIANCE READY (${charges})`;
       badge.className = 'death-defiance-badge ready';
       return;
     }

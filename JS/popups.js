@@ -1662,6 +1662,43 @@ class PopupsManager {
     return true;
   }
 
+  static showBreakdownAlert(title, message) {
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay';
+    overlay.style.zIndex = '15000'; // Make sure it sits on top of existing popups
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+
+    const popup = document.createElement('div');
+    popup.className = 'popup alert-popup breakdown-popup';
+    popup.style.width = 'min(360px, 90vw)';
+    popup.style.textAlign = 'center';
+
+    popup.innerHTML = `
+      <h2 style="font-size: 16px; margin-bottom: 8px;">${title}</h2>
+      <div class="alert-message" style="font-size: 11px; color: #fff; margin: 12px 0; line-height: 1.5; font-family: 'Orbitron', monospace; text-align: left;">
+        ${message}
+      </div>
+      <div class="alert-actions" style="margin-top: 16px;">
+        <button class="btn-large btn-ok">CLOSE</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-ok').addEventListener('click', () => {
+      overlay.remove();
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+    return true;
+  }
+
   static showShopItemDetails(item) {
     if (!item) return false;
     const overlay = this.createPopupOverlay();
