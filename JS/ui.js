@@ -2747,7 +2747,19 @@ class UIManager {
 
         if (!task || task.completed || task.locked) return;
 
-        if (type === 'daily' && (task.maxCompletionsPerDay || 1) > 1) {
+        // Check if there are custom breakdown steps entered for this task
+        const rawSteps = state.systemState.temporaryFocusSteps?.[task.id] || '';
+        const steps = rawSteps.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+        if (steps.length > 0 && type !== 'subtask') {
+          // Spawn separate bubbles for each uncompleted step instead of spawning the main task bubble
+          steps.forEach((stepName, stepIndex) => {
+            const stepId = `${task.id}-step-${stepIndex}`;
+            if (state.systemState.completedSteps.includes(stepId)) return;
+
+            createBubble(stepId, stepName, type, task, 1.0);
+          });
+        } else if (type === 'daily' && (task.maxCompletionsPerDay || 1) > 1) {
           // Spawn multiple individual bubbles (one for each remaining completion: max - current)
           const max = task.maxCompletionsPerDay;
           const current = task.completionsToday || 0;
@@ -2996,6 +3008,7 @@ class UIManager {
       state.systemState.focusTimerEndTimestamp = 0;
       state.systemState.focusTimerSecondsLeft = 0;
       state.systemState.selectedFocusTaskIds = [];
+      state.systemState.completedSteps = [];
       localStorage.removeItem('nemesis_focus_end');
       selectedFocusTaskIds.clear();
       const oldBubbles = popup.querySelectorAll('.focus-bubble');
@@ -3170,6 +3183,7 @@ class UIManager {
         state.drainMana(15);
         state.systemState.focusTimerActive = true;
         state.systemState.focusTimerDurationMins = selectedMinutes;
+        state.systemState.completedSteps = [];
         const newEnd = Date.now() + selectedMinutes * 60 * 1000;
         state.systemState.focusTimerEndTimestamp = newEnd;
         state.systemState.focusTimerSecondsLeft = selectedMinutes * 60;
