@@ -328,34 +328,18 @@ body::before {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 115px;
-  border: none !important;
-  border-radius: 0 !important;
-  background: rgba(232, 184, 74, 0.8) !important;
-  /* Outer gold border */
-  padding: 1px !important;
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px) !important;
-  filter: drop-shadow(0 0 4px rgba(232, 184, 74, 0.5)) drop-shadow(0 0 1px rgba(232, 184, 74, 0.3)) !important;
+  width: 125px;
+  padding: 8px !important;
   z-index: 2000;
   display: flex;
   flex-direction: column;
+  gap: 6px;
   touch-action: none;
-  /* Prevent scrolling while dragging */
   cursor: grab;
 }
 
 .draggable-hud::before {
-  content: '' !important;
-  position: absolute !important;
-  inset: 2px !important;
-  background: linear-gradient(180deg, rgba(20, 13, 38, 0.95), rgba(10, 6, 20, 0.98)) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(232, 184, 74, 0.35) !important;
-  /* Inner gold border */
-  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px) !important;
-  z-index: -1 !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
 .draggable-hud:active {
@@ -10482,4 +10466,146 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   .enemy-card, .btn-action, .btn-action-circle, .btn-menu, .btn-pause-action, .task-card-daily, .task-card-todo {
     box-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
   }
-}
+}
+
+/* ============================================================
+   COHESIVE GLASSMORPHIC HUD PANELS SYSTEM
+   ============================================================ */
+.draggable-hud,
+.draggable-challenge-hud,
+.draggable-stats-hud,
+.run-completion-panel,
+.weekly-heatmap-panel,
+.event-banner-panel,
+.satchel-panel {
+  background: linear-gradient(180deg, rgba(20, 13, 38, 0.8), rgba(10, 6, 20, 0.9)) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(232, 184, 74, 0.45) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  font-family: 'Orbitron', monospace !important;
+  color: #f3f4f6 !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+.draggable-hud.is-dragging,
+.draggable-challenge-hud.is-dragging,
+.draggable-stats-hud.is-dragging,
+.run-completion-panel.is-dragging,
+.weekly-heatmap-panel.is-dragging,
+.event-banner-panel.is-dragging,
+.satchel-panel.is-dragging {
+  border-color: rgba(232, 184, 74, 0.9) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(232, 184, 74, 0.45) !important;
+}
+
+/* Header & Title Standardization */
+.stats-hud-header,
+.challenge-hud-header,
+.run-completion-head,
+.weekly-heatmap-head,
+.satchel-head,
+.event-banner-content .event-banner-title {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-family: 'Orbitron', monospace !important;
+  font-weight: 800 !important;
+  font-size: 8px !important;
+  letter-spacing: 0.1em !important;
+  color: var(--accent-gold, #e8b84a) !important;
+  text-transform: uppercase !important;
+  margin: 0 0 6px 0 !important;
+  padding: 0 0 4px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: none !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+/* Header Text / Inner Title adjustments */
+.stats-hud-header-title,
+.challenge-hud-title,
+.satchel-title {
+  font-family: 'Orbitron', monospace !important;
+  font-weight: 800 !important;
+  font-size: 8px !important;
+  color: var(--accent-gold, #e8b84a) !important;
+}
+
+/* Control buttons style standardization (minimize, close, sub-toggles) */
+.stats-hud-btn,
+.stage-notes-collapse-btn,
+.run-completion-head button,
+.challenge-hud-header .drag-handle,
+.weekly-heatmap-head button,
+#weeklyHeatmapCollapseBtn,
+#runCompletionToggle,
+#runCompletionRewardsToggle {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+  color: #f3f4f6 !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  font-size: 9px !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  transition: all 0.2s ease !important;
+  user-select: none !important;
+  opacity: 0.8 !important;
+}
+
+.stats-hud-btn:hover,
+.stage-notes-collapse-btn:hover,
+.run-completion-head button:hover,
+.challenge-hud-header .drag-handle:hover,
+.weekly-heatmap-head button:hover,
+#weeklyHeatmapCollapseBtn:hover,
+#runCompletionToggle:hover,
+#runCompletionRewardsToggle:hover {
+  background: rgba(232, 184, 74, 0.2) !important;
+  border-color: rgba(232, 184, 74, 0.5) !important;
+  color: var(--accent-gold, #e8b84a) !important;
+  opacity: 1 !important;
+}
+
+/* Scrollbar standardization inside panels */
+.satchel-list::-webkit-scrollbar,
+.challenge-dailies-list::-webkit-scrollbar,
+#runCompletionRewardsContainer::-webkit-scrollbar {
+  width: 3px !important;
+}
+.satchel-list::-webkit-scrollbar-thumb,
+.challenge-dailies-list::-webkit-scrollbar-thumb,
+#runCompletionRewardsContainer::-webkit-scrollbar-thumb {
+  background: rgba(232, 184, 74, 0.3) !important;
+  border-radius: 2px !important;
+}
+
+/* Steal lists / Challenge Penalty Items Standardization */
+.challenge-penalty-item span:first-child {
+  color: #d1d5db !important;
+}
+
+.challenge-penalty-item .penalty-value {
+  color: #ff5a5a !important;
+}
+
+/* Ensure progress bars inside cohesive panels have aligned rounded corners */
+.hud-bar {
+  border-radius: 4px !important;
+  overflow: hidden !important;
+}
+
+.hud-bar .fill {
+  border-radius: 4px !important;
+}
+

@@ -578,7 +578,7 @@ class PlayerManager {
     deathDefiance.active = true;
     deathDefiance.triggeredAt = Date.now();
     state.systemState.isDeathDefiance = true;
-    state.playerState.hp = 1; // Survive with 1 HP
+    state.setHp(1); // Survive with 1 HP
     
     state.eventBus.emit(EVENTS.DEATH_DEFIANCE, {
       survived: true,
@@ -596,7 +596,7 @@ class PlayerManager {
     const deathDefiance = state.systemState.deathDefiance || (state.systemState.deathDefiance = { available: false, active: false, triggeredAt: null });
     deathDefiance.active = false;
     state.systemState.isDeathDefiance = false;
-    state.playerState.hp = 0;
+    state.setHp(0);
     
     state.eventBus.emit(EVENTS.DEATH, {
       type: 'deathDefiance',

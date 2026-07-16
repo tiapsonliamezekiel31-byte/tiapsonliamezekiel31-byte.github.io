@@ -942,8 +942,8 @@ class UIManager {
       <div id="runCompletionPanel" class="run-completion-panel" aria-label="Run completion graph">
         <div class="run-completion-head">
           <span>RUN COMPLETION</span>
-          <button id="runCompletionToggle" title="Compare vs Nemesis" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 4px;opacity:0.75;line-height:1;">⚔️</button>
-          <button id="runCompletionRewardsToggle" title="Buy Diamond Rewards" style="background:none;border:none;cursor:pointer;font-size:11px;padding:0 0 0 4px;opacity:0.75;line-height:1;">🎁</button>
+          <button id="runCompletionToggle" title="Compare vs Nemesis">⚔️</button>
+          <button id="runCompletionRewardsToggle" title="Buy Diamond Rewards">🎁</button>
           <span id="runCompletionRate">0%</span>
         </div>
         <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -2435,14 +2435,15 @@ class UIManager {
         const dailyLabel = d.maxCompletionsPerDay > 1 
           ? `[Daily] ${d.name} (${d.completionsToday || 0}/${d.maxCompletionsPerDay})`
           : `[Daily] ${d.name}`;
+        const dailyColor = UIManager.getAttributeColor(d.attribute);
         html += `
-          <div class="focus-task-item-group" style="margin-bottom: 6px;">
-            <label class="focus-task-item" style="display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" class="focus-task-checkbox" data-id="${d.id}" data-type="daily" ${isChecked} />
-              <span class="focus-task-title">${dailyLabel}</span>
+          <div class="focus-task-item-group" style="margin-bottom: 8px; background: ${dailyColor}1c; border: 1px solid ${dailyColor}60; padding: 6px 8px; border-radius: 6px;">
+            <label class="focus-task-item" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${d.id}" data-type="daily" ${isChecked} style="accent-color: ${dailyColor}; cursor: pointer; transform: scale(1.15);" />
+              <span class="focus-task-title" style="color: #ffffff; font-size: 11px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.6);">${dailyLabel}</span>
             </label>
-            <div style="padding-left: 20px; margin-top: 2px;">
-              <input type="text" class="focus-task-steps-input" data-id="${d.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-family: inherit;" />
+            <div style="padding-left: 22px; margin-top: 4px;">
+              <input type="text" class="focus-task-steps-input" data-id="${d.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 9px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 3px 6px; border-radius: 4px; font-family: inherit;" />
             </div>
           </div>
         `;
@@ -2451,11 +2452,12 @@ class UIManager {
       incompleteTodos.forEach(t => {
         const isChecked = selectedFocusTaskIds.has(t.id) ? 'checked' : '';
         const savedSteps = (state.systemState.temporaryFocusSteps && state.systemState.temporaryFocusSteps[t.id]) || '';
+        const todoColor = UIManager.getAttributeColor(t.attribute);
         html += `
-          <div class="focus-task-item-group" style="margin-bottom: 6px;">
-            <label class="focus-task-item" style="display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" class="focus-task-checkbox" data-id="${t.id}" data-type="todo" ${isChecked} />
-              <span class="focus-task-title">[To-Do] ${t.name}</span>
+          <div class="focus-task-item-group" style="margin-bottom: 8px; background: ${todoColor}1c; border: 1px solid ${todoColor}60; padding: 6px 8px; border-radius: 6px;">
+            <label class="focus-task-item" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${t.id}" data-type="todo" ${isChecked} style="accent-color: ${todoColor}; cursor: pointer; transform: scale(1.15);" />
+              <span class="focus-task-title" style="color: #ffffff; font-size: 11px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.6);">[To-Do] ${t.name}</span>
             </label>
         `;
         
@@ -2465,16 +2467,16 @@ class UIManager {
           const subtaskSelectionId = `${t.id}-subtask-${st.id}`;
           const isSubtaskChecked = selectedFocusTaskIds.has(subtaskSelectionId) ? 'checked' : '';
           html += `
-            <label class="focus-task-item focus-subtask-item" style="padding-left: 20px; font-size: 0.9em; opacity: 0.85; margin-left: 10px; display: flex; align-items: center; gap: 6px; margin-top: 2px; margin-bottom: 2px;">
-              <input type="checkbox" class="focus-task-checkbox" data-id="${subtaskSelectionId}" data-type="subtask" ${isSubtaskChecked} />
-              <span class="focus-task-title">[Subtask] ${st.name}</span>
+            <label class="focus-task-item focus-subtask-item" style="padding: 4px 6px; margin: 4px 0 4px 14px; background: rgba(0,0,0,0.25); border: 1px solid ${todoColor}40; border-radius: 4px; opacity: 0.95; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" class="focus-task-checkbox" data-id="${subtaskSelectionId}" data-type="subtask" ${isSubtaskChecked} style="accent-color: ${todoColor}; cursor: pointer; transform: scale(1.05);" />
+              <span class="focus-task-title" style="color: #ffffff; font-size: 10px; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.6);">${st.name}</span>
             </label>
           `;
         });
 
         html += `
-            <div style="padding-left: 20px; margin-top: 2px;">
-              <input type="text" class="focus-task-steps-input" data-id="${t.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 8px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 2px 6px; border-radius: 4px; font-family: inherit;" />
+            <div style="padding-left: 22px; margin-top: 4px;">
+              <input type="text" class="focus-task-steps-input" data-id="${t.id}" placeholder="Breakdown steps (comma-separated)..." value="${savedSteps}" style="width: 90%; font-size: 9px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 3px 6px; border-radius: 4px; font-family: inherit;" />
             </div>
           </div>
         `;
@@ -2745,19 +2747,7 @@ class UIManager {
 
         if (!task || task.completed || task.locked) return;
 
-        // Check if there are custom breakdown steps entered for this task
-        const rawSteps = state.systemState.temporaryFocusSteps?.[task.id] || '';
-        const steps = rawSteps.split(',').map(s => s.trim()).filter(s => s.length > 0);
-
-        if (steps.length > 0 && type !== 'subtask') {
-          // Spawn separate bubbles for each uncompleted step instead of spawning the main task bubble
-          steps.forEach((stepName, stepIndex) => {
-            const stepId = `${task.id}-step-${stepIndex}`;
-            if (state.systemState.completedSteps.includes(stepId)) return;
-
-            createBubble(stepId, stepName, type, task, 1.0);
-          });
-        } else if (type === 'daily' && (task.maxCompletionsPerDay || 1) > 1) {
+        if (type === 'daily' && (task.maxCompletionsPerDay || 1) > 1) {
           // Spawn multiple individual bubbles (one for each remaining completion: max - current)
           const max = task.maxCompletionsPerDay;
           const current = task.completionsToday || 0;
