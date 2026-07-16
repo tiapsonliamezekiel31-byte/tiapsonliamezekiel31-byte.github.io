@@ -6793,6 +6793,8 @@ class UIManager {
 
 
   static updateDailiesList() {
+    const panel = document.getElementById('dailiesPanel');
+    if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return; // Skip if hidden on mobile
     const dailies = TaskManager.getAllDailies();
     const container = document.getElementById('dailiesList');
 
@@ -7010,6 +7012,9 @@ class UIManager {
       '.task-card-todo[data-difficulty="Ultra"]:not(.completed)'
     );
     if (!cards.length) return;
+    
+    // Disable heavy skull emitter loop on mobile/low-power
+    if (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower) return;
 
     // Check if any card has size — if all are zero, panel probably isn't open yet, retry later
     let anyVisible = false;
@@ -8893,6 +8898,8 @@ class UIManager {
   }
 
   static updateTodosList() {
+    const panel = document.getElementById('todosPanel');
+    if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return; // Skip if hidden on mobile
     const todos = TaskManager.getAllTodos();
     const container = document.getElementById('todosList');
 
@@ -9064,7 +9071,18 @@ class UIManager {
     return { ringLevel, ringIndex, totalInRing: totalInRing || 1 };
   }
 
+  static _renderEnemiesScheduled = false;
+
   static renderEnemies() {
+    if (this._renderEnemiesScheduled) return;
+    this._renderEnemiesScheduled = true;
+    queueMicrotask(() => {
+      this._renderEnemiesScheduled = false;
+      this._doRenderEnemies();
+    });
+  }
+
+  static _doRenderEnemies() {
     const layer = document.getElementById('enemyLayer');
     if (!layer) return;
 
@@ -9185,7 +9203,7 @@ class UIManager {
       if (hasHealer && !window.enemyCanvasLoopActive) {
         window.enemyCanvasLoopActive = true;
         const tick = (ts) => {
-          if (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower && ts - (tick._lastDraw || 0) < 66) {
+          if (typeof AnimationRuntime !== 'undefined' && AnimationRuntime.lowPower && ts - (tick._lastDraw || 0) < 200) {
             requestAnimationFrame(tick);
             return;
           }
@@ -9233,6 +9251,19 @@ class UIManager {
         <div class="enemy-hptext"></div>
       </div>
     `;
+    
+    // Cache references to avoid querySelector in hot render loop
+    card._els = {
+      emoji: card.querySelector('.enemy-emoji'),
+      name: card.querySelector('.enemy-name'),
+      hpFill: card.querySelector('.enemy-hpfill'),
+      hpText: card.querySelector('.enemy-hptext'),
+      dodgeMarker: card.querySelector('.dodge-marker'),
+      petBadge: card.querySelector('.pet-badge'),
+      mutatorBadges: card.querySelector('.mutator-badges')
+    };
+    card._state = {}; // for diffing
+    
     return card;
   }
 
@@ -9243,49 +9274,68 @@ class UIManager {
     const resistColor = this.getEnemyElementColor(enemy?.resist);
     const weakColor = this.getEnemyElementColor(enemy?.weak);
 
-    card.style.left = x + 'px';
-    card.style.top = y + 'px';
-    card.dataset.x = x;
-    card.dataset.y = y;
-    card.style.setProperty('--enemy-resist-color', resistColor);
-    card.style.setProperty('--enemy-weak-color', weakColor);
+    // Diff-guard main property updates
+    if (card._state.x !== x) { card.style.left = x + 'px'; card.dataset.x = x; card._state.x = x; }
+    if (card._state.y !== y) { card.style.top = y + 'px'; card.dataset.y = y; card._state.y = y; }
+    if (card._state.resistColor !== resistColor) { card.style.setProperty('--enemy-resist-color', resistColor); card._state.resistColor = resistColor; }
+    if (card._state.weakColor !== weakColor) { card.style.setProperty('--enemy-weak-color', weakColor); card._state.weakColor = weakColor; }
 
-    card.classList.toggle('dead', !!enemy.isDead);
-    card.classList.toggle('elite', !!enemy.isElite);
-    card.classList.toggle('boss', !!enemy.isBoss);
-    card.classList.toggle('targeted', !!isTargeted);
-    card.classList.toggle('dodge-ready', !!isDodgeReady);
-    card.classList.toggle('enraged', !enemy.isDead && (enemy.daysAlive > 0));
+    const deadClass = !!enemy.isDead;
+    if (card._state.deadClass !== deadClass) { card.classList.toggle('dead', deadClass); card._state.deadClass = deadClass; }
+    
+    const eliteClass = !!enemy.isElite;
+    if (card._state.eliteClass !== eliteClass) { card.classList.toggle('elite', eliteClass); card._state.eliteClass = eliteClass; }
+    
+    const bossClass = !!enemy.isBoss;
+    if (card._state.bossClass !== bossClass) { card.classList.toggle('boss', bossClass); card._state.bossClass = bossClass; }
+    
+    const targetedClass = !!isTargeted;
+    if (card._state.targetedClass !== targetedClass) { card.classList.toggle('targeted', targetedClass); card._state.targetedClass = targetedClass; }
+    
+    const dodgeReadyClass = !!isDodgeReady;
+    if (card._state.dodgeReadyClass !== dodgeReadyClass) { card.classList.toggle('dodge-ready', dodgeReadyClass); card._state.dodgeReadyClass = dodgeReadyClass; }
+    
+    const enragedClass = !enemy.isDead && (enemy.daysAlive > 0);
+    if (card._state.enragedClass !== enragedClass) { card.classList.toggle('enraged', enragedClass); card._state.enragedClass = enragedClass; }
 
     const isPhase2 = !!(enemy.isBoss && (
       (state.stageState.bossData && state.stageState.bossData.phase === 2) ||
       (enemy.maxHp > 0 && enemy.hp / enemy.maxHp <= 0.4)
     ));
-    card.classList.toggle('boss-phase-2', !!isPhase2);
+    if (card._state.isPhase2 !== isPhase2) { card.classList.toggle('boss-phase-2', isPhase2); card._state.isPhase2 = isPhase2; }
+    
     if (enemy.isBoss) {
       const bossColor = (state.config.bosses && state.config.bosses[enemy.name]?.color) || '#ff2222';
-      card.style.setProperty('--boss-color', bossColor);
+      if (card._state.bossColor !== bossColor) { card.style.setProperty('--boss-color', bossColor); card._state.bossColor = bossColor; }
     }
 
-    const emojiEl = card.querySelector('.enemy-emoji');
-    if (emojiEl) emojiEl.textContent = this.getEnemyEmoji(enemy);
+    const els = card._els || {};
 
-    const nameEl = card.querySelector('.enemy-name');
-    if (nameEl) nameEl.textContent = enemy.name;
+    const newEmoji = this.getEnemyEmoji(enemy);
+    if (els.emoji && card._state.emoji !== newEmoji) { els.emoji.textContent = newEmoji; card._state.emoji = newEmoji; }
 
-    const hpFillEl = card.querySelector('.enemy-hpfill');
-    if (hpFillEl) hpFillEl.style.width = hpPercent + '%';
+    if (els.name && card._state.name !== enemy.name) { els.name.textContent = enemy.name; card._state.name = enemy.name; }
 
-    const hpTextEl = card.querySelector('.enemy-hptext');
-    if (hpTextEl) hpTextEl.textContent = `${Math.ceil(enemy.hp || 0)}/${Math.ceil(enemy.maxHp || 0)}`;
+    const newHpWidth = hpPercent + '%';
+    if (els.hpFill && card._state.hpWidth !== newHpWidth) { els.hpFill.style.width = newHpWidth; card._state.hpWidth = newHpWidth; }
 
-    const dodgeMarkerEl = card.querySelector('.dodge-marker');
-    if (dodgeMarkerEl) dodgeMarkerEl.style.display = showDodgeMarker ? '' : 'none';
+    const newHpText = `${Math.ceil(enemy.hp || 0)}/${Math.ceil(enemy.maxHp || 0)}`;
+    if (els.hpText && card._state.hpText !== newHpText) { els.hpText.textContent = newHpText; card._state.hpText = newHpText; }
 
-    const petBadgeEl = card.querySelector('.pet-badge');
-    if (petBadgeEl) {
-      petBadgeEl.style.display = showPetBadge ? '' : 'none';
-      if (showPetBadge) petBadgeEl.textContent = petEmoji;
+    if (els.dodgeMarker && card._state.showDodgeMarker !== showDodgeMarker) { 
+      els.dodgeMarker.style.display = showDodgeMarker ? '' : 'none'; 
+      card._state.showDodgeMarker = showDodgeMarker; 
+    }
+
+    if (els.petBadge) {
+      if (card._state.showPetBadge !== showPetBadge) {
+        els.petBadge.style.display = showPetBadge ? '' : 'none';
+        card._state.showPetBadge = showPetBadge;
+      }
+      if (showPetBadge && card._state.petEmoji !== petEmoji) {
+        els.petBadge.textContent = petEmoji;
+        card._state.petEmoji = petEmoji;
+      }
     }
 
     // Mutator badges
@@ -9293,7 +9343,7 @@ class UIManager {
       this.renderMutatorBadges(card, enemy);
     } catch (e) { console.warn('Failed to render mutator badges', e); }
 
-    // Dynamic archetype & mutator indicators
+        // Dynamic archetype & mutator indicators
     try {
       const archetypeStr = (enemy.archetype || '').toLowerCase();
       const hasVampiric = enemy.mutators && enemy.mutators.includes('vampiric');
@@ -9305,31 +9355,29 @@ class UIManager {
       if (enemy && !enemy.isDead) {
         // 1. Brute archetype
         if (archetypeStr === 'brute') {
-          card.classList.add('archetype-brute');
-          card.style.setProperty('--brute-combo', enemy.consecutiveAttackDays || 0);
+          if (!card._state.archBrute) { card.classList.add('archetype-brute'); card._state.archBrute = true; }
+          const combo = enemy.consecutiveAttackDays || 0;
+          if (card._state.bruteCombo !== combo) { card.style.setProperty('--brute-combo', combo); card._state.bruteCombo = combo; }
         } else {
-          card.classList.remove('archetype-brute');
-          card.style.removeProperty('--brute-combo');
+          if (card._state.archBrute) { card.classList.remove('archetype-brute'); card.style.removeProperty('--brute-combo'); card._state.archBrute = false; card._state.bruteCombo = -1; }
         }
 
         // 2. Mana Drain archetype
-        let blueCircle = card.querySelector('.mana-drain-circle');
         if (archetypeStr === 'mana drain') {
-          if (!blueCircle) {
-            blueCircle = document.createElement('div');
-            blueCircle.className = 'mana-drain-circle';
-            card.appendChild(blueCircle);
+          if (!card._els.manaDrain) {
+            card._els.manaDrain = document.createElement('div');
+            card._els.manaDrain.className = 'mana-drain-circle';
+            card.appendChild(card._els.manaDrain);
           }
         } else {
-          if (blueCircle) blueCircle.remove();
+          if (card._els.manaDrain) { card._els.manaDrain.remove(); card._els.manaDrain = null; }
         }
 
         // 3. Vampiric mutator (Tripled: 12 heart spans)
-        let vampParticles = card.querySelector('.vampiric-particles');
         if (hasVampiric) {
-          if (!vampParticles) {
-            vampParticles = document.createElement('div');
-            vampParticles.className = 'vampiric-particles';
+          if (!card._els.vampParticles) {
+            card._els.vampParticles = document.createElement('div');
+            card._els.vampParticles.className = 'vampiric-particles';
             for (let i = 0; i < 12; i++) {
               const span = document.createElement('span');
               span.textContent = '❤️';
@@ -9340,51 +9388,48 @@ class UIManager {
               span.style.setProperty('--dx', `${dx.toFixed(1)}px`);
               span.style.setProperty('--dy', `${dy.toFixed(1)}px`);
               span.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
-              vampParticles.appendChild(span);
+              card._els.vampParticles.appendChild(span);
             }
-            card.appendChild(vampParticles);
+            card.appendChild(card._els.vampParticles);
           }
         } else {
-          if (vampParticles) vampParticles.remove();
+          if (card._els.vampParticles) { card._els.vampParticles.remove(); card._els.vampParticles = null; }
         }
 
         // 4. Regenerator mutator
-        let regenSquare = card.querySelector('.regenerator-square');
         if (hasRegen) {
-          if (!regenSquare) {
-            regenSquare = document.createElement('div');
-            regenSquare.className = 'regenerator-square';
-            card.appendChild(regenSquare);
+          if (!card._els.regenSquare) {
+            card._els.regenSquare = document.createElement('div');
+            card._els.regenSquare.className = 'regenerator-square';
+            card.appendChild(card._els.regenSquare);
           }
         } else {
-          if (regenSquare) regenSquare.remove();
+          if (card._els.regenSquare) { card._els.regenSquare.remove(); card._els.regenSquare = null; }
         }
 
         // 5. Rallyist mutator
         if (hasRallyist) {
-          card.classList.add('mutator-rallyist');
+          if (!card._state.mutRally) { card.classList.add('mutator-rallyist'); card._state.mutRally = true; }
         } else {
-          card.classList.remove('mutator-rallyist');
+          if (card._state.mutRally) { card.classList.remove('mutator-rallyist'); card._state.mutRally = false; }
         }
 
         // 6. Swift mutator
-        let swiftCircle = card.querySelector('.swift-circle');
         if (hasSwift) {
-          if (!swiftCircle) {
-            swiftCircle = document.createElement('div');
-            swiftCircle.className = 'swift-circle';
-            card.appendChild(swiftCircle);
+          if (!card._els.swiftCircle) {
+            card._els.swiftCircle = document.createElement('div');
+            card._els.swiftCircle.className = 'swift-circle';
+            card.appendChild(card._els.swiftCircle);
           }
         } else {
-          if (swiftCircle) swiftCircle.remove();
+          if (card._els.swiftCircle) { card._els.swiftCircle.remove(); card._els.swiftCircle = null; }
         }
 
         // 7. Necromancer mutator (Tripled: 12 skull spans)
-        let necroParticles = card.querySelector('.necromancer-particles');
         if (hasNecro) {
-          if (!necroParticles) {
-            necroParticles = document.createElement('div');
-            necroParticles.className = 'necromancer-particles';
+          if (!card._els.necroParticles) {
+            card._els.necroParticles = document.createElement('div');
+            card._els.necroParticles.className = 'necromancer-particles';
             for (let i = 0; i < 12; i++) {
               const span = document.createElement('span');
               span.textContent = '💀';
@@ -9395,24 +9440,23 @@ class UIManager {
               span.style.setProperty('--dx', `${dx.toFixed(1)}px`);
               span.style.setProperty('--dy', `${dy.toFixed(1)}px`);
               span.style.animationDelay = `${(i * 0.25).toFixed(2)}s`;
-              necroParticles.appendChild(span);
+              card._els.necroParticles.appendChild(span);
             }
-            card.appendChild(necroParticles);
+            card.appendChild(card._els.necroParticles);
           }
         } else {
-          if (necroParticles) necroParticles.remove();
+          if (card._els.necroParticles) { card._els.necroParticles.remove(); card._els.necroParticles = null; }
         }
       } else {
         // Clean up everything if dead
-        card.classList.remove('archetype-brute');
-        card.style.removeProperty('--brute-combo');
-        card.classList.remove('mutator-rallyist');
+        if (card._state.archBrute) { card.classList.remove('archetype-brute'); card.style.removeProperty('--brute-combo'); card._state.archBrute = false; }
+        if (card._state.mutRally) { card.classList.remove('mutator-rallyist'); card._state.mutRally = false; }
 
-        const selectors = ['.mana-drain-circle', '.vampiric-particles', '.regenerator-square', '.swift-circle', '.necromancer-particles'];
-        selectors.forEach(sel => {
-          const el = card.querySelector(sel);
-          if (el) el.remove();
-        });
+        if (card._els.manaDrain) { card._els.manaDrain.remove(); card._els.manaDrain = null; }
+        if (card._els.vampParticles) { card._els.vampParticles.remove(); card._els.vampParticles = null; }
+        if (card._els.regenSquare) { card._els.regenSquare.remove(); card._els.regenSquare = null; }
+        if (card._els.swiftCircle) { card._els.swiftCircle.remove(); card._els.swiftCircle = null; }
+        if (card._els.necroParticles) { card._els.necroParticles.remove(); card._els.necroParticles = null; }
       }
     } catch (err) {
       console.warn('Failed to render dynamic indicators:', err);

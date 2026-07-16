@@ -10445,3 +10445,41 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   background: radial-gradient(circle, #fbbf24, #f59e0b);
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
 }
+
+/* ---------------------------------------------------- */
+/* MOBILE PERFORMANCE OVERRIDES                         */
+/* ---------------------------------------------------- */
+@media (max-width: 900px) {
+  /* 1a. Eliminate expensive backdrop filters on mobile */
+  * {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  
+  /* Add opaque backgrounds to overlays that previously relied on blur */
+  .popup, .popup-overlay, .draggable-hud, .draggable-taunt-hud, .draggable-challenge-hud, .nav-panel {
+    background-color: rgba(17, 24, 39, 0.95) !important;
+  }
+
+  /* 1b. Disable infinite animations to save battery and GPU cycles */
+  body.low-power-mode *, .low-power-mode * {
+    animation-play-state: paused !important;
+  }
+  
+  /* Aggressive animation disabling for the heaviest infinite loops */
+  .vampiric-particles span, 
+  .necromancer-particles span,
+  .mana-drain-circle,
+  .swift-circle,
+  .regenerator-square,
+  .holy-light-beam,
+  .matrix-char {
+    animation: none !important;
+    display: none !important; /* Most of these don't make sense if frozen */
+  }
+
+  /* 1c. Simplify extremely complex box-shadows */
+  .enemy-card, .btn-action, .btn-action-circle, .btn-menu, .btn-pause-action, .task-card-daily, .task-card-todo {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+  }
+}

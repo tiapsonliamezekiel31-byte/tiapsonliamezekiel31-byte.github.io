@@ -64,9 +64,9 @@
   <!-- Tycoon Mode -->
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="JS/multiplayer.js"></script>
-  <script src="JS/tycoon_worker_code.js?v=20260619c"></script>
-  <script src="JS/tycoon.js?v=20260619c"></script>
+  <script defer src="JS/multiplayer.js"></script>
+  <script defer src="JS/tycoon_worker_code.js?v=20260619c"></script>
+  <script defer src="JS/tycoon.js?v=20260619c"></script>
 
   <!-- Game Initialization -->
   <script>
@@ -265,11 +265,7 @@
         console.error('Unhandled promise rejection:', ev.reason);
       });
 
-      document.addEventListener('click', (ev) => {
-        try {
-          console.log('DEBUG CLICK:', ev.target && (ev.target.id || ev.target.className || ev.target.tagName));
-        } catch (err) { /* ignore */ }
-      }, { capture: true });
+      // Removed DEBUG CLICK logger for performance on mobile
 
       // Ensure update banner buttons allow pointer events and log their clicks
       const ub = document.getElementById('updateBanner');
@@ -284,6 +280,29 @@
         }, { capture: true });
       });
     })();
+    
+    // Phase 4b: Pause intervals when hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (window.deadlineCheckInterval) {
+          clearInterval(window.deadlineCheckInterval);
+          window.deadlineCheckInterval = null;
+        }
+        if (typeof AnimationRuntime !== 'undefined') AnimationRuntime.lowPower = true;
+        document.body.classList.add('low-power-mode');
+      } else {
+        if (!window.deadlineCheckInterval && typeof TaskManager !== 'undefined') {
+          window.deadlineCheckInterval = setInterval(() => {
+            try { TaskManager.checkDailyDeadlines(); } catch(e){}
+          }, 10000);
+        }
+        // Only restore high-power if not strictly on mobile
+        if (window.innerWidth > 900 && typeof AnimationRuntime !== 'undefined') {
+          AnimationRuntime.lowPower = false;
+          document.body.classList.remove('low-power-mode');
+        }
+      }
+    });
   </script>
 </body>
 

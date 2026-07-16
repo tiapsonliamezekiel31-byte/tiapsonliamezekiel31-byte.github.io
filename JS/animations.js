@@ -252,8 +252,8 @@ class ParticleSystem {
   static _tick() {
     const now = performance.now();
     const list = ParticleSystem._active;
-    if (AnimationRuntime.lowPower && list.length > 80) {
-      const excess = list.splice(0, list.length - 80);
+    if (AnimationRuntime.lowPower && list.length > 30) {
+      const excess = list.splice(0, list.length - 30);
       excess.forEach(p => { try { p.el.remove(); } catch(e){} ParticleSystem._pool.push(p.el); });
     }
     for (let i = list.length - 1; i >= 0; i--) {
@@ -710,9 +710,13 @@ FloatingDamageNumber._tickNonAnchored = function () {
       if (!f.freezeDuration) {
         f.freezeDuration = 100 + Math.random() * 200;
       }
+      
+      // Batch writes using template strings
+      let cssText = '';
+
       if (elapsed < f.freezeDuration) {
-        f.div.style.transform = `translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(1)`;
-        f.div.style.opacity = 1;
+        cssText = `transform: translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(1); opacity: 1;`;
+        if (f.div.style.cssText.indexOf(cssText) === -1) f.div.style.cssText += cssText;
         continue;
       }
       const activeElapsed = elapsed - f.freezeDuration;
@@ -747,7 +751,10 @@ FloatingDamageNumber._tickNonAnchored = function () {
       const driftX = (f.driftX || 0) * Math.min(1, progress);
       const driftY = (f.driftY || 0) * easeOut;
 
-      f.div.style.transform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+      const newTransform = `translate3d(${f.x + dx + driftX}px, ${f.y + dy + driftY}px, 0) translateX(-50%) rotate(${f.baseRotation + wobble}deg) scale(${scaleValue})`;
+      if (f.div.style.transform !== newTransform) {
+        f.div.style.transform = newTransform;
+      }
       f.div.style.opacity = opacity;
 
       if (f.cycleText) {
@@ -1808,7 +1815,7 @@ class RetroTaskCompleteAnimation {
         }, delay);
       }
     }
-    else if (animId === 'Matrix') {
+    else if (animId === 'Matrix' && !isLow) {
       const columns = Math.round(9 * difficultyMultiplier);
       const characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$#@%&';
 
@@ -1869,7 +1876,7 @@ class RetroTaskCompleteAnimation {
         }, delay);
       }
     }
-    else if (animId === 'Holy Beam') {
+    else if (animId === 'Holy Beam' && !isLow) {
       const beamCount = Math.min(4, Math.ceil(difficultyMultiplier * 1.2));
       for (let b = 0; b < beamCount; b++) {
         const delay = b * 180;
