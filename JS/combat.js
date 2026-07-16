@@ -886,7 +886,9 @@ class CombatManager {
   static getDodgeCost() {
     const state = getGameState();
     const multiplier = state.playerState.dodgeCostMultiplier || 1.0;
-    return Math.ceil(state.playerState.maxAp * state.config.dodgeCost * multiplier);
+    const aliveEnemies = (state.stageState?.enemies || []).filter(e => e && !e.isDead);
+    const enemyCount = aliveEnemies.length || 1;
+    return Math.ceil((state.playerState.maxAp / enemyCount) * multiplier);
   }
 
   static attemptDodge() {

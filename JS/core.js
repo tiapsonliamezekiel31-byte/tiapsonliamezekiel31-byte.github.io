@@ -1174,7 +1174,7 @@ class GameState {
     const aliveEnemies = (state.stageState.enemies || []).filter(e => e && !e.isDead);
     const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb);
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
-    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb).length || 1;
+    const totalNormal = aliveNormalEnemies.length || 1;
     const passive = PlayerManager.getClassPassive();
 
     const D = TaskManager.calculateMissedDailyDamage();
@@ -1517,10 +1517,22 @@ function performCheckIn() {
   state.systemState.isCheckInRunning = true;
   state.stageState.daysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
 
+  const initiallyDeadEnemyIds = new Set(
+    (state.stageState.enemies || [])
+      .filter(e => e && e.isDead)
+      .map(e => String(e.id))
+  );
+
   // start-of-checkin Bomb check
   const aliveBomb = (state.stageState.enemies || []).find(e => e && e.isBomb && !e.isDead);
   if (aliveBomb) {
     state.playerState.hp = 0;
+    try {
+      TaskManager.resetDailies();
+      state.systemState.lastCheckInTime = Date.now();
+    } catch (e) {
+      console.warn('Failed to reset dailies on bomb death', e);
+    }
     state.eventBus.emit(EVENTS.DEATH, {
       type: 'bomb:explosion',
       stage: state.stageState.stage,
@@ -1630,7 +1642,10 @@ function performCheckIn() {
   const allDailiesComplete = missedDailies.length === 0;
 
   // 1) Calculate missed-daily damage D and scale to N
-  const D = TaskManager.calculateMissedDailyDamage();
+  let D = TaskManager.calculateMissedDailyDamage();
+  if (state.systemState && state.systemState.noCheckinDamageOnce) {
+    D = 0;
+  }
   const N = D * 5; // per blueprint: D × 5 = N
 
   // --- Check-in enemy respawns ---
@@ -1707,6 +1722,12 @@ function performCheckIn() {
   // Madman: miss any daily -> die at check-in, no death defiance
   if (state.playerState.className === 'Madman' && !allDailiesComplete) {
     state.setHp(0);
+    try {
+      TaskManager.resetDailies();
+      state.systemState.lastCheckInTime = Date.now();
+    } catch (e) {
+      console.warn('Failed to reset dailies on Madman death', e);
+    }
     state.eventBus.emit(EVENTS.DEATH, {
       type: 'madman:missedDaily',
       stage: state.stageState.stage,
@@ -1768,9 +1789,9 @@ function performCheckIn() {
   const retaliationSteps = [];
   try {
     const aliveEnemies = StageManager.getAliveEnemies();
-    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb && !respawnedGains.some(rg => rg.enemyId === e.id && rg.source === 'respawn'));
+    const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb && !initiallyDeadEnemyIds.has(String(e.id)));
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);
-    const totalNormal = state.stageState.enemies.filter(e => !e?.isBoss && !e?.isBomb && !respawnedGains.some(rg => rg.enemyId === e.id && rg.source === 'respawn')).length || 1;
+    const totalNormal = aliveNormalEnemies.length || 1;
     const passive = PlayerManager.getClassPassive();
 
     if (bossEnemy && !bossEnemy.isDead) {
@@ -2260,6 +2281,9 @@ function performCheckIn() {
   // 4) Apply late todo flat damage
   try {
     lateTodoDamage = TaskManager.calculateLateTodoDamage();
+    if (state.systemState && state.systemState.noCheckinDamageOnce) {
+      lateTodoDamage = 0;
+    }
     if (lateTodoDamage > 0) {
       if (isAggressive) {
         lateTodoDamage *= 1.5;
@@ -2401,30 +2425,6 @@ function performCheckIn() {
     console.warn('Planner reward claim failed during check-in', e);
   }
 
-  // 6) Death / Death Defiance handling
-  if (state.playerState.hp <= 0) {
-    const survived = PlayerManager.checkDeathDefiance();
-    if (!survived) {
-      // Permanent death — show death screen and emit event
-      state.eventBus.emit(EVENTS.DEATH, {
-        stage: state.stageState.stage,
-        level: state.stageState.level
-      });
-
-      PopupsManager.showDeathScreen({
-        class: state.playerState.className,
-        stage: state.stageState.stage,
-        level: state.stageState.level,
-        enemiesDefeated: state.systemState.runStats.enemiesDefeated,
-        bossesSailed: state.systemState.runStats.bossesSailed,
-        goldEarned: state.systemState.runStats.totalGoldEarned
-      });
-      // Do not auto-reset; waiting for player action on death screen
-      state.save();
-      return;
-    }
-  }
-
   // 6b) Pet attacks random enemy (before checking if all enemies are dead)
   const petAttacks = [];
   if (state.playerState.hp > 0) {
@@ -2465,7 +2465,7 @@ function performCheckIn() {
   }
 
   // 7) If all enemies dead after resolution, advance level / stage
-  if (StageManager.allEnemiesDead()) {
+  if (state.playerState.hp > 0 && StageManager.allEnemiesDead()) {
     state.systemState.runStats.enemiesDefeated += (state.stageState.enemies || []).length;
     PlayerManager.levelUp();
     // Advance to next level / stage
@@ -2528,6 +2528,9 @@ function performCheckIn() {
     });
 
     TaskManager.resetDailies();
+    if (state.systemState && state.systemState.noCheckinDamageOnce) {
+      state.systemState.noCheckinDamageOnce = false;
+    }
     if (typeof generateDailyChallenge === 'function') {
       generateDailyChallenge();
     }
@@ -2564,6 +2567,29 @@ function performCheckIn() {
   // 10) Delayed regeneration & final UI updates (registered to run after animation)
   const doDailyRegenAndSave = async () => {
     try {
+      if (state.playerState.hp <= 0) {
+        const survived = PlayerManager.checkDeathDefiance();
+        if (!survived) {
+          // Permanent death — show death screen and emit event
+          state.eventBus.emit(EVENTS.DEATH, {
+            stage: state.stageState.stage,
+            level: state.stageState.level
+          });
+
+          PopupsManager.showDeathScreen({
+            class: state.playerState.className,
+            stage: state.stageState.stage,
+            level: state.stageState.level,
+            enemiesDefeated: state.systemState.runStats.enemiesDefeated,
+            bossesSailed: state.systemState.runStats.bossesSailed,
+            goldEarned: state.systemState.runStats.totalGoldEarned
+          });
+          clearCheckInRunning();
+          state.save();
+          return;
+        }
+      }
+
       PlayerManager.applyDailyRegeneration();
 
       // Mutator: Regenerator - heal enemies with regenerator mutator at check-in

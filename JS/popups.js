@@ -2478,6 +2478,17 @@ class PopupsManager {
         return { ok: true, message: 'Nemesis attributes reset to yours' };
       }
 
+      if (lower === 'uncomplete' || lower === 'uncomplete all' || lower === 'uncomplete dailies') {
+        state.dailiesState.dailies.forEach(d => {
+          d.completed = false;
+        });
+        if (!state.systemState) state.systemState = {};
+        state.systemState.noCheckinDamageOnce = true;
+        state.save();
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'All dailies uncompleted & check-in damage bypassed once' };
+      }
+
       if (lower === 'resume' || lower === 'close') {
         getGameState().resume();
         this.closeAllPopups();
