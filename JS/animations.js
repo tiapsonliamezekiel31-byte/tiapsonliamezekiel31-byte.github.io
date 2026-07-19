@@ -347,7 +347,7 @@ class FloatingDamageNumber {
 
     const div = FloatingDamageNumber._pool.length ? FloatingDamageNumber._pool.pop() : document.createElement('div');
     div.className = options.className || '';
-    const displayValue = isMiss ? 'MISS' : value;
+    const displayValue = (isMiss && !value) ? 'MISS' : value;
     const fontSize = isCrit ? 28 : 20;
     const baseRotation = (Math.random() - 0.5) * rotationRange;
 

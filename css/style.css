@@ -328,14 +328,54 @@ body::before {
   position: fixed;
   top: 20px;
   right: 20px;
-  width: 125px;
-  padding: 8px !important;
+  width: 120px;
+  padding: 4px 6px !important;
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
   touch-action: none;
   cursor: grab;
+  overflow: visible !important;
+}
+
+/* Impending Damage Big Pop-Out Number */
+.impending-damage-number {
+  position: absolute;
+  top: -19px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 900;
+  color: #ff2222;
+  text-shadow: 
+    -1.5px -1.5px 0 #ffffff,  
+     1.5px -1.5px 0 #ffffff,
+    -1.5px  1.5px 0 #ffffff,
+     1.5px  1.5px 0 #ffffff,
+    -1.5px  0px   0 #ffffff,
+     1.5px  0px   0 #ffffff,
+     0px   -1.5px 0 #ffffff,
+     0px    1.5px 0 #ffffff,
+     2px    2px   3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2005;
+  animation: bigPendingDmgPulse 1.2s infinite alternate ease-in-out;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes bigPendingDmgPulse {
+  0% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 1.0;
+  }
 }
 
 .draggable-hud::before {
@@ -5558,10 +5598,23 @@ button:hover,
   z-index: 10020;
   pointer-events: auto;
   cursor: grab;
+  overflow: visible !important;
 }
 
 .satchel-panel:active {
   cursor: grabbing;
+}
+
+.satchel-popout-icon {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.85));
+  pointer-events: none;
+  z-index: 10025;
 }
 
 .satchel-drag-handle {
@@ -8673,23 +8726,23 @@ button:hover,
 .draggable-stats-hud {
   position: fixed;
   z-index: 1998;
-  width: 140px;
-  height: 280px;
-  min-width: 120px;
-  min-height: 160px;
-  max-width: 90vw;
-  max-height: 90vh;
-  resize: both;
-  overflow: hidden;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  resize: none !important;
+  overflow: visible !important;
   touch-action: none;
-  background: rgba(15, 12, 30, 0.65) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(168, 85, 247, 0.3) !important;
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), inset 0 0.5px 0 rgba(255, 255, 255, 0.1);
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
   display: flex;
   flex-direction: column;
+  align-items: center;
   color: #f3f4f6;
   font-family: 'Orbitron', monospace;
   box-sizing: border-box;
@@ -8698,27 +8751,31 @@ button:hover,
 }
 
 .draggable-stats-hud.collapsed {
-  height: 20px !important;
-  min-height: 20px !important;
-  resize: none;
-  overflow: hidden;
+  height: auto !important;
+}
+
+.draggable-stats-hud.collapsed .stats-hud-content {
+  display: none !important;
 }
 
 .stats-hud-header {
-  height: 20px;
-  min-height: 20px;
-  background: rgba(168, 85, 247, 0.15);
-  border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+  height: auto;
+  min-height: 0;
+  background: linear-gradient(180deg, rgba(20, 13, 38, 0.92), rgba(10, 6, 20, 0.95)) !important;
+  border: 1px solid rgba(232, 184, 74, 0.5) !important;
+  border-radius: 6px !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 6px;
+  padding: 3px 8px !important;
+  margin-bottom: 5px !important;
   cursor: grab;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: bold;
   letter-spacing: 0.3px;
-  color: #d8b4fe;
+  color: var(--accent-gold, #e8b84a);
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
 }
 
 .stats-hud-header:active {
@@ -8755,16 +8812,15 @@ button:hover,
 }
 
 .stats-hud-content {
-  width: 132px;
-  height: 254px;
+  width: auto !important;
+  height: auto !important;
   flex-shrink: 0;
-  padding: 4px;
+  padding: 0 !important;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  overflow: auto;
+  align-items: center;
+  overflow: visible !important;
   box-sizing: border-box;
-  transform-origin: top left;
 }
 
 .stats-hud-section {
@@ -9194,6 +9250,13 @@ button:hover,
   top: 140px;
   right: 14px;
   width: 90px;
+  height: 85px;
+  min-width: 60px;
+  min-height: 48px;
+  max-width: 90vw;
+  max-height: 90vh;
+  resize: both;
+  overflow: hidden !important;
   padding: 5px;
   background: linear-gradient(180deg, rgba(26, 18, 48, 0.45), rgba(15, 10, 26, 0.52)) !important;
   backdrop-filter: blur(12px) !important;
@@ -9224,10 +9287,16 @@ button:hover,
 
 .weekly-heatmap-body {
   display: grid;
-  grid-template-columns: repeat(7, 9px);
+  grid-template-rows: repeat(var(--rows, 7), 9px);
+  grid-template-columns: repeat(var(--cols, 4), 9px);
+  grid-auto-flow: column;
   gap: 2px;
   padding: 2px;
   justify-content: center;
+  align-content: center;
+  overflow: hidden;
+  height: calc(100% - 15px);
+  box-sizing: border-box;
 }
 
 .heatmap-cell {
@@ -10608,4 +10677,280 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .hud-bar .fill {
   border-radius: 4px !important;
 }
-
+
+/* ============================================================
+   NEMESIS CHALLENGE HUD REVAMP
+   ============================================================ */
+.draggable-challenge-hud {
+  position: fixed;
+  top: 140px;
+  left: 20px;
+  width: 135px;
+  padding: 16px 5px 5px 5px !important;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  touch-action: none;
+  cursor: grab;
+  overflow: visible !important;
+}
+
+.challenge-hud-header {
+  display: none !important;
+}
+
+/* Top Section: 3 Stolen Item Squares Popping Out of Top Edge */
+.challenge-stolen-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin-top: -26px; /* Popping out of top edge of the HUD rectangle */
+  margin-bottom: 3px;
+}
+
+.challenge-stolen-card {
+  background: linear-gradient(180deg, rgba(28, 14, 42, 0.98), rgba(12, 6, 20, 0.98));
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  border-radius: 6px;
+  padding: 3px 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.85), 0 0 8px rgba(239, 68, 68, 0.35);
+}
+
+.challenge-stolen-card:hover {
+  border-color: rgba(239, 68, 68, 0.95);
+  background: linear-gradient(180deg, rgba(40, 18, 58, 0.98), rgba(18, 8, 30, 0.98));
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.95), 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.stolen-amount {
+  font-family: 'Orbitron', monospace;
+  font-size: 8.5px;
+  font-weight: 900;
+  color: #ff4d4d;
+  text-shadow: 0 0 4px rgba(255, 77, 77, 0.6);
+  line-height: 1;
+}
+
+.stolen-icon {
+  font-size: 11px;
+  margin: 2px 0 1px 0;
+  line-height: 1;
+}
+
+.stolen-pct {
+  font-family: 'Orbitron', monospace;
+  font-size: 6.5px;
+  font-weight: 700;
+  color: rgba(243, 244, 246, 0.6);
+}
+
+/* Tasks Section underneath */
+.challenge-dailies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 95px;
+  overflow-y: auto;
+}
+
+.challenge-daily-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 8px;
+}
+
+.challenge-daily-item.completed {
+  opacity: 0.65;
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.challenge-status-icon {
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.challenge-daily-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 95px;
+  color: #e5e7eb;
+}
+
+.challenge-daily-item.completed .challenge-daily-name {
+  text-decoration: line-through;
+  color: #86efac;
+}
+
+/* Dynamic color bar for daily task slots */
+.challenge-daily-item[data-color] {
+  border-left: 3px solid var(--daily-color, #e8b84a) !important;
+}
+
+/* ============================================================
+   RUN STATS UNFOLDED BOX HUD SYSTEM (SEPARATE CONNECTED PANELS)
+   ============================================================ */
+.draggable-stats-hud {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+.draggable-stats-hud .stats-hud-header {
+  background: linear-gradient(180deg, rgba(20, 13, 38, 0.92), rgba(10, 6, 20, 0.95)) !important;
+  border: 1px solid rgba(232, 184, 74, 0.5) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  margin-bottom: 5px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+}
+
+.unfolded-box-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0px;
+  position: relative;
+}
+
+.unfolded-box-middle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0px;
+  position: relative;
+}
+
+/* Central Square Panel (Attributes Radar Chart) */
+.unfolded-central-square {
+  width: 145px;
+  height: 135px;
+  background: linear-gradient(135deg, rgba(22, 14, 42, 0.95), rgba(10, 6, 20, 0.98)) !important;
+  border: 1.5px solid rgba(232, 184, 74, 0.6) !important;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(232, 184, 74, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 5;
+}
+
+.central-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 7.5px;
+  font-weight: 800;
+  color: var(--accent-gold, #e8b84a);
+  position: absolute;
+  top: 4px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 6px rgba(232, 184, 74, 0.4);
+}
+
+.stats-radar-container {
+  width: 135px !important;
+  height: 115px !important;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible !important;
+}
+
+/* Separate Connected Flap Panels */
+.unfolded-flap {
+  background: linear-gradient(180deg, rgba(18, 11, 32, 0.92), rgba(8, 4, 16, 0.95)) !important;
+  border: 1px solid rgba(232, 184, 74, 0.45) !important;
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.top-flap {
+  width: 135px;
+  padding: 3px 6px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid var(--accent-gold, #e8b84a) !important;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  z-index: 3;
+}
+
+.left-flap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 4px;
+  margin-right: -1px;
+  border-right: 2px solid var(--accent-gold, #e8b84a) !important;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  z-index: 3;
+}
+
+.right-flap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 4px;
+  margin-left: -1px;
+  border-left: 2px solid var(--accent-gold, #e8b84a) !important;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  z-index: 3;
+}
+
+.flap-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 4px 5px;
+  min-width: 48px;
+}
+
+.flap-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 7px;
+  font-weight: 800;
+  color: rgba(243, 244, 246, 0.75);
+  white-space: nowrap;
+}
+
+.flap-value {
+  font-family: 'Orbitron', monospace;
+  font-size: 9.5px;
+  font-weight: 900;
+  color: var(--accent-gold, #e8b84a);
+}

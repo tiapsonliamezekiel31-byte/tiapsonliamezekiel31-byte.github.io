@@ -390,12 +390,23 @@ class TaskManager {
     }
 
     if (isMiss) {
+      const baseReward = state.config.taskRewards[daily.difficulty] || { ap: 10, gold: 10, diamonds: 1, attributePoints: 1 };
+      const penaltyPct = Math.random() * 0.20; // 0% to 20%
+      const apDeduct = this.roundValue(baseReward.ap * penaltyPct, 1);
+      const goldDeduct = this.roundValue(baseReward.gold * penaltyPct, 1);
+      const diamondDeduct = this.roundValue(baseReward.diamonds * penaltyPct, 1);
+
+      state.addAp(-apDeduct);
+      state.addGold(-goldDeduct);
+      state.addDiamonds(-diamondDeduct);
+
       state.systemState.runStats.tasksCompleted++;
       return {
         success: true,
-        rewards: { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 },
+        rewards: { ap: -apDeduct, gold: -goldDeduct, diamonds: -diamondDeduct, attributePoints: 0 },
         completed: daily.completed,
-        isMiss: true
+        isMiss: true,
+        deductPct: Math.round(penaltyPct * 100)
       };
     }
 

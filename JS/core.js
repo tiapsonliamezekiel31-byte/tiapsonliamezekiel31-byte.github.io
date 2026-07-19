@@ -2612,12 +2612,22 @@ function performCheckIn() {
 
       // Nemesis gains attribute points
       try {
-        // Daily Dailies: Nemesis gets 60-100% of max possible attribute gain randomly each day
-        const dailyGainFactor = 0.6 + Math.random() * 0.4;
+        // Daily Dailies: Nemesis gets 80-110% of player's potential attribute gain if they completed all scheduled dailies
+        const dailyGainFactor = 0.8 + Math.random() * 0.3; // 0.8 to 1.1
+        state.systemState.nemesisDailyRewardRate = dailyGainFactor;
+        const todayKey = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
+          ? TaskManager.getCurrentGameDateKey()
+          : (new Date().toISOString().split('T')[0]);
+
         (state.dailiesState.dailies || []).forEach(daily => {
+          const isScheduled = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function'
+            ? TaskManager.isDailyScheduled(daily, todayKey)
+            : true;
+          if (!isScheduled) return;
+
           const reward = state.config.taskRewards?.[daily.difficulty];
           const pts = (reward?.attributePoints ?? 0) * dailyGainFactor;
-          if (pts > 0) state.addNemesisAttributePoints(daily.attribute, pts);
+          if (pts > 0 && daily.attribute) state.addNemesisAttributePoints(daily.attribute, pts);
         });
 
         // Todos: Nemesis gets the full attributes of a todo at its deadline (if uncompleted and deadline passed)

@@ -75,7 +75,7 @@ const DEFAULT_GAME_CONFIG = {
   attributeLevelThresholds: function() {
     // Level L: sum from i=10 to 10+L-2
     const thresholds = [0, 10]; // Level 0, 1
-    for (let L = 2; L <= 35; L++) {
+    for (let L = 2; L <= 1000; L++) {
       let sum = 0;
       for (let i = 10; i <= 10 + L - 2; i++) sum += i;
       thresholds.push(sum);

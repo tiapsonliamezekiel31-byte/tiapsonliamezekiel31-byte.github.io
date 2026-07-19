@@ -158,6 +158,27 @@ class UIManager {
     }
   }
 
+  static showDeductionPopup(x, y, rewards) {
+    let offset = 0;
+    if (rewards) {
+      if (rewards.ap < 0) {
+        FloatingDamageNumber.show(x, y - offset, `${rewards.ap} AP`, { color: '#ef4444', isMiss: true });
+        offset += 22;
+      }
+      if (rewards.gold < 0) {
+        FloatingDamageNumber.show(x, y - offset, `${rewards.gold} Gold`, { color: '#ef4444', isMiss: true });
+        offset += 22;
+      }
+      if (rewards.diamonds < 0) {
+        FloatingDamageNumber.show(x, y - offset, `${rewards.diamonds} 💎`, { color: '#ef4444', isMiss: true });
+        offset += 22;
+      }
+    }
+    if (offset === 0) {
+      FloatingDamageNumber.show(x, y, '-0 Rewards', { color: '#ef4444', isMiss: true });
+    }
+  }
+
   // Mutator display metadata: emoji, color, one-line description
   static MUTATOR_META = {
     vampiric: { icon: '🩸', color: '#C00707', label: 'Vampiric', desc: 'Heals itself when it deals damage' },
@@ -337,6 +358,9 @@ class UIManager {
     hud.id = 'draggableHud';
     hud.className = 'draggable-hud';
     hud.innerHTML = `
+      <div class="impending-damage-number" id="pendingDmgRow" style="display: none;">
+        <span id="pendingDmgValue">-0</span>
+      </div>
       <div class="hud-resources">
         <div class="hud-resource">
           <div class="hud-bar hp-bar"><div id="hpFill" class="fill" style="width: 100%"></div></div>
@@ -349,10 +373,6 @@ class UIManager {
         <div class="hud-resource">
           <div class="hud-bar ap-bar"><div id="apFill" class="fill" style="width: 100%"></div></div>
           <div class="hud-resource-text"><span id="apValue">0</span>/<span id="apMax">0</span></div>
-        </div>
-        <div class="hud-resource" id="pendingDmgRow" style="display: none;">
-          <div class="hud-bar" style="background: rgba(255, 90, 90, 0.15); border-color: rgba(255, 90, 90, 0.3);"><div id="pendingDmgFill" class="fill" style="width: 0%; background: linear-gradient(90deg, #ff5a5a, #ff3333);"></div></div>
-          <div class="hud-resource-text" style="color: #ff9b9b;"><span id="pendingDmgValue">0</span> DMG</div>
         </div>
       </div>
       <div class="hud-currencies">
@@ -751,13 +771,18 @@ class UIManager {
     let allCompleted = true;
 
     if (challenge.dailies && challenge.dailies.length > 0) {
+      const attrColors = state.config?.attributeColors || {
+        STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
+      };
       challenge.dailies.forEach(dailyId => {
         const daily = state.dailiesState?.dailies?.find(d => d.id === dailyId);
         if (daily) {
           const isCompleted = !!daily.completed;
           if (!isCompleted) allCompleted = false;
+          const attrKey = (daily.attribute || 'STR').toUpperCase();
+          const dailyColor = attrColors[attrKey] || '#e8b84a';
           dailiesHtml += `
-            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}">
+            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}" data-color="true" style="--daily-color: ${dailyColor}; border-left: 3px solid ${dailyColor};">
               <span class="challenge-status-icon">${isCompleted ? '✅' : '❌'}</span>
               <span class="challenge-daily-name" title="${daily.name}">${daily.name}</span>
             </div>
@@ -772,7 +797,7 @@ class UIManager {
         }
       });
     } else {
-      dailiesHtml = '<div style="opacity: 0.6;">No tasks</div>';
+      dailiesHtml = '<div style="opacity: 0.6; font-size: 8px; text-align: center; padding: 4px;">No tasks</div>';
     }
 
     if (allCompleted && !challenge.completed) {
@@ -789,29 +814,26 @@ class UIManager {
     const statusText = allCompleted ? 'SAFE ✨' : 'NEMESIS 👾';
 
     hud.innerHTML = `
-      <div class="challenge-hud-header">
-        <span class="challenge-hud-title" style="color: ${titleColor};">${statusText}</span>
-        <span class="drag-handle">≡</span>
-      </div>
       <div class="challenge-hud-content">
-        <div class="challenge-dailies-list">${dailiesHtml}</div>
-        
-        <div class="challenge-section-separator">STEALS:</div>
-        
-        <div class="challenge-penalties-list">
-          <div class="challenge-penalty-item">
-            <span>💰 ${challenge.goldPenaltyPct}%</span>
-            <span class="penalty-value">-${goldDeduction}</span>
+        <div class="challenge-stolen-row">
+          <div class="challenge-stolen-card">
+            <div class="stolen-amount">-${goldDeduction}</div>
+            <div class="stolen-icon">💰</div>
+            <div class="stolen-pct">${challenge.goldPenaltyPct}%</div>
           </div>
-          <div class="challenge-penalty-item">
-            <span>💎 ${challenge.diamondPenaltyPct}%</span>
-            <span class="penalty-value">-${diamondDeduction}</span>
+          <div class="challenge-stolen-card">
+            <div class="stolen-amount">-${diamondDeduction}</div>
+            <div class="stolen-icon">💎</div>
+            <div class="stolen-pct">${challenge.diamondPenaltyPct}%</div>
           </div>
-          <div class="challenge-penalty-item">
-            <span>⚡ ${challenge.apPenaltyPct}%</span>
-            <span class="penalty-value">-${apDeduction}</span>
+          <div class="challenge-stolen-card">
+            <div class="stolen-amount">-${apDeduction}</div>
+            <div class="stolen-icon">⚡</div>
+            <div class="stolen-pct">${challenge.apPenaltyPct}%</div>
           </div>
         </div>
+        
+        <div class="challenge-dailies-list">${dailiesHtml}</div>
       </div>
     `;
   }
@@ -828,34 +850,42 @@ class UIManager {
         </div>
       </div>
       <div class="stats-hud-content">
-        <!-- Gas Meter -->
-        <div class="stats-hud-section">
-          <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
-        </div>
-        <!-- Radar Chart -->
-        <div class="stats-hud-section">
-          <div class="stats-hud-section-title">Attributes (vs Nemesis)</div>
-          <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
-        </div>
-        <!-- Advanced Statistics Grid -->
-        <div class="stats-grid">
-          <div class="stats-box">
-            <span class="stats-box-label">Max Gold</span>
-            <span class="stats-box-value" id="statsGoldVelocity">0</span>
+        <div class="unfolded-box-container">
+          <!-- TOP FLAP: Run Completion Meter -->
+          <div class="unfolded-flap top-flap">
+            <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
           </div>
-          <div class="stats-box">
-            <span class="stats-box-label">Max Diamonds</span>
-            <span class="stats-box-value" id="statsDiamondVelocity">0</span>
-          </div>
-          <div class="stats-box">
-            <span class="stats-box-label">Avg Dealt Hit</span>
-            <span class="stats-box-value" id="statsDmgDealtAvg">0.0</span>
-            <span class="stats-box-sub">Last 15 hits</span>
-          </div>
-          <div class="stats-box">
-            <span class="stats-box-label">Avg Taken Hit</span>
-            <span class="stats-box-value" id="statsDmgTakenAvg">0.0</span>
-            <span class="stats-box-sub">Across run</span>
+
+          <div class="unfolded-box-middle">
+            <!-- LEFT FLAP: Max Diamonds and AP (with MAX emoji) -->
+            <div class="unfolded-flap left-flap">
+              <div class="flap-box" id="flapDiamondBox" title="Max Diamonds">
+                <span class="flap-label">💎 MAX</span>
+                <span class="flap-value" id="statsDiamondVelocity">0</span>
+              </div>
+              <div class="flap-box" id="flapApBox" title="Max AP">
+                <span class="flap-label">⚡ MAX</span>
+                <span class="flap-value" id="statsApVelocity">0</span>
+              </div>
+            </div>
+
+            <!-- CENTRAL SQUARE: Attribute Radial Chart -->
+            <div class="unfolded-central-square">
+              <div class="central-title">ATTRIBUTES</div>
+              <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+            </div>
+
+            <!-- RIGHT FLAP: Avg Dealt and Taken Hit -->
+            <div class="unfolded-flap right-flap">
+              <div class="flap-box" title="Avg Dealt Damage">
+                <span class="flap-label">⚔️ DEALT</span>
+                <span class="flap-value" id="statsDmgDealtAvg">0.0</span>
+              </div>
+              <div class="flap-box" title="Avg Taken Damage">
+                <span class="flap-label">🛡️ TAKEN</span>
+                <span class="flap-value" id="statsDmgTakenAvg">0.0</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1341,6 +1371,16 @@ class UIManager {
           heatmapMinimized.style.top = top + 'px';
         }
       } catch (e) { }
+    }
+
+    // Setup ResizeObserver to redraw cells on resize
+    if (window.ResizeObserver && heatmapPanel) {
+      const hmObserver = new ResizeObserver(() => {
+        if (heatmapPanel.style.display !== 'none') {
+          UIManager.updateWeeklyHeatmap();
+        }
+      });
+      hmObserver.observe(heatmapPanel);
     }
 
     // Draggable logic for heatmapPanel
@@ -2695,10 +2735,7 @@ class UIManager {
         
         if (res.isMiss) {
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          FloatingDamageNumber.show(centerX, centerY - 20, 'MISS', {
-            color: '#bbbbbb',
-            isMiss: true
-          });
+          UIManager.showDeductionPopup(centerX, centerY - 20, res.rewards);
         } else {
           if (res.isJackpot) {
             try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -4735,12 +4772,7 @@ class UIManager {
               if (res.isMiss) {
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                 const rect = card.getBoundingClientRect();
-                FloatingDamageNumber.show(
-                  rect.left + rect.width / 2,
-                  Math.max(12, rect.top - 18),
-                  'MISS',
-                  { color: '#bbbbbb', isMiss: true }
-                );
+                UIManager.showDeductionPopup(rect.left + rect.width / 2, Math.max(12, rect.top - 18), res.rewards);
               } else {
                 if (res.isJackpot) {
                   try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -4895,13 +4927,8 @@ class UIManager {
       const pendingFill = document.getElementById('pendingDmgFill');
       if (pendingRow) {
         if (pendingDmg > 0) {
-          pendingRow.style.display = 'block';
-          if (pendingVal) pendingVal.textContent = pendingDmg;
-          if (pendingFill) {
-            const maxHp = state.playerState?.maxHp || 100;
-            const fillPct = Math.min(100, (pendingDmg / maxHp) * 100);
-            pendingFill.style.width = fillPct + '%';
-          }
+          pendingRow.style.display = 'flex';
+          if (pendingVal) pendingVal.textContent = `-${pendingDmg}`;
         } else {
           pendingRow.style.display = 'none';
         }
@@ -8277,7 +8304,7 @@ class UIManager {
                 const centerY = rect.top + rect.height / 2;
                 if (res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'MISS', { color: '#bbbbbb', isMiss: true });
+                  UIManager.showDeductionPopup(centerX, Math.max(12, rect.top - 18), res.rewards);
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -10171,7 +10198,7 @@ class UIManager {
 
     if (event.type === 'Shrine') {
       titleEl.textContent = '⛩️';
-      descEl.textContent = 'Complete 100% of today\'s active Dailies.';
+      descEl.textContent = 'Complete 100% of this check-in\'s active Dailies.';
       isComplete = TaskManager.isAllDailiesComplete() && state.dailiesState.dailies.length > 0;
     } else if (event.type === 'Statue') {
       titleEl.textContent = '🗿';
@@ -10461,8 +10488,22 @@ class UIManager {
     const parts = today.split('-');
     const todayDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
+    // Dynamically calculate columns & rows based on container dimensions
+    const panel = document.getElementById('weeklyHeatmapPanel');
+    let cols = 4;
+    let rows = 7;
+    if (panel) {
+      const w = panel.clientWidth || 90;
+      const h = panel.clientHeight || 85;
+      cols = Math.max(2, Math.floor((w - 10 + 2) / 11));
+      rows = Math.max(2, Math.floor((h - 22 + 2) / 11));
+    }
+    container.style.setProperty('--rows', rows);
+    container.style.setProperty('--cols', cols);
+    const totalCells = cols * rows;
+
     const cells = [];
-    for (let i = 27; i >= 0; i--) {
+    for (let i = totalCells - 1; i >= 0; i--) {
       const d = new Date(todayDate);
       d.setDate(todayDate.getDate() - i);
       const y = d.getFullYear();
@@ -10477,43 +10518,52 @@ class UIManager {
 
       if (entry) {
         let rate = 0;
-        if (typeof entry.completionRate === 'number') {
-          rate = entry.completionRate;
+        const compDailies = Array.isArray(entry.completedDailies) ? entry.completedDailies : [];
+        const missedDailies = Array.isArray(entry.missedDailies) ? entry.missedDailies : [];
+        const savedDailies = Array.isArray(entry.savedDailies) ? entry.savedDailies : [];
+        const allDailies = compDailies.concat(missedDailies).concat(savedDailies);
+        
+        if (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedCompletionRate === 'function') {
+          rate = TaskManager.getWeightedCompletionRate(compDailies, allDailies);
         } else {
-          const comp = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
-          const missed = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
-          const saved = Array.isArray(entry.savedDailies) ? entry.savedDailies.length : 0;
-          const total = comp + missed + saved;
-          rate = total > 0 ? (comp / total) : (entry.allDailiesComplete ? 1.0 : 0.0);
+          rate = allDailies.length > 0 ? (compDailies.length / allDailies.length) : (entry.allDailiesComplete ? 1.0 : 0.0);
         }
 
-        const compCount = Array.isArray(entry.completedDailies) ? entry.completedDailies.length : 0;
-        const missedCount = Array.isArray(entry.missedDailies) ? entry.missedDailies.length : 0;
-        const savedCount = Array.isArray(entry.savedDailies) ? entry.savedDailies.length : 0;
-        const totalCount = compCount + missedCount + savedCount;
+        const compCount = compDailies.length;
+        const totalCount = allDailies.length;
 
-        const hue = 240 + Math.round(rate * 120);
-        const color = `hsl(${hue}, 85%, 60%)`;
-        const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
+        const opacity = 0.15 + (rate * 0.8);
+        const color = `rgba(255, 51, 51, ${opacity})`;
+        const borderColor = `rgba(255, 51, 51, ${0.1 + rate * 0.45})`;
+        const shadowColor = `rgba(255, 51, 51, ${rate * 0.45})`;
         const tooltip = `${cell.date}: ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
 
-        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
+        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: ${borderColor};" title="${tooltip}"></div>`;
       } else if (cell.isToday) {
         // Today's pending check-in progress
         const dailies = state.dailiesState?.dailies || [];
         const scheduledDailies = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function'
           ? dailies.filter(d => TaskManager.isDailyScheduled(d, today))
           : dailies;
-        const compCount = scheduledDailies.filter(d => d.completed).length;
-        const totalCount = scheduledDailies.length;
-        const rate = totalCount > 0 ? (compCount / totalCount) : 1.0;
+        const compDailies = scheduledDailies.filter(d => d.completed);
+        
+        let rate = 1.0;
+        if (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedCompletionRate === 'function') {
+          rate = TaskManager.getWeightedCompletionRate(compDailies, scheduledDailies);
+        } else {
+          rate = scheduledDailies.length > 0 ? (compDailies.length / scheduledDailies.length) : 1.0;
+        }
 
-        const hue = 240 + Math.round(rate * 120);
-        const color = `hsl(${hue}, 85%, 60%)`;
-        const shadowColor = `hsla(${hue}, 85%, 60%, 0.4)`;
+        const compCount = compDailies.length;
+        const totalCount = scheduledDailies.length;
+
+        const opacity = 0.15 + (rate * 0.8);
+        const color = `rgba(255, 51, 51, ${opacity})`;
+        const borderColor = `rgba(255, 51, 51, ${0.1 + rate * 0.45})`;
+        const shadowColor = `rgba(255, 51, 51, ${rate * 0.45})`;
         const tooltip = `${cell.date} (Today - Pending): ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
 
-        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: hsla(${hue}, 85%, 60%, 0.1);" title="${tooltip}"></div>`;
+        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: ${borderColor};" title="${tooltip}"></div>`;
       } else {
         return `<div class="heatmap-cell level-0" title="${cell.date}: No check-in"></div>`;
       }
@@ -11160,15 +11210,12 @@ class UIManager {
     const ordered = Object.entries(active || {}).filter(([, count]) => Number(count) > 0);
 
     panel.innerHTML = `
-      <div class="satchel-head">
-        <span class="satchel-title">SATCHEL</span>
-        <span class="satchel-subtitle">Consumables</span>
-      </div>
-      <div class="satchel-list">
+      <div class="satchel-popout-icon">🎒</div>
+      <div class="satchel-list" style="margin-top: 8px;">
         ${ordered.length ? ordered.map(([name, count]) => {
-      const data = state.config?.consumables?.[name] || {};
-      const icon = consumableIcons[name] || data.icon || '🧪';
-      return `
+          const data = state.config?.consumables?.[name] || {};
+          const icon = consumableIcons[name] || data.icon || '🧪';
+          return `
             <button class="satchel-item" type="button" data-consumable="${name}">
               <span class="satchel-item-icon">${icon}</span>
               <span class="satchel-item-name-wrap">
@@ -11180,7 +11227,7 @@ class UIManager {
               </span>
             </button>
           `;
-    }).join('') : '<div class="satchel-empty">No consumables yet</div>'}
+        }).join('') : '<div class="satchel-empty" style="font-size: 8px; padding: 4px 0;">No items</div>'}
       </div>
     `;
 
@@ -11586,18 +11633,9 @@ class StatsHUD {
             width: Math.round(w),
             height: Math.round(h)
           }));
-          
-          // Calculate proportional scale factor
-          // Base content dimensions: width 140px, height 252px total (226px content)
-          const scaleX = w / 140;
-          const scaleY = (h - 20) / 226;
-          const scale = Math.min(scaleX, scaleY);
-          
           if (content) {
-            content.style.transform = `scale(${scale})`;
-            // Center content inside if there is extra space
-            const extraWidth = w - (132 * scale);
-            content.style.marginLeft = `${Math.max(0, extraWidth / 2)}px`;
+            content.style.transform = 'none';
+            content.style.marginLeft = '0px';
           }
         }
       });
@@ -11631,11 +11669,12 @@ class StatsHUD {
 
     const maxGoldVal = (typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function') ? ShopManager.calculateMaxGold() : 0;
     const maxDiamondsVal = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function') ? TaskManager.getMaxPotentialDiamonds() : 0;
+    const maxApVal = state.playerState?.maxAp || 0;
 
-    const elGoldVal = document.getElementById('statsGoldVelocity');
     const elDiaVal = document.getElementById('statsDiamondVelocity');
-    if (elGoldVal) elGoldVal.textContent = Math.ceil(maxGoldVal);
+    const elApVal = document.getElementById('statsApVelocity');
     if (elDiaVal) elDiaVal.textContent = Math.ceil(maxDiamondsVal);
+    if (elApVal) elApVal.textContent = Math.ceil(maxApVal);
 
     const dmgDealtHits = runStats.last15DealtHits || [];
     const avgDmgDealt = dmgDealtHits.length > 0 
@@ -11680,6 +11719,11 @@ class StatsHUD {
       const circumference = 56.55;
       const strokeOffset = circumference * (1 - avgRate);
 
+      // Determine nemesis reward rate:
+      // It is the current daily reward rate multiplier roll (0.8 - 1.1, i.e., 80% - 110%) applied to potential daily attribute gains
+      const nemesisRateMult = state.systemState?.nemesisDailyRewardRate ?? 0.95;
+      const nemesisRatePct = Math.round(nemesisRateMult * 100);
+
       gasContainer.innerHTML = `
         <svg viewBox="0 0 100 32" style="width:100%; height:100%; overflow:visible;">
           <path d="M 32 24 A 18 18 0 0 1 68 24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4" stroke-linecap="round"/>
@@ -11688,6 +11732,7 @@ class StatsHUD {
           <line x1="50" y1="24" x2="${50 + 15 * Math.cos(Math.PI * (1 - avgRate))}" y2="${24 - 15 * Math.sin(Math.PI * (1 - avgRate))}" 
                 stroke="#d8b4fe" stroke-width="1" stroke-linecap="round" style="transition: all 0.5s ease;"/>
           <circle cx="50" cy="24" r="2" fill="#a78bfa"/>
+          <text x="22" y="19" font-size="5" font-weight="normal" fill="#ef4444" text-anchor="middle">${nemesisRatePct}%</text>
           <text x="50" y="19" font-size="7" font-weight="bold" fill="#fff" text-anchor="middle">${ratePct}%</text>
           <text x="50" y="30" font-size="4.5" fill="#9ca3af" text-anchor="middle" font-weight="bold">RUN COMPLETION</text>
           <defs>
