@@ -406,12 +406,12 @@ body::before {
   position: relative !important;
   background: rgba(232, 184, 74, 0.8) !important;
   /* Outer gold border */
-  padding: 5px 7px !important;
-  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px) !important;
-  filter: drop-shadow(0 0 4px rgba(232, 184, 74, 0.5)) drop-shadow(0 0 1px rgba(232, 184, 74, 0.3)) !important;
+  padding: 2px 3px !important;
+  clip-path: polygon(5px 0, calc(100% - 5px) 0, 100% 5px, 100% calc(100% - 5px), calc(100% - 5px) 100%, 5px 100%, 0 calc(100% - 5px), 0 5px) !important;
+  filter: drop-shadow(0 0 3px rgba(232, 184, 74, 0.4)) !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 4px !important;
+  gap: 2px !important;
   pointer-events: auto !important;
   width: max-content;
   cursor: grab;
@@ -420,13 +420,13 @@ body::before {
 .weapon-strip::before {
   content: '' !important;
   position: absolute !important;
-  inset: 2px !important;
+  inset: 1px !important;
   background: linear-gradient(180deg, rgba(20, 13, 38, 0.95), rgba(10, 6, 20, 0.98)) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(232, 184, 74, 0.35) !important;
   /* Inner gold border */
-  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 9px, 100% calc(100% - 9px), calc(100% - 9px) 100%, 9px 100%, 0 calc(100% - 9px), 0 9px) !important;
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px) !important;
   z-index: -1 !important;
   pointer-events: none !important;
 }
@@ -450,14 +450,21 @@ body::before {
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: var(--text-white) !important;
-  padding: 4px 6px !important;
+  padding: 2px 4px !important;
   font-family: 'Orbitron', monospace !important;
-  font-size: 8px !important;
+  font-size: 7px !important;
+  line-height: 1.1 !important;
   cursor: pointer !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   flex: 1 !important;
   text-align: left !important;
   transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.weapon-elem-tag {
+  font-size: 6px !important;
+  opacity: 0.75 !important;
+  margin-left: 2px !important;
 }
 
 .weapon-chip:hover {
@@ -467,16 +474,18 @@ body::before {
 .weapon-chip.active {
   background: rgba(232, 184, 74, 0.25) !important;
   border-color: rgba(232, 184, 74, 0.8) !important;
-  box-shadow: 0 0 10px rgba(232, 184, 74, 0.25) !important;
+  box-shadow: 0 0 6px rgba(232, 184, 74, 0.25) !important;
   color: #fff6cc !important;
 }
 
 .weapon-upgrade-btn {
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 6px !important;
+  border-radius: 4px !important;
   cursor: pointer !important;
-  padding: 3px 5px !important;
+  padding: 1px 3px !important;
+  font-size: 7px !important;
+  line-height: 1 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -3906,19 +3915,22 @@ body::before {
   left: 50%;
   transform: translateX(-50%);
   z-index: 95;
-  background: linear-gradient(135deg, rgba(30, 30, 40, 0.95), rgba(15, 15, 20, 0.98));
-  border: 1px solid rgba(255, 215, 0, 0.3);
-  border-radius: 8px;
-  padding: 4px 8px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
   color: white;
-  min-width: 100px;
-  min-height: 50px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  overflow: hidden;
+  min-width: auto !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow: visible !important;
   touch-action: none;
   cursor: grab;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 .event-banner-panel:active {
@@ -3929,55 +3941,105 @@ body::before {
   display: none !important;
 }
 
-/* Touch-friendly resize handle in bottom-right corner */
 .event-banner-resize-handle {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 2px;
-  cursor: nwse-resize;
-  color: rgba(255, 215, 0, 0.5);
-  font-size: 12px;
-  line-height: 1;
-  touch-action: none;
-  user-select: none;
-  z-index: 11;
-  transition: color 0.15s;
-}
-
-.event-banner-resize-handle:active {
-  color: rgba(255, 215, 0, 0.9);
+  display: none !important;
 }
 
 .event-banner-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: auto !important;
 }
 
-.event-banner-title {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #ffd700;
-  margin-bottom: 1px;
+.event-banner-emoji {
+  font-size: 24px !important;
+  line-height: 1 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: transform 0.15s ease, filter 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  outline: none !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)) !important;
 }
 
-.event-banner-desc {
-  font-size: 7.5px;
-  line-height: 1.3;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
+.event-banner-emoji:hover {
+  transform: scale(1.18) !important;
 }
 
-.btn-claim-event {
-  margin-top: 4px;
-  background: rgba(255, 255, 255, 0.1);
+.event-banner-emoji.ready {
+  animation: eventEmojiPulse 1.5s infinite ease-in-out !important;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.9)) !important;
+}
+
+@keyframes eventEmojiPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.event-banner-slots {
+  background: linear-gradient(135deg, rgba(30, 30, 40, 0.92), rgba(15, 15, 20, 0.96)) !important;
+  border: 1px solid rgba(255, 215, 0, 0.35) !important;
+  border-radius: 10px !important;
+  padding: 4px 6px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 3px !important;
+}
+
+.event-task-slot {
+  font-family: 'Orbitron', monospace !important;
+  font-size: 8.5px !important;
+  font-weight: 600 !important;
+  padding: 2px 7px !important;
+  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid var(--slot-color, rgba(255, 255, 255, 0.2)) !important;
+  color: var(--slot-color, #ffffff) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s ease !important;
+}
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid var(--slot-color, rgba(255, 255, 255, 0.2)) !important;
+  color: var(--slot-color, #ffffff) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  white-space: nowrap !important;
+  transition: all 0.2s ease !important;
+}
+
+.event-task-slot.shrine-slot {
+  border-color: rgba(232, 184, 74, 0.7) !important;
+  color: #ffd700 !important;
+  background: rgba(232, 184, 74, 0.1) !important;
+}
+
+.event-task-slot.completed {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.6) !important;
+  color: #4ade80 !important;
+}
+
+.event-task-slot .slot-status {
+  font-size: 8px !important;
+  font-weight: bold !important;
+}
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.5);
   font-size: 9px;

@@ -1088,11 +1088,9 @@ class UIManager {
       <button id="weeklyHeatmapMinimized" class="weekly-heatmap-minimized" style="display: none;" title="Open Consistency Heatmap">📊</button>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
         <div class="event-banner-content">
-          <div id="eventBannerTitle" class="event-banner-title">Event Name</div>
-          <div id="eventBannerDesc" class="event-banner-desc">Event description</div>
-          <button id="eventBannerClaimBtn" class="btn-action-circle btn-claim-event" disabled>CLAIM</button>
+          <span id="eventBannerEmoji" class="event-banner-emoji" title="Click to claim reward">⛩️</span>
+          <div id="eventBannerSlots" class="event-banner-slots"></div>
         </div>
-        <div class="event-banner-resize-handle" id="eventBannerResizeHandle">⤡</div>
       </div>
       <div class="combo-indicator" id="comboIndicator"></div>
       <div class="focus-overlay" id="focusOverlay"></div>
@@ -1501,6 +1499,7 @@ class UIManager {
     });
 
     const onEbDown = (e) => {
+      if (e.target.closest('#eventBannerEmoji, .event-banner-emoji, .event-task-slot, button')) return;
       isEbDragging = true;
       ebStartX = e.clientX;
       ebStartY = e.clientY;
@@ -3662,92 +3661,115 @@ class UIManager {
       });
     }
 
-    const eventBannerClaimBtn = document.getElementById('eventBannerClaimBtn');
-    if (eventBannerClaimBtn) {
-      eventBannerClaimBtn.addEventListener('click', () => {
+    const eventBannerPanel = document.getElementById('eventBannerPanel');
+    if (eventBannerPanel) {
+      eventBannerPanel.addEventListener('click', (e) => {
+        const emojiTarget = e.target.closest('#eventBannerEmoji, .event-banner-emoji');
+        if (!emojiTarget) return;
+
         const gs = getGameState();
-        if (gs.systemState.specialEvent && !gs.systemState.specialEvent.claimed) {
-          const event = gs.systemState.specialEvent;
+        if (!gs.systemState?.specialEvent || gs.systemState.specialEvent.claimed) return;
 
-          let rewardData = {
-            name: 'Mysterious Reward',
-            icon: '❓',
-            description: 'You claim a mysterious benefit.',
-            claimButtonText: 'CLAIM REWARD'
+        const event = gs.systemState.specialEvent;
+
+        let isComplete = false;
+        if (event.type === 'Shrine') {
+          isComplete = TaskManager.isAllDailiesComplete() && (gs.dailiesState?.dailies?.length || 0) > 0;
+        } else if (event.type === 'Statue') {
+          const targets = event.targets || [];
+          const missed = TaskManager.getMissedDailies().map(d => d.id);
+          isComplete = targets.length > 0 && targets.every(t => !missed.includes(t));
+        } else if (event.type === 'Sacred Tree') {
+          const target = event.targets?.[0];
+          const missed = TaskManager.getMissedDailies().map(d => d.id);
+          isComplete = target && !missed.includes(target);
+        }
+
+        if (!isComplete) {
+          if (typeof FloatingDamageNumber !== 'undefined') {
+            const rect = emojiTarget.getBoundingClientRect();
+            FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, 'Tasks incomplete!', { color: '#ff6666' });
+          }
+          return;
+        }
+
+        let rewardData = {
+          name: 'Mysterious Reward',
+          icon: '❓',
+          description: 'You claim a mysterious benefit.',
+          claimButtonText: 'CLAIM REWARD'
+        };
+
+        if (event.type === 'Sacred Tree') {
+          if (!event.rewardType) {
+            event.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
+            event.rewardVal = Math.floor(Math.random() * 11) + 20; // 20 to 30
+            gs.save();
+          }
+          const isHp = event.rewardType === 'hp';
+          const statName = isHp ? 'Max HP' : 'Max Mana';
+          const icon = isHp ? '❤️' : '💧';
+          rewardData = {
+            name: `+${event.rewardVal} ${statName}`,
+            icon: icon,
+            description: `Permanently increases your maximum ${isHp ? 'Health' : 'Mana'} by +${event.rewardVal}.`,
+            claimButtonText: 'CLAIM STAT UPGRADE'
           };
-          let preRolledTalisman = null;
+        } else if (event.type === 'Shrine') {
+          rewardData = {
+            name: 'Sacred Skill Choice',
+            icon: '⛩️',
+            description: 'Allows you to choose a new powerful class skill to equip.',
+            claimButtonText: 'CLAIM SKILL CHOICE'
+          };
+        } else if (event.type === 'Statue') {
+          rewardData = {
+            name: 'Statue Reward: Choose Talisman',
+            icon: '🏺',
+            description: 'Allows you to choose a new powerful talisman to equip.',
+            claimButtonText: 'CHOOSE TALISMAN'
+          };
+        }
 
-          if (event.type === 'Sacred Tree') {
+        const executeClaim = () => {
+          event.claimed = true;
+          try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) { }
+
+          if (event.type === 'Statue') {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showStatueTalismanChoice) {
+              PopupsManager.showStatueTalismanChoice();
+            }
+          } else if (event.type === 'Sacred Tree') {
             if (!event.rewardType) {
               event.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
-              event.rewardVal = Math.floor(Math.random() * 11) + 20; // 20 to 30
-              gs.save();
+              event.rewardVal = Math.floor(Math.random() * 11) + 20;
             }
             const isHp = event.rewardType === 'hp';
-            const statName = isHp ? 'Max HP' : 'Max Mana';
-            const icon = isHp ? '❤️' : '💧';
-            rewardData = {
-              name: `+${event.rewardVal} ${statName}`,
-              icon: icon,
-              description: `Permanently increases your maximum ${isHp ? 'Health' : 'Mana'} by +${event.rewardVal}.`,
-              claimButtonText: 'CLAIM STAT UPGRADE'
-            };
-          } else if (event.type === 'Shrine') {
-            rewardData = {
-              name: 'Sacred Skill Choice',
-              icon: '⛩️',
-              description: 'Allows you to choose a new powerful class skill to equip.',
-              claimButtonText: 'CLAIM SKILL CHOICE'
-            };
-          } else if (event.type === 'Statue') {
-            rewardData = {
-              name: 'Statue Reward: Choose Talisman',
-              icon: '🏺',
-              description: 'Allows you to choose a new powerful talisman to equip.',
-              claimButtonText: 'CHOOSE TALISMAN'
-            };
-          }
-
-          const executeClaim = () => {
-            event.claimed = true;
-            try { if (window.SoundManager) SoundManager.play('coin'); } catch (e) { }
-
-            if (event.type === 'Statue') {
-              if (typeof PopupsManager !== 'undefined' && PopupsManager.showStatueTalismanChoice) {
-                PopupsManager.showStatueTalismanChoice();
-              }
-            } else if (event.type === 'Sacred Tree') {
-              if (!event.rewardType) {
-                event.rewardType = Math.random() < 0.5 ? 'hp' : 'mana';
-                event.rewardVal = Math.floor(Math.random() * 11) + 20;
-              }
-              const isHp = event.rewardType === 'hp';
-              const val = event.rewardVal;
-              if (isHp) {
-                gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + val;
-                gs.addHp(val);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max HP`, { color: '#84cc16' }); } catch (err) { }
-              } else {
-                gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + val;
-                gs.addMana(val);
-                try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max Mana`, { color: '#3b82f6' }); } catch (err) { }
-              }
-            } else if (event.type === 'Shrine') {
-              if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
-                PopupsManager.showShrineSkillChoice();
-              }
+            const val = event.rewardVal;
+            if (isHp) {
+              gs.playerState.maxHp = (gs.playerState.maxHp || gs.config.baseMaxHp) + val;
+              gs.addHp(val);
+              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max HP`, { color: '#84cc16' }); } catch (err) { }
+            } else {
+              gs.playerState.maxMana = (gs.playerState.maxMana || gs.config.baseMaxMana) + val;
+              gs.addMana(val);
+              try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `+${val} Max Mana`, { color: '#3b82f6' }); } catch (err) { }
             }
-
-            gs.save();
-            this.refreshEventBanner();
-            this.refreshGameUI();
-          };
-
-          if (typeof PopupsManager !== 'undefined' && PopupsManager.showSpecialEventClaimPopup) {
-            PopupsManager.showSpecialEventClaimPopup(event, rewardData, executeClaim);
-          } else {
-            executeClaim();
+          } else if (event.type === 'Shrine') {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showShrineSkillChoice) {
+              PopupsManager.showShrineSkillChoice();
+            }
           }
+
+          gs.save();
+          this.refreshEventBanner();
+          this.refreshGameUI();
+        };
+
+        if (typeof PopupsManager !== 'undefined' && PopupsManager.showSpecialEventClaimPopup) {
+          PopupsManager.showSpecialEventClaimPopup(event, rewardData, executeClaim);
+        } else {
+          executeClaim();
         }
       });
     }
@@ -9837,7 +9859,7 @@ class UIManager {
       }
       const weaponCfg = state.config?.weapons?.[weaponName];
       const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weaponName] || '⚔️';
-      const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} · ${weaponElement}` : `${weaponIcon} ${weaponName}`;
+      const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} <span class="weapon-elem-tag">${weaponElement}</span>` : `${weaponIcon} ${weaponName}`;
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
     }).join('');
@@ -10188,38 +10210,74 @@ class UIManager {
       return;
     }
 
-    banner.style.display = 'block';
+    banner.style.display = 'flex';
 
-    const titleEl = document.getElementById('eventBannerTitle');
-    const descEl = document.getElementById('eventBannerDesc');
-    const claimBtn = document.getElementById('eventBannerClaimBtn');
+    const emojiEl = document.getElementById('eventBannerEmoji');
+    const slotsEl = document.getElementById('eventBannerSlots');
+
+    let emojiIcon = '⛩️';
+    if (event.type === 'Shrine') {
+      emojiIcon = '⛩️';
+    } else if (event.type === 'Statue') {
+      emojiIcon = '🗿';
+    } else if (event.type === 'Sacred Tree') {
+      emojiIcon = '🌳';
+    }
+    if (emojiEl) emojiEl.textContent = emojiIcon;
 
     let isComplete = false;
+    let slotsHtml = '';
+
+    const attrColors = state.config?.attributeColors || {
+      STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
+    };
 
     if (event.type === 'Shrine') {
-      titleEl.textContent = '⛩️';
-      descEl.textContent = 'Complete 100% of this check-in\'s active Dailies.';
-      isComplete = TaskManager.isAllDailiesComplete() && state.dailiesState.dailies.length > 0;
-    } else if (event.type === 'Statue') {
-      titleEl.textContent = '🗿';
-      descEl.textContent = 'Complete the targeted dailies.';
+      const activeDailies = state.dailiesState?.dailies || [];
+      isComplete = TaskManager.isAllDailiesComplete() && activeDailies.length > 0;
+      slotsHtml = `
+        <div class="event-task-slot shrine-slot ${isComplete ? 'completed' : ''}">
+          everything
+        </div>
+      `;
+    } else if (event.type === 'Statue' || event.type === 'Sacred Tree') {
       const targets = event.targets || [];
       const missed = TaskManager.getMissedDailies().map(d => d.id);
       isComplete = targets.length > 0 && targets.every(t => !missed.includes(t));
-    } else if (event.type === 'Sacred Tree') {
-      titleEl.textContent = '🌳';
-      descEl.textContent = 'Complete the selected daily.';
-      const target = event.targets?.[0];
-      const missed = TaskManager.getMissedDailies().map(d => d.id);
-      isComplete = target && !missed.includes(target);
+
+      slotsHtml = targets.map(targetId => {
+        const daily = (state.dailiesState?.dailies || []).find(d => d.id === targetId);
+        if (daily) {
+          const isDone = !missed.includes(targetId) && !!daily.completed;
+          const attrKey = (daily.attribute || 'STR').toUpperCase();
+          const dailyColor = attrColors[attrKey] || '#e8b84a';
+          return `
+            <div class="event-task-slot ${isDone ? 'completed' : ''}" style="--slot-color: ${dailyColor}; border-color: ${dailyColor}; color: ${dailyColor};" title="${daily.name}">
+              <span class="slot-status">${isDone ? '✓' : '○'}</span>
+              <span class="slot-name">${daily.name}</span>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="event-task-slot completed" style="--slot-color: #666; border-color: #666; color: #888;">
+              <span class="slot-status">✓</span>
+              <span class="slot-name" style="text-decoration: line-through;">[Deleted]</span>
+            </div>
+          `;
+        }
+      }).join('');
     }
 
-    if (isComplete) {
-      claimBtn.disabled = false;
-      claimBtn.classList.add('ready');
-    } else {
-      claimBtn.disabled = true;
-      claimBtn.classList.remove('ready');
+    if (slotsEl) slotsEl.innerHTML = slotsHtml;
+
+    if (emojiEl) {
+      if (isComplete) {
+        emojiEl.classList.add('ready');
+        emojiEl.title = 'Ready to claim! Click emoji to claim reward.';
+      } else {
+        emojiEl.classList.remove('ready');
+        emojiEl.title = 'Event in progress. Click emoji to claim when ready.';
+      }
     }
   }
 
