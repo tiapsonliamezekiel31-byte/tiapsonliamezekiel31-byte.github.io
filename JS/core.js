@@ -1059,6 +1059,9 @@ class GameState {
           generateDailyChallenge();
         }
       }
+      if (this.systemState.nemesisDailyRewardRate === undefined) {
+        this.systemState.nemesisDailyRewardRate = 0.8 + Math.random() * 0.3;
+      }
       if (!Array.isArray(this.systemState.diamondRewards)) {
         this.systemState.diamondRewards = [];
       }
