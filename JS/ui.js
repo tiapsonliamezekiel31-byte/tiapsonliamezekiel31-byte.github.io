@@ -10918,9 +10918,15 @@ class UIManager {
       badge.style.setProperty('--pulse-delay', `${pulseDelay}s`);
       
       // Calculate damage for regular/crit/heavy
+      const isLockInActive = state.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+      const lockInDegree = state.systemState?.lockInDegree ?? ((state.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
+      const lockInDamageMult = isLockInActive ? (lockInDegree * 4) : 1;
+
       let dmg = 10;
       if (attackType === 'crit') dmg = 15;
       if (attackType === 'heavy') dmg = 12;
+      dmg *= lockInDamageMult;
+
       let reduction = 1.0;
       if (state.playerState.className === 'Knight') reduction -= 0.10;
       if (state.hasBuff('Iron Skin')) reduction -= 0.10;
@@ -10931,7 +10937,7 @@ class UIManager {
       if (state.playerState.className === 'Brute' && state.combatState?.skillEffects?.wrathUnleashed) reduction *= 1.4;
       
       dmg = Math.max(1, Math.round(dmg * reduction));
-      if (attackType === 'crit') dmg = 15; // ignores reductions usually, but UI preview can be raw
+      if (attackType === 'crit') dmg = 15 * lockInDamageMult;
       
       let badgeInner = '';
       if (attackType === 'regular') {
@@ -11036,14 +11042,22 @@ class UIManager {
         const weights = bossCfg.attackWeights || {};
         const bossColor = bossCfg.color || '#ff2222';
         
+        const isLockInActive = state?.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+        const lockInDegree = state?.systemState?.lockInDegree ?? ((state?.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
+        const lockInDamageMult = isLockInActive ? (lockInDegree * 4) : 1;
+
+        const regDmg = 10 * lockInDamageMult;
+        const heavyDmg = 12 * lockInDamageMult;
+        const critDmg = 15 * lockInDamageMult;
+
         const attackDetails = {
-          heavy: { name: 'Heavy Slam', badge: `<div class="shape-square" style="background-color:${bossColor}; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:#fff;">12</div>`, desc: 'Heavy crushing slam dealing 12 damage & doubling player dodge cost.' },
-          crit: { name: 'Critical Strike', badge: `<div class="shape-triangle crit" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">15</span></div>`, desc: 'Critical strike dealing 15 raw damage, bypassing player shields.' },
+          heavy: { name: 'Heavy Slam', badge: `<div class="shape-square" style="background-color:${bossColor}; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:#fff;">${heavyDmg}</div>`, desc: `Heavy crushing slam dealing ${heavyDmg} damage & doubling player dodge cost.` },
+          crit: { name: 'Critical Strike', badge: `<div class="shape-triangle crit" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">${critDmg}</span></div>`, desc: `Critical strike dealing ${critDmg} raw damage, bypassing player shields.` },
           bomb: { name: 'Summon Bomb', badge: `<div class="shape-circle" style="border:2px solid ${bossColor}; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">💣</div>`, desc: 'Summons an explosive bomb enemy onto the field.' },
           minion: { name: 'Summon Minion', badge: `<div class="shape-circle" style="border:2px solid ${bossColor}; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">👿</div>`, desc: 'Summons a stage minion ally to attack the player.' },
           corrosive: { name: 'Corrosive Spit', badge: `<div class="shape-star" style="background-color:${bossColor}; width:22px; height:22px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">🧪</div>`, desc: 'Toxic spit reducing player shield & heal efficiency by 10%.' },
           heal: { name: 'Self-Heal', badge: `<div class="shape-heart" style="background-color:${bossColor}; width:22px; height:22px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">💚</div>`, desc: 'Restores 10% of boss max HP.' },
-          regular: { name: 'Regular Strike', badge: `<div class="shape-triangle" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">10</span></div>`, desc: 'Standard strike dealing 10 damage.' },
+          regular: { name: 'Regular Strike', badge: `<div class="shape-triangle" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">${regDmg}</span></div>`, desc: `Standard strike dealing ${regDmg} damage.` },
           null: { name: 'Rest / Null', badge: `<div class="shape-circle" style="border:1px dashed #aaa; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">🛡️</div>`, desc: 'Boss rests for turn or attack is erased by player dodge.' }
         };
 

@@ -1231,6 +1231,10 @@ class GameState {
       let tempShieldCharges = skillFx.shieldCharges || 0;
       let tempFortressCharges = skillFx.fortressCharges || 0;
 
+      const isLockInActive = state.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+      const lockInDegree = state.systemState?.lockInDegree ?? ((state.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
+      const lockInDamageMult = isLockInActive ? (lockInDegree * 4) : 1;
+
       rolledAttacks.forEach(attackType => {
         if (attackType === 'null') return;
         if (dodgeCharges > 0) {
@@ -1239,7 +1243,7 @@ class GameState {
         }
 
         if (attackType === 'regular') {
-          let damage = 10;
+          let damage = 10 * lockInDamageMult;
           damage = Math.max(1, Math.round(damage * reductionFactor));
           let shieldMultiplier = 1.0;
           if (tempShieldCharges > 0) {
@@ -1262,7 +1266,7 @@ class GameState {
           }
           totalDamage += damage;
         } else if (attackType === 'crit') {
-          let damage = 15;
+          let damage = 15 * lockInDamageMult;
           if (bossEnemy) {
             const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
             if (reactiveWeapon && reactiveWeapon.pending) {
@@ -1271,7 +1275,7 @@ class GameState {
           }
           totalDamage += damage;
         } else if (attackType === 'heavy') {
-          let damage = 12;
+          let damage = 12 * lockInDamageMult;
           damage = Math.max(1, Math.round(damage * reductionFactor));
           let shieldMultiplier = 1.0;
           if (tempShieldCharges > 0) {
@@ -1885,6 +1889,10 @@ function performCheckIn() {
         reductionFactor *= 1.4; // Brute Berserk +40% damage taken
       }
 
+      const isLockInActive = state.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+      const lockInDegree = state.systemState?.lockInDegree ?? ((state.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
+      const lockInDamageMult = isLockInActive ? (lockInDegree * 4) : 1;
+
       // Process each rolled attack
       const skillFx = state.combatState?.skillEffects || {};
       
@@ -1933,8 +1941,8 @@ function performCheckIn() {
 
         // Apply attack effects
         if (attackType === 'regular') {
-          // Regular attack: does 10 damage
-          let damage = 10;
+          // Regular attack: does 10 damage base
+          let damage = 10 * lockInDamageMult;
           damage = Math.max(1, Math.round(damage * reductionFactor));
           
           let shieldMultiplier = 1.0;
@@ -1976,8 +1984,8 @@ function performCheckIn() {
           state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: damage, source: bossEnemy.name, isBoss: true });
         }
         else if (attackType === 'crit') {
-          // Critical attack: does 15 damage (ignores all shields, etc.)
-          let damage = 15;
+          // Critical attack: does 15 damage base (ignores all shields, etc.)
+          let damage = 15 * lockInDamageMult;
           if (bossEnemy) {
             const reactiveWeapon = bossEnemy.statusEffects?.reactiveWeapon;
             if (reactiveWeapon && reactiveWeapon.pending) {
@@ -2012,8 +2020,8 @@ function performCheckIn() {
           });
         }
         else if (attackType === 'heavy') {
-          // Heavy strike: does 12 damage, forces dodge to cost double ap
-          let damage = 12;
+          // Heavy strike: does 12 damage base, forces dodge to cost double ap
+          let damage = 12 * lockInDamageMult;
           damage = Math.max(1, Math.round(damage * reductionFactor));
           
           let shieldMultiplier = 1.0;
