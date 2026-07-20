@@ -6847,15 +6847,15 @@ class UIManager {
                     const rect = circleRect || UIManager.getCircleRect();
                     const sx = rect.left + buttonCenterX;
                     const sy = rect.top + buttonCenterY;
-                  DodgeTetherAnimation.play(sx, sy, card);
+                    DodgeTetherAnimation.play(sx, sy, card);
+                  }
+                } catch (e) {
+                  console.warn('Failed to play DodgeTetherAnimation', e);
                 }
-              } catch (e) {
-                console.warn('Failed to play DodgeTetherAnimation', e);
-              }
 
-              UIManager.renderEnemies();
+                UIManager.renderEnemies();
+              }
             }
-          }
         }
       }
 
