@@ -10904,10 +10904,18 @@ class UIManager {
       const angle = (i / total) * 360;
       const badge = document.createElement('div');
       badge.className = `orbit-badge attack-${attackType}`;
-      // Set the initial angle so the badge revolves around the center via rotate/translate
-      badge.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(-${angle}deg)`;
+      
+      const minRad = 35 + ((i * 7) % 22);
+      const maxRad = 75 + ((i * 11) % 25);
+      const pulseSpeed = 2.2 + ((i * 13) % 25) / 10;
+      const pulseDelay = -(((i * 17) % 30) / 10);
+      
       badge.style.setProperty('--boss-color', bossColor);
       badge.style.setProperty('--base-angle', `${angle}deg`);
+      badge.style.setProperty('--min-radius', `${minRad}px`);
+      badge.style.setProperty('--max-radius', `${maxRad}px`);
+      badge.style.setProperty('--pulse-speed', `${pulseSpeed}s`);
+      badge.style.setProperty('--pulse-delay', `${pulseDelay}s`);
       
       // Calculate damage for regular/crit/heavy
       let dmg = 10;
@@ -11022,6 +11030,91 @@ class UIManager {
       const state = typeof getGameState === 'function' ? getGameState() : {};
       const archetypeMeta = state?.config?.enemyArchetypes?.[enemy.archetype] || {};
 
+      const elementMeanings = {
+        'Fire': '🔥 Fire: High explosive violence, heat intensity, and aggressive burst strikes.',
+        'Water': '💧 Water: Corrosive fluid flow, deep adaptability, and life-draining tidal forces.',
+        'Earth': '🌱 Earth: Dense earthen fortitude, immovable armor, and heavy seismic crush.',
+        'Air': '⚡ Air: Volatile storm velocity, rapid unpredictable blasts, and gust evasion.',
+        'Aether': '✨ Aether: Cosmic celestial energy, sacred divine criticals, and warp aura.',
+        'Void': '🌌 Void: Absolute entropy, chaos corruption, and unmitigated dark force.'
+      };
+
+      const elementIcons = {
+        'Fire': '🔥', 'Water': '💧', 'Earth': '🌱', 'Air': '⚡', 'Aether': '✨', 'Void': '🌌'
+      };
+
+      const elementColors = {
+        'Fire': '#ff9a2e', 'Water': '#4ea3ff', 'Earth': '#44ff44', 'Air': '#ffffff', 'Aether': '#ffd76a', 'Void': '#b05cff'
+      };
+
+      let elemName = 'Fire';
+      if (enemy.element) {
+        elemName = enemy.element;
+      } else if (enemy.resist) {
+        elemName = enemy.resist.split(' ')[0];
+      } else if (enemy.weak) {
+        elemName = enemy.weak.split(' ')[0];
+      }
+      if (enemy.isBoss && state.config?.bosses?.[enemy.name]?.element) {
+        elemName = state.config.bosses[enemy.name].element;
+      }
+
+      const elemIcon = elementIcons[elemName] || '🔮';
+      const elemColor = elementColors[elemName] || '#ffd700';
+      const elemMeaning = elementMeanings[elemName] || 'Mystic Elemental Energy.';
+
+      const elementTableHtml = `
+        <div class="enemy-info-element-section" style="margin-top: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
+          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: ${elemColor}; display: flex; align-items: center; gap: 6px;">
+            <span>${elemIcon}</span> <span>${elemName} Element Affinity</span>
+          </h3>
+          <div style="font-size: 11px; color: #ddd; margin-bottom: 10px; line-height: 1.4;">${elemMeaning}</div>
+          
+          <div style="font-size: 10px; font-weight: bold; color: #ffd700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: center;">
+            📊 Elemental Interaction Matrix
+          </div>
+          <table class="element-matrix-table" style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden;">
+            <thead>
+              <tr style="background: rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.15);">
+                <th style="padding: 4px; text-align: left;">Element</th>
+                <th style="padding: 4px; color: #ff9a2e;">Fire</th>
+                <th style="padding: 4px; color: #4ea3ff;">Water</th>
+                <th style="padding: 4px; color: #44ff44;">Earth</th>
+                <th style="padding: 4px; color: #ffffff;">Air</th>
+                <th style="padding: 4px; color: #ffd76a;">Aether</th>
+                <th style="padding: 4px; color: #b05cff;">Void</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="${elemName === 'Fire' ? 'background: rgba(255, 154, 46, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #ff9a2e;">🔥 Fire</td>
+                <td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td>
+              </tr>
+              <tr style="${elemName === 'Water' ? 'background: rgba(78, 163, 255, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #4ea3ff;">💧 Water</td>
+                <td>1.0×</td><td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td>
+              </tr>
+              <tr style="${elemName === 'Earth' ? 'background: rgba(68, 255, 68, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #44ff44;">🌱 Earth</td>
+                <td>1.0×</td><td>1.0×</td><td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td>
+              </tr>
+              <tr style="${elemName === 'Air' ? 'background: rgba(255, 255, 255, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #ffffff;">⚡ Air</td>
+                <td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>0.9×</td><td>1.0×</td><td>1.0×</td>
+              </tr>
+              <tr style="${elemName === 'Aether' ? 'background: rgba(255, 215, 106, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #ffd76a;">✨ Aether</td>
+                <td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td>0.9×</td><td>1.0×</td>
+              </tr>
+              <tr style="${elemName === 'Void' ? 'background: rgba(176, 92, 255, 0.25); font-weight: bold;' : ''}">
+                <td style="padding: 4px; text-align: left; color: #b05cff;">🌌 Void</td>
+                <td>1.0×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td style="color:#ff6666">1.1×</td><td>0.9×</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
       PopupsManager.closeAllPopups();
       const overlay = PopupsManager.createPopupOverlay();
       const popup = document.createElement('div');
@@ -11060,7 +11153,8 @@ class UIManager {
               <span class="stat-value" style="color: #9aff9a">${enemy.weak || '-'}</span>
             </div>
           </div>
-          <div class="enemy-info-mutators-section">
+          ${elementTableHtml}
+          <div class="enemy-info-mutators-section" style="margin-top: 10px;">
             <h3>Mutators</h3>
             ${mutatorHtml}
           </div>
@@ -11679,7 +11773,6 @@ class UIManager {
   static renderBuffPanel() {
     const panel = document.getElementById('buffPanel');
     if (!panel) return;
-    panel.innerHTML = '';
     const state = getGameState();
     const buffs = Array.isArray(state.buffs) ? state.buffs : [];
     const cfg = state.config || {};
@@ -11688,19 +11781,37 @@ class UIManager {
       return;
     }
     panel.style.display = 'flex';
-    buffs.forEach(name => {
-      const meta = (cfg.buffs && cfg.buffs[name]) || { icon: '🔸', description: name };
-      const btn = document.createElement('div');
-      btn.className = 'buff-icon';
-      btn.dataset.buff = name;
-      btn.title = meta.description || name;
-      btn.textContent = meta.icon || '🔸';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        try { PopupsManager.showDialogue(name, meta.description || ''); } catch (err) { }
-      });
-      panel.appendChild(btn);
+    const isExpanded = panel.classList.contains('expanded');
+    panel.innerHTML = '';
+
+    const triggerBtn = document.createElement('button');
+    triggerBtn.className = 'buff-panel-trigger';
+    triggerBtn.innerHTML = `<span>✨ Buffs (${buffs.length})</span> <span class="arrow">${isExpanded ? '▴' : '▾'}</span>`;
+    triggerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      panel.classList.toggle('expanded');
+      UIManager.renderBuffPanel();
     });
+    panel.appendChild(triggerBtn);
+
+    if (isExpanded) {
+      const dropdown = document.createElement('div');
+      dropdown.className = 'buff-panel-dropdown';
+      buffs.forEach(name => {
+        const meta = (cfg.buffs && cfg.buffs[name]) || { icon: '🔸', description: name };
+        const row = document.createElement('div');
+        row.className = 'buff-dropdown-row';
+        row.dataset.buff = name;
+        row.innerHTML = `<span class="buff-icon-sm">${meta.icon || '🔸'}</span> <span class="buff-name-sm">${name}</span>`;
+        row.title = meta.description || name;
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          try { PopupsManager.showDialogue(name, meta.description || ''); } catch (err) { }
+        });
+        dropdown.appendChild(row);
+      });
+      panel.appendChild(dropdown);
+    }
   }
 
   static onBuffGained(detail) {

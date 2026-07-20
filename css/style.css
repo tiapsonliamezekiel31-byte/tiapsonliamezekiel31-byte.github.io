@@ -5771,42 +5771,71 @@ button:hover,
   color: var(--text-white);
 }
 
-/* Compact vertical buff panel on the right */
+/* Compact vertical buff panel dropdown on the right */
 .buff-panel {
   position: fixed;
   right: 12px;
   top: 236px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 6px;
   z-index: 10020;
   pointer-events: auto;
 }
 
-.buff-panel .buff-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
+.buff-panel-trigger {
+  background: linear-gradient(135deg, rgba(20, 18, 38, 0.95), rgba(40, 30, 70, 0.95));
+  border: 1.5px solid rgba(255, 215, 106, 0.4);
+  color: #ffd76a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(180deg, rgba(20, 18, 38, 0.98), rgba(8, 10, 20, 0.98));
-  border: 2px solid rgba(255, 255, 255, 0.04);
-  font-size: 20px;
-  color: var(--text-white);
+  gap: 6px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.buff-panel-trigger:hover {
+  transform: scale(1.04);
+  background: linear-gradient(135deg, rgba(30, 25, 55, 0.98), rgba(60, 45, 105, 0.98));
+}
+
+.buff-panel-dropdown {
+  background: rgba(15, 14, 28, 0.96);
+  border: 1px solid rgba(255, 215, 106, 0.3);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  min-width: 150px;
+}
+
+.buff-dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  font-size: 12px;
+  color: #fff;
+  transition: background 0.15s ease;
 }
 
-.buff-panel .buff-icon.buff-gain {
-  transform: scale(1.18);
-  box-shadow: 0 10px 28px rgba(255, 215, 106, 0.12);
-}
-
-@media (max-width: 900px) {
-  .buff-panel {
-    display: none;
-  }
+.buff-dropdown-row:hover {
+  background: rgba(255, 215, 106, 0.15);
 }
 
 /* ============================================================
@@ -11009,8 +11038,6 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   height: 0;
   z-index: 10;
   pointer-events: none;
-  animation: bossOrbitPulse 4.5s ease-in-out infinite alternate;
-  will-change: transform;
 }
 
 .boss-attack-orbit-inner {
@@ -11023,15 +11050,21 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   will-change: transform;
 }
 
-@keyframes bossOrbitPulse {
-  0% { transform: scale(1.25); }
-  50% { transform: scale(0.60); }
-  100% { transform: scale(1.15); }
-}
-
 @keyframes bossOrbitRotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes badgeIndependentOrbitPulse {
+  0% {
+    transform: rotate(var(--base-angle, 0deg)) translate(var(--min-radius, 40px)) rotate(calc(-1 * var(--base-angle, 0deg)));
+  }
+  50% {
+    transform: rotate(var(--base-angle, 0deg)) translate(var(--max-radius, 85px)) rotate(calc(-1 * var(--base-angle, 0deg)));
+  }
+  100% {
+    transform: rotate(var(--base-angle, 0deg)) translate(var(--min-radius, 40px)) rotate(calc(-1 * var(--base-angle, 0deg)));
+  }
 }
 
 .orbit-badge {
@@ -11048,6 +11081,8 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   color: #fff;
   text-shadow: 0px 0px 3px rgba(0,0,0,1);
   will-change: transform;
+  animation: badgeIndependentOrbitPulse var(--pulse-speed, 3.5s) ease-in-out infinite;
+  animation-delay: var(--pulse-delay, 0s);
 }
 
 /* To keep elements upright, the inner element rotates in reverse */
