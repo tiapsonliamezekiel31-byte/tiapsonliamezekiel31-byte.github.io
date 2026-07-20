@@ -1287,6 +1287,10 @@ class GameState {
       let tempShieldCharges = skillFx.shieldCharges || 0;
       let tempFortressCharges = skillFx.fortressCharges || 0;
 
+      const nextDaysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
+      const isAggressive = (nextDaysOnLevel >= 3);
+      const checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
+
       aliveNormalEnemies.forEach(enemy => {
         if (enemy.statusEffects?.stunned) return;
 
@@ -1297,6 +1301,8 @@ class GameState {
         const currentConsecutive = enemy.consecutiveAttackDays || 0;
         const simulatedBruteMult = enemy.archetype === 'Brute' ? Math.pow(1 + state.stageState.stage / 10, Math.min(currentConsecutive, 5)) : 1.0;
         damage *= simulatedBruteMult;
+
+        damage *= checkinDamageMultiplier;
 
         if (enemy.statusEffects?.freeze) {
           damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
@@ -2256,7 +2262,7 @@ function performCheckIn() {
 
       aliveNormalEnemies.forEach(enemy => {
         // Base enemy damage calculation (normal enemies split N)
-        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal);
+        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal, { excludeEnemyIds: initiallyDeadEnemyIds });
 
         // Incantation multiplier (applies to THIS check-in, then clears)
         const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;

@@ -203,8 +203,9 @@ class EnemyManager {
     return new Enemy(name, maxAp, stage, isElite);
   }
   
-  static calculateEnemyDamage(enemy, baseN, totalAliveEnemies) {
+  static calculateEnemyDamage(enemy, baseN, totalAliveEnemies, options = {}) {
     const state = getGameState();
+    const excludeIds = options.excludeEnemyIds || null;
     // Base damage = enemy_Dmg_Mult × (N/T) + small random variance
     // Reduce absolute variance so small N still deals predictable damage
     const randomVariance = Math.random() * 2 - 1; // ±1
@@ -224,7 +225,11 @@ class EnemyManager {
     }
     
     // Rallyist Buff: multiplies damage of all enemies
-    const rallyistCount = (state.stageState.enemies || []).filter(e => e && !e.isDead && Array.isArray(e.mutators) && e.mutators.includes('rallyist')).length;
+    const rallyistCount = (state.stageState.enemies || []).filter(e => {
+      if (!e || e.isDead) return false;
+      if (excludeIds && excludeIds.has(String(e.id))) return false;
+      return Array.isArray(e.mutators) && e.mutators.includes('rallyist');
+    }).length;
     if (rallyistCount > 0) {
       const rallyistMult = state.config.mutators?.rallyist?.multiplier ?? 1.2;
       final *= Math.pow(rallyistMult, rallyistCount);
