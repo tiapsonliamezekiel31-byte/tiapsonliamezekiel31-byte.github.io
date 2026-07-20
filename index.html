@@ -16,8 +16,8 @@
   <script>
     (async function () {
       try {
-        if (!localStorage.getItem('nemesis_emergency_fix_v2')) {
-          localStorage.setItem('nemesis_emergency_fix_v2', 'true');
+        if (!localStorage.getItem('nemesis_emergency_fix_v3')) {
+          localStorage.setItem('nemesis_emergency_fix_v3', 'true');
           const keys = await caches.keys();
           for (const key of keys) {
             await caches.delete(key);
@@ -26,7 +26,7 @@
           for (const r of regs) {
             await r.unregister();
           }
-          window.location.replace(window.location.href.split('?')[0] + '?forced=1');
+          window.location.replace(window.location.href.split('?')[0] + '?forced=3');
         }
       } catch (e) { }
     })();
@@ -44,22 +44,22 @@
   </div>
 
   <!-- Core Systems -->
-  <script src="JS/config.js"></script>
-  <script src="JS/core.js"></script>
-  <script src="JS/animations.js?v=20260606b"></script>
+  <script src="JS/config.js?v=20260720a"></script>
+  <script src="JS/core.js?v=20260720a"></script>
+  <script src="JS/animations.js?v=20260720a"></script>
 
   <!-- Game Systems -->
-  <script src="JS/player.js"></script>
-  <script src="JS/tasks.js"></script>
-  <script src="JS/enemy.js"></script>
-  <script src="JS/stage.js"></script>
-  <script src="JS/combat.js?v=20260606b"></script>
+  <script src="JS/player.js?v=20260720a"></script>
+  <script src="JS/tasks.js?v=20260720a"></script>
+  <script src="JS/enemy.js?v=20260720a"></script>
+  <script src="JS/stage.js?v=20260720a"></script>
+  <script src="JS/combat.js?v=20260720a"></script>
 
   <!-- UI Systems -->
-  <script src="JS/sound.js"></script>
-  <script src="JS/shop.js"></script>
-  <script src="JS/ui.js?v=20260606c"></script>
-  <script src="JS/popups.js?v=20260606c"></script>
+  <script src="JS/sound.js?v=20260720a"></script>
+  <script src="JS/shop.js?v=20260720a"></script>
+  <script src="JS/ui.js?v=20260720a"></script>
+  <script src="JS/popups.js?v=20260720a"></script>
 
   <!-- Tycoon Mode -->
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
