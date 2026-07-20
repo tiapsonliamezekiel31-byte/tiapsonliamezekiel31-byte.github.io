@@ -6856,10 +6856,10 @@ class UIManager {
                 UIManager.renderEnemies();
               }
             }
+          }
         }
-      }
 
-      dragType = null;
+        dragType = null;
       activePointerId = null;
       currentTargetEnemyId = null;
       circleRect = null;
