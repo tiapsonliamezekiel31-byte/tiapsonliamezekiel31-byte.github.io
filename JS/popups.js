@@ -1819,12 +1819,74 @@ class PopupsManager {
         <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
       </div>
       <div class="pause-cheat-box">
-        <label for="cheatCommandInput">CHEAT COMMAND</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label for="cheatCommandInput" style="margin: 0; font-weight: bold; color: #ffd700;">CHEAT CONSOLE</label>
+          <button id="toggleCheatGuideBtn" style="background: rgba(255,215,106,0.15); border: 1px solid #ffd700; color: #ffd700; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: bold; cursor: pointer;">📖 Cheat Guide (All Commands)</button>
+        </div>
         <div class="pause-cheat-row">
           <input id="cheatCommandInput" type="text" spellcheck="false" autocomplete="off" placeholder="stage 4 b 2 | level 3 | class Knight | gold 999 | diamonds 100 | keys 10 | help" />
           <button class="btn-pause-action" id="runCheatBtn">RUN</button>
         </div>
-        <div class="pause-cheat-help">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>class Knight</span> · <span>weapon Uzi</span> · <span>gold 999</span> · <span>diamonds 100</span> · <span>keys 10</span></div>
+        <div id="cheatGuideContainer" style="display: none; margin-top: 8px; background: rgba(10,10,20,0.95); border: 1px solid rgba(255,215,106,0.3); border-radius: 8px; padding: 10px; max-height: 240px; overflow-y: auto; text-align: left; font-size: 11px; color: #eee;">
+          <div style="font-weight: bold; color: #ffd700; margin-bottom: 8px; border-bottom: 1px solid rgba(255,215,106,0.2); padding-bottom: 4px;">📜 Complete Cheat Commands Guide (Click command to autofill):</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div class="cheat-guide-item" data-cmd="stage 4 B 2" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">stage [1-7] [A/B] [1-5]</code>: Jump to stage/level
+            </div>
+            <div class="cheat-guide-item" data-cmd="boss 5" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">boss [1-7] [A/B]</code>: Jump to Boss level
+            </div>
+            <div class="cheat-guide-item" data-cmd="level 3" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">level [1-5]</code>: Jump to level in current stage
+            </div>
+            <div class="cheat-guide-item" data-cmd="weapon Scythe" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">weapon [NAME]</code>: Give specific weapon
+            </div>
+            <div class="cheat-guide-item" data-cmd="all weapons" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">all weapons</code>: Fill slots with all weapons
+            </div>
+            <div class="cheat-guide-item" data-cmd="element Fire" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">element [Air/Fire/...]</code>: Set weapon element
+            </div>
+            <div class="cheat-guide-item" data-cmd="class Knight" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">class [NAME]</code>: Change player class
+            </div>
+            <div class="cheat-guide-item" data-cmd="gold 9999" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">gold [N]</code>: Set gold amount
+            </div>
+            <div class="cheat-guide-item" data-cmd="diamonds 500" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">diamonds [N]</code>: Set diamonds amount
+            </div>
+            <div class="cheat-guide-item" data-cmd="keys 50" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">keys [N]</code>: Set lootbox keys amount
+            </div>
+            <div class="cheat-guide-item" data-cmd="hp 200" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">hp [N]</code>: Set player HP
+            </div>
+            <div class="cheat-guide-item" data-cmd="mana 100" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">mana [N]</code>: Set player Mana
+            </div>
+            <div class="cheat-guide-item" data-cmd="ap 500" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">ap [N]</code>: Set player Action Points
+            </div>
+            <div class="cheat-guide-item" data-cmd="pp 100" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">pp [N]</code>: Set pet points
+            </div>
+            <div class="cheat-guide-item" data-cmd="heal full" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">heal full</code>: Restore full HP/Mana/AP
+            </div>
+            <div class="cheat-guide-item" data-cmd="enemy hp half" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">enemy hp half</code>: Halve all enemies HP
+            </div>
+            <div class="cheat-guide-item" data-cmd="tycoon" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">tycoon</code>: Enter Tycoon Mode
+            </div>
+            <div class="cheat-guide-item" data-cmd="reset tycoon" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">reset tycoon</code>: Reset Tycoon progress
+            </div>
+          </div>
+        </div>
+        <div class="pause-cheat-help" style="margin-top: 6px;">Examples: <span>stage 4 b 2</span> · <span>level 3</span> · <span>class Knight</span> · <span>weapon Uzi</span> · <span>gold 999</span> · <span>diamonds 100</span> · <span>keys 10</span></div>
       </div>
     `;
     
@@ -1945,6 +2007,27 @@ class PopupsManager {
     });
 
     const cheatInput = popup.querySelector('#cheatCommandInput');
+    const guideContainer = popup.querySelector('#cheatGuideContainer');
+    const guideToggle = popup.querySelector('#toggleCheatGuideBtn');
+    
+    if (guideToggle && guideContainer) {
+      guideToggle.addEventListener('click', () => {
+        const isHidden = guideContainer.style.display === 'none';
+        guideContainer.style.display = isHidden ? 'block' : 'none';
+        guideToggle.textContent = isHidden ? '📖 Close Cheat Guide' : '📖 Cheat Guide (All Commands)';
+      });
+
+      guideContainer.querySelectorAll('.cheat-guide-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const cmd = item.dataset.cmd;
+          if (cheatInput && cmd) {
+            cheatInput.value = cmd;
+            cheatInput.focus();
+          }
+        });
+      });
+    }
+
     const runCheat = () => {
       const value = String(cheatInput?.value || '').trim();
       const result = this.runCheatCommand(value);
