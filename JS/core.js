@@ -1158,16 +1158,21 @@ class GameState {
     }
   }
 
-  static getBossRolledAttacks(W, bossName) {
+  static getBossRolledAttacks(N, bossName) {
     const state = getGameState();
-    if (!state.stageState.bossRolledAttacks || state.stageState.bossRolledAttacks.length !== W) {
+    if (!state.stageState.bossRolledAttacksPool || 
+        state.stageState.bossRolledAttacksPool.length !== 20 || 
+        state.stageState.bossRolledAttacksPoolBossName !== bossName) {
       const rolled = [];
-      for (let i = 0; i < W; i++) {
+      for (let i = 0; i < 20; i++) {
         rolled.push(rollBossAttack(bossName, state.config));
       }
       rolled.sort(() => Math.random() - 0.5);
-      state.stageState.bossRolledAttacks = rolled;
+      state.stageState.bossRolledAttacksPool = rolled;
+      state.stageState.bossRolledAttacksPoolBossName = bossName;
     }
+    // ensure we don't save just the slice in a way that overrides the pool
+    state.stageState.bossRolledAttacks = state.stageState.bossRolledAttacksPool.slice(0, N);
     return state.stageState.bossRolledAttacks;
   }
 
@@ -1189,16 +1194,24 @@ class GameState {
     let totalDamage = 0;
 
     if (bossEnemy && !bossEnemy.isDead) {
-      const missedDailies = TaskManager.getMissedDailies();
+      const today = TaskManager.getCurrentGameDateKey();
+      const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
+      const missedDailies = allScheduled.filter(d => !d.completed);
+      
       const bossData = state.stageState.bossData || {};
       const isPhase2 = (bossData.phase === 2) || (bossEnemy.hp / bossEnemy.maxHp <= 0.4);
-      let W = 0;
-      missedDailies.forEach(daily => {
-        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[daily.difficulty] || 1;
-        W += baseWeight + (isPhase2 ? 1 : 0);
+      
+      let maxW = 0;
+      allScheduled.forEach(d => {
+        maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
       });
-
-      const rolledAttacks = GameState.getBossRolledAttacks(W, bossEnemy.name);
+      let missedW = 0;
+      missedDailies.forEach(d => {
+        missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
+      });
+      
+      const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+      const rolledAttacks = GameState.getBossRolledAttacks(N, bossEnemy.name);
 
       const dodgeTarget = state.combatState?.dodgeTarget;
       const dodgeTargets = Array.isArray(dodgeTarget) ? [...dodgeTarget] : (dodgeTarget ? [dodgeTarget] : []);
@@ -1398,13 +1411,9 @@ function getGameState() {
 // ============================================================
 function rollBossAttack(bossName, config) {
   const bossCfg = (config.bosses && config.bosses[bossName]) || {};
-  const weights = bossCfg.attackWeights || { regular: 0.9 };
+  const weights = bossCfg.attackWeights || { regular: 0.7, crit: 0.1, heavy: 0.1, null: 0.1 };
   
-  if (Math.random() < 0.1) {
-    return 'null';
-  }
-  
-  const entries = Object.entries(weights).filter(([k]) => k !== 'null');
+  const entries = Object.entries(weights);
   let total = 0;
   entries.forEach(([_, w]) => total += w);
   
@@ -1834,15 +1843,22 @@ function performCheckIn() {
         state.stageState.bossData = bossData;
       }
 
-      // Calculate total weight W from missed dailies
-      let W = 0;
-      missedDailies.forEach(daily => {
-        const baseWeight = { Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[daily.difficulty] || 1;
-        W += baseWeight + (isPhase2 ? 1 : 0);
+      // Calculate total attacks N based on max possible weights
+      const today = TaskManager.getCurrentGameDateKey();
+      const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
+      const missedDailies = allScheduled.filter(d => !d.completed);
+      
+      let maxW = 0;
+      allScheduled.forEach(d => {
+        maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
+      });
+      let missedW = 0;
+      missedDailies.forEach(d => {
+        missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
       });
 
-      // Retrieve rolled attacks from GameState
-      const rolledAttacks = [...GameState.getBossRolledAttacks(W, bossEnemy.name)];
+      const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+      const rolledAttacks = [...GameState.getBossRolledAttacks(N, bossEnemy.name)];
 
       // Determine dodge charges for the boss
       const dodgeTarget = state.combatState?.dodgeTarget;

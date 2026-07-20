@@ -417,6 +417,35 @@ class CombatManager {
       const tgt = entry.enemy;
       if (!tgt || tgt.isDead) return;
 
+      // Boss 20% dodge chance check against player attacks
+      // swift bypasses dodge
+      const isSwift = weaponData.special === 'swift' || (weaponData.special && weaponData.special.includes('swift'));
+      if (tgt.isBoss && Math.random() < 0.20 && !isSwift) {
+        try {
+          const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${tgt.id}"]`);
+          if (targetCard) {
+            targetCard.classList.add('dodged');
+            setTimeout(() => targetCard.classList.remove('dodged'), 1200);
+            const rect = targetCard.getBoundingClientRect();
+            if (typeof FloatingDamageNumber !== 'undefined') {
+              FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'DODGED!', { color: '#ff4444', duration: 1200 });
+            }
+          }
+        } catch (e) {}
+        
+        hitDetails.push({
+          enemyId: tgt.id,
+          damage: 0,
+          isCrit: false,
+          isDead: false,
+          weaknessMatch: false,
+          resistanceMatch: false,
+          element: attackPlan.weaponElement,
+          isDodgedByBoss: true
+        });
+        return; // Skip damage resolution for this target
+      }
+
       const weaknessMatch = Boolean(attackPlan.weaponElement && tgt.weak && String(tgt.weak).split(',').map(p => p.trim().split(' ')[0]).includes(attackPlan.weaponElement));
       const resistanceMatch = Boolean(attackPlan.weaponElement && tgt.resist && String(tgt.resist).split(',').map(p => p.trim().split(' ')[0]).includes(attackPlan.weaponElement));
 
@@ -921,11 +950,17 @@ class CombatManager {
     };
   }
   
-  static getDodgeCost() {
+  static getDodgeCost(targetEnemy = null) {
     const state = getGameState();
     const multiplier = state.playerState.dodgeCostMultiplier || 1.0;
     const aliveEnemies = (state.stageState?.enemies || []).filter(e => e && !e.isDead);
     const enemyCount = aliveEnemies.length || 1;
+
+    const isBoss = targetEnemy ? !!targetEnemy.isBoss : aliveEnemies.some(e => e.isBoss);
+    if (isBoss) {
+      return Math.ceil((state.playerState.maxAp / 3) * multiplier);
+    }
+
     return Math.ceil(((state.playerState.maxAp * 1.5) / enemyCount) * multiplier);
   }
 

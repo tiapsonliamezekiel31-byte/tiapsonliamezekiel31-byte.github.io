@@ -6747,34 +6747,87 @@ class UIManager {
                 FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
               } else {
-                const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                  ? state.combatState.dodgeTarget
-                  : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-
-                if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                const dodgeCost = CombatManager.getDodgeCost(enemy);
+                if (state.playerState.ap < dodgeCost) {
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough AP', { color: '#ff4444' });
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                } else {
-                  const dodgeCost = CombatManager.getDodgeCost();
-                  state.spendAp(dodgeCost);
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                } else if (enemy.isBoss) {
+                  const today = TaskManager.getCurrentGameDateKey();
+                  const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
+                  const missedDailies = allScheduled.filter(d => !d.completed);
+                  const bossData = state.stageState.bossData || {};
+                  const isPhase2 = (bossData.phase === 2) || (enemy.maxHp > 0 && enemy.hp / enemy.maxHp <= 0.4);
+                  let maxW = 0, missedW = 0;
+                  allScheduled.forEach(d => { maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
+                  missedDailies.forEach(d => { missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
+                  const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+                  const rolledAttacks = GameState.getBossRolledAttacks(N, enemy.name);
 
-                  state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
-
-                  try {
-                    const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                      const rect = circleRect || UIManager.getCircleRect();
-                      const sx = rect.left + buttonCenterX;
-                      const sy = rect.top + buttonCenterY;
-                      DodgeTetherAnimation.play(sx, sy, card);
+                  const firstNonNullIndex = rolledAttacks.findIndex(a => a !== 'null');
+                  if (firstNonNullIndex === -1) {
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66' });
+                    try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                  } else {
+                    state.spendAp(dodgeCost);
+                    rolledAttacks[firstNonNullIndex] = 'null';
+                    if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
+                      state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
                     }
-                  } catch (e) {
-                    console.warn('Failed to play DodgeTetherAnimation', e);
-                  }
+                    const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                      ? state.combatState.dodgeTarget
+                      : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+                    state.combatState.dodgeTarget = [...currentDodges, enemy.id];
 
-                  UIManager.renderEnemies();
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack Erased! 🛡️', { color: '#44ff44' });
+
+                    try {
+                      const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                      if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                        const rect = circleRect || UIManager.getCircleRect();
+                        const sx = rect.left + buttonCenterX;
+                        const sy = rect.top + buttonCenterY;
+                        DodgeTetherAnimation.play(sx, sy, card);
+                      }
+                    } catch (e) {
+                      console.warn('Failed to play DodgeTetherAnimation', e);
+                    }
+
+                    UIManager.renderEnemies();
+                    UIManager.updateActionCosts();
+                    UIManager.updatePendingDamageDisplay();
+                  }
+                } else {
+                  const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                    ? state.combatState.dodgeTarget
+                    : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+                  if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                    try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                  } else {
+                    state.spendAp(dodgeCost);
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+
+                    state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+                    try {
+                      const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                      if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                        const rect = circleRect || UIManager.getCircleRect();
+                        const sx = rect.left + buttonCenterX;
+                        const sy = rect.top + buttonCenterY;
+                        DodgeTetherAnimation.play(sx, sy, card);
+                      }
+                    } catch (e) {
+                      console.warn('Failed to play DodgeTetherAnimation', e);
+                    }
+
+                    UIManager.renderEnemies();
+                    UIManager.updateActionCosts();
+                    UIManager.updatePendingDamageDisplay();
+                  }
                 }
               }
             }
@@ -6826,34 +6879,87 @@ class UIManager {
               FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
               try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
             } else {
-              const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                ? state.combatState.dodgeTarget
-                : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-
-              if (currentDodges.map(id => String(id)).includes(String(target.id))) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+              const dodgeCost = CombatManager.getDodgeCost(target);
+              if (state.playerState.ap < dodgeCost) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough AP', { color: '#ff4444' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-              } else {
-                const dodgeCost = CombatManager.getDodgeCost();
-                state.spendAp(dodgeCost);
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+              } else if (target.isBoss) {
+                const today = TaskManager.getCurrentGameDateKey();
+                const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
+                const missedDailies = allScheduled.filter(d => !d.completed);
+                const bossData = state.stageState.bossData || {};
+                const isPhase2 = (bossData.phase === 2) || (target.maxHp > 0 && target.hp / target.maxHp <= 0.4);
+                let maxW = 0, missedW = 0;
+                allScheduled.forEach(d => { maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
+                missedDailies.forEach(d => { missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
+                const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+                const rolledAttacks = GameState.getBossRolledAttacks(N, target.name);
 
-                state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
-
-                try {
-                  const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
-                  if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                    const rect = circleRect || UIManager.getCircleRect();
-                    const sx = rect.left + buttonCenterX;
-                    const sy = rect.top + buttonCenterY;
-                    DodgeTetherAnimation.play(sx, sy, card);
+                const firstNonNullIndex = rolledAttacks.findIndex(a => a !== 'null');
+                if (firstNonNullIndex === -1) {
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66' });
+                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                } else {
+                  state.spendAp(dodgeCost);
+                  rolledAttacks[firstNonNullIndex] = 'null';
+                  if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
+                    state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
                   }
-                } catch (e) {
-                  console.warn('Failed to play DodgeTetherAnimation', e);
-                }
+                  const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                    ? state.combatState.dodgeTarget
+                    : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+                  state.combatState.dodgeTarget = [...currentDodges, target.id];
 
-                UIManager.renderEnemies();
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack Erased! 🛡️', { color: '#44ff44' });
+
+                  try {
+                    const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                      const rect = circleRect || UIManager.getCircleRect();
+                      const sx = rect.left + buttonCenterX;
+                      const sy = rect.top + buttonCenterY;
+                      DodgeTetherAnimation.play(sx, sy, card);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to play DodgeTetherAnimation', e);
+                  }
+
+                  UIManager.renderEnemies();
+                  UIManager.updateActionCosts();
+                  UIManager.updatePendingDamageDisplay();
+                }
+              } else {
+                const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                  ? state.combatState.dodgeTarget
+                  : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+                if (currentDodges.map(id => String(id)).includes(String(target.id))) {
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                } else {
+                  state.spendAp(dodgeCost);
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+
+                  state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+                  try {
+                    const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                      const rect = circleRect || UIManager.getCircleRect();
+                      const sx = rect.left + buttonCenterX;
+                      const sy = rect.top + buttonCenterY;
+                      DodgeTetherAnimation.play(sx, sy, card);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to play DodgeTetherAnimation', e);
+                  }
+
+                  UIManager.renderEnemies();
+                  UIManager.updateActionCosts();
+                  UIManager.updatePendingDamageDisplay();
+                }
               }
             }
           }
@@ -9538,7 +9644,15 @@ class UIManager {
     // Mutator badges
     try {
       this.renderMutatorBadges(card, enemy);
-    } catch (e) { console.warn('Failed to render mutator badges', e); }
+    } catch (e) {
+      console.warn('Failed to render mutator badges', e);
+    }
+
+    try {
+      this.renderBossOrbit(card, enemy);
+    } catch (e) {
+      console.warn('Failed to render boss orbit', e);
+    }
 
         // Dynamic archetype & mutator indicators
     try {
@@ -10723,6 +10837,113 @@ class UIManager {
       setTimeout(() => tip.classList.add('visible'), 10);
       setTimeout(() => { try { tip.classList.remove('visible'); setTimeout(() => tip.remove(), 220); } catch (e) { } }, 3000);
     } catch (e) { console.warn('showEnemyTooltip', e); }
+  }
+
+  static renderBossOrbit(card, enemy) {
+    if (!enemy || !enemy.isBoss) return;
+    
+    // Anti-lag: Throttle computation to once every 500ms per enemy card
+    const now = Date.now();
+    if (card._lastOrbitUpdate && now - card._lastOrbitUpdate < 500) {
+      return;
+    }
+    card._lastOrbitUpdate = now;
+
+    const state = getGameState();
+    
+    const today = (typeof TaskManager !== 'undefined') ? TaskManager.getCurrentGameDateKey() : null;
+    if (!today) return;
+    
+    const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
+    const missedDailies = allScheduled.filter(d => !d.completed);
+    
+    const bossData = state.stageState.bossData || {};
+    const isPhase2 = (bossData.phase === 2) || (enemy.maxHp > 0 && enemy.hp / enemy.maxHp <= 0.4);
+    
+    let maxW = 0;
+    allScheduled.forEach(d => {
+      maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
+    });
+    let missedW = 0;
+    missedDailies.forEach(d => {
+      missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
+    });
+
+    const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+    const rolledAttacks = GameState.getBossRolledAttacks(N, enemy.name);
+    const visibleAttacks = rolledAttacks.filter(a => a !== 'null');
+    
+    // Check if orbit container exists
+    let orbitContainer = card.querySelector('.boss-attack-orbit');
+    if (!orbitContainer) {
+      orbitContainer = document.createElement('div');
+      orbitContainer.className = 'boss-attack-orbit';
+      card.appendChild(orbitContainer);
+    }
+    
+    // Create inner ring that counter-rotates badges if needed, though we can just counter-rotate the badges themselves via CSS animations.
+    // For simplicity, we just generate badges and apply a transform property with calc.
+    
+    // Quick diff by stringified content
+    const attacksKey = visibleAttacks.join(',');
+    if (orbitContainer.dataset.attacksKey === attacksKey) return;
+    orbitContainer.dataset.attacksKey = attacksKey;
+    
+    orbitContainer.innerHTML = ''; // clear and rebuild
+    const total = visibleAttacks.length;
+    if (total === 0) return;
+    
+    const radius = 65; // px radius for orbit
+    const bossColor = (state.config.bosses && state.config.bosses[enemy.name]?.color) || '#ff2222';
+    
+    visibleAttacks.forEach((attackType, i) => {
+      const angle = (i / total) * 360;
+      const badge = document.createElement('div');
+      badge.className = `orbit-badge attack-${attackType}`;
+      // Set the initial angle so the badge revolves around the center via rotate/translate
+      badge.style.transform = `rotate(${angle}deg) translate(${radius}px) rotate(-${angle}deg)`;
+      badge.style.setProperty('--boss-color', bossColor);
+      badge.style.setProperty('--base-angle', `${angle}deg`);
+      
+      // Calculate damage for regular/crit/heavy
+      let dmg = 10;
+      if (attackType === 'crit') dmg = 15;
+      if (attackType === 'heavy') dmg = 12;
+      let reduction = 1.0;
+      if (state.playerState.className === 'Knight') reduction -= 0.10;
+      if (state.hasBuff('Iron Skin')) reduction -= 0.10;
+      if (state.playerState.talismans?.includes("Titan's Mantle")) {
+        reduction = Math.max(0, 1.0 - (1.0 - reduction) * 2);
+      }
+      if (state.playerState.className === 'Juggernaut') reduction *= 0.85;
+      if (state.playerState.className === 'Brute' && state.combatState?.skillEffects?.wrathUnleashed) reduction *= 1.4;
+      
+      dmg = Math.max(1, Math.round(dmg * reduction));
+      if (attackType === 'crit') dmg = 15; // ignores reductions usually, but UI preview can be raw
+      
+      let badgeInner = '';
+      if (attackType === 'regular') {
+        badgeInner = `<div class="shape-triangle" style="border-bottom-color: ${bossColor}"><span>${dmg}</span></div>`;
+      } else if (attackType === 'crit') {
+        badgeInner = `<div class="shape-triangle crit" style="border-bottom-color: ${bossColor}"><span>${dmg}</span></div>`;
+      } else if (attackType === 'heavy') {
+        badgeInner = `<div class="shape-square" style="background-color: ${bossColor}"><span>${dmg}</span></div>`;
+      } else if (attackType === 'minion') {
+        const minionName = (typeof getRandomMinionNameForStage !== 'undefined') ? getRandomMinionNameForStage(state.stageState.stage, state.stageState.stageVariation) : 'Bat';
+        const emoji = (state.config.enemies && state.config.enemies[minionName]?.emoji) || '👿';
+        badgeInner = `<div class="shape-circle" style="border-color: ${bossColor}"><span>${emoji}</span></div>`;
+      } else if (attackType === 'heal') {
+        const healAmt = Math.round(enemy.maxHp * 0.10);
+        badgeInner = `<div class="shape-heart" style="background-color: ${bossColor}"><span>${healAmt}</span></div>`;
+      } else if (attackType === 'corrosive') {
+        badgeInner = `<div class="shape-star" style="background-color: ${bossColor}"><span>🧪</span></div>`;
+      } else if (attackType === 'bomb') {
+        badgeInner = `<div class="shape-circle" style="border-color: ${bossColor}"><span>💣</span></div>`;
+      }
+      
+      badge.innerHTML = badgeInner;
+      orbitContainer.appendChild(badge);
+    });
   }
 
   static renderMutatorBadges(card, enemy) {
