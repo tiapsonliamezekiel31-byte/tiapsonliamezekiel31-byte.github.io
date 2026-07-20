@@ -9094,6 +9094,7 @@ class UIManager {
   }
 
   static updateTodosList() {
+    try { this.updatePendingDamageDisplay(); } catch (e) { }
     const panel = document.getElementById('todosPanel');
     if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return; // Skip if hidden on mobile
     const todos = TaskManager.getAllTodos();

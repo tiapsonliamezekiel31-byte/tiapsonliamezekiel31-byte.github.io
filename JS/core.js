@@ -1180,7 +1180,10 @@ class GameState {
     const totalNormal = aliveNormalEnemies.length || 1;
     const passive = PlayerManager.getClassPassive();
 
-    const D = TaskManager.calculateMissedDailyDamage();
+    let D = TaskManager.calculateMissedDailyDamage();
+    if (state.systemState && state.systemState.noCheckinDamageOnce) {
+      D = 0;
+    }
     const N = D * 5;
 
     let totalDamage = 0;
@@ -1352,6 +1355,23 @@ class GameState {
 
         totalDamage += damage;
       });
+    }
+
+    try {
+      let lateTodoDamage = TaskManager.calculateLateTodoDamage();
+      if (state.systemState && state.systemState.noCheckinDamageOnce) {
+        lateTodoDamage = 0;
+      }
+      if (lateTodoDamage > 0) {
+        const nextDaysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
+        const isAggressive = (nextDaysOnLevel >= 3);
+        if (isAggressive) {
+          lateTodoDamage *= 1.5;
+        }
+        totalDamage += lateTodoDamage;
+      }
+    } catch (e) {
+      console.warn('Late todo damage calculation in calculateExactPendingDamage failed', e);
     }
 
     return Math.ceil(totalDamage);
