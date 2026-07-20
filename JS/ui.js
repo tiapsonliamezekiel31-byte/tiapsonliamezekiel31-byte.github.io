@@ -6858,8 +6858,9 @@ class UIManager {
             }
           }
         }
+      }
 
-        dragType = null;
+      dragType = null;
       activePointerId = null;
       currentTargetEnemyId = null;
       circleRect = null;
