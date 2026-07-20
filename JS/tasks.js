@@ -492,12 +492,13 @@ class TaskManager {
       }
     }
 
-    const isConsistencyActive = state.systemState && state.systemState.consistencyDaysLeft > 0;
-    if (isConsistencyActive) {
-      apReward *= 3;
-      goldReward *= 3;
-      diamondReward *= 3;
-      attrReward *= 3;
+    const isLockInActive = state.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+    const lockInDegree = state.systemState?.lockInDegree ?? ((state.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
+    if (isLockInActive) {
+      apReward *= lockInDegree;
+      goldReward *= lockInDegree;
+      diamondReward *= lockInDegree;
+      attrReward *= lockInDegree;
     }
 
     if (state.hasBuff('Lightning Speed')) {
@@ -533,8 +534,8 @@ class TaskManager {
     // Award pet points silently
     const petPointsMap = { Easy: 1, Medium: 2, Hard: 3, Ultra: 4 };
     let petPointsAwarded = petPointsMap[daily.difficulty] || 1;
-    if (isConsistencyActive) {
-      petPointsAwarded *= 3;
+    if (isLockInActive) {
+      petPointsAwarded *= lockInDegree;
     }
     state.playerState.petPoints = (state.playerState.petPoints || 0) + petPointsAwarded;
 
@@ -560,8 +561,8 @@ class TaskManager {
       if (streak > 0 && streak % 14 === 0) {
         keysAwarded *= 2;
       }
-      if (isConsistencyActive) {
-        keysAwarded *= 3;
+      if (isLockInActive) {
+        keysAwarded *= lockInDegree;
       }
       if (keysAwarded > 0) {
         state.addLootboxKeys(keysAwarded);
@@ -1377,11 +1378,13 @@ class TaskManager {
     };
 
     let damage = 0;
-    const isConsistencyActive = state.systemState && state.systemState.consistencyDaysLeft > 0;
+    const isLockInActive = state.systemState && ((state.systemState.lockInDaysLeft || 0) > 0 || (state.systemState.consistencyDaysLeft || 0) > 0);
+    const lockInDegree = state.systemState?.lockInDegree ?? ((state.systemState?.consistencyDaysLeft || 0) > 0 ? 3 : 2);
     missedDailies.forEach(daily => {
       let baseDamage = missedDailyDamageTable[daily.difficulty] ?? 0;
-      if (isConsistencyActive) {
-        baseDamage *= 8;
+      if (isLockInActive) {
+        const damageMult = lockInDegree * 4; // 2:8 ratio multiplier (Degree R -> R * 4 damage)
+        baseDamage *= damageMult;
       }
       const multiplier = daily.bloodOathActive ? state.config.bloodOathDamageMultiplier : 1;
       damage += baseDamage * multiplier;

@@ -2261,6 +2261,7 @@ function performCheckIn() {
       };
 
       aliveNormalEnemies.forEach(enemy => {
+        if (state.playerState.hp <= 0) return;
         // Base enemy damage calculation (normal enemies split N)
         let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal, { excludeEnemyIds: initiallyDeadEnemyIds });
 
@@ -2489,11 +2490,12 @@ function performCheckIn() {
   // 8) Reset dailies, update streaks and record last check-in
   try {
     if (state.systemState) {
-      if (state.systemState.consistencyDaysLeft === undefined) {
-        state.systemState.consistencyDaysLeft = 0;
+      if (state.systemState.lockInDaysLeft === undefined) {
+        state.systemState.lockInDaysLeft = state.systemState.consistencyDaysLeft || 0;
       }
-      if (state.systemState.consistencyDaysLeft > 0) {
-        state.systemState.consistencyDaysLeft--;
+      if (state.systemState.lockInDaysLeft > 0) {
+        state.systemState.lockInDaysLeft--;
+        state.systemState.consistencyDaysLeft = state.systemState.lockInDaysLeft;
       }
     }
     state.dailiesState.history = state.dailiesState.history || [];

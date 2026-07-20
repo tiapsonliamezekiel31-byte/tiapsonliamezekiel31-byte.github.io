@@ -280,7 +280,7 @@ const DEFAULT_GAME_CONFIG = {
   mutatorChancePerDay: 0.3,
   maxMutatorsPerEnemy: 3,
   mutators: {
-    available: ['vampiric','regenerator','rallyist','turret','swift','necromancer'],
+    available: ['vampiric','regenerator','rallyist','swift','necromancer'],
     vampiric: {
       // heals this enemy on dealing damage: percent of PLAYER max AP
       healPctOfPlayerMaxAp: 0.20
@@ -292,13 +292,6 @@ const DEFAULT_GAME_CONFIG = {
     rallyist: {
       // multiplies damage of all enemies by 1.2x per rallyist (multiplicatively)
       multiplier: 1.2
-    },
-    turret: {
-      // damage dealt to player when player attacks other enemies (unblockable)
-      damage: 5,
-      // cap fraction of player's max HP per action caused by turrets
-      maxBacklashFraction: 0.15,
-      unblockable: true
     },
     swift: {
       // swift enemies bypass dodge and shields when they attack

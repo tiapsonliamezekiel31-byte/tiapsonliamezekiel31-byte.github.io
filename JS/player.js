@@ -50,6 +50,15 @@ class PlayerManager {
     this.recalculateMaxAp();
     
     state.systemState.runStats.startClass = className;
+    
+    // Spawn stage 1 enemies and refresh UI on run start
+    if (typeof StageManager !== 'undefined' && typeof StageManager.initializeStage === 'function') {
+      try { StageManager.initializeStage(1); } catch (e) { console.warn('initializeStage failed', e); }
+    }
+    if (typeof UIManager !== 'undefined' && typeof UIManager.renderAll === 'function') {
+      try { UIManager.renderAll(); } catch (e) { }
+    }
+
     state.eventBus.emit(EVENTS.GAME_START, { class: className });
     
     return true;

@@ -422,7 +422,7 @@ class EnemyManager {
   // -------------------------
   static pickMutatorForEnemy(enemy) {
     const state = getGameState();
-    const pool = (state.config.mutators && state.config.mutators.available) ? state.config.mutators.available.slice() : ['vampiric','regenerator','rallyist','turret','swift','necromancer'];
+    const pool = (state.config.mutators && state.config.mutators.available) ? state.config.mutators.available.slice() : ['vampiric','regenerator','rallyist','swift','necromancer'];
     // Remove ones already present
     const choices = pool.filter(m => !(enemy.mutators || []).includes(m));
     if (!choices.length) return null;
@@ -467,38 +467,7 @@ class EnemyManager {
   }
 
   static applyMutatorsOnPlayerAttack(target, primaryDamage) {
-    // Called when the player attacks a target. Handles turret backlash and similar reactive mutators.
-    try {
-      const state = getGameState();
-      const enemies = state.stageState.enemies || [];
-
-      // Turret: every enemy with turret mutator deals flat damage to player when player attacks another enemy
-      // New rule: if the player attacked a turret, other turrets do NOT retaliate.
-      let totalTurretDamage = 0;
-      const attackedIsTurret = Boolean(target && Array.isArray(target.mutators) && target.mutators.includes('turret'));
-      enemies.forEach(e => {
-        if (!e || e.isDead) return;
-        if (Array.isArray(e.mutators) && e.mutators.includes('turret')) {
-          // Only trigger if the player attacked a different enemy and the attacked target is not a turret
-          if (e.id !== target.id && !attackedIsTurret) {
-            totalTurretDamage += (state.config.mutators?.turret?.damage ?? 5);
-          }
-        }
-      });
-
-      if (totalTurretDamage > 0) {
-        const capFraction = state.config.mutators?.turret?.maxBacklashFraction ?? 0.15;
-        const cap = Math.max(1, Math.ceil((state.playerState?.maxHp || 1) * capFraction));
-        const applied = Math.min(totalTurretDamage, cap);
-        // Unblockable by default (configurable)
-        if (applied > 0) {
-          state.takeDamage(applied);
-          try { state.eventBus.emit(EVENTS.DAMAGE_TAKEN, { amount: applied, source: 'mutator:turret', unblockable: !!state.config.mutators?.turret?.unblockable }); } catch (e) {}
-        }
-      }
-    } catch (e) {
-      console.warn('applyMutatorsOnPlayerAttack failed', e);
-    }
+    // Called when the player attacks a target.
   }
 
 

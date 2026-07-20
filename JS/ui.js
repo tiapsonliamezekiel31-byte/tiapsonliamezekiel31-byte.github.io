@@ -184,7 +184,6 @@ class UIManager {
     vampiric: { icon: '🩸', color: '#C00707', label: 'Vampiric', desc: 'Heals itself when it deals damage' },
     regenerator: { icon: '🌿', color: '#30C85A', label: 'Regenerator', desc: 'Heals every check-in' },
     rallyist: { icon: '📣', color: '#FFB84D', label: 'Rallyist', desc: 'Multiplies damage of all enemies by 1.2x per Rallyist' },
-    turret: { icon: '🔫', color: '#8B0000', label: 'Turret', desc: 'Deals backlash damage when you attack others' },
     swift: { icon: '⚡', color: '#FFD700', label: 'Swift', desc: 'Bypasses dodge and shields' },
     necromancer: { icon: '☠️', color: '#6B3E8B', label: 'Necromancer', desc: 'May revive dead allies when it attacks' }
   };
@@ -1063,7 +1062,7 @@ class UIManager {
           </svg>
         </div>
           <button id="focusTimerBtn" class="btn-focus-timer" title="Focus Timer">⏱️ FOCUS</button>
-          <button id="consistencyChallengeBtn" class="btn-consistency-challenge" title="Consistency Challenge">⚖️ CONSISTENCY</button>
+          <button id="consistencyChallengeBtn" class="btn-consistency-challenge" title="Lock In Commitment">🔒 LOCK IN</button>
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
@@ -1125,27 +1124,34 @@ class UIManager {
           <div class="focus-cost-warning">Costs 15 Mana · Doubles all task rewards</div>
         </div>
       </div>
-      <!-- Consistency Challenge Popup -->
+      <!-- Lock In Popup -->
       <div class="focus-overlay" id="consistencyOverlay" style="display: none; z-index: 19996;"></div>
       <div id="consistency-popup" style="display: none; position: fixed; z-index: 19997; top: 0; left: 0; width: 100vw; height: 100vh; align-items: center; justify-content: center; font-family: 'Orbitron', monospace; color: #ffffff; pointer-events: auto;">
-        <div class="focus-fullscreen-inner" style="background: rgba(10, 10, 14, 0.96); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 320px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;">
+        <div class="focus-fullscreen-inner" style="background: rgba(10, 10, 14, 0.96); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; max-width: 330px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.8); position: relative;">
           <button class="focus-popup-close" id="consistencyPopupClose" style="position: absolute; top: 12px; right: 12px; background: none; border: none; color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer;">✕</button>
-          <div style="font-size: 14px; color: #fef08a; font-weight: bold; margin-bottom: 8px; text-shadow: 0 0 8px rgba(234, 179, 8, 0.4);">CONSISTENCY COMMITMENT</div>
-          <div style="font-size: 8px; color: #9ca3af; text-align: center; margin-bottom: 16px; line-height: 1.4;">Commit to a number of days. Dailies completed during this time yield <strong style="color:#fef08a;">3x rewards</strong>, but each missed daily inflicts <strong style="color:#ef4444;">6x damage</strong>.</div>
+          <div style="font-size: 14px; color: #fef08a; font-weight: bold; margin-bottom: 8px; text-shadow: 0 0 8px rgba(234, 179, 8, 0.4);">LOCK IN COMMITMENT</div>
+          <div style="font-size: 8px; color: #9ca3af; text-align: center; margin-bottom: 14px; line-height: 1.4;">Set Lock In Degree. Ratio is fixed at <strong style="color:#fef08a;">2:8 (Reward:Damage)</strong> multiplier. e.g. <span style="color:#fef08a;">4x rewards</span> = <span style="color:#ef4444;">16x damage</span>.</div>
           
           <div style="display: flex; flex-direction: column; width: 100%; gap: 8px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 9px; color: #d1d5db;">Active Commitment:</span>
+              <span style="font-size: 9px; color: #d1d5db;">Active Lock In:</span>
               <span id="currentConsistencyCommitment" style="font-size: 10px; color: #fef08a; font-weight: bold;">0 days</span>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center; justify-content: center;">
-              <span style="font-size: 9px; color: #d1d5db;">Commit to:</span>
-              <input type="number" id="consistencyCommitDays" min="1" max="365" value="7" style="width: 70px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-family: inherit; font-size: 10px; padding: 4px; text-align: center; border-radius: 4px;" />
-              <span style="font-size: 9px; color: #d1d5db;">days</span>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between;">
+              <span style="font-size: 9px; color: #d1d5db;">Lock In Degree (Reward Mult):</span>
+              <input type="number" id="lockInDegreeInput" min="1" max="10" value="4" style="width: 65px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-family: inherit; font-size: 10px; padding: 4px; text-align: center; border-radius: 4px;" />
+            </div>
+            <div id="lockInRatioPreview" style="font-size: 9px; color: #fef08a; text-align: center; font-weight: bold; background: rgba(234, 179, 8, 0.1); padding: 4px; border-radius: 4px;">4x Rewards ⚡ | 16x Missed Damage 💀</div>
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between;">
+              <span style="font-size: 9px; color: #d1d5db;">Lock In Duration:</span>
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <input type="number" id="consistencyCommitDays" min="1" max="365" value="7" style="width: 65px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; font-family: inherit; font-size: 10px; padding: 4px; text-align: center; border-radius: 4px;" />
+                <span style="font-size: 9px; color: #d1d5db;">days</span>
+              </div>
             </div>
           </div>
           
-          <button class="focus-action-btn focus-start-btn" id="consistencyCommitBtn" style="width: 100%; padding: 10px; background: #eab308; color: #000; border: none; font-family: inherit; font-size: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s;">COMMIT TO CHALLENGE</button>
+          <button class="focus-action-btn focus-start-btn" id="consistencyCommitBtn" style="width: 100%; padding: 10px; background: #eab308; color: #000; border: none; font-family: inherit; font-size: 10px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: all 0.2s;">LOCK IN NOW</button>
         </div>
       </div>
       <div id="focus-mini-widget" style="display: none;">
@@ -3360,17 +3366,39 @@ class UIManager {
     const closeBtn = document.getElementById('consistencyPopupClose');
     const commitBtn = document.getElementById('consistencyCommitBtn');
     const daysInput = document.getElementById('consistencyCommitDays');
+    const degreeInput = document.getElementById('lockInDegreeInput');
+    const previewEl = document.getElementById('lockInRatioPreview');
     const activeLabel = document.getElementById('currentConsistencyCommitment');
 
     if (!btn || !overlay || !popup || !closeBtn || !commitBtn || !daysInput || !activeLabel) return;
 
-    if (state.systemState.consistencyDaysLeft === undefined) {
-      state.systemState.consistencyDaysLeft = 0;
+    if (state.systemState.lockInDaysLeft === undefined) {
+      state.systemState.lockInDaysLeft = state.systemState.consistencyDaysLeft || 0;
+    }
+    if (state.systemState.lockInDegree === undefined) {
+      state.systemState.lockInDegree = 4;
     }
 
+    const updatePreview = () => {
+      const deg = Math.max(1, parseInt(degreeInput?.value, 10) || 4);
+      if (previewEl) {
+        previewEl.textContent = `${deg}x Rewards ⚡ | ${deg * 4}x Missed Damage 💀`;
+      }
+    };
+
+    if (degreeInput) {
+      degreeInput.value = state.systemState.lockInDegree || 4;
+      degreeInput.addEventListener('input', updatePreview);
+    }
+    updatePreview();
+
     const openPopup = () => {
-      const currentDays = state.systemState.consistencyDaysLeft || 0;
-      activeLabel.textContent = `${currentDays} day${currentDays === 1 ? '' : 's'}`;
+      const currentDays = state.systemState.lockInDaysLeft || state.systemState.consistencyDaysLeft || 0;
+      const currentDegree = state.systemState.lockInDegree || 4;
+      activeLabel.textContent = `${currentDays} day${currentDays === 1 ? '' : 's'} (${currentDegree}x)`;
+      if (degreeInput) degreeInput.value = currentDegree;
+      updatePreview();
+
       overlay.style.display = 'block';
       popup.style.display = 'flex';
 
@@ -3415,12 +3443,15 @@ class UIManager {
     commitBtn.addEventListener('click', (e) => {
       if (e) e.stopPropagation();
       const val = parseInt(daysInput.value, 10);
+      const degree = Math.max(1, parseInt(degreeInput?.value, 10) || 4);
       if (isNaN(val) || val < 1) {
         alert("Please enter a valid number of days (at least 1).");
         return;
       }
       
-      state.systemState.consistencyDaysLeft = (state.systemState.consistencyDaysLeft || 0) + val;
+      state.systemState.lockInDaysLeft = (state.systemState.lockInDaysLeft || state.systemState.consistencyDaysLeft || 0) + val;
+      state.systemState.consistencyDaysLeft = state.systemState.lockInDaysLeft;
+      state.systemState.lockInDegree = degree;
       state.save();
       
       closePopup();
@@ -3430,7 +3461,7 @@ class UIManager {
         FloatingDamageNumber.show(
           window.innerWidth / 2,
           window.innerHeight / 2,
-          `Consistency challenge active: +${val} days! ⚖️`,
+          `LOCK IN ACTIVE: ${degree}x (${degree * 4}x Dmg) +${val}d! 🔒`,
           { color: '#eab308', duration: 3000 }
         );
       } catch (err) {}
@@ -3443,15 +3474,16 @@ class UIManager {
     const btn = document.getElementById('consistencyChallengeBtn');
     if (!btn) return;
     const state = getGameState();
-    const days = state.systemState ? (state.systemState.consistencyDaysLeft || 0) : 0;
+    const days = state.systemState ? (state.systemState.lockInDaysLeft || state.systemState.consistencyDaysLeft || 0) : 0;
+    const degree = state.systemState ? (state.systemState.lockInDegree || 4) : 4;
     if (days > 0) {
       btn.classList.add('active');
-      btn.textContent = `⚖️ CONSISTENCY: ${days}d`;
-      btn.title = `Consistency Challenge active: ${days} days remaining. Dailies award 3x rewards, but missed dailies deal 6x damage.`;
+      btn.textContent = `🔒 LOCK IN: ${degree}x (${days}d)`;
+      btn.title = `Lock In active: ${days} days remaining. Degree ${degree}x (${degree}x rewards, ${degree * 4}x missed daily damage).`;
     } else {
       btn.classList.remove('active');
-      btn.textContent = `⚖️ CONSISTENCY`;
-      btn.title = `Commit to Consistency. Set a number of days: dailies award 3x rewards, but missed dailies deal 6x damage.`;
+      btn.textContent = `🔒 LOCK IN`;
+      btn.title = `Lock In Commitment. Set Lock In Degree: 2:8 reward to damage multiplier ratio (e.g. 4x rewards = 16x damage).`;
     }
   }
 
@@ -6710,34 +6742,40 @@ class UIManager {
             } else if (dragType === 'skill' && isTargetingSkill) {
               UIManager.handleSkillClick(enemy.id);
             } else if (dragType === 'dodge') {
-              const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                ? state.combatState.dodgeTarget
-                : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-
-              if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+              const isSwift = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift');
+              if (isSwift) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
               } else {
-                const dodgeCost = CombatManager.getDodgeCost();
-                state.spendAp(dodgeCost);
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                  ? state.combatState.dodgeTarget
+                  : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
 
-                state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+                if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                } else {
+                  const dodgeCost = CombatManager.getDodgeCost();
+                  state.spendAp(dodgeCost);
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
 
-                try {
-                  const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-                  if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                    const rect = circleRect || UIManager.getCircleRect();
-                    const sx = rect.left + buttonCenterX;
-                    const sy = rect.top + buttonCenterY;
-                    DodgeTetherAnimation.play(sx, sy, card);
+                  state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+                  try {
+                    const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                      const rect = circleRect || UIManager.getCircleRect();
+                      const sx = rect.left + buttonCenterX;
+                      const sy = rect.top + buttonCenterY;
+                      DodgeTetherAnimation.play(sx, sy, card);
+                    }
+                  } catch (e) {
+                    console.warn('Failed to play DodgeTetherAnimation', e);
                   }
-                } catch (e) {
-                  console.warn('Failed to play DodgeTetherAnimation', e);
-                }
 
-                UIManager.renderEnemies();
+                  UIManager.renderEnemies();
+                }
               }
             }
           }
@@ -6783,27 +6821,32 @@ class UIManager {
               }
             });
 
-            const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-              ? state.combatState.dodgeTarget
-              : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-
-            if (currentDodges.map(id => String(id)).includes(String(target.id))) {
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+            const isSwift = Array.isArray(target.mutators) && target.mutators.includes('swift');
+            if (isSwift) {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
               try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
             } else {
-              const dodgeCost = CombatManager.getDodgeCost();
-              state.spendAp(dodgeCost);
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+              const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                ? state.combatState.dodgeTarget
+                : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
 
-              state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+              if (currentDodges.map(id => String(id)).includes(String(target.id))) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+              } else {
+                const dodgeCost = CombatManager.getDodgeCost();
+                state.spendAp(dodgeCost);
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
 
-              try {
-                const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
-                if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                  const rect = circleRect || UIManager.getCircleRect();
-                  const sx = rect.left + buttonCenterX;
-                  const sy = rect.top + buttonCenterY;
+                state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+
+                try {
+                  const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                  if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                    const rect = circleRect || UIManager.getCircleRect();
+                    const sx = rect.left + buttonCenterX;
+                    const sy = rect.top + buttonCenterY;
                   DodgeTetherAnimation.play(sx, sy, card);
                 }
               } catch (e) {
