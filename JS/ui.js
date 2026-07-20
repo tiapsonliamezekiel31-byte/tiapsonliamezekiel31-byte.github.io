@@ -11030,90 +11030,58 @@ class UIManager {
       const state = typeof getGameState === 'function' ? getGameState() : {};
       const archetypeMeta = state?.config?.enemyArchetypes?.[enemy.archetype] || {};
 
-      const elementMeanings = {
-        'Fire': '🔥 Fire: High explosive violence, heat intensity, and aggressive burst strikes.',
-        'Water': '💧 Water: Corrosive fluid flow, deep adaptability, and life-draining tidal forces.',
-        'Earth': '🌱 Earth: Dense earthen fortitude, immovable armor, and heavy seismic crush.',
-        'Air': '⚡ Air: Volatile storm velocity, rapid unpredictable blasts, and gust evasion.',
-        'Aether': '✨ Aether: Cosmic celestial energy, sacred divine criticals, and warp aura.',
-        'Void': '🌌 Void: Absolute entropy, chaos corruption, and unmitigated dark force.'
-      };
+      let bossAttacksTableHtml = '';
+      if (enemy.isBoss) {
+        const bossCfg = (state.config && state.config.bosses && state.config.bosses[enemy.name]) || {};
+        const weights = bossCfg.attackWeights || {};
+        const bossColor = bossCfg.color || '#ff2222';
+        
+        const attackDetails = {
+          heavy: { name: 'Heavy Slam', badge: `<div class="shape-square" style="background-color:${bossColor}; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:#fff;">12</div>`, desc: 'Heavy crushing slam dealing 12 damage & doubling player dodge cost.' },
+          crit: { name: 'Critical Strike', badge: `<div class="shape-triangle crit" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">15</span></div>`, desc: 'Critical strike dealing 15 raw damage, bypassing player shields.' },
+          bomb: { name: 'Summon Bomb', badge: `<div class="shape-circle" style="border:2px solid ${bossColor}; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">💣</div>`, desc: 'Summons an explosive bomb enemy onto the field.' },
+          minion: { name: 'Summon Minion', badge: `<div class="shape-circle" style="border:2px solid ${bossColor}; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">👿</div>`, desc: 'Summons a stage minion ally to attack the player.' },
+          corrosive: { name: 'Corrosive Spit', badge: `<div class="shape-star" style="background-color:${bossColor}; width:22px; height:22px; border-radius:3px; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">🧪</div>`, desc: 'Toxic spit reducing player shield & heal efficiency by 10%.' },
+          heal: { name: 'Self-Heal', badge: `<div class="shape-heart" style="background-color:${bossColor}; width:22px; height:22px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">💚</div>`, desc: 'Restores 10% of boss max HP.' },
+          regular: { name: 'Regular Strike', badge: `<div class="shape-triangle" style="border-bottom-color:${bossColor}; border-left:11px solid transparent; border-right:11px solid transparent; border-bottom:22px solid ${bossColor}; display:inline-flex; align-items:center; justify-content:center;"><span style="color:#fff; font-size:9px; font-weight:bold;">10</span></div>`, desc: 'Standard strike dealing 10 damage.' },
+          null: { name: 'Rest / Null', badge: `<div class="shape-circle" style="border:1px dashed #aaa; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:11px;">🛡️</div>`, desc: 'Boss rests for turn or attack is erased by player dodge.' }
+        };
 
-      const elementIcons = {
-        'Fire': '🔥', 'Water': '💧', 'Earth': '🌱', 'Air': '⚡', 'Aether': '✨', 'Void': '🌌'
-      };
+        const totalW = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
+        const rows = Object.entries(weights).map(([type, w]) => {
+          const detail = attackDetails[type] || { name: type, badge: '❓', desc: '' };
+          const pct = Math.round((w / totalW) * 100);
+          return `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+              <td style="padding: 6px; text-align: center;">${detail.badge}</td>
+              <td style="padding: 6px; font-weight: bold; color: #fff;">${detail.name}</td>
+              <td style="padding: 6px; color: #ccc; font-size: 10px;">${detail.desc}</td>
+              <td style="padding: 6px; text-align: right; font-weight: bold; color: #ffd700; font-family: 'Orbitron', sans-serif;">${pct}%</td>
+            </tr>
+          `;
+        }).join('');
 
-      const elementColors = {
-        'Fire': '#ff9a2e', 'Water': '#4ea3ff', 'Earth': '#44ff44', 'Air': '#ffffff', 'Aether': '#ffd76a', 'Void': '#b05cff'
-      };
-
-      let elemName = 'Fire';
-      if (enemy.element) {
-        elemName = enemy.element;
-      } else if (enemy.resist) {
-        elemName = enemy.resist.split(' ')[0];
-      } else if (enemy.weak) {
-        elemName = enemy.weak.split(' ')[0];
-      }
-      if (enemy.isBoss && state.config?.bosses?.[enemy.name]?.element) {
-        elemName = state.config.bosses[enemy.name].element;
-      }
-
-      const elemIcon = elementIcons[elemName] || '🔮';
-      const elemColor = elementColors[elemName] || '#ffd700';
-      const elemMeaning = elementMeanings[elemName] || 'Mystic Elemental Energy.';
-
-      const elementTableHtml = `
-        <div class="enemy-info-element-section" style="margin-top: 14px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 10px;">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: ${elemColor}; display: flex; align-items: center; gap: 6px;">
-            <span>${elemIcon}</span> <span>${elemName} Element Affinity</span>
-          </h3>
-          <div style="font-size: 11px; color: #ddd; margin-bottom: 10px; line-height: 1.4;">${elemMeaning}</div>
-          
-          <div style="font-size: 10px; font-weight: bold; color: #ffd700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; text-align: center;">
-            📊 Elemental Interaction Matrix
+        bossAttacksTableHtml = `
+          <div class="enemy-info-boss-attacks" style="margin-top: 14px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 13px; color: #ffd700; display: flex; align-items: center; gap: 6px;">
+              <span>🎯</span> <span>Boss Attack Arsenal & Roll Chances</span>
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; overflow: hidden;">
+              <thead>
+                <tr style="background: rgba(255,215,106,0.12); border-bottom: 1px solid rgba(255,215,106,0.25); color: #ffd700; font-family: 'Orbitron', sans-serif;">
+                  <th style="padding: 6px; width: 44px; text-align: center;">Badge</th>
+                  <th style="padding: 6px;">Attack Name</th>
+                  <th style="padding: 6px;">Effect / Description</th>
+                  <th style="padding: 6px; width: 60px; text-align: right;">Chance</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows}
+              </tbody>
+            </table>
           </div>
-          <table class="element-matrix-table" style="width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; background: rgba(0,0,0,0.4); border-radius: 4px; overflow: hidden;">
-            <thead>
-              <tr style="background: rgba(255,255,255,0.08); border-bottom: 1px solid rgba(255,255,255,0.15);">
-                <th style="padding: 4px; text-align: left;">Element</th>
-                <th style="padding: 4px; color: #ff9a2e;">Fire</th>
-                <th style="padding: 4px; color: #4ea3ff;">Water</th>
-                <th style="padding: 4px; color: #44ff44;">Earth</th>
-                <th style="padding: 4px; color: #ffffff;">Air</th>
-                <th style="padding: 4px; color: #ffd76a;">Aether</th>
-                <th style="padding: 4px; color: #b05cff;">Void</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="${elemName === 'Fire' ? 'background: rgba(255, 154, 46, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #ff9a2e;">🔥 Fire</td>
-                <td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td>
-              </tr>
-              <tr style="${elemName === 'Water' ? 'background: rgba(78, 163, 255, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #4ea3ff;">💧 Water</td>
-                <td>1.0×</td><td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td>
-              </tr>
-              <tr style="${elemName === 'Earth' ? 'background: rgba(68, 255, 68, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #44ff44;">🌱 Earth</td>
-                <td>1.0×</td><td>1.0×</td><td>0.9×</td><td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td>
-              </tr>
-              <tr style="${elemName === 'Air' ? 'background: rgba(255, 255, 255, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #ffffff;">⚡ Air</td>
-                <td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>0.9×</td><td>1.0×</td><td>1.0×</td>
-              </tr>
-              <tr style="${elemName === 'Aether' ? 'background: rgba(255, 215, 106, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #ffd76a;">✨ Aether</td>
-                <td style="color:#ff6666">1.1×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td>0.9×</td><td>1.0×</td>
-              </tr>
-              <tr style="${elemName === 'Void' ? 'background: rgba(176, 92, 255, 0.25); font-weight: bold;' : ''}">
-                <td style="padding: 4px; text-align: left; color: #b05cff;">🌌 Void</td>
-                <td>1.0×</td><td>1.0×</td><td>1.0×</td><td>1.0×</td><td style="color:#ff6666">1.1×</td><td>0.9×</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      `;
+        `;
+      }
 
       PopupsManager.closeAllPopups();
       const overlay = PopupsManager.createPopupOverlay();
@@ -11153,7 +11121,7 @@ class UIManager {
               <span class="stat-value" style="color: #9aff9a">${enemy.weak || '-'}</span>
             </div>
           </div>
-          ${elementTableHtml}
+          ${bossAttacksTableHtml}
           <div class="enemy-info-mutators-section" style="margin-top: 10px;">
             <h3>Mutators</h3>
             ${mutatorHtml}
