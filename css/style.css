@@ -11009,9 +11009,26 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   height: 0;
   z-index: 10;
   pointer-events: none;
-  animation: bossOrbitRotate 15s linear infinite;
+  animation: bossOrbitPulse 4.5s ease-in-out infinite alternate;
   will-change: transform;
 }
+
+.boss-attack-orbit-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  animation: bossOrbitRotate 12s linear infinite;
+  will-change: transform;
+}
+
+@keyframes bossOrbitPulse {
+  0% { transform: scale(1.25); }
+  50% { transform: scale(0.60); }
+  100% { transform: scale(1.15); }
+}
+
 @keyframes bossOrbitRotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

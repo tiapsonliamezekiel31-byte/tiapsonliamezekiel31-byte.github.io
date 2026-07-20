@@ -10880,16 +10880,20 @@ class UIManager {
       orbitContainer.className = 'boss-attack-orbit';
       card.appendChild(orbitContainer);
     }
-    
-    // Create inner ring that counter-rotates badges if needed, though we can just counter-rotate the badges themselves via CSS animations.
-    // For simplicity, we just generate badges and apply a transform property with calc.
+
+    let orbitInner = orbitContainer.querySelector('.boss-attack-orbit-inner');
+    if (!orbitInner) {
+      orbitInner = document.createElement('div');
+      orbitInner.className = 'boss-attack-orbit-inner';
+      orbitContainer.appendChild(orbitInner);
+    }
     
     // Quick diff by stringified content
     const attacksKey = visibleAttacks.join(',');
     if (orbitContainer.dataset.attacksKey === attacksKey) return;
     orbitContainer.dataset.attacksKey = attacksKey;
     
-    orbitContainer.innerHTML = ''; // clear and rebuild
+    orbitInner.innerHTML = ''; // clear and rebuild
     const total = visibleAttacks.length;
     if (total === 0) return;
     
@@ -10942,7 +10946,7 @@ class UIManager {
       }
       
       badge.innerHTML = badgeInner;
-      orbitContainer.appendChild(badge);
+      orbitInner.appendChild(badge);
     });
   }
 
