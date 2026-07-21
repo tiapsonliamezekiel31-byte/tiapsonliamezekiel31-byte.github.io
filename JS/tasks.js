@@ -865,7 +865,7 @@ class TaskManager {
       completed: false,
       bloodOath: false,
       bloodOathActive: false,
-      layout: null,
+      layout: { x: 4, y: 4 },
       subtasks: subtasks.map(st => ({
         id: this.generateTaskId(),
         name: st,

@@ -3419,8 +3419,8 @@ class PopupsManager {
             created.clusterAttributes = t.clusterAttributes;
           }
           created.layout = {
-            x: 15 + (Math.random() * 20),
-            y: 8 + (Math.random() * 8)
+            x: 4 + ((addedCount % 5) * 2),
+            y: 4 + ((addedCount % 5) * 2)
           };
           addedCount++;
         }

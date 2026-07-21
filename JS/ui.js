@@ -4038,8 +4038,8 @@ class UIManager {
             created.clusterAttributes = t.clusterAttributes;
           }
           created.layout = {
-            x: 15 + (Math.random() * 20),
-            y: 8 + (Math.random() * 8)
+            x: 4 + ((count % 5) * 2),
+            y: 4 + ((count % 5) * 2)
           };
           count++;
         }
@@ -8776,18 +8776,9 @@ class UIManager {
   }
 
   static getDefaultTodoLayout(index, metrics, tileSize, hasHeader = false) {
-    const padding = 20;
-    const gap = 12;
-    const cols = Math.max(1, Math.floor((metrics.width - (padding * 2) + gap) / (tileSize.width + gap)));
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-    const minXPx = 20;
-    const minYPx = hasHeader ? 28 : 20;
-    const xPx = Math.min(Math.max(minXPx, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
-    const yPx = Math.min(Math.max(minYPx, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
     return {
-      x: (xPx / metrics.width) * 100,
-      y: (yPx / metrics.height) * 100
+      x: 4,
+      y: 4
     };
   }
 
