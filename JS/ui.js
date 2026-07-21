@@ -8759,16 +8759,14 @@ class UIManager {
   }
 
   static clampTodoLayout(layout, metrics, tileSize, hasHeader = false) {
-    const minXPx = 20;
-    const minYPx = hasHeader ? 28 : 0;
-    const minX = (minXPx / metrics.width) * 100;
-    const minY = (minYPx / metrics.height) * 100;
-    const maxX = Math.max(minX, 100 - ((tileSize.width / metrics.width) * 100));
-    const maxY = Math.max(minY, 100 - ((tileSize.height / metrics.height) * 100));
+    const minX = 0;
+    const minY = 0;
+    const maxX = Math.max(0, 100 - ((tileSize.width / metrics.width) * 100));
+    const maxY = Math.max(0, 100 - ((tileSize.height / metrics.height) * 100));
     let x = Number(layout?.x);
     let y = Number(layout?.y);
-    if (isNaN(x) || !isFinite(x) || x < 0 || x > 100) x = 0;
-    if (isNaN(y) || !isFinite(y) || y < 0 || y > 100) y = 0;
+    if (isNaN(x) || !isFinite(x)) x = 0;
+    if (isNaN(y) || !isFinite(y)) y = 0;
     return {
       x: Math.max(minX, Math.min(maxX, x)),
       y: Math.max(minY, Math.min(maxY, y))
@@ -8776,10 +8774,22 @@ class UIManager {
   }
 
   static getDefaultTodoLayout(index, metrics, tileSize, hasHeader = false) {
-    return {
-      x: 4,
-      y: 4
-    };
+    const boardWidth = metrics?.width || 800;
+    const boardHeight = metrics?.height || 600;
+    const cardW = tileSize?.width || 180;
+    const cardH = tileSize?.height || 180;
+
+    const cols = Math.max(1, Math.floor((boardWidth - 20) / (cardW + 15)));
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+
+    const xPx = 15 + col * (cardW + 15);
+    const yPx = 15 + row * (cardH + 20);
+
+    const xPct = Math.min(85, (xPx / boardWidth) * 100);
+    const yPct = Math.min(85, (yPx / boardHeight) * 100);
+
+    return { x: xPct, y: yPct };
   }
 
   static positionTodoCards() {
@@ -8816,7 +8826,13 @@ class UIManager {
       if (todo.clusterId && clusterPositions[todo.clusterId]) {
         const prev = clusterPositions[todo.clusterId];
         const leftPx = prev.leftPx;
-        const topPx = prev.topPx + prev.heightPx;
+        const topPx = prev.topPx + prev.heightPx + 6;
+
+        // Ensure child cards in cluster don't have separate competing layout objects saved
+        if (todo.layout && (todo.clusterIndex || 0) > 0) {
+          delete todo.layout;
+          changed = true;
+        }
 
         card.style.width = `${tileSize.width}px`;
         card.style.left = `${leftPx}px`;
@@ -9060,7 +9076,6 @@ class UIManager {
 
       const startX = event.clientX;
       const startY = event.clientY;
-      let isLongPressed = false;
 
       if (card) {
         const todoId = card.dataset.id;
@@ -9068,14 +9083,11 @@ class UIManager {
 
         event.preventDefault();
 
-        try { card.setPointerCapture(event.pointerId); } catch (error) { }
-
         // Check double tap for completing To-Do (only when clicking the main shape)
         const targetIsShape = !!event.target.closest('.todo-main-shape');
         const now = Date.now();
         const lastTap = Number(card.dataset.lastTapTime || 0);
         if (targetIsShape && (now - lastTap < 300)) {
-          clearTimeout(this.todoHoldTimer);
           card.dataset.lastTapTime = '0';
           
           const res = TaskManager.completeTodo(todoId);
@@ -9109,107 +9121,167 @@ class UIManager {
           card.dataset.lastTapTime = String(now);
         }
 
-        // Long-Press to start Dragging (Mobile & Desktop friendly)
-        clearTimeout(this.todoHoldTimer);
-        this.todoHoldTimer = setTimeout(() => {
-          isLongPressed = true;
-          try { if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(40); } catch (e) {}
+        let isDragging = false;
+        const todo = TaskManager.getTaskById(todoId);
+        const isCluster = todo && todo.clusterId;
+        let clusterCards = [];
+        let firstCardTodo = null;
+        let firstCardElement = null;
 
-          const todo = TaskManager.getTaskById(todoId);
-          const isCluster = todo && todo.clusterId;
-          let clusterCards = [];
-          let firstCardTodo = null;
-          let firstCardElement = null;
+        if (isCluster) {
+          clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
+            .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
 
-          if (isCluster) {
-            clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
-              .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
-
-            if (clusterCards.length > 0) {
-              firstCardElement = clusterCards[0];
-              firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
-            }
+          if (clusterCards.length > 0) {
+            firstCardElement = clusterCards[0];
+            firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
           }
+        }
 
-          const cardRect = card.getBoundingClientRect();
-          const boardRect = board.getBoundingClientRect();
+        const cardRect = card.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
 
-          const styleLeft = card.style.left || '0px';
-          const styleTop = card.style.top || '0px';
-          let startLeftPx = styleLeft.includes('px') ? parseFloat(styleLeft) || 0 : ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
-          let startTopPx = styleTop.includes('px') ? parseFloat(styleTop) || 0 : ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
-          const startLeftPercent = styleLeft.includes('px') ? (startLeftPx / boardRect.width) * 100 : parseFloat(styleLeft) || 0;
-          const startTopPercent = styleTop.includes('px') ? (startTopPx / boardRect.height) * 100 : parseFloat(styleTop) || 0;
+        const startLeftPx = cardRect.left - boardRect.left;
+        const startTopPx = cardRect.top - boardRect.top;
+        const startLeftPercent = (startLeftPx / Math.max(1, boardRect.width)) * 100;
+        const startTopPercent = (startTopPx / Math.max(1, boardRect.height)) * 100;
 
-          let firstStartLeftPercent = 0;
-          let firstStartTopPercent = 0;
-          if (firstCardElement) {
-            const fStyleLeft = firstCardElement.style.left || '0px';
-            const fStyleTop = firstCardElement.style.top || '0px';
+        const offsetX = event.clientX - cardRect.left;
+        const offsetY = event.clientY - cardRect.top;
 
-            firstStartLeftPercent = fStyleLeft.includes('px') ? (parseFloat(fStyleLeft) / boardRect.width) * 100 : parseFloat(fStyleLeft) || 0;
-            firstStartTopPercent = fStyleTop.includes('px') ? (parseFloat(fStyleTop) / boardRect.height) * 100 : parseFloat(fStyleTop) || 0;
-          }
+        let firstStartLeftPercent = 0;
+        let firstStartTopPercent = 0;
+        if (firstCardElement) {
+          const fRect = firstCardElement.getBoundingClientRect();
+          firstStartLeftPercent = ((fRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100;
+          firstStartTopPercent = ((fRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100;
+        }
 
-          const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
+        const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
 
-          this.todoDragState = {
-            todoId,
-            card,
-            board,
-            pointerId: event.pointerId,
-            boardRect,
-            cardWidth: cardRect.width,
-            cardHeight: cardRect.height,
-            offsetX: event.clientX - (boardRect.left + startLeftPx),
-            offsetY: event.clientY - (boardRect.top + startTopPx),
-            moved: false,
-            startX: event.clientX,
-            startY: event.clientY,
-            startLeftPercent,
-            startTopPercent,
-            nextX: startLeftPercent,
-            nextY: startTopPercent,
-            isCluster,
-            hasHeader,
-            firstCardElement,
-            firstStartLeftPercent,
-            firstStartTopPercent,
-            clusterCards
-          };
-
-          card.classList.add('dragging');
-          if (isCluster) {
-            clusterCards.forEach(c => c.classList.add('dragging'));
-          }
-        }, 400);
-
-        const onMove = (moveEvent) => {
+        const onCardMove = (moveEvent) => {
           if (moveEvent.pointerId !== event.pointerId) return;
-          if (!isLongPressed) {
-            const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-            if (dist > 8) {
-              clearTimeout(this.todoHoldTimer);
-              cleanup();
+          if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
+
+          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+          if (!isDragging) {
+            if (dist > 5) {
+              isDragging = true;
+              try { card.setPointerCapture(event.pointerId); } catch (error) { }
+
+              this.todoDragState = {
+                todoId,
+                card,
+                board,
+                pointerId: event.pointerId,
+                boardRect,
+                cardWidth: cardRect.width,
+                cardHeight: cardRect.height,
+                offsetX,
+                offsetY,
+                moved: true,
+                startX,
+                startY,
+                startLeftPercent,
+                startTopPercent,
+                nextX: startLeftPercent,
+                nextY: startTopPercent,
+                isCluster,
+                hasHeader,
+                firstCardElement,
+                firstStartLeftPercent,
+                firstStartTopPercent,
+                clusterCards
+              };
+
+              card.classList.add('dragging');
+              if (isCluster) {
+                clusterCards.forEach(c => c.classList.add('dragging'));
+              }
+            } else {
+              return;
             }
+          }
+
+          const boardNow = board.getBoundingClientRect();
+          let nextLeftPx = moveEvent.clientX - boardNow.left - offsetX;
+          let nextTopPx = moveEvent.clientY - boardNow.top - offsetY;
+
+          nextLeftPx = Math.max(0, Math.min(boardNow.width - cardRect.width, nextLeftPx));
+          nextTopPx = Math.max(0, Math.min(boardNow.height - cardRect.height, nextTopPx));
+
+          const nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
+          const nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+
+          if (this.todoDragState) {
+            this.todoDragState.nextX = nextX;
+            this.todoDragState.nextY = nextY;
+            this.todoDragState.moved = true;
+          }
+
+          if (isCluster && firstCardElement && firstCardTodo) {
+            const deltaX = nextX - startLeftPercent;
+            const deltaY = nextY - startTopPercent;
+
+            firstCardTodo.layout = {
+              x: Math.max(0, firstStartLeftPercent + deltaX),
+              y: Math.max(0, firstStartTopPercent + deltaY)
+            };
+
+            this.positionTodoCards();
+          } else {
+            card.style.left = `${nextX}%`;
+            card.style.top = `${nextY}%`;
           }
         };
 
-        const onUp = (upEvent) => {
+        const onCardUp = (upEvent) => {
           if (upEvent.pointerId !== event.pointerId) return;
-          clearTimeout(this.todoHoldTimer);
-          cleanup();
+          cleanupCard();
+
+          const dragState = this.todoDragState;
+          if (isDragging && dragState) {
+            card.classList.remove('dragging');
+            try { card.releasePointerCapture(event.pointerId); } catch (error) { }
+
+            if (isCluster && clusterCards) {
+              clusterCards.forEach(c => c.classList.remove('dragging'));
+              if (firstCardElement && firstCardTodo && firstCardTodo.layout) {
+                TaskManager.updateTodoLayout(firstCardElement.dataset.id, firstCardTodo.layout);
+              }
+              // Clean up non-anchor cluster cards layouts
+              clusterCards.forEach((c, i) => {
+                if (i > 0) {
+                  const cTodo = TaskManager.getTaskById(c.dataset.id);
+                  if (cTodo && cTodo.layout) delete cTodo.layout;
+                }
+              });
+              try { getGameState().save(); } catch (error) { }
+            } else if (dragState.moved) {
+              const layout = this.clampTodoLayout(
+                { x: dragState.nextX, y: dragState.nextY },
+                { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) },
+                { width: cardRect.width, height: cardRect.height },
+                hasHeader
+              );
+              TaskManager.updateTodoLayout(todoId, layout);
+              try { getGameState().save(); } catch (error) { }
+            }
+          }
+
+          this.todoDragState = null;
+          this.positionTodoCards();
         };
 
-        const cleanup = () => {
-          document.removeEventListener('pointermove', onMove);
-          document.removeEventListener('pointerup', onUp);
-          document.removeEventListener('pointercancel', onUp);
+        const cleanupCard = () => {
+          document.removeEventListener('pointermove', onCardMove);
+          document.removeEventListener('pointerup', onCardUp);
+          document.removeEventListener('pointercancel', onCardUp);
         };
 
-        document.addEventListener('pointermove', onMove);
-        document.addEventListener('pointerup', onUp);
-        document.addEventListener('pointercancel', onUp);
+        document.addEventListener('pointermove', onCardMove);
+        document.addEventListener('pointerup', onCardUp);
+        document.addEventListener('pointercancel', onCardUp);
 
       } else {
         const existingWizard = document.querySelector('.floating-wizard');
@@ -9253,105 +9325,6 @@ class UIManager {
         document.addEventListener('pointercancel', onUp);
       }
     });
-
-    const onMove = (event) => {
-      const dragState = this.todoDragState;
-      if (!dragState || event.pointerId !== dragState.pointerId) return;
-      if (event.clientX === 0 && event.clientY === 0) return;
-
-      const boardRect = dragState.board.getBoundingClientRect();
-      const minXPx = 20;
-      const minYPx = dragState.hasHeader ? 28 : 0;
-      const maxLeft = Math.max(minXPx, boardRect.width - dragState.cardWidth);
-      const maxTop = Math.max(minYPx, boardRect.height - dragState.cardHeight);
-
-      const nextLeftPx = Math.max(minXPx, Math.min(maxLeft, event.clientX - boardRect.left - dragState.offsetX));
-      const nextTopPx = Math.max(minYPx, Math.min(maxTop, event.clientY - boardRect.top - dragState.offsetY));
-
-      if (!dragState.moved) {
-        const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
-        if (distance > 4) dragState.moved = true;
-      }
-
-      dragState.nextX = (nextLeftPx / Math.max(1, boardRect.width)) * 100;
-      dragState.nextY = (nextTopPx / Math.max(1, boardRect.height)) * 100;
-
-      if (dragState.isCluster && dragState.firstCardElement) {
-        const deltaX = dragState.nextX - dragState.startLeftPercent;
-        const deltaY = dragState.nextY - dragState.startTopPercent;
-
-        // Update the first card's layout in memory to allow real-time rigid positioning
-        const firstCardTodo = TaskManager.getTaskById(dragState.firstCardElement.dataset.id);
-        if (firstCardTodo) {
-          firstCardTodo.layout = {
-            x: dragState.firstStartLeftPercent + deltaX,
-            y: dragState.firstStartTopPercent + deltaY
-          };
-        }
-
-        dragState.firstCardElement.style.left = `${dragState.firstStartLeftPercent + deltaX}%`;
-        dragState.firstCardElement.style.top = `${dragState.firstStartTopPercent + deltaY}%`;
-
-        this.positionTodoCards();
-      } else {
-        dragState.card.style.left = `${dragState.nextX}%`;
-        dragState.card.style.top = `${dragState.nextY}%`;
-      }
-    };
-
-    const endDrag = (event) => {
-      const dragState = this.todoDragState;
-      if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
-
-      const boardRect = dragState.board.getBoundingClientRect();
-      const cardRect = dragState.card.getBoundingClientRect();
-      dragState.card.classList.remove('dragging');
-      try { dragState.card.releasePointerCapture(dragState.pointerId); } catch (error) { }
-
-      if (dragState.isCluster && dragState.clusterCards) {
-        if (dragState.moved) {
-          dragState.clusterCards.forEach(c => {
-            c.classList.remove('dragging');
-
-            const cRect = c.getBoundingClientRect();
-            const cTileSize = { width: cRect.width, height: cRect.height };
-            const cTodo = TaskManager.getTaskById(c.dataset.id);
-            const cHasHeader = !!cTodo?.clusterId || (!!cTodo?.deadline && !cTodo?.completed);
-            const cLayout = this.clampTodoLayout({
-              x: ((cRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
-              y: ((cRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
-            }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, cTileSize, cHasHeader);
-
-            TaskManager.updateTodoLayout(c.dataset.id, cLayout);
-          });
-          try { getGameState().save(); } catch (error) { }
-          this.todoDragSuppressUntil = Date.now() + 250;
-        } else {
-          dragState.clusterCards.forEach(c => {
-            c.classList.remove('dragging');
-          });
-        }
-      } else if (dragState.moved) {
-        const tileSize = { width: cardRect.width, height: cardRect.height };
-        const cTodo = TaskManager.getTaskById(dragState.todoId);
-        const cHasHeader = !!cTodo?.clusterId || (!!cTodo?.deadline && !cTodo?.completed);
-        const layout = this.clampTodoLayout({
-          x: ((cardRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100,
-          y: ((cardRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100
-        }, { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) }, tileSize, cHasHeader);
-
-        TaskManager.updateTodoLayout(dragState.todoId, layout);
-        try { getGameState().save(); } catch (error) { }
-        this.todoDragSuppressUntil = Date.now() + 250;
-      }
-
-      this.todoDragState = null;
-      this.positionTodoCards();
-    };
-
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', endDrag);
-    document.addEventListener('pointercancel', endDrag);
   }
 
   static updateTodosList() {
