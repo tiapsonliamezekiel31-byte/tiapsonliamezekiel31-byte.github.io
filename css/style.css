@@ -2719,7 +2719,7 @@ body::before {
   transition: background 0.15s ease;
 }
 
-.task-card-daily.shape-task::after {
+.shape-task::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -2729,26 +2729,26 @@ body::before {
   transition: transform 0.15s ease;
 }
 
-.task-card-daily.shape-task.shape-easy::before,
-.task-card-daily.shape-task.shape-easy::after {
+.shape-task.shape-easy::before,
+.shape-task.shape-easy::after {
   border-radius: 50% !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-medium::before,
-.task-card-daily.shape-task.shape-medium::after {
+.shape-task.shape-medium::before,
+.shape-task.shape-medium::after {
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
   border-radius: 0 !important;
 }
 
-.task-card-daily.shape-task.shape-hard::before,
-.task-card-daily.shape-task.shape-hard::after {
+.shape-task.shape-hard::before,
+.shape-task.shape-hard::after {
   border-radius: 0 !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-ultra::before,
-.task-card-daily.shape-task.shape-ultra::after {
+.shape-task.shape-ultra::before,
+.shape-task.shape-ultra::after {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
   border-radius: 0 !important;
 }
@@ -2774,11 +2774,11 @@ body::before {
   background: rgba(26, 21, 21, 0.95) !important;
 }
 
-.task-card-daily.shape-task .task-shape-streak,
-.task-card-daily.shape-task .task-shape-difficulty,
-.task-card-daily.shape-task .task-shape-progress,
-.task-card-daily.shape-task .task-shape-name,
-.task-card-daily.shape-task .task-shape-attr {
+.shape-task .task-shape-streak,
+.shape-task .task-shape-difficulty,
+.shape-task .task-shape-progress,
+.shape-task .task-shape-name,
+.shape-task .task-shape-attr {
   position: relative;
   z-index: 1;
 }
@@ -2836,7 +2836,7 @@ body::before {
   color: rgba(200, 200, 200, 0.8);
 }
 
-.task-card-daily.shape-task .task-shape-name {
+.shape-task .task-shape-name {
   font-family: 'Orbitron', monospace !important;
   font-size: 12px !important;
   font-weight: 700;
@@ -2851,9 +2851,9 @@ body::before {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
-.task-card-daily.shape-task .task-shape-difficulty,
-.task-card-daily.shape-task .task-shape-progress,
-.task-card-daily.shape-task .task-shape-attr {
+.shape-task .task-shape-difficulty,
+.shape-task .task-shape-progress,
+.shape-task .task-shape-attr {
   font-family: 'Orbitron', monospace !important;
   font-size: 6px !important;
   line-height: 1.1;
@@ -2862,31 +2862,31 @@ body::before {
   opacity: 0.92;
 }
 
-.task-card-daily.shape-task .task-shape-progress {
+.shape-task .task-shape-progress {
   margin-top: 2px;
 }
 
-.task-card-daily.shape-task .task-shape-attr {
+.shape-task .task-shape-attr {
   font-size: 5px !important;
   opacity: 0.82;
 }
 
-.task-card-daily.shape-task.shape-easy {
+.shape-task.shape-easy {
   border-radius: 50% !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-medium {
+.shape-task.shape-medium {
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
   border-radius: 0 !important;
 }
 
-.task-card-daily.shape-task.shape-hard {
+.shape-task.shape-hard {
   border-radius: 0 !important;
   clip-path: none !important;
 }
 
-.task-card-daily.shape-task.shape-ultra {
+.shape-task.shape-ultra {
   clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%) !important;
   border-radius: 0 !important;
 }
@@ -10494,7 +10494,7 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 
 .nemesis-joystick-track {
   position: relative;
-  width: 156px;
+  width: 196px;
   height: 38px;
   background: rgba(10, 10, 15, 0.85);
   backdrop-filter: blur(8px);
@@ -10504,7 +10504,7 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 14px;
+  padding: 0 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 
               0 0 15px rgba(255, 255, 255, 0.03);
   box-sizing: border-box;
@@ -10518,7 +10518,7 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   letter-spacing: 1px;
   pointer-events: none;
   transition: color 0.2s ease;
-  width: 32px;
+  width: 38px;
   text-align: center;
 }
 
@@ -10537,10 +10537,15 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   text-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
 }
 
+.nemesis-joystick-label.active-oath {
+  color: #dc2626;
+  text-shadow: 0 0 8px rgba(220, 38, 38, 0.6);
+}
+
 .nemesis-joystick-handle {
   position: absolute;
   top: 4px;
-  left: 64.5px;
+  left: 84.5px;
   width: 27px;
   height: 27px;
   border-radius: 50%;
@@ -10571,6 +10576,273 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .nemesis-joystick-handle.state-edit {
   background: radial-gradient(circle, #fbbf24, #f59e0b);
   box-shadow: 0 0 15px rgba(245, 158, 11, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
+}
+
+.nemesis-joystick-handle.state-oath {
+  background: radial-gradient(circle, #ef4444, #991b1b);
+  box-shadow: 0 0 15px rgba(220, 38, 38, 0.9), inset 0 2px 2px rgba(255,255,255,0.4);
+}
+
+/* ---------------------------------------------------- */
+/* TO-DO SHAPE SYSTEM STYLING                           */
+/* ---------------------------------------------------- */
+.todo-shape-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  position: relative !important;
+  box-sizing: border-box !important;
+  padding: 2px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  width: 140px !important;
+}
+
+.task-card-actions-left {
+  position: absolute !important;
+  left: -24px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  z-index: 10 !important;
+  opacity: 0.35 !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.todo-shape-wrapper:hover .task-card-actions-left {
+  opacity: 1 !important;
+  transform: translateY(-50%) translateX(-2px) !important;
+}
+
+.task-card-actions-left button {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  background: rgba(12, 12, 20, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5) !important;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.task-card-actions-left button:hover {
+  transform: scale(1.18) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+.task-card-actions-left .btn-todo-delete:hover {
+  background: rgba(239, 68, 68, 0.85) !important;
+  border-color: #ef4444 !important;
+}
+
+.todo-header-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-bottom: 0px !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+.todo-days-counter {
+  font-family: 'Orbitron', monospace !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.4) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.todo-deadline-subtext {
+  font-family: 'Orbitron', monospace !important;
+  font-size: 7px !important;
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+  white-space: nowrap !important;
+}
+
+.todo-main-shape {
+  position: relative !important;
+  cursor: pointer !important;
+  width: 95px !important;
+  height: 95px !important;
+  min-width: 95px !important;
+  min-height: 95px !important;
+  margin: 1px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  padding: 8px !important;
+  box-sizing: border-box !important;
+  transition: transform 0.2s cubic-bezier(0.25, 1.1, 0.5, 1.15), filter 0.2s ease !important;
+}
+
+.todo-main-shape:hover {
+  transform: scale(1.05) !important;
+}
+
+.todo-main-shape:active {
+  transform: scale(0.95) !important;
+}
+
+.todo-main-shape .task-shape-name {
+  font-family: 'Orbitron', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  word-break: break-word !important;
+  margin: 0 !important;
+  z-index: 2 !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+  color: inherit !important;
+}
+
+.todo-subtasks-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  width: 100% !important;
+  max-width: 130px !important;
+  margin-top: 2px !important;
+}
+
+/* ---------------------------------------------------- */
+/* INLINE BULK ADD EDITOR STYLING                       */
+/* ---------------------------------------------------- */
+.bulk-add-inline-editor {
+  width: 100% !important;
+  min-height: 110px !important;
+  font-family: 'Orbitron', monospace !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+  background: rgba(12, 12, 22, 0.9) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+  color: #ffffff !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-y: auto !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+  margin-bottom: 8px !important;
+}
+
+.bulk-add-inline-editor:focus {
+  border-color: var(--accent-gold, #fbbf24) !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 10px rgba(251, 191, 36, 0.3) !important;
+}
+
+.bulk-add-inline-editor[contenteditable="true"]:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.btn-add-subtask-plus {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 50% !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  font-size: 14px !important;
+  line-height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  margin-top: 4px !important;
+  transition: all 0.15s ease !important;
+  padding: 0 !important;
+}
+
+.btn-add-subtask-plus:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  transform: scale(1.15) !important;
+}
+
+.todo-subtask-rect {
+  background: rgba(10, 10, 18, 0.75) !important;
+  border: 1px solid var(--subtask-accent, rgba(255,255,255,0.2)) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  min-height: 22px !important;
+  height: 22px !important;
+  font-size: 9px !important;
+  font-family: 'Orbitron', monospace !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: opacity 0.25s ease, filter 0.25s ease, transform 0.15s ease, background 0.2s ease !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.todo-subtask-rect:hover {
+  transform: translateY(-1px) !important;
+  background: var(--subtask-accent, #555) !important;
+  color: #ffffff !important;
+}
+
+.todo-subtask-rect.completed {
+  opacity: 0.4 !important;
+  filter: grayscale(0.8) !important;
+  text-decoration: line-through !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+.todo-subtask-rect .subtask-title {
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.todo-subtask-rect .subtask-remove {
+  background: transparent !important;
+  border: none !important;
+  color: rgba(255,255,255,0.6) !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  padding: 0 0 0 6px !important;
+  line-height: 1 !important;
+}
+
+.todo-subtask-rect .subtask-remove:hover {
+  color: #ef4444 !important;
 }
 
 /* ---------------------------------------------------- */

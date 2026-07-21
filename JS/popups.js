@@ -3368,18 +3368,6 @@ class PopupsManager {
             </div>
           </div>
         </div>
-
-        <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; margin-bottom: 8px;">
-          <input type="checkbox" id="bulkTodoClusterCheckbox" style="accent-color: var(--accent-gold); cursor: pointer;" />
-          <label for="bulkTodoClusterCheckbox" style="font-size: 9px; color: #fff0b8; cursor: pointer; user-select: none;">⛓️ Create as Cluster (linked cards, split attributes)</label>
-        </div>
-
-        <div id="clusterAttributesPanel" style="display: none; border: 1px dashed rgba(255, 215, 106, 0.2); border-radius: 4px; padding: 10px; margin-bottom: 12px; background: rgba(0, 0, 0, 0.15);">
-          <h3 style="font-size: 10px; color: #f1de97; margin: 0 0 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 4px;">Cluster Attribute Weights</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px;" id="clusterAttributesGrid">
-            <!-- Populated dynamically -->
-          </div>
-        </div>
       </div>
       
       <div class="edit-todo-actions" style="margin-top: 12px;">
@@ -3391,151 +3379,20 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
-    // Populate attributes grid
-    const attrGrid = popup.querySelector('#clusterAttributesGrid');
-    if (attrGrid) {
-      attrGrid.innerHTML = attributes.map(attr => {
-        const color = state.config.attributeColors?.[attr] || '#fff';
-        return `
-          <div class="cluster-attr-row" style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-            <label style="display: flex; align-items: center; gap: 4px; font-size: 9px; color: ${color}; cursor: pointer; user-select: none; min-width: 0; flex: 1;">
-              <input type="checkbox" class="cluster-attr-check" data-attr="${attr}" style="accent-color: ${color}; cursor: pointer;" />
-              <span>${attr}</span>
-            </label>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <input type="number" class="cluster-attr-weight" data-attr="${attr}" min="1" value="1" disabled style="width: 40px; padding: 2px 4px; font-size: 8px; text-align: center; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-family: monospace;" />
-              <span class="cluster-attr-pct" data-attr="${attr}" style="font-size: 7px; color: var(--text-muted); min-width: 32px; font-family: monospace;">(0%)</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    const clusterCheck = popup.querySelector('#bulkTodoClusterCheckbox');
-    const panel = popup.querySelector('#clusterAttributesPanel');
-    const singleAttrCol = popup.querySelector('#bulkTodoAttr').closest('.bulk-setting-col');
-    
-    const updatePercentages = () => {
-      let totalWeight = 0;
-      const checkedAttrs = [];
-      
-      popup.querySelectorAll('.cluster-attr-row').forEach(row => {
-        const check = row.querySelector('.cluster-attr-check');
-        const weightInput = row.querySelector('.cluster-attr-weight');
-        const pctSpan = row.querySelector('.cluster-attr-pct');
-        const attr = check.dataset.attr;
-        
-        if (check.checked) {
-          weightInput.disabled = false;
-          const w = Math.max(1, parseInt(weightInput.value) || 1);
-          totalWeight += w;
-          checkedAttrs.push({ attr, weightInput, pctSpan, weight: w });
-        } else {
-          weightInput.disabled = true;
-          pctSpan.textContent = '(0%)';
-        }
-      });
-      
-      checkedAttrs.forEach(item => {
-        const pct = totalWeight > 0 ? Math.round((item.weight / totalWeight) * 100) : 0;
-        item.pctSpan.textContent = `(${pct}%)`;
-      });
-    };
-
-    clusterCheck.addEventListener('change', () => {
-      if (clusterCheck.checked) {
-        panel.style.display = 'block';
-        singleAttrCol.style.opacity = '0.35';
-        popup.querySelector('#bulkTodoAttr').disabled = true;
-        updatePercentages();
-      } else {
-        panel.style.display = 'none';
-        singleAttrCol.style.opacity = '1';
-        popup.querySelector('#bulkTodoAttr').disabled = false;
-      }
-    });
-
-    popup.querySelectorAll('.cluster-attr-check').forEach(check => {
-      check.addEventListener('change', updatePercentages);
-    });
-    popup.querySelectorAll('.cluster-attr-weight').forEach(input => {
-      input.addEventListener('input', updatePercentages);
-      input.addEventListener('change', updatePercentages);
-    });
-
     const textarea = popup.querySelector('#bulkTodoNames');
     // Ensure autofocus works
     setTimeout(() => textarea.focus(), 80);
 
     popup.querySelector('#btnBulkAddSave').addEventListener('click', () => {
-      const lines = (textarea.value || '').split('\n');
-      const parsedTasks = [];
-      
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return;
-
-        const isSubtask = trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('•');
-        if (isSubtask) {
-          const subtaskName = trimmed.slice(1).trim();
-          if (subtaskName) {
-            if (parsedTasks.length > 0) {
-              parsedTasks[parsedTasks.length - 1].subtasks.push(subtaskName);
-            } else {
-              // No parent task yet, treat as main task
-              parsedTasks.push({ name: subtaskName, subtasks: [] });
-            }
-          }
-        } else {
-          parsedTasks.push({ name: trimmed, subtasks: [] });
-        }
-      });
-
-      if (parsedTasks.length === 0) {
+      const textVal = textarea.value || '';
+      if (!textVal.trim()) {
         if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Enter at least one task!', { color: '#ff6666' });
         }
         return;
       }
 
-      const isCluster = clusterCheck.checked;
-      let clusterId = null;
-      let clusterAttributes = null;
-      let fallbackAttribute = popup.querySelector('#bulkTodoAttr').value;
-
-      if (isCluster) {
-        let totalWeight = 0;
-        const weights = {};
-        
-        popup.querySelectorAll('.cluster-attr-row').forEach(row => {
-          const check = row.querySelector('.cluster-attr-check');
-          const weightInput = row.querySelector('.cluster-attr-weight');
-          const attr = check.dataset.attr;
-          
-          if (check.checked) {
-            const w = Math.max(1, parseInt(weightInput.value) || 1);
-            weights[attr] = w;
-            totalWeight += w;
-          }
-        });
-
-        const checkedKeys = Object.keys(weights);
-        if (checkedKeys.length === 0) {
-          if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
-            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Check at least 1 attribute!', { color: '#ff6666' });
-          }
-          return;
-        }
-
-        clusterId = TaskManager.generateTaskId();
-        clusterAttributes = {};
-        checkedKeys.forEach(attr => {
-          clusterAttributes[attr] = weights[attr] / totalWeight;
-        });
-
-        fallbackAttribute = checkedKeys[0];
-      }
-      
+      const fallbackAttribute = popup.querySelector('#bulkTodoAttr').value;
       const difficulty = popup.querySelector('#bulkTodoDiff').value;
       const deadlineInput = popup.querySelector('#bulkTodoDeadline').value;
       const deadlineTimeInput = popup.querySelector('#bulkTodoDeadlineTime').value || '23:59';
@@ -3545,25 +3402,26 @@ class PopupsManager {
         const [dh, dmin] = deadlineTimeInput.split(':').map(Number);
         deadline = new Date(dy, dm - 1, dd, dh, dmin, 0, 0).getTime();
       }
-      
+
+      const parsedTasks = TaskManager.parseBulkAddText(textVal, fallbackAttribute, difficulty, deadline);
+      if (parsedTasks.length === 0) {
+        if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Enter at least one task!', { color: '#ff6666' });
+        }
+        return;
+      }
+
       let addedCount = 0;
-      parsedTasks.forEach((t, i) => {
-        const created = TaskManager.addTodo(t.name, difficulty, fallbackAttribute, deadline, t.subtasks);
+      parsedTasks.forEach(t => {
+        const created = TaskManager.addTodo(t.name, t.difficulty, t.attribute, t.deadline, t.subtasks);
         if (created) {
-          if (isCluster) {
-            created.clusterId = clusterId;
-            created.clusterIndex = i;
-            created.clusterAttributes = clusterAttributes;
-            created.layout = {
-              x: 20,
-              y: 8 + (Math.random() * 8)
-            };
-          } else {
-            created.layout = {
-              x: 15 + (Math.random() * 20),
-              y: 8 + (Math.random() * 8)
-            };
+          if (t.clusterAttributes) {
+            created.clusterAttributes = t.clusterAttributes;
           }
+          created.layout = {
+            x: 15 + (Math.random() * 20),
+            y: 8 + (Math.random() * 8)
+          };
           addedCount++;
         }
       });
@@ -3578,8 +3436,7 @@ class PopupsManager {
         state.save();
         
         if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
-          const msg = isCluster ? `Created cluster with ${addedCount} To-Dos!` : `Added ${addedCount} To-Dos!`;
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, msg, { color: '#44ff44', duration: 1800 });
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Added ${addedCount} To-Dos!`, { color: '#44ff44', duration: 1800 });
         }
       }
     });

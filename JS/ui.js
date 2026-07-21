@@ -1823,7 +1823,7 @@ class UIManager {
       <div class="bulk-add-inline-container" id="bulkAddInlineContainer">
         <button id="toggleBulkAddInlineBtn" class="bulk-toggle-header-btn">＋ Inline Bulk Add (NLP) ▾</button>
         <div id="bulkAddInlineContent" class="bulk-add-inline-content" style="display: none;">
-          <textarea id="bulkAddInlineTextarea" placeholder="Enter tasks (one per line). e.g.:&#10;Clean room Hard STR tomorrow&#10;Study math Medium INT monday 5pm" spellcheck="false"></textarea>
+          <div id="bulkAddInlineEditor" contenteditable="true" class="bulk-add-inline-editor" data-placeholder="Enter tasks (one per line). e.g.:&#10;Clean room Hard STR tomorrow&#10;Study math Medium INT monday 5pm" spellcheck="false"></div>
           <div class="bulk-add-inline-controls">
             <div class="inline-control-selects">
               <select id="inlineBulkAttr" title="Fallback Attribute"></select>
@@ -2377,6 +2377,7 @@ class UIManager {
           <div class="nemesis-joystick-label" id="jsLabelLock" style="cursor: pointer;">LOCK</div>
           <div class="nemesis-joystick-label" id="jsLabelDefault" style="cursor: pointer;">DEF</div>
           <div class="nemesis-joystick-label" id="jsLabelEdit" style="cursor: pointer;">EDIT</div>
+          <div class="nemesis-joystick-label" id="jsLabelOath" style="cursor: pointer;">OATH</div>
           <div class="nemesis-joystick-handle" id="jsHandle"></div>
         </div>
       `;
@@ -2387,6 +2388,7 @@ class UIManager {
     const labelLock = container.querySelector('#jsLabelLock');
     const labelDefault = container.querySelector('#jsLabelDefault');
     const labelEdit = container.querySelector('#jsLabelEdit');
+    const labelOath = container.querySelector('#jsLabelOath');
 
     const setJoystickMode = (mode) => {
       const state = getGameState();
@@ -2397,13 +2399,20 @@ class UIManager {
       if (mode === 'lock') {
         state.systemState.taskListFilters.lockModeDailies = true;
         state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.oathModeDailies = false;
       } else if (mode === 'edit') {
         state.systemState.taskListFilters.lockModeDailies = false;
         state.systemState.taskListFilters.editModeDailies = true;
+        state.systemState.taskListFilters.oathModeDailies = false;
+      } else if (mode === 'oath') {
+        state.systemState.taskListFilters.lockModeDailies = false;
+        state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.oathModeDailies = true;
       } else {
         // default
         state.systemState.taskListFilters.lockModeDailies = false;
         state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.oathModeDailies = false;
       }
 
       state.save();
@@ -2414,6 +2423,7 @@ class UIManager {
     labelLock.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('lock'); });
     labelDefault.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('default'); });
     labelEdit.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('edit'); });
+    labelOath.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('oath'); });
 
     // Pointer events for dragging
     handle.addEventListener('pointerdown', (e) => {
@@ -2426,9 +2436,10 @@ class UIManager {
 
       const state = getGameState();
       const filters = state.systemState?.taskListFilters || {};
-      let initialTx = 0;
-      if (filters.lockModeDailies) initialTx = -58.5;
-      else if (filters.editModeDailies) initialTx = 58.5;
+      let initialTx = -22.5;
+      if (filters.lockModeDailies) initialTx = -67.5;
+      else if (filters.editModeDailies) initialTx = 22.5;
+      else if (filters.oathModeDailies) initialTx = 67.5;
 
       handle.style.transition = 'none';
 
@@ -2436,7 +2447,7 @@ class UIManager {
         if (!isDragging) return;
         let dx = moveEv.clientX - startX;
         let tx = initialTx + dx;
-        tx = Math.max(-58.5, Math.min(58.5, tx));
+        tx = Math.max(-67.5, Math.min(67.5, tx));
         handle.style.transform = `translateX(${tx}px)`;
       };
 
@@ -2449,18 +2460,20 @@ class UIManager {
         document.removeEventListener('pointerup', onPointerUp);
         document.removeEventListener('pointercancel', onPointerUp);
 
-        const transformStr = handle.style.transform || 'translateX(0px)';
+        const transformStr = handle.style.transform || 'translateX(-22.5px)';
         const match = transformStr.match(/translateX\(([-\d.]+)px\)/);
-        const currentTx = match ? parseFloat(match[1]) : 0;
+        const currentTx = match ? parseFloat(match[1]) : -22.5;
 
         handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
 
-        if (currentTx < -29.25) {
+        if (currentTx < -45) {
           setJoystickMode('lock');
-        } else if (currentTx > 29.25) {
+        } else if (currentTx < 0) {
+          setJoystickMode('default');
+        } else if (currentTx < 45) {
           setJoystickMode('edit');
         } else {
-          setJoystickMode('default');
+          setJoystickMode('oath');
         }
       };
 
@@ -2480,9 +2493,10 @@ class UIManager {
     const labelLock = document.getElementById('jsLabelLock');
     const labelDefault = document.getElementById('jsLabelDefault');
     const labelEdit = document.getElementById('jsLabelEdit');
+    const labelOath = document.getElementById('jsLabelOath');
     const container = document.getElementById('nemesisJoystick');
 
-    if (!container || !handle || !labelLock || !labelDefault || !labelEdit) return;
+    if (!container || !handle || !labelLock || !labelDefault || !labelEdit || !labelOath) return;
 
     const dailiesPanel = document.getElementById('dailiesPanel');
     if (dailiesPanel && dailiesPanel.classList.contains('open')) {
@@ -2499,19 +2513,29 @@ class UIManager {
       labelLock.className = 'nemesis-joystick-label active-lock';
       labelDefault.className = 'nemesis-joystick-label';
       labelEdit.className = 'nemesis-joystick-label';
-      handle.style.transform = 'translateX(-58.5px)';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(-67.5px)';
     } else if (filters.editModeDailies) {
       handle.className = 'nemesis-joystick-handle state-edit';
       labelLock.className = 'nemesis-joystick-label';
       labelDefault.className = 'nemesis-joystick-label';
       labelEdit.className = 'nemesis-joystick-label active-edit';
-      handle.style.transform = 'translateX(58.5px)';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(22.5px)';
+    } else if (filters.oathModeDailies) {
+      handle.className = 'nemesis-joystick-handle state-oath';
+      labelLock.className = 'nemesis-joystick-label';
+      labelDefault.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label';
+      labelOath.className = 'nemesis-joystick-label active-oath';
+      handle.style.transform = 'translateX(67.5px)';
     } else {
       handle.className = 'nemesis-joystick-handle state-default';
       labelLock.className = 'nemesis-joystick-label';
       labelDefault.className = 'nemesis-joystick-label active-default';
       labelEdit.className = 'nemesis-joystick-label';
-      handle.style.transform = 'translateX(0px)';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(-22.5px)';
     }
   }
 
@@ -2738,9 +2762,9 @@ class UIManager {
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
         
-        if (res.isMiss) {
+        if (res.isHeld || res.isMiss) {
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          UIManager.showDeductionPopup(centerX, centerY - 20, res.rewards);
+          FloatingDamageNumber.show(centerX, centerY - 20, 'Rewards Held! ⏳', { color: '#f59e0b', scale: 1.2, duration: 2000 });
         } else {
           if (res.isJackpot) {
             try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -3905,15 +3929,99 @@ class UIManager {
       }
     });
 
+    // Real-time in-place syntax detection & highlighting on actual inline bulk text
+    const editor = document.getElementById('bulkAddInlineEditor');
+    if (editor) {
+      let isUpdating = false;
+
+      const highlightEditorContent = () => {
+        if (isUpdating) return;
+        isUpdating = true;
+
+        // Save selection caret position
+        const sel = window.getSelection();
+        let caretPos = 0;
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          const preRange = range.cloneRange();
+          preRange.selectNodeContents(editor);
+          preRange.setEnd(range.endContainer, range.endOffset);
+          caretPos = preRange.toString().length;
+        }
+
+        const rawText = editor.innerText || editor.textContent || '';
+        if (!rawText.trim()) {
+          if (editor.innerHTML !== '') editor.innerHTML = '';
+          isUpdating = false;
+          return;
+        }
+
+        const lines = rawText.split('\n');
+        const highlightedHtml = lines.map(line => TaskManager.highlightBulkAddLine(line)).join('<br>');
+
+        if (editor.innerHTML !== highlightedHtml) {
+          editor.innerHTML = highlightedHtml;
+
+          // Restore selection caret position
+          if (sel && caretPos > 0) {
+            try {
+              const range = document.createRange();
+              range.selectNodeContents(editor);
+              range.collapse(true);
+
+              let currentOffset = 0;
+              const nodeStack = [editor];
+              let found = false;
+
+              while (nodeStack.length > 0 && !found) {
+                const node = nodeStack.pop();
+                if (node.nodeType === 3) {
+                  const nextOffset = currentOffset + node.length;
+                  if (caretPos >= currentOffset && caretPos <= nextOffset) {
+                    range.setStart(node, caretPos - currentOffset);
+                    range.setEnd(node, caretPos - currentOffset);
+                    found = true;
+                  }
+                  currentOffset = nextOffset;
+                } else {
+                  let i = node.childNodes.length;
+                  while (i--) nodeStack.push(node.childNodes[i]);
+                }
+              }
+
+              if (found) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            } catch (e) {}
+          }
+        }
+
+        isUpdating = false;
+      };
+
+      editor.addEventListener('input', highlightEditorContent);
+    }
+
     // Inline Bulk Add ADD ALL button
     document.getElementById('inlineBulkAddSaveBtn')?.addEventListener('click', () => {
-      const textarea = document.getElementById('bulkAddInlineTextarea');
-      if (!textarea) return;
+      const editorEl = document.getElementById('bulkAddInlineEditor');
+      let textVal = '';
+      if (editorEl) {
+        textVal = editorEl.innerText || editorEl.textContent || '';
+        if (!textVal.trim()) {
+          const html = editorEl.innerHTML || '';
+          const tmp = document.createElement('div');
+          tmp.innerHTML = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<\/div>/gi, '\n');
+          textVal = tmp.textContent || tmp.innerText || '';
+        }
+      }
+      if (!textVal.trim()) return;
 
       const fallbackAttr = document.getElementById('inlineBulkAttr')?.value || 'RESP';
       const fallbackDiff = document.getElementById('inlineBulkDiff')?.value || 'Medium';
 
-      const parsedTasks = TaskManager.parseBulkAddText(textarea.value, fallbackAttr, fallbackDiff);
+      const parsedTasks = TaskManager.parseBulkAddText(textVal, fallbackAttr, fallbackDiff);
       if (parsedTasks.length === 0) return;
 
       let count = 0;
@@ -3938,9 +4046,11 @@ class UIManager {
       });
 
       if (count > 0) {
-        textarea.value = '';
-        this.positionTodoCards();
-        this.updateTodosList();
+        if (editorEl) editorEl.innerHTML = '';
+        const filterSelect = document.getElementById('todosDifficultyFilter');
+        if (filterSelect) filterSelect.value = 'All';
+        UIManager.currentTodoDifficultyFilter = 'All';
+        UIManager.updateTodosList();
         try { getGameState().save(); } catch (e) {}
         try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Added ${count} Tasks`, { color: '#ffd700' }); } catch (e) {}
       }
@@ -4779,7 +4889,7 @@ class UIManager {
           return;
         }
 
-        const interactiveInsideCard = event.target.closest('.subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
+        const interactiveInsideCard = event.target.closest('.todo-subtask-rect, .todo-subtasks-container, .subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
         
         if (event.target.closest('.btn-lock-daily')) {
@@ -4805,7 +4915,9 @@ class UIManager {
           PopupsManager.showEditDaily(taskId);
           return;
         }
-        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') || card.classList.contains('task-card')) && !interactiveInsideCard) {
+
+        // To-Do card single clicks should not trigger complete. Only Dailies or explicit complete buttons.
+        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') && !interactiveInsideCard)) {
           if (card.classList.contains('completed')) return;
           if (taskType === 'daily') {
             const res = TaskManager.completeDaily(taskId);
@@ -4823,10 +4935,16 @@ class UIManager {
               }, 160);
 
               // Show reward popup numbers
-              if (res.isMiss) {
+              if (res.isHeld || res.isMiss) {
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                 const rect = card.getBoundingClientRect();
-                UIManager.showDeductionPopup(rect.left + rect.width / 2, Math.max(12, rect.top - 18), res.rewards);
+                // Red MISS floating popup
+                FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', scale: 1.4, duration: 1800 });
+
+                // Separate floating number popup for held daily rewards
+                if (res.heldAmount && res.heldAmount.ap > 0) {
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 42), `+${Math.ceil(res.heldAmount.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.1, duration: 2200 });
+                }
               } else {
                 if (res.isJackpot) {
                   try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -4847,6 +4965,12 @@ class UIManager {
                 if (res.rewards && res.rewards.diamonds) {
                   const rect = card.getBoundingClientRect();
                   UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+                }
+
+                // Separate floating popup for released held rewards
+                if (res.releasedHeldRewards && res.releasedHeldRewards.ap > 0) {
+                  const rect = card.getBoundingClientRect();
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 58), `+${Math.ceil(res.releasedHeldRewards.ap)} Held AP Released! 🎉`, { color: '#3b82f6', scale: 1.3, duration: 2500 });
                 }
               }
 
@@ -8441,6 +8565,7 @@ class UIManager {
         
         const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
         const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
+        const oathModeDailies = !!getGameState().systemState?.taskListFilters?.oathModeDailies;
 
         if (editModeDailies) {
           try { PopupsManager.showEditDaily(dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
@@ -8452,6 +8577,16 @@ class UIManager {
             } else {
               TaskManager.lockDaily(dailyId);
             }
+            this.scheduleUpdateDailiesList();
+            getGameState().save();
+          }
+        } else if (oathModeDailies) {
+          const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
+          if (daily) {
+            daily.bloodOathActive = !daily.bloodOathActive;
+            try {
+              FloatingDamageNumber.show(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, daily.bloodOathActive ? '🩸 Blood Oath Active!' : 'Blood Oath Removed', { color: daily.bloodOathActive ? '#dc2626' : '#9ca3af' });
+            } catch (e) {}
             this.scheduleUpdateDailiesList();
             getGameState().save();
           }
@@ -8474,9 +8609,9 @@ class UIManager {
                 const rect = card.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
-                if (res.isMiss) {
+                if (res.isHeld || res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  UIManager.showDeductionPopup(centerX, Math.max(12, rect.top - 18), res.rewards);
+                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'Rewards Held! ⏳', { color: '#f59e0b', scale: 1.2, duration: 2000 });
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -8618,8 +8753,8 @@ class UIManager {
     const rect = board?.getBoundingClientRect();
     const width = rect?.width || window.innerWidth || 360;
     const height = rect?.height || window.innerHeight || 640;
-    const minimumSize = window.innerWidth <= 700 ? 156 : 180;
-    const size = Math.round(Math.max(minimumSize, Math.min(260, Math.min(width, height) * 0.36)));
+    const minimumSize = window.innerWidth <= 700 ? 140 : 150;
+    const size = Math.round(Math.max(minimumSize, Math.min(200, Math.min(width, height) * 0.32)));
     return { width: size, height: size };
   }
 
@@ -8878,6 +9013,54 @@ class UIManager {
         return;
       }
 
+      // Check plus button for adding subtasks (toggles inline subtask field)
+      const addSubtaskPlus = event.target.closest('.btn-add-subtask-plus');
+      if (addSubtaskPlus) {
+        event.stopPropagation();
+        const card = addSubtaskPlus.closest('.task-card-todo');
+        const inlineContainer = card ? card.querySelector('.subtask-add-inline') : null;
+        if (inlineContainer) {
+          const isHidden = inlineContainer.style.display === 'none';
+          inlineContainer.style.display = isHidden ? 'flex' : 'none';
+          if (isHidden) {
+            const input = inlineContainer.querySelector('input');
+            if (input) input.focus();
+          }
+        }
+        return;
+      }
+
+      // Check subtask rectangle double tap
+      const subtaskRect = event.target.closest('.todo-subtask-rect');
+      if (subtaskRect) {
+        if (event.target.closest('.subtask-remove')) {
+          const todoId = subtaskRect.dataset.todoId;
+          const subtaskId = subtaskRect.dataset.subtaskId;
+          if (todoId && subtaskId) {
+            TaskManager.removeSubtask(todoId, subtaskId);
+            try { getGameState().save(); } catch (e) {}
+            UIManager.updateTodosList();
+          }
+          return;
+        }
+
+        const now = Date.now();
+        const lastTap = Number(subtaskRect.dataset.lastTapTime || 0);
+        if (now - lastTap < 350) {
+          subtaskRect.dataset.lastTapTime = '0';
+          const todoId = subtaskRect.dataset.todoId;
+          const subtaskId = subtaskRect.dataset.subtaskId;
+          if (todoId && subtaskId) {
+            TaskManager.toggleSubtask(todoId, subtaskId);
+            try { getGameState().save(); } catch (e) {}
+            UIManager.updateTodosList();
+          }
+        } else {
+          subtaskRect.dataset.lastTapTime = String(now);
+        }
+        return;
+      }
+
       if (event.target.closest('button, input, textarea, select, label')) return;
 
       const card = event.target.closest('.task-card-todo');
@@ -8896,21 +9079,50 @@ class UIManager {
 
         try { card.setPointerCapture(event.pointerId); } catch (error) { }
 
-        // Check double tap first
+        // Check double tap for completing To-Do (only when clicking the main shape)
+        const targetIsShape = !!event.target.closest('.todo-main-shape');
         const now = Date.now();
         const lastTap = Number(card.dataset.lastTapTime || 0);
-        if (now - lastTap < 300) {
-          // Double tap: toggle Blood Oath
+        if (targetIsShape && (now - lastTap < 300)) {
           clearTimeout(this.todoHoldTimer);
-          TaskManager.toggleBloodOathTodo(todoId);
           card.dataset.lastTapTime = '0';
+          
+          const res = TaskManager.completeTodo(todoId);
+          if (res && res.success) {
+            card.style.transition = 'filter 150ms ease, opacity 400ms ease';
+            card.style.filter = 'brightness(10) contrast(1.5)';
+            const rect = card.getBoundingClientRect();
+
+            if (res.isJackpot) {
+              try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
+            }
+            if (res.rewards && res.rewards.ap) {
+              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
+            }
+            if (res.rewards && res.rewards.diamonds) {
+              UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+            }
+            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+              RetroTaskCompleteAnimation.play(card);
+            }
+            setTimeout(() => {
+              UIManager.updateTodosList();
+            }, 200);
+            try { getGameState().save(); } catch (e) {}
+            UIManager.renderEnemies();
+          }
           return;
         }
-        card.dataset.lastTapTime = String(now);
+        if (targetIsShape) {
+          card.dataset.lastTapTime = String(now);
+        }
 
+        // Long-Press to start Dragging (Mobile & Desktop friendly)
         clearTimeout(this.todoHoldTimer);
         this.todoHoldTimer = setTimeout(() => {
           isLongPressed = true;
+          try { if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(40); } catch (e) {}
 
           const todo = TaskManager.getTaskById(todoId);
           const isCluster = todo && todo.clusterId;
@@ -8933,27 +9145,10 @@ class UIManager {
 
           const styleLeft = card.style.left || '0px';
           const styleTop = card.style.top || '0px';
-          let startLeftPx = 0;
-          let startTopPx = 0;
-
-          if (styleLeft.includes('px')) {
-            startLeftPx = parseFloat(styleLeft) || 0;
-          } else {
-            startLeftPx = ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
-          }
-
-          if (styleTop.includes('px')) {
-            startTopPx = parseFloat(styleTop) || 0;
-          } else {
-            startTopPx = ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
-          }
-
-          const startLeftPercent = styleLeft.includes('px')
-            ? (startLeftPx / boardRect.width) * 100
-            : parseFloat(styleLeft) || 0;
-          const startTopPercent = styleTop.includes('px')
-            ? (startTopPx / boardRect.height) * 100
-            : parseFloat(styleTop) || 0;
+          let startLeftPx = styleLeft.includes('px') ? parseFloat(styleLeft) || 0 : ((parseFloat(styleLeft) || 0) / 100) * boardRect.width;
+          let startTopPx = styleTop.includes('px') ? parseFloat(styleTop) || 0 : ((parseFloat(styleTop) || 0) / 100) * boardRect.height;
+          const startLeftPercent = styleLeft.includes('px') ? (startLeftPx / boardRect.width) * 100 : parseFloat(styleLeft) || 0;
+          const startTopPercent = styleTop.includes('px') ? (startTopPx / boardRect.height) * 100 : parseFloat(styleTop) || 0;
 
           let firstStartLeftPercent = 0;
           let firstStartTopPercent = 0;
@@ -8961,12 +9156,8 @@ class UIManager {
             const fStyleLeft = firstCardElement.style.left || '0px';
             const fStyleTop = firstCardElement.style.top || '0px';
 
-            firstStartLeftPercent = fStyleLeft.includes('px')
-              ? (parseFloat(fStyleLeft) / boardRect.width) * 100
-              : parseFloat(fStyleLeft) || 0;
-            firstStartTopPercent = fStyleTop.includes('px')
-              ? (parseFloat(fStyleTop) / boardRect.height) * 100
-              : parseFloat(fStyleTop) || 0;
+            firstStartLeftPercent = fStyleLeft.includes('px') ? (parseFloat(fStyleLeft) / boardRect.width) * 100 : parseFloat(fStyleLeft) || 0;
+            firstStartTopPercent = fStyleTop.includes('px') ? (parseFloat(fStyleTop) / boardRect.height) * 100 : parseFloat(fStyleTop) || 0;
           }
 
           const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
@@ -8998,17 +9189,15 @@ class UIManager {
 
           card.classList.add('dragging');
           if (isCluster) {
-            clusterCards.forEach(c => {
-              c.classList.add('dragging');
-            });
+            clusterCards.forEach(c => c.classList.add('dragging'));
           }
-        }, 500);
+        }, 400);
 
         const onMove = (moveEvent) => {
           if (moveEvent.pointerId !== event.pointerId) return;
           if (!isLongPressed) {
             const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-            if (dist > 10) {
+            if (dist > 8) {
               clearTimeout(this.todoHoldTimer);
               cleanup();
             }
@@ -9019,34 +9208,9 @@ class UIManager {
           if (upEvent.pointerId !== event.pointerId) return;
           clearTimeout(this.todoHoldTimer);
           cleanup();
-
-          if (!isLongPressed) {
-            const todoName = card.querySelector('.todo-title')?.textContent || '';
-            const state = getGameState();
-            try {
-              PopupsManager.showConfirm(`Complete To-Do?`, `Complete ${todoName || 'this to-do'}?`, () => {
-                if (!TaskManager.completeTodo(todoId)) return;
-
-                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                  RetroTaskCompleteAnimation.play(card);
-                }
-
-                UIManager.updateTodosList();
-                try { state.save(); } catch (e) { }
-                UIManager.renderEnemies();
-              });
-            } catch (e) {
-              if (TaskManager.completeTodo(todoId)) {
-                UIManager.updateTodosList();
-                try { state.save(); } catch (err) { }
-                UIManager.renderEnemies();
-              }
-            }
-          }
         };
 
         const cleanup = () => {
-          try { card.releasePointerCapture(event.pointerId); } catch (error) { }
           document.removeEventListener('pointermove', onMove);
           document.removeEventListener('pointerup', onUp);
           document.removeEventListener('pointercancel', onUp);
@@ -9233,71 +9397,27 @@ class UIManager {
     container.innerHTML = visibleTodos.map(todo => {
       const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
 
-      // Check if this is the first card in its cluster among visible todos
-      let isFirstInCluster = false;
-      let clusterHeader = '';
-      if (todo.clusterId) {
-        const clusterTodos = visibleTodos.filter(t => t.clusterId === todo.clusterId)
-          .sort((a, b) => (a.clusterIndex || 0) - (b.clusterIndex || 0));
-        if (clusterTodos.length > 0 && clusterTodos[0].id === todo.id) {
-          isFirstInCluster = true;
+      // 1. Calculate days remaining counter & natural language deadline
+      let daysCounterText = '--';
+      let naturalDeadlineText = 'No deadline';
 
-          const deadlineLabel = todo.deadline ? new Date(todo.deadline).toLocaleDateString() : 'No deadline';
-          const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
-          const attrTexts = [];
-          if (todo.clusterAttributes) {
-            for (const attr in todo.clusterAttributes) {
-              const pct = Math.round(todo.clusterAttributes[attr] * 100);
-              attrTexts.push(`${pct}% ${attr.toLowerCase()}`);
-            }
-          }
-          clusterHeader = `
-            <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
-              <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
-                <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Orbitron', monospace; font-weight: bold;">${deadlineLabel}</div>
-                <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace;">${deadlineDistance}</div>
-              </div>
-              <div class="cluster-badge" style="font-size: 6px; color: #a04ef6; font-family: 'Orbitron', monospace; font-weight: bold; text-transform: lowercase;">${attrTexts.join(', ')}</div>
-            </div>
-          `;
-        }
-      } else if (todo.deadline && !todo.completed) {
-        const deadlineLabel = new Date(todo.deadline).toLocaleDateString();
-        const deadlineDistance = this.getDeadlineDistanceText(todo.deadline);
-        clusterHeader = `
-          <div class="todo-cluster-header-outside" style="position: absolute; bottom: 100%; left: 0; width: 100%; padding-bottom: 6px; pointer-events: none; display: flex; flex-direction: column; gap: 2px;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; width: 100%; margin-bottom: 2px;">
-              <div class="todo-date-big" style="font-size: 11px; color: #fff0b8; font-family: 'Orbitron', monospace; font-weight: bold;">${deadlineLabel}</div>
-              <div class="todo-date-subtext" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace;">${deadlineDistance}</div>
-            </div>
-          </div>
-        `;
+      if (todo.deadline) {
+        const diffMs = todo.deadline - Date.now();
+        const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+        daysCounterText = String(days);
+
+        const d = new Date(todo.deadline);
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const mName = months[d.getMonth()];
+        const dayNum = d.getDate();
+        const yr = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        naturalDeadlineText = `${mName} ${dayNum}, ${yr} ${hh}:${mm}`;
       }
 
-      // Completed placeholder for cluster cards
-      if (todo.completed && todo.clusterId) {
-        return `
-        <div class="task-card task-card-todo completed-cluster-placeholder" data-id="${todo.id}" data-type="todo" data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}" style="background: transparent !important; border: none !important; box-shadow: none !important; height: 48px !important; min-height: 48px !important; display: flex !important; align-items: center !important; justify-content: center !important; pointer-events: auto !important; cursor: grab !important; position: relative !important;">
-          ${clusterHeader}
-          <div class="completed-cluster-chain" style="display: flex !important; align-items: center !important; justify-content: center !important; width: 100% !important; height: 100% !important; opacity: 0.45 !important; font-size: 16px !important; pointer-events: none !important; transform: rotate(90deg) !important;">⛓️</div>
-          <div class="task-card-actions task-card-actions-todo task-card-actions-small placeholder-actions hover-only" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%);">
-            <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
-          </div>
-        </div>
-        `;
-      }
-
-      const subtasks = (todo.subtasks || []).map(st => `
-        <div class="subtask ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}">
-          <label class="subtask-label"><input type="checkbox" class="subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''}> <span class="subtask-name" style="color: inherit;">${st.name}</span></label>
-          <button class="subtask-remove" data-subtask-id="${st.id}" title="Remove subtask">×</button>
-        </div>
-      `).join('');
-      const subtaskCount = (todo.subtasks || []).length;
-
-      // Border and color configurations
-      const isCluster = todo.clusterId && !todo.completed;
-      let displayAttr = todo.attribute;
+      // 2. Color based on attribute, shape based on difficulty
+      let displayAttr = todo.attribute || 'RESP';
       if (todo.clusterAttributes && typeof todo.clusterAttributes === 'object') {
         let maxVal = -1;
         for (const attr in todo.clusterAttributes) {
@@ -9309,51 +9429,59 @@ class UIManager {
       }
       const attrColor = palette[displayAttr] || '#555';
       const textColor = UIManager.getTextColorForHex(attrColor);
-      const bgGradient = `background: linear-gradient(135deg, ${attrColor}cf, ${UIManager.shadeColor(attrColor, -60)}e5) !important; color: ${textColor} !important;`;
-      const borderStyle = isCluster
-        ? 'border-color: #6a0dad !important; --cluster-color: #6a0dad; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px rgba(106,13,173,0.5) !important;'
-        : `border-color: ${attrColor} !important; --task-accent: ${attrColor}; box-shadow: 0 4px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 6px ${attrColor}44 !important; ${bgGradient}`;
-
+      const shadeColor = UIManager.shadeColor ? UIManager.shadeColor(attrColor, -20) : attrColor;
       const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
-
+      // Subtasks formatted as separate rectangles
+      const subtaskRects = (todo.subtasks || []).map(st => `
+        <div class="todo-subtask-rect ${st.completed ? 'completed' : ''}" data-todo-id="${todo.id}" data-subtask-id="${st.id}" style="--subtask-accent:${attrColor};">
+          <span class="subtask-title">${st.name}</span>
+          <button class="subtask-remove" data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Remove">×</button>
+        </div>
+      `).join('');
 
       return `
-      <div class="task-card task-clickable task-card-todo discreet ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" data-difficulty="${todo.difficulty || ''}" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''} style="${borderStyle}">
-        ${todo.difficulty === 'Ultra' ? '<div class="ultra-badge-overlay">👑☠️</div>' : ''}
-        ${todo.bloodOathActive ? `
-          <div class="blood-oath-fire-container">
-            <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-            <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-          </div>
-        ` : ''}
-        ${clusterHeader}
-
-        <!-- Floating difficulty shape next to the card -->
-        <div class="todo-difficulty-shape shape-${shapeClass}" title="Difficulty: ${todo.difficulty}"></div>
+      <div class="task-card task-clickable task-card-todo todo-shape-wrapper ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" data-difficulty="${todo.difficulty || ''}" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''}>
         
-        <div class="todo-card-top" style="gap: 4px;">
-          <div class="task-title todo-title">${displayName}</div>
-        </div>
-
-        <div class="todo-card-body" style="margin-top: 2px;">
-          ${subtaskCount > 0 ? `
-            <div class="todo-subtasks-wrap" style="margin-top: 4px;">
-              <div class="todo-subtask-label" style="font-size: 6px; color: var(--text-muted); font-family: 'Orbitron', monospace; margin-bottom: 4px;">${subtaskCount} subtasks</div>
-              <div class="subtasks">${subtasks}</div>
-            </div>
-          ` : ''}
-          <div class="subtask-add hover-only" style="margin-top: 4px;">
-            <input class="subtask-input" placeholder="Add subtask..." data-todo-id="${todo.id}" />
-            <button class="subtask-add-btn" data-todo-id="${todo.id}">Add</button>
-          </div>
-        </div>
-
-        <div class="task-card-actions task-card-actions-todo task-card-actions-small hover-only">
-          <button class="btn-blood-oath" title="Blood Oath">🩸</button>
-          <button class="btn-edit" title="Edit">✎</button>
+        <!-- Action buttons on left side of card shape -->
+        <div class="task-card-actions-left">
+          <button class="btn-edit btn-todo-edit" title="Edit to-do" data-id="${todo.id}">✎</button>
           <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
         </div>
+
+        <!-- Big Counter & Natural Language Deadline Subtext -->
+        <div class="todo-header-container">
+          <div class="todo-days-counter">${daysCounterText}</div>
+          <div class="todo-deadline-subtext">${naturalDeadlineText}</div>
+        </div>
+
+        <!-- Main Shape Card -->
+        <div class="shape-task shape-${shapeClass} todo-main-shape" style="--task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor}; position: relative;">
+          ${todo.difficulty === 'Ultra' ? '<div class="ultra-badge-overlay">👑☠️</div>' : ''}
+          ${todo.bloodOathActive ? `
+            <div class="blood-oath-fire-container">
+              <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+              <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+            </div>
+          ` : ''}
+          <div class="task-shape-name">${displayName}</div>
+        </div>
+
+        <!-- Subtasks as separate rectangles below shape -->
+        ${(todo.subtasks || []).length > 0 ? `
+          <div class="todo-subtasks-container">
+            ${subtaskRects}
+          </div>
+        ` : ''}
+
+        <!-- Inline Subtask Input (Toggled by + button) -->
+        <div class="subtask-add-inline" style="display: none; margin-top: 4px; width: 100%; gap: 4px; align-items: center;">
+          <input class="subtask-input" placeholder="Subtask name..." data-todo-id="${todo.id}" style="font-size: 9px; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.6); color: #fff; flex: 1; min-width: 0;" />
+          <button class="subtask-add-btn" data-todo-id="${todo.id}" style="font-size: 9px; padding: 3px 6px; border-radius: 4px; background: var(--accent-gold, #fbbf24); color: #000; border: none; font-weight: bold; cursor: pointer;">Add</button>
+        </div>
+
+        <!-- Compact Plus Button for Subtasks -->
+        <button class="btn-add-subtask-plus" data-todo-id="${todo.id}" title="Add subtask">+</button>
 
       </div>
       `;

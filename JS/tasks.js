@@ -27,7 +27,7 @@ class TaskManager {
     }
   }
 
-  static parseMetadata(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
+  static parseMetadata(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium', fallbackDeadline = null) {
     let name = rawText.trim();
     let attribute = null;
     let clusterAttributes = null;
@@ -49,7 +49,9 @@ class TaskManager {
       foundAttrs[attr] = val;
     }
 
-    if (Object.keys(foundAttrs).length > 0) {
+    const hasExplicitAttribute = Object.keys(foundAttrs).length > 0;
+
+    if (hasExplicitAttribute) {
       clusterAttributes = foundAttrs;
       let maxVal = -1;
       for (const attr in foundAttrs) {
@@ -58,7 +60,7 @@ class TaskManager {
           attribute = attr;
         }
       }
-      name = name.replace(attrRegex, '');
+      name = name.replace(new RegExp(`\\b(${validAttrs.join('|')})\\b(?:\\s*(\\d+(?:\\.\\d+)?))?`, 'gi'), '');
     }
 
     // 2. Parse Difficulty
@@ -77,7 +79,26 @@ class TaskManager {
     let dateParsed = false;
     let timeParsed = false;
 
-    // Relative dates
+    // Relative date offsets (e.g. in 3 days, in 2 weeks, in 1 month, in 5 hours)
+    const inDaysRegex = /\bin\s+(\d+)\s*(days?|weeks?|months?|hrs?|hours?)\b/i;
+    const inMatch = name.match(inDaysRegex);
+    if (inMatch) {
+      const num = parseInt(inMatch[1], 10);
+      const unit = inMatch[2].toLowerCase();
+      if (unit.startsWith('day')) {
+        targetDate.setDate(targetDate.getDate() + num);
+      } else if (unit.startsWith('week')) {
+        targetDate.setDate(targetDate.getDate() + num * 7);
+      } else if (unit.startsWith('month')) {
+        targetDate.setMonth(targetDate.getMonth() + num);
+      } else if (unit.startsWith('hr') || unit.startsWith('hour')) {
+        targetDate.setHours(targetDate.getHours() + num);
+      }
+      name = name.replace(inDaysRegex, '');
+      dateParsed = true;
+    }
+
+    // Relative dates (tomorrow, today, next week)
     const tomorrowRegex = /\btomorrow\b/i;
     const todayRegex = /\btoday\b/i;
     const nextWeekRegex = /\bnext\s+week\b/i;
@@ -117,31 +138,18 @@ class TaskManager {
       dateParsed = true;
     }
 
-    // Absolute dates
+    // Absolute dates with optional year (e.g. Jan 31 2027, July 21)
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const absDateRegex1 = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2})\b/i;
-    const absDateRegex2 = /\b(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b/i;
-    
-    let absMatch = name.match(absDateRegex1);
-    let regexToReplace = absDateRegex1;
-    if (!absMatch) {
-      absMatch = name.match(absDateRegex2);
-      regexToReplace = absDateRegex2;
-    }
-    if (absMatch) {
-      let monthStr, dayStr;
-      if (regexToReplace === absDateRegex1) {
-        monthStr = absMatch[1];
-        dayStr = absMatch[2];
-      } else {
-        dayStr = absMatch[1];
-        monthStr = absMatch[2];
-      }
-      const monthIdx = months.indexOf(monthStr.toLowerCase().substring(0, 3));
+    const absDateWithYearRegex = /\b(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)[a-z]*\s+(\d{1,2})(st|nd|rd|th)?(\s+(\d{2,4}))?\b/i;
+    const yearMatch = name.match(absDateWithYearRegex);
+    if (yearMatch) {
+      const monthIdx = months.indexOf(yearMatch[1].toLowerCase().substring(0, 3));
+      const dayNum = parseInt(yearMatch[2], 10);
+      const yearNum = yearMatch[5] ? parseInt(yearMatch[5], 10) : targetDate.getFullYear();
       if (monthIdx !== -1) {
-        targetDate.setMonth(monthIdx);
-        targetDate.setDate(Number(dayStr));
-        name = name.replace(regexToReplace, '');
+        const fullYr = yearNum < 100 ? 2000 + yearNum : yearNum;
+        targetDate.setFullYear(fullYr, monthIdx, dayNum);
+        name = name.replace(absDateWithYearRegex, '');
         dateParsed = true;
       }
     }
@@ -170,8 +178,12 @@ class TaskManager {
 
     name = name.replace(/\s+/g, ' ').replace(/^\s*[-,\s]+\s*|\s*[-,\s]+\s*$/g, '').trim();
 
-    if (dateParsed || timeParsed) {
+    const hasExplicitDeadline = dateParsed || timeParsed;
+
+    if (hasExplicitDeadline) {
       deadline = targetDate.getTime();
+    } else if (fallbackDeadline !== null && fallbackDeadline !== undefined) {
+      deadline = fallbackDeadline;
     } else {
       deadline = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) 
         ? UIManager.quickDayDeadline 
@@ -183,17 +195,20 @@ class TaskManager {
       attribute: attribute || fallbackAttr,
       clusterAttributes,
       difficulty: difficulty || fallbackDiff,
-      deadline
+      deadline,
+      hasExplicitAttribute,
+      hasExplicitDifficulty: difficulty !== null,
+      hasExplicitDeadline
     };
   }
 
-  static parseNaturalLanguage(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
-    const res = this.parseMetadata(rawText, fallbackAttr, fallbackDiff);
+  static parseNaturalLanguage(rawText, fallbackAttr = 'RESP', fallbackDiff = 'Medium', fallbackDeadline = null) {
+    const res = this.parseMetadata(rawText, fallbackAttr, fallbackDiff, fallbackDeadline);
     if (!res.name) res.name = 'Untitled NLP Task';
     return res;
   }
 
-  static parseBulkAddText(bulkText, fallbackAttr = 'RESP', fallbackDiff = 'Medium') {
+  static parseBulkAddText(bulkText, fallbackAttr = 'RESP', fallbackDiff = 'Medium', fallbackDeadline = null) {
     const lines = bulkText.split('\n');
     const tasks = [];
     let currentHeader = null;
@@ -205,7 +220,11 @@ class TaskManager {
 
       if (trimmedLine.startsWith('#') || trimmedLine.startsWith('@')) {
         const metaText = trimmedLine.substring(1).trim();
-        currentHeader = this.parseMetadata(metaText, fallbackAttr, fallbackDiff);
+        if (metaText) {
+          currentHeader = this.parseMetadata(metaText, fallbackAttr, fallbackDiff, fallbackDeadline);
+        } else {
+          currentHeader = null;
+        }
         continue;
       }
 
@@ -217,29 +236,111 @@ class TaskManager {
           tasks[tasks.length - 1].subtasks.push(subtaskName);
         }
       } else {
-        if (currentHeader) {
-          tasks.push({
-            name: trimmedLine,
-            difficulty: currentHeader.difficulty,
-            attribute: currentHeader.attribute,
-            clusterAttributes: currentHeader.clusterAttributes,
-            deadline: currentHeader.deadline,
-            subtasks: []
-          });
-        } else {
-          const parsed = this.parseNaturalLanguage(trimmedLine, fallbackAttr, fallbackDiff);
-          tasks.push({
-            name: parsed.name,
-            difficulty: parsed.difficulty,
-            attribute: parsed.attribute,
-            clusterAttributes: parsed.clusterAttributes,
-            deadline: parsed.deadline,
-            subtasks: []
-          });
-        }
+        const effAttr = (currentHeader && currentHeader.hasExplicitAttribute) ? currentHeader.attribute : fallbackAttr;
+        const effDiff = (currentHeader && currentHeader.hasExplicitDifficulty) ? currentHeader.difficulty : fallbackDiff;
+        const effDeadline = (currentHeader && currentHeader.hasExplicitDeadline) ? currentHeader.deadline : fallbackDeadline;
+
+        const parsed = this.parseNaturalLanguage(trimmedLine, effAttr, effDiff, effDeadline);
+        tasks.push({
+          name: parsed.name,
+          difficulty: parsed.difficulty,
+          attribute: parsed.attribute,
+          clusterAttributes: parsed.clusterAttributes,
+          deadline: parsed.deadline,
+          subtasks: []
+        });
       }
     }
     return tasks;
+  }
+
+  static highlightBulkAddLine(rawLine) {
+    if (!rawLine || !rawLine.trim()) return '';
+    const trimmed = rawLine.trim();
+    if (trimmed.startsWith('#') || trimmed.startsWith('@')) {
+      return `<span style="color:#38bdf8; font-weight:bold; font-style:italic;">${rawLine}</span>`;
+    }
+    const isSubtask = /^[ \t]+/.test(rawLine) || /^[-\*\+]\s*/.test(trimmed);
+    if (isSubtask) {
+      return `<span style="color:#94a3b8; font-style:italic;">${rawLine}</span>`;
+    }
+
+    const attrs = ['STR', 'AGI', 'INT', 'VIT', 'DEX', 'PER', 'LUK', 'RESP'];
+    const diffs = ['Easy', 'Medium', 'Hard', 'Ultra'];
+
+    // Comprehensive NLP Deadline Regexes (multi-word support)
+    const deadlineRegexes = [
+      /\bin\s+\d+\s*(days?|weeks?|months?|hrs?|hours?)\b/gi,
+      /\b(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)[a-z]*\s+\d{1,2}(st|nd|rd|th)?(\s+\d{2,4})?\b/gi,
+      /\b\d{1,2}(st|nd|rd|th)?\s+(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)[a-z]*(\s+\d{2,4})?\b/gi,
+      /\b\d{1,4}[-/\.]\d{1,2}[-/\.]\d{1,4}\b/gi,
+      /\b(next\s+)?(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b/gi,
+      /\b(tomorrow|today|tonight|next\s+week|next\s+month|next\s+year)\b/gi,
+      /\b\d{1,2}(:\d{2})?\s*(am|pm)\b/gi,
+      /\b\d{1,2}:\d{2}\b/gi
+    ];
+
+    const matches = [];
+
+    // 1. Attributes
+    attrs.forEach(attr => {
+      const reg = new RegExp(`\\b${attr}\\b`, 'gi');
+      let m;
+      while ((m = reg.exec(rawLine)) !== null) {
+        matches.push({ start: m.index, end: m.index + m[0].length, text: m[0], type: 'attr' });
+      }
+    });
+
+    // 2. Difficulties
+    diffs.forEach(diff => {
+      const reg = new RegExp(`\\b${diff}\\b`, 'gi');
+      let m;
+      while ((m = reg.exec(rawLine)) !== null) {
+        matches.push({ start: m.index, end: m.index + m[0].length, text: m[0], type: 'diff' });
+      }
+    });
+
+    // 3. Deadlines
+    deadlineRegexes.forEach(reg => {
+      let m;
+      while ((m = reg.exec(rawLine)) !== null) {
+        const start = m.index;
+        const end = m.index + m[0].length;
+        const overlaps = matches.some(existing => !(end <= existing.start || start >= existing.end));
+        if (!overlaps) {
+          matches.push({ start, end, text: m[0], type: 'deadline' });
+        }
+      }
+    });
+
+    matches.sort((a, b) => a.start - b.start);
+
+    let html = '';
+    let lastIdx = 0;
+
+    matches.forEach(m => {
+      if (m.start > lastIdx) {
+        const textBefore = rawLine.substring(lastIdx, m.start);
+        html += `<span style="color:#fbbf24; font-weight:bold;">${textBefore}</span>`;
+      }
+
+      if (m.type === 'attr') {
+        html += `<span style="color:#60a5fa; font-weight:bold;">${m.text}</span>`;
+      } else if (m.type === 'diff') {
+        html += `<span style="color:#c084fc; font-weight:bold;">${m.text}</span>`;
+      } else if (m.type === 'deadline') {
+        html += `<span style="color:#f87171; font-weight:bold;">${m.text}</span>`;
+      }
+
+      lastIdx = m.end;
+    });
+
+    if (lastIdx < rawLine.length) {
+      const textAfter = rawLine.substring(lastIdx);
+      html += `<span style="color:#fbbf24; font-weight:bold;">${textAfter}</span>`;
+    }
+
+    return html;
   }
 
   // ============================================================
@@ -377,41 +478,24 @@ class TaskManager {
       daily.completed = false;
     }
 
-    // Check if miss chance triggers
+    // Check if daily is the last active unlocked incomplete daily
+    const activeIncompleteDailies = (state.dailiesState.dailies || []).filter(d => !d.completed && !d.locked);
+    const isLastUnlockedDaily = activeIncompleteDailies.length === 0;
+
+    // Check if hold chance triggers (doubled chance)
     let isLootboxMode = !!state.playerState.lootboxDailyMode;
-    let isMiss = false;
-    if (!isLootboxMode) {
+    let isHeld = false;
+    if (!isLootboxMode && !isLastUnlockedDaily) {
       const diff = daily.difficulty;
       const rand = Math.random();
-      if (diff === 'Ultra' && rand < 1 / 9) isMiss = true;
-      else if (diff === 'Hard' && rand < 1 / 8) isMiss = true;
-      else if (diff === 'Medium' && rand < 1 / 7) isMiss = true;
-      else if (diff === 'Easy' && rand < 1 / 5) isMiss = true;
+      if (diff === 'Ultra' && rand < 2 / 9) isHeld = true;
+      else if (diff === 'Hard' && rand < 2 / 8) isHeld = true;
+      else if (diff === 'Medium' && rand < 2 / 7) isHeld = true;
+      else if (diff === 'Easy' && rand < 2 / 5) isHeld = true;
     }
 
-    if (isMiss) {
-      const baseReward = state.config.taskRewards[daily.difficulty] || { ap: 10, gold: 10, diamonds: 1, attributePoints: 1 };
-      const penaltyPct = Math.random() * 0.20; // 0% to 20%
-      const apDeduct = this.roundValue(baseReward.ap * penaltyPct, 1);
-      const goldDeduct = this.roundValue(baseReward.gold * penaltyPct, 1);
-      const diamondDeduct = this.roundValue(baseReward.diamonds * penaltyPct, 1);
-
-      state.addAp(-apDeduct);
-      state.addGold(-goldDeduct);
-      state.addDiamonds(-diamondDeduct);
-
-      state.systemState.runStats.tasksCompleted++;
-      return {
-        success: true,
-        rewards: { ap: -apDeduct, gold: -goldDeduct, diamonds: -diamondDeduct, attributePoints: 0 },
-        completed: daily.completed,
-        isMiss: true,
-        deductPct: Math.round(penaltyPct * 100)
-      };
-    }
-
-    // Award rewards
-    const reward = state.config.taskRewards[daily.difficulty];
+    // Calculate rewards
+    const reward = state.config.taskRewards[daily.difficulty] || { ap: 10, gold: 10, diamonds: 1, attributePoints: 1 };
 
     let apReward = isLootboxMode ? 0 : reward.ap;
     let goldReward = isLootboxMode ? 0 : reward.gold;
@@ -510,16 +594,49 @@ class TaskManager {
       attrReward *= mult;
     }
 
-    // Round values to prevent floating point issues
+    // Round current task calculated rewards
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
     attrReward = this.roundValue(attrReward, 2);
 
+    if (!state.dailiesState.heldRewards) {
+      state.dailiesState.heldRewards = { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 };
+    }
+
+    if (isHeld) {
+      state.dailiesState.heldRewards.ap = this.roundValue((state.dailiesState.heldRewards.ap || 0) + apReward, 1);
+      state.dailiesState.heldRewards.gold = this.roundValue((state.dailiesState.heldRewards.gold || 0) + goldReward, 1);
+      state.dailiesState.heldRewards.diamonds = this.roundValue((state.dailiesState.heldRewards.diamonds || 0) + diamondReward, 1);
+      state.dailiesState.heldRewards.attributePoints = this.roundValue((state.dailiesState.heldRewards.attributePoints || 0) + attrReward, 2);
+
+      state.systemState.runStats.tasksCompleted++;
+      return {
+        success: true,
+        isHeld: true,
+        heldAmount: { ap: apReward, gold: goldReward, diamonds: diamondReward, attributePoints: attrReward },
+        totalHeld: { ...state.dailiesState.heldRewards },
+        rewards: { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 },
+        completed: daily.completed
+      };
+    }
+
+    // Add accumulated held rewards to current task rewards
+    const held = state.dailiesState.heldRewards || { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 };
+    apReward = this.roundValue(apReward + (held.ap || 0), 1);
+    goldReward = this.roundValue(goldReward + (held.gold || 0), 1);
+    diamondReward = this.roundValue(diamondReward + (held.diamonds || 0), 1);
+    attrReward = this.roundValue(attrReward + (held.attributePoints || 0), 2);
+
+    // Reset held rewards pool
+    state.dailiesState.heldRewards = { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 };
+
     state.addAp(apReward);
     state.addGold(goldReward);
     state.addDiamonds(diamondReward);
-    state.addAttributePoints(daily.attribute, attrReward);
+    if (daily.attribute && attrReward > 0) {
+      state.addAttributePoints(daily.attribute, attrReward);
+    }
 
     state.systemState.runStats.tasksCompleted++;
 
@@ -569,6 +686,8 @@ class TaskManager {
       }
     }
 
+    const releasedHeldRewards = { ...held };
+
     const rewards = {
       ap: apReward,
       gold: goldReward,
@@ -577,7 +696,7 @@ class TaskManager {
       keys: keysAwarded
     };
 
-    return { success: true, rewards, completed: daily.completed, isJackpot };
+    return { success: true, rewards, releasedHeldRewards, completed: daily.completed, isJackpot };
   }
 
   static toggleBloodOath(dailyId) {
@@ -727,12 +846,14 @@ class TaskManager {
   static addTodo(name, difficulty, attribute, deadline = new Date(new Date().setHours(23, 59, 0, 0)), subtasks = []) {
     const state = getGameState();
 
-    if (!['Easy', 'Medium', 'Hard', 'Ultra'].includes(difficulty)) {
-      return null;
+    const validDiffs = ['Easy', 'Medium', 'Hard', 'Ultra'];
+    if (!validDiffs.includes(difficulty)) {
+      difficulty = 'Medium';
     }
 
-    if (!state.config.attributes.includes(attribute)) {
-      return null;
+    const validAttrs = state?.config?.attributes || ['STR', 'DISC', 'RESP', 'SOC', 'CAP', 'CREA', 'INT'];
+    if (!validAttrs.includes(attribute)) {
+      attribute = validAttrs[0] || 'RESP';
     }
 
     const todo = {
