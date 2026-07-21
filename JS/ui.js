@@ -9120,7 +9120,7 @@ class UIManager {
         return;
       }
 
-      if (event.target.closest('button, input, textarea, select, label')) return;
+      if (event.target.closest('button, input, textarea, select, label, .todo-subtask-rect, .subtask-add-inline')) return;
 
       const card = event.target.closest('.task-card-todo');
       const isNote = event.target.closest('.todo-note-card');
@@ -9190,34 +9190,29 @@ class UIManager {
           }
         }
 
-        const cardRect = card.getBoundingClientRect();
-        const boardRect = board.getBoundingClientRect();
+        const initialLeftPx = card.offsetLeft;
+        const initialTopPx = card.offsetTop;
 
-        const startLeftPx = cardRect.left - boardRect.left;
-        const startTopPx = cardRect.top - boardRect.top;
-        const startLeftPercent = (startLeftPx / Math.max(1, boardRect.width)) * 100;
-        const startTopPercent = (startTopPx / Math.max(1, boardRect.height)) * 100;
-
-        const offsetX = event.clientX - cardRect.left;
-        const offsetY = event.clientY - cardRect.top;
-
-        let firstStartLeftPercent = 0;
-        let firstStartTopPercent = 0;
+        let firstInitialLeftPx = 0;
+        let firstInitialTopPx = 0;
         if (firstCardElement) {
-          const fRect = firstCardElement.getBoundingClientRect();
-          firstStartLeftPercent = ((fRect.left - boardRect.left) / Math.max(1, boardRect.width)) * 100;
-          firstStartTopPercent = ((fRect.top - boardRect.top) / Math.max(1, boardRect.height)) * 100;
+          firstInitialLeftPx = firstCardElement.offsetLeft;
+          firstInitialTopPx = firstCardElement.offsetTop;
         }
 
+        const boardWidth = board.clientWidth || board.offsetWidth || 1;
+        const boardHeight = board.clientHeight || board.offsetHeight || 1;
         const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
 
         const onCardMove = (moveEvent) => {
           if (moveEvent.pointerId !== event.pointerId) return;
           if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
 
-          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+          const deltaX = moveEvent.clientX - startX;
+          const deltaY = moveEvent.clientY - startY;
+
           if (!isDragging) {
-            if (dist > 5) {
+            if (Math.hypot(deltaX, deltaY) > 4) {
               isDragging = true;
               try { card.setPointerCapture(event.pointerId); } catch (error) { }
 
@@ -9226,24 +9221,20 @@ class UIManager {
                 card,
                 board,
                 pointerId: event.pointerId,
-                boardRect,
-                cardWidth: cardRect.width,
-                cardHeight: cardRect.height,
-                offsetX,
-                offsetY,
                 moved: true,
                 startX,
                 startY,
-                startLeftPercent,
-                startTopPercent,
-                nextX: startLeftPercent,
-                nextY: startTopPercent,
+                initialLeftPx,
+                initialTopPx,
                 isCluster,
                 hasHeader,
                 firstCardElement,
-                firstStartLeftPercent,
-                firstStartTopPercent,
-                clusterCards
+                firstCardTodo,
+                firstInitialLeftPx,
+                firstInitialTopPx,
+                clusterCards,
+                nextX: (initialLeftPx / Math.max(1, boardWidth)) * 100,
+                nextY: (initialTopPx / Math.max(1, boardHeight)) * 100
               };
 
               card.classList.add('dragging');
@@ -9255,15 +9246,11 @@ class UIManager {
             }
           }
 
-          const boardNow = board.getBoundingClientRect();
-          let nextLeftPx = moveEvent.clientX - boardNow.left - offsetX;
-          let nextTopPx = moveEvent.clientY - boardNow.top - offsetY;
+          let nextLeftPx = Math.max(0, Math.min(boardWidth - card.offsetWidth, initialLeftPx + deltaX));
+          let nextTopPx = Math.max(0, Math.min(boardHeight - card.offsetHeight, initialTopPx + deltaY));
 
-          nextLeftPx = Math.max(0, Math.min(boardNow.width - cardRect.width, nextLeftPx));
-          nextTopPx = Math.max(0, Math.min(boardNow.height - cardRect.height, nextTopPx));
-
-          const nextX = (nextLeftPx / Math.max(1, boardNow.width)) * 100;
-          const nextY = (nextTopPx / Math.max(1, boardNow.height)) * 100;
+          const nextX = (nextLeftPx / Math.max(1, boardWidth)) * 100;
+          const nextY = (nextTopPx / Math.max(1, boardHeight)) * 100;
 
           if (this.todoDragState) {
             this.todoDragState.nextX = nextX;
@@ -9272,14 +9259,13 @@ class UIManager {
           }
 
           if (isCluster && firstCardElement && firstCardTodo) {
-            const deltaX = nextX - startLeftPercent;
-            const deltaY = nextY - startTopPercent;
+            let firstNextLeftPx = Math.max(0, Math.min(boardWidth - firstCardElement.offsetWidth, firstInitialLeftPx + deltaX));
+            let firstNextTopPx = Math.max(0, Math.min(boardHeight - firstCardElement.offsetHeight, firstInitialTopPx + deltaY));
 
-            firstCardTodo.layout = {
-              x: Math.max(0, firstStartLeftPercent + deltaX),
-              y: Math.max(0, firstStartTopPercent + deltaY)
-            };
+            const firstNextX = (firstNextLeftPx / Math.max(1, boardWidth)) * 100;
+            const firstNextY = (firstNextTopPx / Math.max(1, boardHeight)) * 100;
 
+            firstCardTodo.layout = { x: firstNextX, y: firstNextY };
             this.positionTodoCards();
           } else {
             card.style.left = `${nextX}%`;
@@ -9312,8 +9298,8 @@ class UIManager {
             } else if (dragState.moved) {
               const layout = this.clampTodoLayout(
                 { x: dragState.nextX, y: dragState.nextY },
-                { width: Math.max(1, boardRect.width), height: Math.max(1, boardRect.height) },
-                { width: cardRect.width, height: cardRect.height },
+                { width: Math.max(1, boardWidth), height: Math.max(1, boardHeight) },
+                { width: card.offsetWidth, height: card.offsetHeight },
                 hasHeader
               );
               TaskManager.updateTodoLayout(todoId, layout);
@@ -9380,6 +9366,7 @@ class UIManager {
   }
 
   static updateTodosList() {
+    if (this.todoDragState) return;
     try { this.updatePendingDamageDisplay(); } catch (e) { }
     const panel = document.getElementById('todosPanel');
     if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return; // Skip if hidden on mobile

@@ -2938,17 +2938,21 @@ body::before {
   overflow: visible;
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: none !important;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   z-index: 500;
+  transition: left 0.15s ease, top 0.15s ease;
 }
 
 .task-card-todo.dragging {
-  cursor: grabbing;
-  z-index: 1000;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.5);
+  cursor: grabbing !important;
+  z-index: 10000 !important;
+  transition: none !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6), 0 0 15px rgba(251, 191, 36, 0.4) !important;
+  transform: scale(1.02);
+  will-change: left, top;
 }
 
 .task-card-daily.dragging {
@@ -5527,7 +5531,6 @@ body::before {
 .shop-panel,
 .task-card,
 .task-card-daily,
-.task-card-todo,
 .btn-icon,
 .btn-action,
 .backup-popup {
