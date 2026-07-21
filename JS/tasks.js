@@ -621,21 +621,30 @@ class TaskManager {
       };
     }
 
-    // Add accumulated held rewards to current task rewards
+    // Record current daily direct rewards before adding held rewards
+    const directRewards = {
+      ap: apReward,
+      gold: goldReward,
+      diamonds: diamondReward,
+      attributePoints: attrReward
+    };
+
+    // Add accumulated held rewards to total awarded to player
     const held = state.dailiesState.heldRewards || { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 };
-    apReward = this.roundValue(apReward + (held.ap || 0), 1);
-    goldReward = this.roundValue(goldReward + (held.gold || 0), 1);
-    diamondReward = this.roundValue(diamondReward + (held.diamonds || 0), 1);
-    attrReward = this.roundValue(attrReward + (held.attributePoints || 0), 2);
+    const releasedHeld = { ...held };
+    const totalAp = this.roundValue(apReward + (held.ap || 0), 1);
+    const totalGold = this.roundValue(goldReward + (held.gold || 0), 1);
+    const totalDiamonds = this.roundValue(diamondReward + (held.diamonds || 0), 1);
+    const totalAttr = this.roundValue(attrReward + (held.attributePoints || 0), 2);
 
     // Reset held rewards pool
     state.dailiesState.heldRewards = { ap: 0, gold: 0, diamonds: 0, attributePoints: 0 };
 
-    state.addAp(apReward);
-    state.addGold(goldReward);
-    state.addDiamonds(diamondReward);
-    if (daily.attribute && attrReward > 0) {
-      state.addAttributePoints(daily.attribute, attrReward);
+    state.addAp(totalAp);
+    state.addGold(totalGold);
+    state.addDiamonds(totalDiamonds);
+    if (daily.attribute && totalAttr > 0) {
+      state.addAttributePoints(daily.attribute, totalAttr);
     }
 
     state.systemState.runStats.tasksCompleted++;
@@ -686,17 +695,17 @@ class TaskManager {
       }
     }
 
-    const releasedHeldRewards = { ...held };
+    directRewards.keys = keysAwarded;
+    const hasReleasedHeld = (releasedHeld.ap > 0 || releasedHeld.gold > 0 || releasedHeld.diamonds > 0);
 
-    const rewards = {
-      ap: apReward,
-      gold: goldReward,
-      diamonds: diamondReward,
-      attributePoints: attrReward,
-      keys: keysAwarded
+    return {
+      success: true,
+      rewards: directRewards,
+      releasedHeld: hasReleasedHeld ? releasedHeld : null,
+      releasedHeldRewards: hasReleasedHeld ? releasedHeld : null,
+      completed: daily.completed,
+      isJackpot
     };
-
-    return { success: true, rewards, releasedHeldRewards, completed: daily.completed, isJackpot };
   }
 
   static toggleBloodOath(dailyId) {

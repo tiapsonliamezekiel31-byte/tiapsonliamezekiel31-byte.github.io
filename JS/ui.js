@@ -2764,7 +2764,7 @@ class UIManager {
         
         if (res.isHeld || res.isMiss) {
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-          FloatingDamageNumber.show(centerX, centerY - 20, 'Rewards Held! ⏳', { color: '#f59e0b', scale: 1.2, duration: 2000 });
+          FloatingDamageNumber.show(centerX, Math.max(12, centerY - 20), 'MISS', { color: '#ef4444', isMiss: true, scale: 1.3, duration: 2000 });
         } else {
           if (res.isJackpot) {
             try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -2790,6 +2790,34 @@ class UIManager {
               color: '#ffd700',
               cycleText: false
             });
+          }
+
+          const released = res.releasedHeld || res.releasedHeldRewards;
+          if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
+            let offset = 48;
+            if (released.ap > 0) {
+              FloatingDamageNumber.show(centerX, Math.max(12, centerY - offset), `+${Math.ceil(released.ap)} AP (Held)`, {
+                color: '#f59e0b',
+                scale: 1.2,
+                duration: 2500
+              });
+              offset += 24;
+            }
+            if (released.diamonds > 0) {
+              FloatingDamageNumber.show(centerX + 25, Math.max(12, centerY - offset), `+${released.diamonds} 💎 (Held)`, {
+                color: '#00e5ff',
+                scale: 1.2,
+                duration: 2500
+              });
+              offset += 24;
+            }
+            if (released.keys > 0) {
+              FloatingDamageNumber.show(centerX, Math.max(12, centerY - offset), `+${released.keys} Keys (Held) 🔑`, {
+                color: '#f59e0b',
+                scale: 1.2,
+                duration: 2500
+              });
+            }
           }
         }
 
@@ -4939,12 +4967,7 @@ class UIManager {
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                 const rect = card.getBoundingClientRect();
                 // Red MISS floating popup
-                FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', scale: 1.4, duration: 1800 });
-
-                // Separate floating number popup for held daily rewards
-                if (res.heldAmount && res.heldAmount.ap > 0) {
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 42), `+${Math.ceil(res.heldAmount.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.1, duration: 2200 });
-                }
+                FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', isMiss: true, scale: 1.4, duration: 1800 });
               } else {
                 if (res.isJackpot) {
                   try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -4968,9 +4991,22 @@ class UIManager {
                 }
 
                 // Separate floating popup for released held rewards
-                if (res.releasedHeldRewards && res.releasedHeldRewards.ap > 0) {
+                const released = res.releasedHeld || res.releasedHeldRewards;
+                if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
                   const rect = card.getBoundingClientRect();
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 58), `+${Math.ceil(res.releasedHeldRewards.ap)} Held AP Released! 🎉`, { color: '#3b82f6', scale: 1.3, duration: 2500 });
+                  const centerX = rect.left + rect.width / 2;
+                  let offset = 48;
+                  if (released.ap > 0) {
+                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                    offset += 24;
+                  }
+                  if (released.diamonds > 0) {
+                    FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500 });
+                    offset += 24;
+                  }
+                  if (released.keys > 0) {
+                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                  }
                 }
               }
 
@@ -8611,7 +8647,7 @@ class UIManager {
                 const centerY = rect.top + rect.height / 2;
                 if (res.isHeld || res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'Rewards Held! ⏳', { color: '#f59e0b', scale: 1.2, duration: 2000 });
+                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', isMiss: true, scale: 1.3, duration: 2000 });
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
@@ -8625,6 +8661,22 @@ class UIManager {
                   }
                   if (res.rewards && res.rewards.diamonds) {
                     UIManager.spawnDiamondFloatingPopup(centerX, centerY, res.rewards.diamonds);
+                  }
+
+                  const released = res.releasedHeld || res.releasedHeldRewards;
+                  if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
+                    let offset = 48;
+                    if (released.ap > 0) {
+                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                      offset += 24;
+                    }
+                    if (released.diamonds > 0) {
+                      FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500 });
+                      offset += 24;
+                    }
+                    if (released.keys > 0) {
+                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                    }
                   }
                 }
                 if (typeof RetroTaskCompleteAnimation !== 'undefined') {
