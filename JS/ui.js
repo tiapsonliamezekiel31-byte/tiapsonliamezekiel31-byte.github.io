@@ -8870,7 +8870,7 @@ class UIManager {
 
     sortedTodos.forEach((todo, index) => {
       const card = metrics.board.querySelector(`.task-card-todo[data-id="${todo.id}"]`);
-      if (!card) return;
+      if (!card || card.classList.contains('dragging')) return;
 
       const actualTileHeight = card.offsetHeight || tileSize.height;
 
@@ -9204,6 +9204,12 @@ class UIManager {
         const boardHeight = board.clientHeight || board.offsetHeight || 1;
         const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
 
+        const onTouchMovePrevent = (touchEv) => {
+          if (isDragging && touchEv.cancelable) {
+            touchEv.preventDefault();
+          }
+        };
+
         const onCardMove = (moveEvent) => {
           if (moveEvent.pointerId !== event.pointerId) return;
           if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
@@ -9215,6 +9221,11 @@ class UIManager {
             if (Math.hypot(deltaX, deltaY) > 4) {
               isDragging = true;
               try { card.setPointerCapture(event.pointerId); } catch (error) { }
+
+              const panel = document.getElementById('todosPanel');
+              if (panel) panel.style.overflow = 'hidden';
+
+              document.addEventListener('touchmove', onTouchMovePrevent, { passive: false });
 
               this.todoDragState = {
                 todoId,
@@ -9268,14 +9279,17 @@ class UIManager {
             firstCardTodo.layout = { x: firstNextX, y: firstNextY };
             this.positionTodoCards();
           } else {
-            card.style.left = `${nextX}%`;
-            card.style.top = `${nextY}%`;
+            card.style.left = `${nextLeftPx}px`;
+            card.style.top = `${nextTopPx}px`;
           }
         };
 
         const onCardUp = (upEvent) => {
           if (upEvent.pointerId !== event.pointerId) return;
           cleanupCard();
+
+          const panel = document.getElementById('todosPanel');
+          if (panel) panel.style.overflow = '';
 
           const dragState = this.todoDragState;
           if (isDragging && dragState) {
@@ -9287,7 +9301,6 @@ class UIManager {
               if (firstCardElement && firstCardTodo && firstCardTodo.layout) {
                 TaskManager.updateTodoLayout(firstCardElement.dataset.id, firstCardTodo.layout);
               }
-              // Clean up non-anchor cluster cards layouts
               clusterCards.forEach((c, i) => {
                 if (i > 0) {
                   const cTodo = TaskManager.getTaskById(c.dataset.id);
@@ -9303,6 +9316,8 @@ class UIManager {
                 hasHeader
               );
               TaskManager.updateTodoLayout(todoId, layout);
+              card.style.left = `${layout.x}%`;
+              card.style.top = `${layout.y}%`;
               try { getGameState().save(); } catch (error) { }
             }
           }
@@ -9315,6 +9330,7 @@ class UIManager {
           document.removeEventListener('pointermove', onCardMove);
           document.removeEventListener('pointerup', onCardUp);
           document.removeEventListener('pointercancel', onCardUp);
+          document.removeEventListener('touchmove', onTouchMovePrevent);
         };
 
         document.addEventListener('pointermove', onCardMove);
