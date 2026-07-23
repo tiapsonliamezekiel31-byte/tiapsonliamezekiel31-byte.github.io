@@ -322,6 +322,14 @@ class PlayerManager {
     }
   }
   
+  static getKillTagUpgradeCost() {
+    const state = getGameState();
+    if (state.playerState?.className === 'Ranger') {
+      return state.config?.killTagThresholdRanger || 3;
+    }
+    return state.config?.killTagsPerUpgrade || 5;
+  }
+
   static getKillTags(weaponName) {
     const state = getGameState();
     return state.playerState.killTagsByWeapon[weaponName] || 0;
@@ -490,6 +498,16 @@ class PlayerManager {
       } else if (key === 's_ap_potion' || /ap|tonic/i.test(key)) {
         // Grant 30 AP
         state.addAp(30);
+      } else if (key === 'Shield' || /^shield$/i.test(key)) {
+        // Shield: -1/4 all pending damage, stackable
+        state.playerState.shieldConsumableStacks = (state.playerState.shieldConsumableStacks || 0) + 1;
+      } else if (key === 'Mega Instinct' || /mega\s*instinct/i.test(key)) {
+        // Mega Instinct: -30% dodge cost
+        state.playerState.megaInstinctStacks = (state.playerState.megaInstinctStacks || 0) + 1;
+        state.playerState.dodgeCostMultiplier = (state.playerState.dodgeCostMultiplier || 1.0) * 0.70;
+      } else if (key === 'Elemental Grease' || /elemental\s*grease/i.test(key)) {
+        // Elemental Grease: enemy weakness +60%
+        state.playerState.elementalGreaseStacks = (state.playerState.elementalGreaseStacks || 0) + 1;
       } else {
         // If consumable is defined in config with structured effect, attempt basic parsing
         const conf = state.config && state.config.consumables && state.config.consumables[consumableName];

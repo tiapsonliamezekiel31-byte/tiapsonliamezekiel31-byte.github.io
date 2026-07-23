@@ -1391,6 +1391,12 @@ class GameState {
       console.warn('Late todo damage calculation in calculateExactPendingDamage failed', e);
     }
 
+    const shieldStacks = state.playerState?.shieldConsumableStacks || 0;
+    if (shieldStacks > 0) {
+      const reductionFactor = Math.max(0, 1.0 - 0.25 * shieldStacks);
+      totalDamage *= reductionFactor;
+    }
+
     return Math.ceil(totalDamage);
   }
 }
@@ -2495,8 +2501,9 @@ function performCheckIn() {
 
       const petDamage = petBase * petMultiplier;
       
-      const skillFx = state.combatState?.skillEffects || {};
-      const petAttacksCount = skillFx.shadowPet ? 2 : 1;
+      const extraPetAttacks = state.systemState?.extraPetAttacksTomorrow || 0;
+      const petAttacksCount = 1 + extraPetAttacks;
+      state.systemState.extraPetAttacksTomorrow = 0;
 
       for (let i = 0; i < petAttacksCount; i++) {
         const alive = StageManager.getAliveEnemies();
@@ -2590,6 +2597,9 @@ function performCheckIn() {
     }
     state.playerState.corrosiveStacks = 0;
     state.playerState.dodgeCostMultiplier = 1.0;
+    state.playerState.shieldConsumableStacks = 0;
+    state.playerState.megaInstinctStacks = 0;
+    state.playerState.elementalGreaseStacks = 0;
     state.playerState.furyFirstAttackUsed = false;
     state.systemState.lastCheckInTime = nowMs;
     state.systemState.runStats.daysSurvived = (state.systemState.runStats.daysSurvived || 0) + 1;

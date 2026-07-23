@@ -866,6 +866,10 @@ class UIManager {
                 <span class="flap-label">⚡ MAX</span>
                 <span class="flap-value" id="statsApVelocity">0</span>
               </div>
+              <div class="flap-box" id="flapStreakBox" title="Weighted Average Daily Streak & Combat Multiplier">
+                <span class="flap-label">🔥 STRK</span>
+                <span class="flap-value" id="statsStreakVal">0 (x1.0)</span>
+              </div>
             </div>
 
             <!-- CENTRAL SQUARE: Attribute Radial Chart -->
@@ -5510,9 +5514,8 @@ class UIManager {
       if (initial.length > 0) {
         initial.forEach(m => {
           try {
-            const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
-            // show slightly longer so it fits the slowed sequence
-            this.showFloatingText(m.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 });
+            const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
+            this.showFloatingText(m.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 });
           } catch (e) { }
         });
         // remove shown entries
@@ -5542,8 +5545,7 @@ class UIManager {
           await UIManager.playChainMutationAnimation(respawn.chainFromId, respawn.enemyId);
           const card = document.querySelector(`.enemy-card[data-enemy-id="${respawn.enemyId}"]`);
           if (card) {
-            const meta = UIManager.MUTATOR_META[respawn.mutator] || { icon: '❗', label: respawn.mutator, color: '#a15cff' };
-            UIManager.showFloatingText(respawn.enemyId, `CHAIN MUTATION! ${meta.icon} ${meta.label}`, { color: '#a15cff', duration: 2200 });
+            UIManager.showFloatingText(respawn.enemyId, 'CHAIN', { color: '#a15cff', scale: 0.8, duration: 2000 });
             const enemy = StageManager.getEnemyById(respawn.enemyId);
             if (enemy) {
               UIManager.renderMutatorBadges(card, enemy);
@@ -5571,8 +5573,8 @@ class UIManager {
             await wait(800);
 
             if (respawn.mutator) {
-              const meta = UIManager.MUTATOR_META[respawn.mutator] || { icon: '❗', label: respawn.mutator, color: '#a15cff' };
-              UIManager.showFloatingText(respawn.enemyId, `MUTATED: ${meta.icon} ${meta.label}`, { color: '#a15cff', duration: 2200 });
+              const label = String(respawn.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
+              UIManager.showFloatingText(respawn.enemyId, label, { color: '#a15cff', scale: 0.8, duration: 2000 });
               const enemy = StageManager.getEnemyById(respawn.enemyId);
               if (enemy) {
                 UIManager.renderMutatorBadges(card, enemy);
@@ -5683,8 +5685,8 @@ class UIManager {
           if (matches.length) {
             matches.forEach(m => {
               try {
-                const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
-                try { this.showFloatingText(step.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 }); } catch (e) { /* ignore */ }
+                const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
+                try { this.showFloatingText(step.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 }); } catch (e) { /* ignore */ }
               } catch (e) { }
             });
             // remove shown entries
@@ -5705,8 +5707,8 @@ class UIManager {
       if (Array.isArray(mutatorGains) && mutatorGains.length > 0) {
         mutatorGains.forEach(m => {
           try {
-            const meta = UIManager.MUTATOR_META[m.mutator] || { icon: '❗', label: m.mutator, color: UIManager.themeColor('--accent-gold', '#FFB33F') };
-            this.showFloatingText(m.enemyId, `${meta.icon} ${meta.label}`, { color: meta.color || UIManager.themeColor('--accent-gold', '#FFB33F'), duration: 2200 });
+            const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
+            this.showFloatingText(m.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 });
           } catch (e) { }
         });
       }
@@ -6334,14 +6336,14 @@ class UIManager {
             break;
 
           case 'Druid':
-            // Nature's Embrace: heal 40 HP, summon shadow pet for today
-            state.addHp(40);
-            state.combatState.skillEffects.shadowPet = true; // pet attacks 2× today
+            // Nature's Embrace: heal 20 HP, pet attacks +1 tomorrow
+            state.addHp(20);
+            state.systemState.extraPetAttacksTomorrow = (state.systemState.extraPetAttacksTomorrow || 0) + 1;
             break;
 
           case 'Alchemist':
             // Unstable Concoction: reverse target's weaknesses/resistances permanently, block healing/mutating next check-in.
-            // If weak to current element, deal 15% max HP splash damage to adjacent enemies.
+            // Deal 30% max HP of target as splash damage to 2 adjacent enemies.
             try {
               const target = alchemistTarget || this.resolveAttackTarget();
               if (target) {
@@ -6368,46 +6370,29 @@ class UIManager {
                   }
                 } catch (e) { }
 
-                const weapon = PlayerManager.getCurrentWeapon();
-                if (weapon) {
-                  const isWeak = resolveWeaponWeaknessMultiplier(target, weapon.element) > 1.0;
-                  if (isWeak) {
-                    const all = StageManager.getAllEnemies ? StageManager.getAllEnemies() : [];
-                    const idx = all.indexOf(target);
-                    if (idx > -1) {
-                      const adjacents = EnemyManager.getAdjacentEnemies(all, idx);
-                      adjacents.forEach(adj => {
-                        if (adj && !adj.isDead && adj.maxHp > 0) {
-                          const splashDmg = Math.ceil(adj.maxHp * 0.15);
-                          adj.takeDamage(splashDmg);
+                const all = StageManager.getAllEnemies ? StageManager.getAllEnemies() : [];
+                const idx = all.indexOf(target);
+                if (idx > -1) {
+                  const adjacents = EnemyManager.getAdjacentEnemies(all, idx).slice(0, 2);
+                  const splashDmg = Math.ceil((target.maxHp || 100) * 0.30);
+                  adjacents.forEach(adj => {
+                    if (adj && !adj.isDead) {
+                      adj.takeDamage(splashDmg);
 
-                          try {
-                            const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
-                            if (adjCard) {
-                              if (adjCard.dataset.x) {
-                                const circleRect = UIManager.getCircleRect();
-                                FloatingDamageNumber.show(circleRect.left + Number(adjCard.dataset.x), circleRect.top + Number(adjCard.dataset.y) - 45, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
-                              } else {
-                                const rect = adjCard.getBoundingClientRect();
-                                FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
-                              }
-                            }
-                          } catch (e) { }
+                      try {
+                        const adjCard = document.querySelector(`.enemy-card[data-enemy-id="${adj.id}"]`);
+                        if (adjCard) {
+                          if (adjCard.dataset.x) {
+                            const circleRect = UIManager.getCircleRect();
+                            FloatingDamageNumber.show(circleRect.left + Number(adjCard.dataset.x), circleRect.top + Number(adjCard.dataset.y) - 45, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                          } else {
+                            const rect = adjCard.getBoundingClientRect();
+                            FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `-${splashDmg} 💥`, { color: '#ffaa00', scale: 1.2, duration: 1200 });
+                          }
                         }
-                      });
-
-                      if (adjacents.length > 0) {
-                        try {
-                          FloatingDamageNumber.show(
-                            window.innerWidth / 2,
-                            window.innerHeight / 2 - 50,
-                            'CONCOCTION EXPLOSION! 💥',
-                            { color: '#84cc16', duration: 1500 }
-                          );
-                        } catch (e) { }
-                      }
+                      } catch (e) { }
                     }
-                  }
+                  });
                 }
               }
             } catch (e) {
@@ -6904,7 +6889,7 @@ class UIManager {
             } else if (dragType === 'dodge') {
               const isSwift = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift');
               if (isSwift) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444', scale: 0.75 });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
               } else {
                 const dodgeCost = CombatManager.getDodgeCost(enemy);
@@ -6925,7 +6910,7 @@ class UIManager {
 
                   const firstNonNullIndex = rolledAttacks.findIndex(a => a !== 'null');
                   if (firstNonNullIndex === -1) {
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66' });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66', scale: 0.75 });
                     try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                   } else {
                     state.spendAp(dodgeCost);
@@ -6963,14 +6948,14 @@ class UIManager {
                     : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
 
                   if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66', scale: 0.75 });
                     try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                   } else {
                     state.spendAp(dodgeCost);
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700', scale: 0.8 });
 
                     state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
+                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44', scale: 0.75 });
 
                     try {
                       const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
@@ -12035,6 +12020,7 @@ class UIManager {
   }
 
 }
+window.UIManager = UIManager;
 
 window.addEventListener('resize', () => {
   if (typeof UIManager === 'undefined') return;
@@ -12241,8 +12227,17 @@ class StatsHUD {
 
     const elDiaVal = document.getElementById('statsDiamondVelocity');
     const elApVal = document.getElementById('statsApVelocity');
+    const elStreakVal = document.getElementById('statsStreakVal');
     if (elDiaVal) elDiaVal.textContent = Math.ceil(maxDiamondsVal);
     if (elApVal) elApVal.textContent = Math.ceil(maxApVal);
+
+    if (elStreakVal && typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function') {
+      const avgStreak = TaskManager.getWeightedAverageStreak();
+      const streakBonus = TaskManager.getDailyStreakDamageBonus();
+      const mult = 1 + streakBonus;
+      const formattedStreak = Number.isInteger(avgStreak) ? avgStreak : avgStreak.toFixed(1);
+      elStreakVal.textContent = `${formattedStreak} (x${mult.toFixed(1)})`;
+    }
 
     const dmgDealtHits = runStats.last15DealtHits || [];
     const avgDmgDealt = dmgDealtHits.length > 0 

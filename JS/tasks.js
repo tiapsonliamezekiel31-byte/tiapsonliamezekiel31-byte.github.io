@@ -1369,13 +1369,38 @@ class TaskManager {
     return (typeof UIManager !== 'undefined') ? UIManager.themeColor('--mana-blue', '#134E8E') : '#4488FF';
   }
 
+  static getWeightedAverageStreak() {
+    const state = getGameState();
+    const dailies = Array.isArray(state.dailiesState?.dailies) ? state.dailiesState.dailies : [];
+    if (dailies.length === 0) return 0;
+
+    const weights = { Easy: 1, Medium: 2, Hard: 3, Ultra: 6 };
+    let totalWeightedStreak = 0;
+    let totalWeight = 0;
+
+    for (const daily of dailies) {
+      const streak = this.computeDailyStreak(daily.id);
+      const w = weights[daily.difficulty] || 1;
+      totalWeightedStreak += streak * w;
+      totalWeight += w;
+    }
+
+    return totalWeight > 0 ? (totalWeightedStreak / totalWeight) : 0;
+  }
+
   static getDailyStreakDamageBonus() {
     const state = getGameState();
-    let bonusMult = state.config.perfectDayStreakDamageBonus;
-    if (state.hasBuff('Quick Learner')) {
-      bonusMult *= 2;
+    const avgStreak = this.getWeightedAverageStreak();
+    const clampedStreak = Math.max(0, Math.min(66, avgStreak));
+
+    // Lowest (0) gives x1 multiplier (+0 bonus), highest (66) gives x10 multiplier (+9 bonus)
+    let bonus = (clampedStreak / 66.0) * 9.0;
+
+    if (state.hasBuff && state.hasBuff('Quick Learner')) {
+      bonus *= 2;
     }
-    return state.dailiesState.streakCompletion * bonusMult;
+
+    return bonus;
   }
 
   static computeDailyStreak(dailyId) {

@@ -163,7 +163,17 @@ function resolveWeaponWeaknessMultiplier(target, weaponElement) {
   if (!weaknessEntries.length) return 1;
 
   const matchedEntry = weaknessEntries.find(entry => entry.startsWith(weaponElement));
-  return matchedEntry ? target.getWeaknessMultiplier(matchedEntry) : 1;
+  let mult = matchedEntry ? target.getWeaknessMultiplier(matchedEntry) : 1;
+
+  if (matchedEntry || mult > 1.0) {
+    const state = getGameState();
+    const greaseStacks = state.playerState?.elementalGreaseStacks || 0;
+    if (greaseStacks > 0) {
+      mult *= (1 + 0.60 * greaseStacks);
+    }
+  }
+
+  return mult;
 }
 
 function resolveWeaponResistanceMultiplier(target, weaponElement) {
@@ -373,9 +383,9 @@ class CombatManager {
     const skillFx = state.combatState?.skillEffects || {};
 
     if (skillFx.stormVolley) {
-      targets.push({ enemy: target, damageMultiplier: 1 });
+      targets.push({ enemy: target, damageMultiplier: 1, isPrimaryTarget: true });
       const otherEnemies = aliveList.filter(enemy => enemy && enemy.id !== target.id);
-      targets.push(...otherEnemies.map(enemy => ({ enemy, damageMultiplier: 0.6 })));
+      targets.push(...otherEnemies.map(enemy => ({ enemy, damageMultiplier: 0.6, isPrimaryTarget: false })));
       pushSpecialPopup('STORM VOLLEY', '#22c55e');
       delete skillFx.stormVolley;
     } else if (weaponData.special && weaponData.special.includes('Hits ALL')) {
@@ -416,6 +426,7 @@ class CombatManager {
     targets.forEach(entry => {
       const tgt = entry.enemy;
       if (!tgt || tgt.isDead) return;
+      const isPrimaryTarget = entry.isPrimaryTarget !== undefined ? entry.isPrimaryTarget : (tgt === target);
 
       // Boss 20% dodge chance check against player attacks
       // swift bypasses dodge
@@ -428,7 +439,7 @@ class CombatManager {
             setTimeout(() => targetCard.classList.remove('dodged'), 1200);
             const rect = targetCard.getBoundingClientRect();
             if (typeof FloatingDamageNumber !== 'undefined') {
-              FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'DODGED!', { color: '#ff4444', duration: 1200 });
+              FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'DODGED!', { color: '#ff4444', scale: 0.75, duration: 1200 });
             }
           }
         } catch (e) {}
@@ -474,7 +485,7 @@ class CombatManager {
       }
 
       if (attackPlan.weaponName === 'Death Spell' && damage === 0) {
-        pushSpecialPopup('RESISTED', '#ef4444');
+        // Element ailment text removed per user preference
       }
 
       if (attackPlan.specialId === 'vine') {
@@ -499,7 +510,7 @@ class CombatManager {
         }
       }
 
-      if (weapon.name === 'Heavy Hammer' || weapon.name === 'Great Hammer') {
+      if ((weapon.name === 'Heavy Hammer' || weapon.name === 'Great Hammer') && isPrimaryTarget) {
         if (Array.isArray(tgt.mutators) && tgt.mutators.length > 0) {
           tgt.mutators = [];
           pushSpecialPopup('MUTATIONS CLEARED', '#e11d48');
@@ -544,45 +555,41 @@ class CombatManager {
           element: attackPlan.weaponElement
         });
 
-        // Apply Runes (Flame, Frost, Storm, Venom, Siphon, Blast)
+        // Apply Runes (Flame, Frost, Storm, Venom, Siphon, Blast) - Elemental ailment text popups removed
         const hasFlameRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Flame Rune';
-        if (hasFlameRune && !tgt.isDead) {
+        if (hasFlameRune && !tgt.isDead && isPrimaryTarget) {
           tgt.statusEffects = tgt.statusEffects || {};
           tgt.statusEffects.burn = {
             daysRemaining: 3,
             damagePerDay: Math.max(1, Math.round(enforcedDamage * 0.1))
           };
-          pushSpecialPopup('BURN APPLIED', '#ff9a2e');
         }
 
         const hasFrostRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Frost Rune';
-        if (hasFrostRune && !tgt.isDead) {
+        if (hasFrostRune && !tgt.isDead && isPrimaryTarget) {
           tgt.statusEffects = tgt.statusEffects || {};
           tgt.statusEffects.freeze = {
             damageMultiplier: 0.55
           };
-          pushSpecialPopup('FROST APPLIED', '#4ea3ff');
         }
 
         const hasStormRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Storm Rune';
-        if (hasStormRune && !tgt.isDead && Math.random() < 0.15) {
+        if (hasStormRune && !tgt.isDead && Math.random() < 0.15 && isPrimaryTarget) {
           tgt.statusEffects = tgt.statusEffects || {};
           tgt.statusEffects.stunned = true;
-          pushSpecialPopup('STUNNED', '#ffd76a');
         }
 
         const hasVenomRune = state.playerState.weaponRunes?.[weapon.name]?.tier1 === 'Venom Rune';
-        if (hasVenomRune && !tgt.isDead) {
+        if (hasVenomRune && !tgt.isDead && isPrimaryTarget) {
           tgt.statusEffects = tgt.statusEffects || {};
           tgt.statusEffects.poison = {
             daysRemaining: 3,
             damagePerDay: Math.max(1, Math.round(state.playerState.maxAp * 0.04))
           };
-          pushSpecialPopup('POISON APPLIED', '#84cc16');
         }
 
         const hasSiphonRune = state.playerState.weaponRunes?.[weapon.name]?.tier2 === 'Siphon Rune';
-        if (isCrit && hasSiphonRune) {
+        if (isCrit && hasSiphonRune && isPrimaryTarget) {
           state.addMana(10);
           pushSpecialPopup('+10 MANA', '#4ea3ff');
         }
@@ -663,10 +670,12 @@ class CombatManager {
           pushSpecialPopup(attackPlan.specialId === 'buckler' ? 'BUCKLER READY' : 'AEGIS READY', attackPlan.specialId === 'buckler' ? '#ffd700' : '#4ea3ff');
         }
 
-        if (isCrit && weapon.name === 'Thunder Hammer' && !tgt.isDead) {
-          tgt.statusEffects = tgt.statusEffects || {};
-          tgt.statusEffects.stunned = true;
-          pushSpecialPopup('STUNNED', '#facc15');
+        if (weapon.name === 'Thunder Hammer' && !tgt.isDead && isPrimaryTarget) {
+          const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+            ? state.combatState.dodgeTarget
+            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+          state.combatState.dodgeTarget = [...currentDodges, tgt.id];
+          pushSpecialPopup('AUTO DODGE', '#facc15');
         }
 
         // Boss phase-2 trigger at <= 40% HP (dialogue + phase flag only)
@@ -776,9 +785,16 @@ class CombatManager {
             if (overkillDamage > 0) {
                 adj.forEach(a => a.takeDamage(overkillDamage));
                 try {
-                  // Large red OVERKILL popup centered on screen
-                  FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2 - 40, 'OVERKILL!', { color: (typeof UIManager !== 'undefined') ? UIManager.themeColor('--danger-red', '#C00707') : '#ff2222', scale: 2.2, duration: 1800, fadeDelay: 200 });
-                  // small screen flash for emphasis
+                  // OVERKILL popup smaller and positioned on top of attacked enemy card
+                  let okX = window.innerWidth / 2;
+                  let okY = window.innerHeight / 2 - 40;
+                  const card = document.querySelector(`.enemy-card[data-enemy-id="${tgt.id}"]`);
+                  if (card) {
+                    const rect = card.getBoundingClientRect();
+                    okX = rect.left + rect.width / 2;
+                    okY = rect.top - 45;
+                  }
+                  FloatingDamageNumber.show(okX, okY, 'OVERKILL!', { color: (typeof UIManager !== 'undefined') ? UIManager.themeColor('--danger-red', '#C00707') : '#ff2222', scale: 0.9, duration: 1500, fadeDelay: 150 });
                   ScreenEffects.flash('rgba(255, 34, 34, 0.06)', 250);
                 } catch (e) { console.warn('Failed to show OVERKILL popup', e); }
             }
@@ -796,10 +812,12 @@ class CombatManager {
           element: attackPlan.weaponElement
         });
 
-        if (isCrit && weapon.name === 'Thunder Hammer' && !tgt.isDead) {
-          tgt.statusEffects = tgt.statusEffects || {};
-          tgt.statusEffects.stunned = true;
-          pushSpecialPopup('STUNNED', '#facc15');
+        if (weapon.name === 'Thunder Hammer' && !tgt.isDead && isPrimaryTarget) {
+          const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+            ? state.combatState.dodgeTarget
+            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+          state.combatState.dodgeTarget = [...currentDodges, tgt.id];
+          pushSpecialPopup('AUTO DODGE', '#facc15');
         }
       }
     });
@@ -852,11 +870,18 @@ class CombatManager {
       }
     }
 
-    // Show big CRITICAL popup when a critical hit occurred
+    // Show CRITICAL popup smaller positioned on top of attacked enemy card
     if (isCrit) {
       try {
-        FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2 - 40, 'CRITICAL!', { color: (typeof UIManager !== 'undefined') ? UIManager.themeColor('--ap-gold', '#FFB33F') : '#ffd700', scale: 2.0, duration: 1500, fadeDelay: 120, isCrit: true });
-        // Removed ScreenEffects.flash call for critical hits per user preference (no full-screen overlay)
+        let critX = window.innerWidth / 2;
+        let critY = window.innerHeight / 2 - 40;
+        const card = targetEnemyId ? document.querySelector(`.enemy-card[data-enemy-id="${targetEnemyId}"]`) : null;
+        if (card) {
+          const rect = card.getBoundingClientRect();
+          critX = rect.left + rect.width / 2;
+          critY = rect.top - 40;
+        }
+        FloatingDamageNumber.show(critX, critY, 'CRITICAL!', { color: (typeof UIManager !== 'undefined') ? UIManager.themeColor('--ap-gold', '#FFB33F') : '#ffd700', scale: 0.9, duration: 1400, fadeDelay: 120, isCrit: true });
       } catch (e) { console.warn('Failed to show CRITICAL popup', e); }
     }
     // If any enemy was killed, check for level completion and advance immediately

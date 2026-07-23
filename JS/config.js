@@ -109,18 +109,18 @@ const DEFAULT_GAME_CONFIG = {
     },
     Ranger: {
       hp: 80, mana: 300, hpRegen: 12, manaRegen: 167,
-      passive: 'Master of Arms: equip 3 weapons; gain Kill Tags every 3 kills instead of 5',
+      passive: 'Master of Arms: equip 3 weapons; uses 3 Kill Tags to upgrade instead of 5',
       skill: 'Storm Volley – next attack deals full damage to target + 60% to all other enemies (cost: 40 mana)'
     },
     Druid: {
       hp: 120, mana: 300, hpRegen: 20, manaRegen: 164,
       passive: 'Whisperer: pet damage ×5',
-      skill: 'Nature\'s Embrace – heal 40 HP, summon shadow pet for today (2× pet attacks) (cost: 50 mana)'
+      skill: 'Nature\'s Embrace – heal 20 HP, pet attacks +1 tomorrow (cost: 50 mana)'
     },
     Alchemist: {
-      hp: 90, mana: 300, hpRegen: 10, manaRegen: 168,
-      passive: 'Potion Master: consumable effects 80% stronger, last 2 extra days',
-      skill: 'Unstable Concoction – reverse target\'s weaknesses/resistances permanently, block healing/mutating next check-in. If weak to current element, deal 15% max HP splash damage to adjacent enemies (cost: 50 mana)'
+      hp: 100, mana: 300, hpRegen: 15, manaRegen: 160,
+      passive: 'Elemental Attunement: attacking an enemy\'s weakness auto-crits',
+      skill: 'Unstable Concoction – reverse target\'s weaknesses/resistances permanently, block healing/mutating next check-in; deal 30% max HP of target as splash damage to 2 adjacent enemies (cost: 50 mana)'
     },
     Juggernaut: {
       hp: 250, mana: 300, hpRegen: 30, manaRegen: 180,
@@ -256,9 +256,10 @@ const DEFAULT_GAME_CONFIG = {
     Fire: '#ff9a2e',
     Water: '#4ea3ff',
     Aether: '#ffd76a',
+    Light: '#ffee55',
     default: '#9d6bff'
   },
-  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether'],
+  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether', 'Light'],
   enemyArchetypes: {
     Brute: {
       description: 'Consecutive attack multiplier M = 1 + stage/10. Each consecutive day, damage ×M up to M^5.'
@@ -535,7 +536,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0.15,
       fireRate: 1,
       price: 7,
-      special: 'Stuns enemy on crit (skips its next attack)'
+      special: 'Automatically dodges target on attack'
     },
     'Lazer': {
       type: 'Special',
@@ -631,13 +632,13 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   consumables: {
     // Defensive
-    'Shield': { type: 'Defensive', effect: '-10% dmg 1 day', price: 0.3 },
-    'Mega Instinct': { type: 'Defensive', effect: '+20% dodge 1 day', price: 0.3 },
+    'Shield': { type: 'Defensive', effect: '-1/4 all pending damage, stackable', price: 0.3 },
+    'Mega Instinct': { type: 'Defensive', effect: '-30% dodge cost', price: 0.3 },
     'Health Potion': { type: 'Restorative', effect: '+30 HP instantly', price: 1 },
     'Mana Potion': { type: 'Restorative', effect: '+50 Mana instantly', price: 1 },
     // Offensive
     'Rage Tonic': { type: 'Offensive', effect: 'next 3 attacks +5% dmg', price: 0.4 },
-    'Elemental Grease': { type: 'Offensive', effect: 'enemy weaknesses +3%', price: 0.4 },
+    'Elemental Grease': { type: 'Offensive', effect: 'enemy weakness +60%', price: 0.4 },
     'Lightning Rod': { type: 'Offensive', effect: 'next crit hits random enemy too', price: 0.4 },
     'Gorillaz Brute Juice': { type: 'Offensive', effect: 'Brute passive for 1 day', price: 0.4 },
     'Catalyzer': { type: 'Offensive', effect: 'next 3 attacks ignore resistance', price: 0.4 },

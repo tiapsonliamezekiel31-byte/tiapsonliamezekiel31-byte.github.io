@@ -399,9 +399,15 @@ class FloatingDamageNumber {
       isCrit,
       baseRotation,
       color,
+      scale: scale || 1,
+      isFrozen: true,
+      squeezeStartTime: 0,
       cycleText: !!options.cycleText,
       finalText: String(options.finalText !== undefined ? options.finalText : value)
     };
+
+    FloatingDamageNumber.registerBatchItem(options.batchId, item, options.batchTotal);
+
     FloatingDamageNumber._list.push(item);
     if (!FloatingDamageNumber._running) {
       FloatingDamageNumber._running = true;
@@ -411,12 +417,61 @@ class FloatingDamageNumber {
     return div;
   }
 
+  static startBatch(batchId, totalItems) {
+    if (!FloatingDamageNumber._activeBatches) FloatingDamageNumber._activeBatches = {};
+    FloatingDamageNumber._activeBatches[batchId] = {
+      total: totalItems,
+      spawned: 0,
+      items: [],
+      frozen: true,
+      startTime: performance.now()
+    };
+  }
+
+  static registerBatchItem(batchId, item, totalHint = 1) {
+    if (!FloatingDamageNumber._activeBatches) FloatingDamageNumber._activeBatches = {};
+    let bKey = batchId;
+    if (!bKey) {
+      bKey = 'auto_batch_' + Math.floor(performance.now() / 40);
+    }
+    let b = FloatingDamageNumber._activeBatches[bKey];
+    if (!b) {
+      b = { total: totalHint || 1, spawned: 0, items: [], frozen: true, startTime: performance.now() };
+      FloatingDamageNumber._activeBatches[bKey] = b;
+    }
+    b.spawned++;
+    b.items.push(item);
+    item.batchRef = b;
+
+    if (b.releaseTimer) clearTimeout(b.releaseTimer);
+
+    if (b.spawned >= b.total) {
+      FloatingDamageNumber.releaseBatch(bKey);
+    } else {
+      b.releaseTimer = setTimeout(() => {
+        FloatingDamageNumber.releaseBatch(bKey);
+      }, 50);
+    }
+  }
+
+  static releaseBatch(batchId) {
+    if (!FloatingDamageNumber._activeBatches) return;
+    const b = FloatingDamageNumber._activeBatches[batchId];
+    if (!b || !b.frozen) return;
+    b.frozen = false;
+    const now = performance.now();
+    b.items.forEach(item => {
+      item.isFrozen = false;
+      item.squeezeStartTime = now;
+    });
+  }
+
   static showBurst(x, y, totalValue, options = {}) {
     const {
       bursts = 1,
       spreadX = 18,
       spreadY = 6,
-      staggerMs = 55,
+      staggerMs = 28,
       values = null,
       ...rest
     } = options;
@@ -432,12 +487,17 @@ class FloatingDamageNumber {
         return sign * (base + (index < remainder ? 1 : 0));
       });
 
+    const batchId = 'burst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+    FloatingDamageNumber.startBatch(batchId, count);
+
     burstValues.forEach((value, index) => {
       setTimeout(() => {
         const offsetX = ((index - (burstValues.length - 1) / 2) * spreadX) + (Math.random() * 6 - 3);
         const offsetY = (Math.random() * spreadY) - (spreadY / 2);
         FloatingDamageNumber.show(x + offsetX, y + offsetY, Math.abs(value), {
           ...rest,
+          batchId,
+          batchTotal: count,
           isCrit: !!rest.isCrit && index === 0,
           scale: rest.scale || 1
         });
@@ -707,20 +767,27 @@ FloatingDamageNumber._tickNonAnchored = function () {
         continue;
       }
       const elapsed = now - f.createdAt;
-      if (!f.freezeDuration) {
-        f.freezeDuration = 100 + Math.random() * 200;
-      }
-      
-      // Batch writes using template strings
-      let cssText = '';
-
-      if (elapsed < f.freezeDuration) {
-        cssText = `transform: translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(1); opacity: 1;`;
-        if (f.div.style.cssText.indexOf(cssText) === -1) f.div.style.cssText += cssText;
+      if (f.isFrozen) {
+        const frozenTransform = `translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(${(f.scale || 1) * 0.85})`;
+        if (f.div.style.transform !== frozenTransform) {
+          f.div.style.transform = frozenTransform;
+        }
+        f.div.style.opacity = '1';
         continue;
       }
-      const activeElapsed = elapsed - f.freezeDuration;
-      const progress = activeElapsed / f.duration;
+
+      const squeezeElapsed = f.squeezeStartTime ? (now - f.squeezeStartTime) : 999;
+      let squeezeScale = 1;
+      if (squeezeElapsed < 45) {
+        // Squeeze down
+        squeezeScale = 0.70;
+      } else if (squeezeElapsed < 110) {
+        // Elastic release pop
+        squeezeScale = 1.25;
+      }
+
+      const activeElapsed = Math.max(0, squeezeElapsed - 110);
+      const progress = Math.min(1, activeElapsed / f.duration);
       const visibleDuration = Math.max(1, f.duration - f.fadeDelay);
       const fadeRaw = activeElapsed <= f.fadeDelay ? 0 : Math.min(1, (activeElapsed - f.fadeDelay) / visibleDuration);
       const easedFade = Math.pow(fadeRaw, 2.6);
@@ -745,7 +812,7 @@ FloatingDamageNumber._tickNonAnchored = function () {
       const easeOut = 1 - Math.pow(1 - progress, 3);
       const dx = progress * (f.travelX !== undefined ? f.travelX : 0);
       const dy = easeOut * (f.travelY !== undefined ? f.travelY : -50);
-      const scaleValue = 1 + Math.max(0, Math.min(1, progress)) * 0.3;
+      const scaleValue = (f.scale || 1) * squeezeScale * (1 + Math.max(0, Math.min(1, progress)) * 0.2);
       const wobbleAmplitude = f.isCrit ? 6 : 3;
       const wobble = Math.sin(progress * Math.PI * 2) * wobbleAmplitude * (1 - progress);
       const driftX = (f.driftX || 0) * Math.min(1, progress);
