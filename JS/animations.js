@@ -428,31 +428,41 @@ class FloatingDamageNumber {
     };
   }
 
-  static registerBatchItem(batchId, item, totalHint = 1) {
+  static registerBatchItem(batchId, item, totalHint = null) {
     if (!FloatingDamageNumber._activeBatches) FloatingDamageNumber._activeBatches = {};
-    if (!batchId) {
-      // Single un-batched float: immediately unfreeze with squeeze animation
-      item.isFrozen = false;
-      item.squeezeStartTime = performance.now();
-      return;
+    
+    let bKey = batchId;
+    const now = performance.now();
+
+    if (!bKey) {
+      // Rolling auto-batch for consecutive float calls within 45ms window
+      const lastTime = FloatingDamageNumber._lastAutoBatchTime || 0;
+      if (!FloatingDamageNumber._autoBatchId || (now - lastTime > 45)) {
+        FloatingDamageNumber._autoBatchId = 'auto_batch_' + now + '_' + Math.random().toString(36).substr(2, 4);
+      }
+      FloatingDamageNumber._lastAutoBatchTime = now;
+      bKey = FloatingDamageNumber._autoBatchId;
     }
-    let b = FloatingDamageNumber._activeBatches[batchId];
+
+    let b = FloatingDamageNumber._activeBatches[bKey];
     if (!b) {
-      b = { total: totalHint || 1, spawned: 0, items: [], frozen: true, startTime: performance.now() };
-      FloatingDamageNumber._activeBatches[batchId] = b;
+      b = { total: totalHint || 999, spawned: 0, items: [], frozen: true, startTime: now };
+      FloatingDamageNumber._activeBatches[bKey] = b;
     }
+
     b.spawned++;
     b.items.push(item);
     item.batchRef = b;
+    item.isFrozen = true;
 
     if (b.releaseTimer) clearTimeout(b.releaseTimer);
 
-    if (b.spawned >= b.total) {
-      FloatingDamageNumber.releaseBatch(batchId);
+    if (totalHint && b.spawned >= b.total) {
+      FloatingDamageNumber.releaseBatch(bKey);
     } else {
       b.releaseTimer = setTimeout(() => {
-        FloatingDamageNumber.releaseBatch(batchId);
-      }, 50);
+        FloatingDamageNumber.releaseBatch(bKey);
+      }, 45);
     }
   }
 
@@ -463,7 +473,7 @@ class FloatingDamageNumber {
     b.frozen = false;
     const now = performance.now();
     (b.items || []).forEach(item => {
-      if (item) {
+      if (item && item.isFrozen) {
         item.isFrozen = false;
         item.squeezeStartTime = now;
       }
