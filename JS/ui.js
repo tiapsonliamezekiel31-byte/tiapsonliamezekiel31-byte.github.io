@@ -6200,7 +6200,7 @@ class UIManager {
                   isCrit: hit.isCrit,
                   duration: 1400,
                   fadeDelay: 900,
-                  staggerMs: 60
+                  staggerMs: 120
                 }
               );
             } else {
@@ -6221,7 +6221,7 @@ class UIManager {
               const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
               EnemyDeathAnimation.burst(targetX, targetY, isElite);
             }
-          }, index * 60);
+          }, index * 120);
         });
 
         if (Array.isArray(result.specialPopups) && result.specialPopups.length) {
@@ -6234,7 +6234,7 @@ class UIManager {
                 popup.text,
                 { color: popup.color || damageColor, duration: 1400, fadeDelay: 800, scale: 0.9 }
               );
-            }, (hitDetails.length * 60) + (index * 60));
+            }, (hitDetails.length * 120) + (index * 120));
           });
         }
 
