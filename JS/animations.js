@@ -430,14 +430,16 @@ class FloatingDamageNumber {
 
   static registerBatchItem(batchId, item, totalHint = 1) {
     if (!FloatingDamageNumber._activeBatches) FloatingDamageNumber._activeBatches = {};
-    let bKey = batchId;
-    if (!bKey) {
-      bKey = 'auto_batch_' + Math.floor(performance.now() / 40);
+    if (!batchId) {
+      // Single un-batched float: immediately unfreeze with squeeze animation
+      item.isFrozen = false;
+      item.squeezeStartTime = performance.now();
+      return;
     }
-    let b = FloatingDamageNumber._activeBatches[bKey];
+    let b = FloatingDamageNumber._activeBatches[batchId];
     if (!b) {
       b = { total: totalHint || 1, spawned: 0, items: [], frozen: true, startTime: performance.now() };
-      FloatingDamageNumber._activeBatches[bKey] = b;
+      FloatingDamageNumber._activeBatches[batchId] = b;
     }
     b.spawned++;
     b.items.push(item);
@@ -446,10 +448,10 @@ class FloatingDamageNumber {
     if (b.releaseTimer) clearTimeout(b.releaseTimer);
 
     if (b.spawned >= b.total) {
-      FloatingDamageNumber.releaseBatch(bKey);
+      FloatingDamageNumber.releaseBatch(batchId);
     } else {
       b.releaseTimer = setTimeout(() => {
-        FloatingDamageNumber.releaseBatch(bKey);
+        FloatingDamageNumber.releaseBatch(batchId);
       }, 50);
     }
   }
@@ -457,12 +459,14 @@ class FloatingDamageNumber {
   static releaseBatch(batchId) {
     if (!FloatingDamageNumber._activeBatches) return;
     const b = FloatingDamageNumber._activeBatches[batchId];
-    if (!b || !b.frozen) return;
+    if (!b) return;
     b.frozen = false;
     const now = performance.now();
-    b.items.forEach(item => {
-      item.isFrozen = false;
-      item.squeezeStartTime = now;
+    (b.items || []).forEach(item => {
+      if (item) {
+        item.isFrozen = false;
+        item.squeezeStartTime = now;
+      }
     });
   }
 
@@ -646,7 +650,7 @@ FloatingDamageNumber._anchoredTick = function () {
       }
       const elapsed = now - f.createdAt;
       if (!f.freezeDuration) {
-        f.freezeDuration = 100 + Math.random() * 200;
+        f.freezeDuration = 40;
       }
       if (elapsed < f.freezeDuration) {
         const baseX = f.baseX;
@@ -768,12 +772,17 @@ FloatingDamageNumber._tickNonAnchored = function () {
       }
       const elapsed = now - f.createdAt;
       if (f.isFrozen) {
-        const frozenTransform = `translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(${(f.scale || 1) * 0.85})`;
-        if (f.div.style.transform !== frozenTransform) {
-          f.div.style.transform = frozenTransform;
+        if (elapsed > 160) {
+          f.isFrozen = false;
+          f.squeezeStartTime = now;
+        } else {
+          const frozenTransform = `translate3d(${f.x}px, ${f.y}px, 0) translateX(-50%) rotate(${f.baseRotation}deg) scale(${(f.scale || 1) * 0.85})`;
+          if (f.div.style.transform !== frozenTransform) {
+            f.div.style.transform = frozenTransform;
+          }
+          f.div.style.opacity = '1';
+          continue;
         }
-        f.div.style.opacity = '1';
-        continue;
       }
 
       const squeezeElapsed = f.squeezeStartTime ? (now - f.squeezeStartTime) : 999;
