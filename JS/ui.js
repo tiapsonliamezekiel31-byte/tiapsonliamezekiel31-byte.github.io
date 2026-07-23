@@ -6123,114 +6123,118 @@ class UIManager {
 
         // Combo finisher and crit delays removed
 
-        const hits = Array.isArray(result.hitDetails) ? result.hitDetails : [{
+        const hitDetails = Array.isArray(result.hitDetails) ? result.hitDetails : [{
           enemyId: target.id,
           damage: result.primaryDamage || result.damage || 0,
           isCrit: result.isCrit,
           isDead: result.targetDead
         }];
 
-        hits.forEach(hit => {
-          const hitColor = hit.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
-          const fireRate = Math.max(1, Number(result.fireRate || 1));
+        hitDetails.forEach((hit, index) => {
+          setTimeout(() => {
+            const hitColor = hit.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
+            const fireRate = Math.max(1, Number(result.fireRate || 1));
 
-          let targetX = window.innerWidth / 2;
-          let targetY = window.innerHeight / 2;
-          const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
-          if (targetCard) {
-            if (targetCard.dataset.x) {
-              const circleRect = UIManager.getCircleRect();
-              targetX = circleRect.left + Number(targetCard.dataset.x);
-              targetY = circleRect.top + Number(targetCard.dataset.y);
+            let targetX = window.innerWidth / 2;
+            let targetY = window.innerHeight / 2;
+            const targetCard = document.querySelector(`.enemy-card[data-enemy-id="${hit.enemyId}"]`);
+            if (targetCard) {
+              if (targetCard.dataset.x) {
+                const circleRect = UIManager.getCircleRect();
+                targetX = circleRect.left + Number(targetCard.dataset.x);
+                targetY = circleRect.top + Number(targetCard.dataset.y);
+              } else {
+                const rect = targetCard.getBoundingClientRect();
+                targetX = rect.left + rect.width / 2;
+                targetY = rect.top + rect.height / 2;
+              }
+
+              const elementColors = {
+                Earth: '#30C85A',
+                Water: '#134E8E',
+                Fire: '#FF4400',
+                Air: '#cbd5e1',
+                Aether: '#A15CFF'
+              };
+              const elementColor = elementColors[hit.element] || '#ffffff';
+
+              if (hit.weaknessMatch && typeof RetroWeaknessAnimation !== 'undefined') {
+                RetroWeaknessAnimation.play(targetCard, elementColor);
+                try {
+                  FloatingDamageNumber.show(targetX, targetY - 45, 'WEAK!', {
+                    color: elementColor,
+                    duration: 1100,
+                    scale: 1.2,
+                    fadeDelay: 700
+                  });
+                } catch (e) { }
+              } else if (hit.resistanceMatch && typeof RetroResistanceAnimation !== 'undefined') {
+                RetroResistanceAnimation.play(targetCard, elementColor);
+                try {
+                  FloatingDamageNumber.show(targetX, targetY - 45, 'RESISTED!', {
+                    color: '#888888',
+                    duration: 1100,
+                    scale: 0.9,
+                    fadeDelay: 700
+                  });
+                } catch (e) { }
+              }
+
+              if (hit.isCrit && typeof RetroCritSlashAnimation !== 'undefined') {
+                RetroCritSlashAnimation.play(targetCard, elementColor);
+              }
+            }
+
+            if (typeof RetroHitAnimation !== 'undefined') {
+              RetroHitAnimation.play(targetX, targetY, hitColor);
+            }
+
+            if (fireRate > 1) {
+              FloatingDamageNumber.showBurst(
+                targetX,
+                targetY,
+                Math.ceil(hit.damage),
+                {
+                  bursts: fireRate,
+                  color: hitColor,
+                  isCrit: hit.isCrit,
+                  duration: 1400,
+                  fadeDelay: 900,
+                  staggerMs: 60
+                }
+              );
             } else {
-              const rect = targetCard.getBoundingClientRect();
-              targetX = rect.left + rect.width / 2;
-              targetY = rect.top + rect.height / 2;
+              FloatingDamageNumber.show(
+                targetX,
+                targetY,
+                Math.ceil(hit.damage),
+                {
+                  color: hitColor,
+                  isCrit: hit.isCrit,
+                  duration: 1200,
+                  fadeDelay: 800
+                }
+              );
             }
 
-            const elementColors = {
-              Earth: '#30C85A',
-              Water: '#134E8E',
-              Fire: '#FF4400',
-              Air: '#cbd5e1',
-              Aether: '#A15CFF'
-            };
-            const elementColor = elementColors[hit.element] || '#ffffff';
-
-            if (hit.weaknessMatch && typeof RetroWeaknessAnimation !== 'undefined') {
-              RetroWeaknessAnimation.play(targetCard, elementColor);
-              try {
-                FloatingDamageNumber.show(targetX, targetY - 45, 'WEAK!', {
-                  color: elementColor,
-                  duration: 1100,
-                  scale: 1.2,
-                  fadeDelay: 700
-                });
-              } catch (e) { }
-            } else if (hit.resistanceMatch && typeof RetroResistanceAnimation !== 'undefined') {
-              RetroResistanceAnimation.play(targetCard, elementColor);
-              try {
-                FloatingDamageNumber.show(targetX, targetY - 45, 'RESISTED!', {
-                  color: '#888888',
-                  duration: 1100,
-                  scale: 0.9,
-                  fadeDelay: 700
-                });
-              } catch (e) { }
+            if (hit.isDead) {
+              const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
+              EnemyDeathAnimation.burst(targetX, targetY, isElite);
             }
-
-            if (hit.isCrit && typeof RetroCritSlashAnimation !== 'undefined') {
-              RetroCritSlashAnimation.play(targetCard, elementColor);
-            }
-          }
-
-          if (typeof RetroHitAnimation !== 'undefined') {
-            RetroHitAnimation.play(targetX, targetY, hitColor);
-          }
-
-          if (fireRate > 1) {
-            FloatingDamageNumber.showBurst(
-              targetX,
-              targetY,
-              Math.ceil(hit.damage),
-              {
-                bursts: fireRate,
-                color: hitColor,
-                isCrit: hit.isCrit,
-                duration: 1400,
-                fadeDelay: 900,
-                staggerMs: 60
-              }
-            );
-          } else {
-            FloatingDamageNumber.show(
-              targetX,
-              targetY,
-              Math.ceil(hit.damage),
-              {
-                color: hitColor,
-                isCrit: hit.isCrit,
-                duration: 1200,
-                fadeDelay: 800
-              }
-            );
-          }
-
-          if (hit.isDead) {
-            const isElite = targetCard ? targetCard.classList.contains('elite') || targetCard.classList.contains('boss') : false;
-            EnemyDeathAnimation.burst(targetX, targetY, isElite);
-          }
+          }, index * 60);
         });
 
         if (Array.isArray(result.specialPopups) && result.specialPopups.length) {
           const damageColor = result.isCrit ? UIManager.themeColor('--ap-gold', '#FFB33F') : UIManager.themeColor('--danger-red', '#C00707');
           result.specialPopups.forEach((popup, index) => {
-            FloatingDamageNumber.show(
-              window.innerWidth / 2 + ((index % 2 === 0) ? -42 : 42),
-              window.innerHeight / 2 - 54 - (index * 16),
-              popup.text,
-              { color: popup.color || damageColor, duration: 1100 }
-            );
+            setTimeout(() => {
+              FloatingDamageNumber.show(
+                window.innerWidth / 2 + ((index % 2 === 0) ? -42 : 42),
+                window.innerHeight / 2 - 54 - (index * 16),
+                popup.text,
+                { color: popup.color || damageColor, duration: 1400, fadeDelay: 800, scale: 0.9 }
+              );
+            }, (hitDetails.length * 60) + (index * 60));
           });
         }
 
