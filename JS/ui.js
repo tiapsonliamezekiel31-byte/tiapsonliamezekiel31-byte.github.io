@@ -2044,9 +2044,9 @@ class UIManager {
           const detail = weaponCfg?.detail || weaponCfg?.special || '';
           const row = document.createElement('div');
           row.className = 'shop-item shop-item-tile';
-          const shopIcon = UIManager.getWeaponIconHtml(name, iconFor(name, iconMap.smith || '⚒️'));
+          const weaponIconHtml = UIManager.getWeaponIconHtml(name, iconFor(name, iconMap.smith || '⚒️'));
           row.innerHTML = `
-            <div class="shop-item-icon">${shopIcon}</div>
+            <div class="shop-item-icon">${weaponIconHtml}</div>
             <div class="shop-item-meta">
               <div class="shop-item-name">${name}</div>
               <div class="shop-item-price">💰 ${String(price || 0)}</div>
@@ -10709,7 +10709,7 @@ class UIManager {
     const state = typeof getGameState === 'function' ? getGameState() : null;
     const imgPath = state?.config?.weaponImages?.[weaponName] || DEFAULT_GAME_CONFIG?.weaponImages?.[weaponName];
     if (imgPath) {
-      return `<img src="${imgPath}" alt="${weaponName}" class="weapon-img-icon" style="width: 3em; height: 3em; vertical-align: middle; object-fit: contain;" />`;
+      return `<img src="${imgPath}" alt="${weaponName}" class="weapon-img-icon" />`;
     }
     const weaponCfg = state?.config?.weapons?.[weaponName];
     const icon = weaponCfg?.icon || state?.config?.shopItemIcons?.[weaponName] || fallbackIcon;

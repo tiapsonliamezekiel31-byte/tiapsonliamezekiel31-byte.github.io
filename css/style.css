@@ -12226,37 +12226,52 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 }
 
 /* Weapon Image Icon Styling */
+.weapon-img-icon,
 .weapon-icon-img {
-  width: 24px;
-  height: 24px;
+  width: 3em;
+  height: 3em;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
   vertical-align: middle;
   display: inline-block;
+  pointer-events: none !important;
+  user-select: none !important;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
+.weapon-chip .weapon-img-icon,
+.weapon-chip .weapon-icon-img {
+  width: 2.4em;
+  height: 2.4em;
+}
+
+.weapon-showcase-icon .weapon-img-icon,
 .weapon-showcase-icon .weapon-icon-img {
+  width: 72px;
+  height: 72px;
+}
+
+.shop-item-icon .weapon-img-icon,
+.shop-item-icon .weapon-icon-img {
   width: 54px;
   height: 54px;
 }
 
-.shop-item-icon .weapon-icon-img {
-  width: 36px;
-  height: 36px;
-}
-
+.compendium-card-icon .weapon-img-icon,
 .compendium-card-icon .weapon-icon-img {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
 }
 
+#attackBtn .weapon-img-icon,
 #attackBtn .weapon-icon-img {
   width: 68px !important;
   height: 68px !important;
   object-fit: contain;
   margin-top: -6px;
+  pointer-events: none !important;
+  user-select: none !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.8));
 }
 
@@ -12271,4 +12286,5 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   padding: 1px 5px !important;
   border-radius: 4px !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  pointer-events: none !important;
 }
