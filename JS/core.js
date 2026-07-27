@@ -98,9 +98,7 @@ const USER_DATA_STORAGE_KEYS = [
   'nemesis_planner_data', 
   'nemesis_shop_data',
   'nemesis_hud_pos',
-  'nemesis_todo_hud_states',
   'nemesis_taunt_hud_pos',
-  'nemesis_challenge_hud_pos',
   'nemesis_satchel_pos',
   'nemesis_weapon_pos',
   'nemesis_center_pos',
@@ -830,24 +828,10 @@ class GameState {
   }
 
   buildUserDataSnapshot() {
-    try { this.save(); } catch (e) {}
     const snapshot = { version: USER_DATA_EXPORT_VERSION, exportedAt: Date.now(), storage: {} };
-    const keysToBackup = new Set(USER_DATA_STORAGE_KEYS);
-
-    try {
-      if (typeof localStorage !== 'undefined') {
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('nemesis_')) {
-            keysToBackup.add(k);
-          }
-        }
-      }
-    } catch (e) {}
-
-    keysToBackup.forEach((key) => {
+    USER_DATA_STORAGE_KEYS.forEach((key) => {
       const raw = localStorage.getItem(key);
-      if (raw === null || raw === undefined) return;
+      if (!raw) return;
       try {
         snapshot.storage[key] = JSON.parse(raw);
       } catch (error) {
@@ -882,20 +866,9 @@ class GameState {
     USER_DATA_STORAGE_KEYS.forEach((key) => {
       localStorage.removeItem(key);
     });
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const toRemove = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('nemesis_')) toRemove.push(k);
-        }
-        toRemove.forEach((k) => localStorage.removeItem(k));
-      }
-    } catch (e) {}
 
     Object.entries(storage).forEach(([key, value]) => {
-      const isAllowed = USER_DATA_STORAGE_KEYS.includes(key) || key.startsWith('nemesis_');
-      if (!isAllowed) return;
+      if (!USER_DATA_STORAGE_KEYS.includes(key)) return;
       if (value === undefined || value === null) return;
       localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
       try {
@@ -909,7 +882,7 @@ class GameState {
     try { if (window.ShopManager && typeof ShopManager.init === 'function') ShopManager.init(); } catch (error) {}
     try { if (window.UIManager && typeof UIManager.refreshGameUI === 'function') UIManager.refreshGameUI(); } catch (error) {}
 
-    return { success: true, keys: Object.keys(storage).filter((key) => USER_DATA_STORAGE_KEYS.includes(key) || key.startsWith('nemesis_')) };
+    return { success: true, keys: Object.keys(storage).filter((key) => USER_DATA_STORAGE_KEYS.includes(key)) };
   }
   
   load() {

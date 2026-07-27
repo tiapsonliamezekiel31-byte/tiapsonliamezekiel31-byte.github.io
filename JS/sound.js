@@ -15,6 +15,7 @@ class SoundManager {
     'Lazer': 'assets/sounds/lazer.mp3',
     'Vine Spell': 'assets/sounds/vinespell.mp3',
     'Death Spell': 'assets/sounds/deathspell.mp3',
+    'Heavy Hammer': 'assets/sounds/heavyhammer.mp3',
     'Echo Bow': 'assets/sounds/echobow.mp3',
     'Aegis': 'assets/sounds/aegishsield.mp3'
   };

@@ -510,7 +510,7 @@ class CombatManager {
         }
       }
 
-      if (weapon.name === 'Great Hammer' && isPrimaryTarget) {
+      if ((weapon.name === 'Heavy Hammer' || weapon.name === 'Great Hammer') && isPrimaryTarget) {
         if (Array.isArray(tgt.mutators) && tgt.mutators.length > 0) {
           tgt.mutators = [];
           pushSpecialPopup('MUTATIONS CLEARED', '#e11d48');
