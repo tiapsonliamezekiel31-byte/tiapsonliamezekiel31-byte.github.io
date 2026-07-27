@@ -994,7 +994,7 @@ class PopupsManager {
       <div class="upgrade-left-panel">
         <div class="weapon-showcase-box">
           <div class="weapon-showcase-icon ${weaponElement ? 'glow-' + weaponElement.toLowerCase() : ''}" id="smithWeaponIcon">
-            ${weaponCfg.icon || '⚔️'}
+            ${(typeof UIManager !== 'undefined' && typeof UIManager.getWeaponIconHtml === 'function') ? UIManager.getWeaponIconHtml(weaponName) : (weaponCfg.icon || '⚔️')}
           </div>
           <h3 class="weapon-showcase-name">${weaponName}</h3>
           ${weaponElement ? `<span class="weapon-showcase-element" style="border-color:${state.config.enemyElementColors?.[weaponElement] || 'rgba(255,255,255,0.15)'}; background: ${state.config.enemyElementColors?.[weaponElement] + '1e' || 'rgba(255,255,255,0.08)'}; color: ${state.config.enemyElementColors?.[weaponElement] || '#fff'};">${weaponElement} Infusion</span>` : ''}
