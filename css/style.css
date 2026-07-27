@@ -1753,7 +1753,7 @@ body::before {
 #dailiesPanel {
   position: relative;
   overflow: hidden;
-  background: #090a14;
+  background: #030408;
 }
 
 #dailiesPanel::before {
@@ -1771,7 +1771,8 @@ body::before {
   will-change: transform;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.85;
+  opacity: 0.25;
+  filter: brightness(0.4) contrast(1.2);
 }
 
 @keyframes spinDailyGalaxy {
@@ -1796,9 +1797,9 @@ body::before {
 
 .daily-panel-summary {
   position: sticky;
-  top: 38px;
+  top: 0px;
   z-index: 12900 !important;
-  padding: 6px 12px !important;
+  padding: 2px 12px !important;
   font-family: 'Orbitron', monospace !important;
   font-size: 11px !important;
   font-weight: 600 !important;
