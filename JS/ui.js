@@ -2044,8 +2044,9 @@ class UIManager {
           const detail = weaponCfg?.detail || weaponCfg?.special || '';
           const row = document.createElement('div');
           row.className = 'shop-item shop-item-tile';
+          const shopIconHtml = UIManager.getWeaponIconHtml(name, iconFor(name, iconMap.smith || '⚒️'));
           row.innerHTML = `
-            <div class="shop-item-icon">${iconFor(name, iconMap.smith || '⚒️')}</div>
+            <div class="shop-item-icon">${shopIconHtml}</div>
             <div class="shop-item-meta">
               <div class="shop-item-name">${name}</div>
               <div class="shop-item-price">💰 ${String(price || 0)}</div>
@@ -10706,9 +10707,10 @@ class UIManager {
 
   static getWeaponIconHtml(weaponName, fallbackIcon = '⚔️') {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    const imgPath = state?.config?.weaponImages?.[weaponName] || DEFAULT_GAME_CONFIG?.weaponImages?.[weaponName];
+    const defaultConfig = typeof DEFAULT_GAME_CONFIG !== 'undefined' ? DEFAULT_GAME_CONFIG : (typeof window !== 'undefined' ? window.DEFAULT_GAME_CONFIG : null);
+    const imgPath = state?.config?.weaponImages?.[weaponName] || defaultConfig?.weaponImages?.[weaponName];
     if (imgPath) {
-      return `<img src="${imgPath}" alt="${weaponName}" class="weapon-img-icon" style="width: 1em; height: 1em; vertical-align: middle; object-fit: contain;" />`;
+      return `<img src="${imgPath}" alt="${weaponName}" class="weapon-icon-img" />`;
     }
     const weaponCfg = state?.config?.weapons?.[weaponName];
     const icon = weaponCfg?.icon || state?.config?.shopItemIcons?.[weaponName] || fallbackIcon;
@@ -10897,15 +10899,14 @@ class UIManager {
 
     const attackBtn = document.getElementById('attackBtn');
     if (attackBtn) {
-      const weaponCfg = weapon ? state.config?.weapons?.[weapon.name] : null;
-      const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weapon?.name] || '⚔️';
+      const weaponIconHtml = weapon ? UIManager.getWeaponIconHtml(weapon.name) : '⚔️';
       let iconEl = document.getElementById('attackIcon');
       if (!iconEl) {
         iconEl = document.createElement('span');
         iconEl.id = 'attackIcon';
         attackBtn.insertBefore(iconEl, attackBtn.firstChild);
       }
-      iconEl.innerHTML = weaponIcon;
+      iconEl.innerHTML = weaponIconHtml;
     }
   }
 
