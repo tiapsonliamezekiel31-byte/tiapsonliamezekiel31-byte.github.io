@@ -571,7 +571,7 @@ const DEFAULT_GAME_CONFIG = {
       fireRate: 1,
       price: 8,
       special: 'Kills enemy at ≤40% HP instantly'
-
+    },
     'Echo Bow': {
       type: 'Light/Spec',
       icon: '🏹',
