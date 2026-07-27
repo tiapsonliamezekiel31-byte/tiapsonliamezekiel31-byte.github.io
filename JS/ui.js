@@ -317,6 +317,7 @@ class UIManager {
     this.createPullTabs();
     this.createShopPanel();
     this.setupJoystickModeToggle();
+    this.setupTodoJoystickModeToggle();
     this.bindEventListeners();
     this.adjustLayout();
     this.ensureSpinnerLoop();
@@ -1629,7 +1630,7 @@ class UIManager {
     const ring = document.querySelector('.action-ring');
     if (!ring) return;
     ring.innerHTML = `
-      <button id="attackBtn" class="btn-action-circle">⚔️<div class="cost-text" id="attackCostText"></div></button>
+      <button id="attackBtn" class="btn-action-circle"><span id="attackIcon">⚔️</span><div class="cost-text" id="attackCostText"></div></button>
       <button id="skillBtn" class="btn-action-circle">✨</button>
       <button id="dodgeBtn" class="btn-action-circle dodge-button">🛡️<div class="cost-text" id="dodgeCostText"></div></button>
     `;
@@ -1823,25 +1824,6 @@ class UIManager {
         <span class="quick-day-label">⚡ Quick Day:</span>
         <button id="quickDayBtn" class="quick-day-value">Not set</button>
         <button id="quickDayClearBtn" class="quick-day-clear" title="Clear quick day">✕</button>
-      </div>
-      <div class="bulk-add-inline-container" id="bulkAddInlineContainer">
-        <button id="toggleBulkAddInlineBtn" class="bulk-toggle-header-btn">＋ Inline Bulk Add (NLP) ▾</button>
-        <div id="bulkAddInlineContent" class="bulk-add-inline-content" style="display: none;">
-          <div id="bulkAddInlineEditor" contenteditable="true" class="bulk-add-inline-editor" data-placeholder="Enter tasks (one per line). e.g.:&#10;Clean room Hard STR tomorrow&#10;Study math Medium INT monday 5pm" spellcheck="false"></div>
-          <div class="bulk-add-inline-controls">
-            <div class="inline-control-selects">
-              <select id="inlineBulkAttr" title="Fallback Attribute"></select>
-              <select id="inlineBulkDiff" title="Fallback Difficulty">
-                <option value="Easy">Easy</option>
-                <option value="Medium" selected>Medium</option>
-                <option value="Hard">Hard</option>
-                <option value="Ultra">Ultra</option>
-              </select>
-            </div>
-            <button id="inlineBulkAddSaveBtn" class="btn-success btn-small">ADD ALL</button>
-          </div>
-          <div class="nlp-help-text">Type tags (e.g. STR, INT, Easy, tomorrow, 5pm) in line. System parses them!</div>
-        </div>
       </div>
       <div class="tab-content todo-board" id="todosList"></div>
     `;
@@ -2540,6 +2522,160 @@ class UIManager {
       labelEdit.className = 'nemesis-joystick-label';
       labelOath.className = 'nemesis-joystick-label';
       handle.style.transform = 'translateX(-22.5px)';
+    }
+  }
+
+  static setupTodoJoystickModeToggle() {
+    let container = document.getElementById('nemesisTodoJoystick');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'nemesisTodoJoystick';
+      container.className = 'nemesis-joystick-container nemesis-todo-joystick';
+      container.innerHTML = `
+        <div class="nemesis-joystick-track">
+          <div class="nemesis-joystick-label" id="jsTodoLabelDone" style="cursor: pointer;">DONE</div>
+          <div class="nemesis-joystick-label" id="jsTodoLabelEdit" style="cursor: pointer;">EDIT</div>
+          <div class="nemesis-joystick-label" id="jsTodoLabelDel" style="cursor: pointer;">DEL</div>
+          <div class="nemesis-joystick-label" id="jsTodoLabelOath" style="cursor: pointer;">OATH</div>
+          <div class="nemesis-joystick-handle" id="jsTodoHandle"></div>
+        </div>
+      `;
+      document.body.appendChild(container);
+    }
+
+    const handle = container.querySelector('#jsTodoHandle');
+    const labelDone = container.querySelector('#jsTodoLabelDone');
+    const labelEdit = container.querySelector('#jsTodoLabelEdit');
+    const labelDel = container.querySelector('#jsTodoLabelDel');
+    const labelOath = container.querySelector('#jsTodoLabelOath');
+
+    const setTodoJoystickMode = (mode) => {
+      const state = getGameState();
+      if (!state.systemState.taskListFilters) {
+        state.systemState.taskListFilters = {};
+      }
+      state.systemState.taskListFilters.todoJoystickMode = mode;
+      try { state.save(); } catch (e) {}
+      this.updateTodoJoystickUI();
+    };
+
+    labelDone?.addEventListener('click', (e) => { e.stopPropagation(); setTodoJoystickMode('done'); });
+    labelEdit?.addEventListener('click', (e) => { e.stopPropagation(); setTodoJoystickMode('edit'); });
+    labelDel?.addEventListener('click', (e) => { e.stopPropagation(); setTodoJoystickMode('del'); });
+    labelOath?.addEventListener('click', (e) => { e.stopPropagation(); setTodoJoystickMode('oath'); });
+
+    if (handle) {
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+
+        let isDragging = true;
+        let startX = e.clientX;
+
+        const state = getGameState();
+        const mode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
+        let initialTx = -67.5;
+        if (mode === 'edit') initialTx = -22.5;
+        else if (mode === 'del') initialTx = 22.5;
+        else if (mode === 'oath') initialTx = 67.5;
+
+        handle.style.transition = 'none';
+
+        const onPointerMove = (moveEv) => {
+          if (!isDragging) return;
+          let dx = moveEv.clientX - startX;
+          let tx = initialTx + dx;
+          tx = Math.max(-67.5, Math.min(67.5, tx));
+          handle.style.transform = `translateX(${tx}px)`;
+        };
+
+        const onPointerUp = (upEv) => {
+          if (!isDragging) return;
+          isDragging = false;
+          try { handle.releasePointerCapture(upEv.pointerId); } catch (err) {}
+
+          document.removeEventListener('pointermove', onPointerMove);
+          document.removeEventListener('pointerup', onPointerUp);
+          document.removeEventListener('pointercancel', onPointerUp);
+
+          const transformStr = handle.style.transform || 'translateX(-67.5px)';
+          const match = transformStr.match(/translateX\(([-\d.]+)px\)/);
+          const currentTx = match ? parseFloat(match[1]) : -67.5;
+
+          handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
+
+          if (currentTx < -45) {
+            setTodoJoystickMode('done');
+          } else if (currentTx < 0) {
+            setTodoJoystickMode('edit');
+          } else if (currentTx < 45) {
+            setTodoJoystickMode('del');
+          } else {
+            setTodoJoystickMode('oath');
+          }
+        };
+
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+        document.addEventListener('pointercancel', onPointerUp);
+      });
+    }
+
+    this.updateTodoJoystickUI();
+  }
+
+  static updateTodoJoystickUI() {
+    const state = getGameState();
+    const mode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
+
+    const handle = document.getElementById('jsTodoHandle');
+    const labelDone = document.getElementById('jsTodoLabelDone');
+    const labelEdit = document.getElementById('jsTodoLabelEdit');
+    const labelDel = document.getElementById('jsTodoLabelDel');
+    const labelOath = document.getElementById('jsTodoLabelOath');
+    const container = document.getElementById('nemesisTodoJoystick');
+
+    if (!container || !handle || !labelDone || !labelEdit || !labelDel || !labelOath) return;
+
+    const todosPanel = document.getElementById('todosPanel');
+    if (todosPanel && todosPanel.classList.contains('open')) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+
+    handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
+
+    if (mode === 'edit') {
+      handle.className = 'nemesis-joystick-handle state-edit';
+      labelDone.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label active-edit';
+      labelDel.className = 'nemesis-joystick-label';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(-22.5px)';
+    } else if (mode === 'del') {
+      handle.className = 'nemesis-joystick-handle state-del';
+      labelDone.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label';
+      labelDel.className = 'nemesis-joystick-label active-del';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(22.5px)';
+    } else if (mode === 'oath') {
+      handle.className = 'nemesis-joystick-handle state-oath';
+      labelDone.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label';
+      labelDel.className = 'nemesis-joystick-label';
+      labelOath.className = 'nemesis-joystick-label active-oath';
+      handle.style.transform = 'translateX(67.5px)';
+    } else {
+      // done
+      handle.className = 'nemesis-joystick-handle state-done';
+      labelDone.className = 'nemesis-joystick-label active-done';
+      labelEdit.className = 'nemesis-joystick-label';
+      labelDel.className = 'nemesis-joystick-label';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(-67.5px)';
     }
   }
 
@@ -3943,149 +4079,82 @@ class UIManager {
       }
     });
 
-    // Populate fallback attribute select for inline bulk add
-    const inlineBulkAttr = document.getElementById('inlineBulkAttr');
-    if (inlineBulkAttr) {
-      inlineBulkAttr.innerHTML = getGameState().config.attributes.map(a => `<option value="${a}">${a}</option>`).join('');
+    // Initialize Top-Left Attribute Orbit Wheel
+    const attributes = getGameState().config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
+    const orbitNodesContainer = document.getElementById('todoPresetOrbitNodes');
+    const orbitCenter = document.getElementById('todoPresetAttrCenter');
+
+    if (orbitNodesContainer) {
+      const angleStep = 360 / attributes.length;
+      const radius = 69;
+      orbitNodesContainer.innerHTML = attributes.map((attr, i) => {
+        const angle = angleStep * i - 90;
+        const rad = (angle * Math.PI) / 180;
+        const x = Math.round(96 + radius * Math.cos(rad));
+        const y = Math.round(96 + radius * Math.sin(rad));
+        const color = getGameState().config.attributeColors?.[attr] || '#4facfe';
+        return `<div class="preset-orbit-node ${i === 0 ? 'active' : ''}" data-attr="${attr}" style="left:${x}px; top:${y}px; --attr-color:${color};" title="${attr}">${attr}</div>`;
+      }).join('');
+
+      if (orbitCenter && attributes.length > 0) {
+        const defaultAttr = attributes[0];
+        orbitCenter.textContent = defaultAttr;
+        orbitCenter.dataset.selectedAttr = defaultAttr;
+        const col = getGameState().config.attributeColors?.[defaultAttr] || '#4facfe';
+        orbitCenter.style.color = col;
+        orbitCenter.style.borderColor = col;
+      }
+
+      orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach(node => {
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const attr = node.dataset.attr;
+          orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach(n => n.classList.remove('active'));
+          node.classList.add('active');
+          if (orbitCenter) {
+            orbitCenter.textContent = attr;
+            orbitCenter.dataset.selectedAttr = attr;
+            const col = getGameState().config.attributeColors?.[attr] || '#4facfe';
+            orbitCenter.style.color = col;
+            orbitCenter.style.borderColor = col;
+          }
+        });
+      });
     }
 
-    // Toggle inline bulk add panel
-    document.getElementById('toggleBulkAddInlineBtn')?.addEventListener('click', () => {
-      const content = document.getElementById('bulkAddInlineContent');
-      if (content) {
-        const isHidden = content.style.display === 'none';
-        content.style.display = isHidden ? 'flex' : 'none';
-        document.getElementById('toggleBulkAddInlineBtn').textContent = isHidden 
-          ? '＋ Inline Bulk Add (NLP) ▴' 
-          : '＋ Inline Bulk Add (NLP) ▾';
-      }
+    // Initialize Shape Silhouette Difficulty Selector
+    const shapeBtns = document.querySelectorAll('#todoPresetDiffShapes .preset-shape-btn');
+    shapeBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        shapeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
     });
 
-    // Real-time in-place syntax detection & highlighting on actual inline bulk text
-    const editor = document.getElementById('bulkAddInlineEditor');
-    if (editor) {
-      let isUpdating = false;
-
-      const highlightEditorContent = () => {
-        if (isUpdating) return;
-        isUpdating = true;
-
-        // Save selection caret position
-        const sel = window.getSelection();
-        let caretPos = 0;
-        if (sel && sel.rangeCount > 0) {
-          const range = sel.getRangeAt(0);
-          const preRange = range.cloneRange();
-          preRange.selectNodeContents(editor);
-          preRange.setEnd(range.endContainer, range.endOffset);
-          caretPos = preRange.toString().length;
-        }
-
-        const rawText = editor.innerText || editor.textContent || '';
-        if (!rawText.trim()) {
-          if (editor.innerHTML !== '') editor.innerHTML = '';
-          isUpdating = false;
-          return;
-        }
-
-        const lines = rawText.split('\n');
-        const highlightedHtml = lines.map(line => TaskManager.highlightBulkAddLine(line)).join('<br>');
-
-        if (editor.innerHTML !== highlightedHtml) {
-          editor.innerHTML = highlightedHtml;
-
-          // Restore selection caret position
-          if (sel && caretPos > 0) {
-            try {
-              const range = document.createRange();
-              range.selectNodeContents(editor);
-              range.collapse(true);
-
-              let currentOffset = 0;
-              const nodeStack = [editor];
-              let found = false;
-
-              while (nodeStack.length > 0 && !found) {
-                const node = nodeStack.pop();
-                if (node.nodeType === 3) {
-                  const nextOffset = currentOffset + node.length;
-                  if (caretPos >= currentOffset && caretPos <= nextOffset) {
-                    range.setStart(node, caretPos - currentOffset);
-                    range.setEnd(node, caretPos - currentOffset);
-                    found = true;
-                  }
-                  currentOffset = nextOffset;
-                } else {
-                  let i = node.childNodes.length;
-                  while (i--) nodeStack.push(node.childNodes[i]);
-                }
-              }
-
-              if (found) {
-                sel.removeAllRanges();
-                sel.addRange(range);
-              }
-            } catch (e) {}
-          }
-        }
-
-        isUpdating = false;
-      };
-
-      editor.addEventListener('input', highlightEditorContent);
+    // Initialize Deadline Quick Chips & Date Input
+    const todoPresetDate = document.getElementById('todoPresetDate');
+    if (todoPresetDate) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : null;
+      const defaultDate = quickTs ? new Date(quickTs) : tomorrow;
+      todoPresetDate.value = defaultDate.toISOString().slice(0, 10);
     }
 
-    // Inline Bulk Add ADD ALL button
-    document.getElementById('inlineBulkAddSaveBtn')?.addEventListener('click', () => {
-      const editorEl = document.getElementById('bulkAddInlineEditor');
-      let textVal = '';
-      if (editorEl) {
-        textVal = editorEl.innerText || editorEl.textContent || '';
-        if (!textVal.trim()) {
-          const html = editorEl.innerHTML || '';
-          const tmp = document.createElement('div');
-          tmp.innerHTML = html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<\/div>/gi, '\n');
-          textVal = tmp.textContent || tmp.innerText || '';
-        }
-      }
-      if (!textVal.trim()) return;
-
-      const fallbackAttr = document.getElementById('inlineBulkAttr')?.value || 'RESP';
-      const fallbackDiff = document.getElementById('inlineBulkDiff')?.value || 'Medium';
-
-      const parsedTasks = TaskManager.parseBulkAddText(textVal, fallbackAttr, fallbackDiff);
-      if (parsedTasks.length === 0) return;
-
-      let count = 0;
-      parsedTasks.forEach(t => {
-        const created = TaskManager.addTodo(
-          t.name,
-          t.difficulty,
-          t.attribute,
-          t.deadline,
-          t.subtasks
-        );
-        if (created) {
-          if (t.clusterAttributes) {
-            created.clusterAttributes = t.clusterAttributes;
-          }
-          created.layout = {
-            x: 4 + ((count % 5) * 2),
-            y: 4 + ((count % 5) * 2)
-          };
-          count++;
+    const dateChips = document.querySelectorAll('.preset-date-chips .preset-chip');
+    dateChips.forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dateChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const addDays = Number(chip.dataset.days || 0);
+        const d = new Date();
+        d.setDate(d.getDate() + addDays);
+        if (todoPresetDate) {
+          todoPresetDate.value = d.toISOString().slice(0, 10);
         }
       });
-
-      if (count > 0) {
-        if (editorEl) editorEl.innerHTML = '';
-        const filterSelect = document.getElementById('todosDifficultyFilter');
-        if (filterSelect) filterSelect.value = 'All';
-        UIManager.currentTodoDifficultyFilter = 'All';
-        UIManager.updateTodosList();
-        try { getGameState().save(); } catch (e) {}
-        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `Added ${count} Tasks`, { color: '#ffd700' }); } catch (e) {}
-      }
     });
 
     // Difficulty filter listener
@@ -4293,6 +4362,7 @@ class UIManager {
       }, 260);
     }
     this.updateJoystickUI();
+    this.updateTodoJoystickUI();
   }
 
   static closeTaskPanel(which) {
@@ -4303,6 +4373,7 @@ class UIManager {
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
     this.updateJoystickUI();
+    this.updateTodoJoystickUI();
   }
 
   static achievementsSortBy = 'rate';
@@ -5955,7 +6026,17 @@ class UIManager {
       if (target) return target;
     }
 
-    return this.getSpinnerTargetEnemy();
+    const spinnerTarget = this.getSpinnerTargetEnemy();
+    if (spinnerTarget) return spinnerTarget;
+
+    const state = getGameState();
+    const savedId = state.combatState?.currentTarget;
+    if (savedId) {
+      const saved = StageManager.getAllEnemies().find(e => String(e.id) === String(savedId) && !e.isDead);
+      if (saved) return saved;
+    }
+
+    return null;
   }
 
   static async handleAttackClick(targetEnemyId = null) {
@@ -6051,6 +6132,9 @@ class UIManager {
           console.error('[UI] attack failed', attackError);
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack failed', { color: '#ff6666' });
           try { state.resetCombo(); } catch (e) { }
+          state.combatState.attackInProgress = false;
+          this.finishAttackSpinner();
+          settleQueue();
           return;
         }
 
@@ -6069,6 +6153,9 @@ class UIManager {
             ScreenEffects.shake(2, 80);
             try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           }
+          state.combatState.attackInProgress = false;
+          this.finishAttackSpinner();
+          settleQueue();
           return;
         }
 
@@ -6698,32 +6785,23 @@ class UIManager {
       });
     };
 
-    const getTargetEnemyByProximity = (pointerX, pointerY) => {
+    const getTargetEnemyByProximity = (clientX, clientY) => {
       const state = getGameState();
       const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
       if (enemies.length === 0) return null;
-
-      const rect = circleRect || UIManager.getCircleRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const radius = Math.min(rect.width, rect.height) / 2;
 
       let bestEnemy = null;
       let minDistanceSq = Infinity;
 
       enemies.forEach((enemy) => {
-        const index = state.stageState.enemies.indexOf(enemy);
-        if (index === -1) return;
+        const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
 
-        const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(index, state.stageState.enemies.length);
-        const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
-
-        const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
-        const cardX = centerX + Math.cos(angle) * currentRadius;
-        const cardY = centerY + Math.sin(angle) * currentRadius;
-
-        const dx = pointerX - cardX;
-        const dy = pointerY - cardY;
+        const dx = clientX - cardCenterX;
+        const dy = clientY - cardCenterY;
         const distSq = dx * dx + dy * dy;
 
         if (distSq < minDistanceSq) {
@@ -6848,7 +6926,7 @@ class UIManager {
 
         line.className.baseVal = dragType;
 
-        const targetedEnemy = getTargetEnemyByProximity(pointerX, pointerY);
+        const targetedEnemy = getTargetEnemyByProximity(event.clientX, event.clientY);
         clearHighlights();
 
         if (targetedEnemy) {
@@ -6883,8 +6961,10 @@ class UIManager {
       clearHighlights();
 
       if (hasDraggedPastDeadzone) {
-        if (currentTargetEnemyId) {
-          const enemy = StageManager.getAllEnemies().find(e => String(e.id) === String(currentTargetEnemyId) && !e.isDead);
+        const dragTargetEnemy = getTargetEnemyByProximity(event.clientX, event.clientY);
+        const finalTargetId = currentTargetEnemyId || (dragTargetEnemy ? dragTargetEnemy.id : null);
+        if (finalTargetId) {
+          const enemy = StageManager.getAllEnemies().find(e => String(e.id) === String(finalTargetId) && !e.isDead);
           if (enemy) {
             if (dragType === 'attack') {
               UIManager.handleAttackClick(enemy.id);
@@ -6988,27 +7068,16 @@ class UIManager {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
         } else {
           if (dragType === 'attack') {
-            let target = aliveEnemies[0];
-            let lowestHpPct = target.hp / target.maxHp;
-            aliveEnemies.forEach(e => {
-              const pct = e.hp / e.maxHp;
-              if (pct < lowestHpPct) {
-                lowestHpPct = pct;
-                target = e;
-              }
-            });
+            const savedId = state.combatState?.currentTarget;
+            let target = savedId ? aliveEnemies.find(e => String(e.id) === String(savedId)) : null;
+            if (!target) {
+              target = aliveEnemies[0];
+            }
             UIManager.handleAttackClick(target.id);
           } else if (dragType === 'skill') {
             if (isTargetingSkill) {
-              let target = aliveEnemies[0];
-              let lowestHpPct = target.hp / target.maxHp;
-              aliveEnemies.forEach(e => {
-                const pct = e.hp / e.maxHp;
-                if (pct < lowestHpPct) {
-                  lowestHpPct = pct;
-                  target = e;
-                }
-              });
+              const savedId = state.combatState?.currentTarget;
+              let target = savedId ? aliveEnemies.find(e => String(e.id) === String(savedId)) : aliveEnemies[0];
               UIManager.handleSkillClick(target.id);
             } else {
               UIManager.handleSkillClick();
@@ -7359,10 +7428,8 @@ class UIManager {
       const progressText = daily.locked ? 'LOCKED' : `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
-      // Streak saturation: positive boosts colour, negative washes it out, capped at |streak|=20
-      let streakSat = 1;
-      if (streak > 0) streakSat = +(1 + (Math.min(streak, 20) / 20) * 2.0).toFixed(3);
-      if (streak < 0) streakSat = +(1 - (Math.min(Math.abs(streak), 20) / 20) * 0.9).toFixed(3);
+      // Streak saturation: 0 (completely desaturated) at streak 0, 1 (fully saturated) at streak 21
+      const streakSat = +(Math.max(0, Math.min(21, Number(streak) || 0)) / 21).toFixed(3);
       const particleCount = (streak > 0 && !focusModeActive) ? Math.min(streak, 10) : 0;
 
       // Check for surplus multiplier indicator
@@ -7396,7 +7463,6 @@ class UIManager {
       html += '<div class="shape-task shape-' + this.shapeClassForDifficulty(daily.difficulty) + ' task-clickable task-card-daily ' + eventTargetClass + ' ' + (daily.completed ? 'completed ' + completedVisibleClass : '') + (daily.locked ? 'locked ' : '') + (daily.bloodOathActive && !focusModeActive ? ' blood-oath-active' : '') + '" data-id="' + daily.id + '" data-type="daily" data-size-scale="' + sizeScale + '" tabindex="0" data-attribute="' + (daily.attribute || '') + '" data-difficulty="' + (daily.difficulty || '') + '" style="--task-accent:' + attributeColor + ';--task-accent-strong:' + shadeColor(attributeColor, -20) + ';--task-ink:' + textColor + ';--streak-sat:' + streakSat + ';opacity:' + opacity + ';transform:scale(' + sizeScale + ');transform-origin:top left;touch-action:none;' + focusBorderStyle + '">';
       html += '<div class="hold-progress-overlay"></div>';
       if (daily.difficulty === 'Ultra') {
-        html += '<div class="ultra-badge-overlay">👑☠️</div>';
       }
       if (daily.bloodOathActive && !focusModeActive) {
         html += '<div class="blood-oath-fire-container">';
@@ -8068,8 +8134,9 @@ class UIManager {
     const board = document.getElementById('todosList');
     if (!board) return;
 
+    const orbitLayer = document.getElementById('todoOrbitNodesLayer') || document.getElementById('todoOrbitCanvasContainer') || board;
     const notes = Array.isArray(state.getTodoNotes?.()) ? state.getTodoNotes() : [];
-    const existingNotes = new Map(Array.from(board.querySelectorAll('.todo-note-card')).map((note) => [String(note.dataset.noteId), note]));
+    const existingNotes = new Map(Array.from(document.querySelectorAll('.todo-note-card')).map((note) => [String(note.dataset.noteId), note]));
     const activeIds = new Set();
 
     notes.forEach((noteData, index) => {
@@ -8081,12 +8148,21 @@ class UIManager {
       if (!noteEl) {
         noteEl = document.createElement('div');
         noteEl.dataset.noteId = noteId;
-        board.appendChild(noteEl);
+        orbitLayer.appendChild(noteEl);
+      } else if (noteEl.parentElement !== orbitLayer) {
+        orbitLayer.appendChild(noteEl);
       }
 
       // Configure class name & z-index
       noteEl.className = `todo-note-card sticker-${noteData.type || 'note'}`;
       noteEl.style.left = `${Number.isFinite(Number(noteData.x)) ? Number(noteData.x) : 12}%`;
+      noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
+      noteEl.style.zIndex = String(40 + index);
+
+      // Counter-scale so notes DO NOT change physical size when zooming
+      const invScale = (1 / (this.orbitScale || 1)).toFixed(3);
+      noteEl.style.transform = `scale(${invScale})`;
+      noteEl.style.transformOrigin = 'center center';
       noteEl.style.top = `${Number.isFinite(Number(noteData.y)) ? Number(noteData.y) : 12}%`;
       noteEl.style.zIndex = String(40 + index);
 
@@ -8834,89 +8910,8 @@ class UIManager {
   }
 
   static positionTodoCards() {
-    const metrics = this.getTodoBoardMetrics();
-    if (!metrics) return;
-
-    const todos = TaskManager.getAllTodos();
-    const tileSize = this.getTodoCardSize();
-    let changed = false;
-
-    // Group and sort cluster items to position them sequentially
-    const clusterPositions = {}; // maps clusterId -> { leftPx, topPx, heightPx }
-
-    // Sort todos so cluster items are grouped together and processed in sequential order of their index
-    const sortedTodos = [...todos].sort((a, b) => {
-      if (a.clusterId && b.clusterId) {
-        if (a.clusterId === b.clusterId) {
-          return (a.clusterIndex || 0) - (b.clusterIndex || 0);
-        }
-        return a.clusterId.localeCompare(b.clusterId);
-      }
-      if (a.clusterId) return -1;
-      if (b.clusterId) return 1;
-      return 0;
-    });
-
-    sortedTodos.forEach((todo, index) => {
-      const card = metrics.board.querySelector(`.task-card-todo[data-id="${todo.id}"]`);
-      if (!card || card.classList.contains('dragging')) return;
-
-      const actualTileHeight = card.offsetHeight || tileSize.height;
-
-      // Check if this card belongs to an active cluster and has a predecessor positioned
-      if (todo.clusterId && clusterPositions[todo.clusterId]) {
-        const prev = clusterPositions[todo.clusterId];
-        const leftPx = prev.leftPx;
-        const topPx = prev.topPx + prev.heightPx + 6;
-
-        // Ensure child cards in cluster don't have separate competing layout objects saved
-        if (todo.layout && (todo.clusterIndex || 0) > 0) {
-          delete todo.layout;
-          changed = true;
-        }
-
-        card.style.width = `${tileSize.width}px`;
-        card.style.left = `${leftPx}px`;
-        card.style.top = `${topPx}px`;
-
-        // Update the track position for the next card in the cluster
-        clusterPositions[todo.clusterId] = {
-          leftPx,
-          topPx,
-          heightPx: actualTileHeight
-        };
-        return;
-      }
-
-      const hasHeader = !!todo.clusterId || (!!todo.deadline && !todo.completed);
-      const layout = todo.layout
-        ? this.clampTodoLayout(todo.layout, { width: metrics.width, height: metrics.height }, { width: tileSize.width, height: actualTileHeight }, hasHeader)
-        : this.getDefaultTodoLayout(index, metrics, { width: tileSize.width, height: actualTileHeight }, hasHeader);
-
-      if (!todo.layout) {
-        TaskManager.updateTodoLayout(todo.id, layout);
-        changed = true;
-      }
-
-      card.style.width = `${tileSize.width}px`;
-      card.style.left = `${layout.x}%`;
-      card.style.top = `${layout.y}%`;
-
-      // If this is the start of an active cluster, record its position
-      if (todo.clusterId) {
-        const leftPx = (layout.x / 100) * metrics.width;
-        const topPx = (layout.y / 100) * metrics.height;
-        clusterPositions[todo.clusterId] = {
-          leftPx,
-          topPx,
-          heightPx: actualTileHeight
-        };
-      }
-    });
-
-    if (changed) {
-      try { getGameState().save(); } catch (error) { }
-    }
+    // In Orbit mode, node positioning is handled dynamically by updateTodosList() along concentric deadline rings
+    return;
   }
 
   static bindTodoBoardInteractions() {
@@ -8925,7 +8920,77 @@ class UIManager {
 
     board.dataset.dragBound = '1';
 
+    board.addEventListener('dblclick', (event) => {
+      const card = event.target.closest('.task-card-todo');
+      if (!card) return;
+
+      const todoId = card.dataset.id;
+      if (!todoId) return;
+
+      const mode = getGameState().systemState?.taskListFilters?.todoJoystickMode || 'done';
+
+      if (mode === 'done') {
+        const res = TaskManager.completeTodo(todoId);
+        if (res && res.success) {
+          card.style.transition = 'filter 150ms ease, opacity 400ms ease';
+          card.style.filter = 'brightness(10) contrast(1.5)';
+          const rect = card.getBoundingClientRect();
+
+          if (res.isJackpot) {
+            try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
+            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
+          }
+          if (res.rewards && res.rewards.ap) {
+            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
+          }
+          if (res.rewards && res.rewards.diamonds) {
+            UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+          }
+          if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+            RetroTaskCompleteAnimation.play(card);
+          }
+          setTimeout(() => {
+            UIManager.updateTodosList();
+          }, 200);
+          try { getGameState().save(); } catch (e) {}
+          UIManager.renderEnemies();
+        }
+      } else if (mode === 'edit') {
+        if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
+          PopupsManager.showEditTodo(todoId);
+        }
+      } else if (mode === 'del') {
+        const todo = TaskManager.getTaskById(todoId);
+        const name = todo?.name || 'this to-do';
+        if (confirm(`Delete "${name}"?`)) {
+          TaskManager.removeTodo(todoId);
+          try { getGameState().save(); } catch (e) {}
+          UIManager.updateTodosList();
+          UIManager.renderEnemies();
+        }
+      } else if (mode === 'oath') {
+        TaskManager.toggleBloodOathTodo(todoId);
+        try { getGameState().save(); } catch (e) {}
+        UIManager.updateTodosList();
+      }
+    });
+
     board.addEventListener('click', (event) => {
+      const deadlineCard = event.target.closest('.todo-plain-deadline-num, .todo-massive-deadline-left, .todo-deadline-card-badge-top');
+      if (deadlineCard) {
+        event.stopPropagation();
+        event.preventDefault();
+        const todoId = deadlineCard.dataset.todoId;
+        if (todoId && typeof PopupsManager !== 'undefined' && PopupsManager.showQuickDayPicker) {
+          PopupsManager.showQuickDayPicker((newTs) => {
+            TaskManager.editTodo(todoId, { deadline: newTs });
+            UIManager.updateTodosList();
+            try { getGameState().save(); } catch (e) {}
+          });
+        }
+        return;
+      }
+
       const existingWizard = document.querySelector('.floating-wizard');
       if (existingWizard) {
         if (Date.now() - (this.wizardOpenedTime || 0) < 300) {
@@ -8933,6 +8998,11 @@ class UIManager {
         }
         if (!existingWizard.contains(event.target)) existingWizard.remove();
         return;
+      }
+      const card = event.target.closest('.task-card-todo');
+      if (card && !event.target.closest('.todo-subtask-rect, .subtask-remove')) {
+        document.querySelectorAll('.task-card-todo.selected').forEach(el => el.classList.remove('selected'));
+        card.classList.add('selected');
       }
     });
 
@@ -9179,19 +9249,16 @@ class UIManager {
           }
         }
 
-        const initialLeftPx = card.offsetLeft;
-        const initialTopPx = card.offsetTop;
+        const leftStyle = card.style.left || '';
+        const topStyle = card.style.top || '';
+        const matchX = leftStyle.match(/calc\(50%\s*([+-]\s*[\d.]+)px\)/);
+        const matchY = topStyle.match(/calc\(50%\s*([+-]\s*[\d.]+)px\)/);
 
-        let firstInitialLeftPx = 0;
-        let firstInitialTopPx = 0;
-        if (firstCardElement) {
-          firstInitialLeftPx = firstCardElement.offsetLeft;
-          firstInitialTopPx = firstCardElement.offsetTop;
-        }
+        const boardWidth = board.clientWidth || board.offsetWidth || 800;
+        const boardHeight = board.clientHeight || board.offsetHeight || 600;
 
-        const boardWidth = board.clientWidth || board.offsetWidth || 1;
-        const boardHeight = board.clientHeight || board.offsetHeight || 1;
-        const hasHeader = isCluster || (todo && todo.deadline && !todo.completed);
+        let initX = matchX ? parseFloat(matchX[1].replace(/\s+/g, '')) : (card.offsetLeft - (boardWidth / 2));
+        let initY = matchY ? parseFloat(matchY[1].replace(/\s+/g, '')) : (card.offsetTop - (boardHeight / 2));
 
         const onTouchMovePrevent = (touchEv) => {
           if (isDragging && touchEv.cancelable) {
@@ -9221,98 +9288,33 @@ class UIManager {
                 card,
                 board,
                 pointerId: event.pointerId,
-                moved: true,
-                startX,
-                startY,
-                initialLeftPx,
-                initialTopPx,
-                isCluster,
-                hasHeader,
-                firstCardElement,
-                firstCardTodo,
-                firstInitialLeftPx,
-                firstInitialTopPx,
-                clusterCards,
-                nextX: (initialLeftPx / Math.max(1, boardWidth)) * 100,
-                nextY: (initialTopPx / Math.max(1, boardHeight)) * 100
+                moved: true
               };
 
               card.classList.add('dragging');
-              if (isCluster) {
-                clusterCards.forEach(c => c.classList.add('dragging'));
-              }
             } else {
               return;
             }
           }
 
-          let nextLeftPx = Math.max(0, Math.min(boardWidth - card.offsetWidth, initialLeftPx + deltaX));
-          let nextTopPx = Math.max(0, Math.min(boardHeight - card.offsetHeight, initialTopPx + deltaY));
+          const scale = this.orbitScale || 1;
+          const currentX = initX + (deltaX / scale);
+          const currentY = initY + (deltaY / scale);
 
-          const nextX = (nextLeftPx / Math.max(1, boardWidth)) * 100;
-          const nextY = (nextTopPx / Math.max(1, boardHeight)) * 100;
-
-          if (this.todoDragState) {
-            this.todoDragState.nextX = nextX;
-            this.todoDragState.nextY = nextY;
-            this.todoDragState.moved = true;
-          }
-
-          if (isCluster && firstCardElement && firstCardTodo) {
-            let firstNextLeftPx = Math.max(0, Math.min(boardWidth - firstCardElement.offsetWidth, firstInitialLeftPx + deltaX));
-            let firstNextTopPx = Math.max(0, Math.min(boardHeight - firstCardElement.offsetHeight, firstInitialTopPx + deltaY));
-
-            const firstNextX = (firstNextLeftPx / Math.max(1, boardWidth)) * 100;
-            const firstNextY = (firstNextTopPx / Math.max(1, boardHeight)) * 100;
-
-            firstCardTodo.layout = { x: firstNextX, y: firstNextY };
-            this.positionTodoCards();
-          } else {
-            card.style.left = `${nextLeftPx}px`;
-            card.style.top = `${nextTopPx}px`;
-          }
+          card.style.left = `calc(50% + ${currentX.toFixed(1)}px)`;
+          card.style.top = `calc(50% + ${currentY.toFixed(1)}px)`;
         };
 
         const onCardUp = (upEvent) => {
           if (upEvent.pointerId !== event.pointerId) return;
           cleanupCard();
 
-          const panel = document.getElementById('todosPanel');
-          if (panel) panel.style.overflow = '';
-
-          const dragState = this.todoDragState;
-          if (isDragging && dragState) {
+          if (isDragging) {
             card.classList.remove('dragging');
             try { card.releasePointerCapture(event.pointerId); } catch (error) { }
-
-            if (isCluster && clusterCards) {
-              clusterCards.forEach(c => c.classList.remove('dragging'));
-              if (firstCardElement && firstCardTodo && firstCardTodo.layout) {
-                TaskManager.updateTodoLayout(firstCardElement.dataset.id, firstCardTodo.layout);
-              }
-              clusterCards.forEach((c, i) => {
-                if (i > 0) {
-                  const cTodo = TaskManager.getTaskById(c.dataset.id);
-                  if (cTodo && cTodo.layout) delete cTodo.layout;
-                }
-              });
-              try { getGameState().save(); } catch (error) { }
-            } else if (dragState.moved) {
-              const layout = this.clampTodoLayout(
-                { x: dragState.nextX, y: dragState.nextY },
-                { width: Math.max(1, boardWidth), height: Math.max(1, boardHeight) },
-                { width: card.offsetWidth, height: card.offsetHeight },
-                hasHeader
-              );
-              TaskManager.updateTodoLayout(todoId, layout);
-              card.style.left = `${layout.x}%`;
-              card.style.top = `${layout.y}%`;
-              try { getGameState().save(); } catch (error) { }
-            }
           }
 
           this.todoDragState = null;
-          this.positionTodoCards();
         };
 
         const cleanupCard = () => {
@@ -9370,6 +9372,10 @@ class UIManager {
     });
   }
 
+  static orbitPanX = 0;
+  static orbitPanY = 0;
+  static orbitScale = 1;
+
   static updateTodosList() {
     if (this.todoDragState) return;
     try { this.updatePendingDamageDisplay(); } catch (e) { }
@@ -9402,104 +9408,657 @@ class UIManager {
 
     const palette = getGameState()?.config?.attributeColors || {};
 
-    container.innerHTML = visibleTodos.map(todo => {
-      const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
+    const ringBuckets = [[], [], [], [], []];
 
-      // 1. Calculate days remaining counter & natural language deadline
-      let daysCounterText = '--';
-      let naturalDeadlineText = 'No deadline';
-
-      if (todo.deadline) {
+    visibleTodos.forEach(todo => {
+      if (!todo.deadline) {
+        ringBuckets[4].push(todo);
+      } else {
         const diffMs = todo.deadline - Date.now();
         const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-        daysCounterText = String(days);
-
-        const d = new Date(todo.deadline);
-        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        const mName = months[d.getMonth()];
-        const dayNum = d.getDate();
-        const yr = d.getFullYear();
-        const hh = String(d.getHours()).padStart(2, '0');
-        const mm = String(d.getMinutes()).padStart(2, '0');
-        naturalDeadlineText = `${mName} ${dayNum}, ${yr} ${hh}:${mm}`;
+        if (days <= 1) ringBuckets[0].push(todo);
+        else if (days <= 3) ringBuckets[1].push(todo);
+        else if (days <= 7) ringBuckets[2].push(todo);
+        else ringBuckets[3].push(todo);
       }
+    });
 
-      // 2. Color based on attribute, shape based on difficulty
-      let displayAttr = todo.attribute || 'RESP';
-      if (todo.clusterAttributes && typeof todo.clusterAttributes === 'object') {
-        let maxVal = -1;
-        for (const attr in todo.clusterAttributes) {
-          if (todo.clusterAttributes[attr] > maxVal) {
-            maxVal = todo.clusterAttributes[attr];
-            displayAttr = attr;
+    const RING_RADII = [95, 175, 255, 335, 415];
+    const nodesData = [];
+
+    ringBuckets.forEach((ringTodos, ringIdx) => {
+      const radius = RING_RADII[ringIdx];
+      const count = ringTodos.length;
+      if (count === 0) return;
+
+      const angleStep = (2 * Math.PI) / count;
+      const ringAngleOffset = (ringIdx * 0.25) - Math.PI / 2;
+
+      ringTodos.forEach((todo, idx) => {
+        const angle = ringAngleOffset + (idx * angleStep);
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+
+        const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
+
+        let plainNumText = '∞';
+        let naturalDeadlineText = 'No deadline';
+
+        if (todo.deadline) {
+          const diffMs = todo.deadline - Date.now();
+          const d = new Date(todo.deadline);
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const mName = months[d.getMonth()];
+          const dayNum = d.getDate();
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mm = String(d.getMinutes()).padStart(2, '0');
+          naturalDeadlineText = `${mName} ${dayNum}, ${hh}:${mm}`;
+
+          if (diffMs < 0) {
+            plainNumText = '!';
+          } else {
+            const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+            const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            if (hours <= 24) {
+              plainNumText = `${Math.max(1, hours)}h`;
+            } else {
+              plainNumText = `${days}d`;
+            }
           }
         }
-      }
-      const attrColor = palette[displayAttr] || '#555';
-      const textColor = UIManager.getTextColorForHex(attrColor);
-      const shadeColor = UIManager.shadeColor ? UIManager.shadeColor(attrColor, -20) : attrColor;
-      const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
-      // Subtasks formatted as separate rectangles
-      const subtaskRects = (todo.subtasks || []).map(st => `
-        <div class="todo-subtask-rect ${st.completed ? 'completed' : ''}" data-todo-id="${todo.id}" data-subtask-id="${st.id}" style="--subtask-accent:${attrColor};">
-          <span class="subtask-title">${st.name}</span>
-          <button class="subtask-remove" data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Remove">×</button>
-        </div>
-      `).join('');
+        let displayAttr = todo.attribute || 'RESP';
+        if (todo.clusterAttributes && typeof todo.clusterAttributes === 'object') {
+          let maxVal = -1;
+          for (const attr in todo.clusterAttributes) {
+            if (todo.clusterAttributes[attr] > maxVal) {
+              maxVal = todo.clusterAttributes[attr];
+              displayAttr = attr;
+            }
+          }
+        }
+        const attrColor = palette[displayAttr] || '#555';
+        const textColor = UIManager.getTextColorForHex(attrColor);
+        const shadeColor = UIManager.shadeColor ? UIManager.shadeColor(attrColor, -20) : attrColor;
+        const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
 
-      return `
-      <div class="task-card task-clickable task-card-todo todo-shape-wrapper ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" data-id="${todo.id}" data-type="todo" data-difficulty="${todo.difficulty || ''}" tabindex="0" ${todo.clusterId ? `data-cluster-id="${todo.clusterId}" data-cluster-index="${todo.clusterIndex}"` : ''}>
-        
-        <!-- Action buttons on left side of card shape -->
-        <div class="task-card-actions-left">
-          <button class="btn-edit btn-todo-edit" title="Edit to-do" data-id="${todo.id}">✎</button>
-          <button class="btn-todo-delete" title="Delete to-do" data-id="${todo.id}">🗑</button>
-        </div>
-
-        <!-- Big Counter & Natural Language Deadline Subtext -->
-        <div class="todo-header-container">
-          <div class="todo-days-counter">${daysCounterText}</div>
-          <div class="todo-deadline-subtext">${naturalDeadlineText}</div>
-        </div>
-
-        <!-- Main Shape Card -->
-        <div class="shape-task shape-${shapeClass} todo-main-shape" style="--task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor}; position: relative;">
-          ${todo.difficulty === 'Ultra' ? '<div class="ultra-badge-overlay">👑☠️</div>' : ''}
-          ${todo.bloodOathActive ? `
-            <div class="blood-oath-fire-container">
-              <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-              <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-            </div>
-          ` : ''}
-          <div class="task-shape-name">${displayName}</div>
-        </div>
-
-        <!-- Subtasks as separate rectangles below shape -->
-        ${(todo.subtasks || []).length > 0 ? `
-          <div class="todo-subtasks-container">
-            ${subtaskRects}
+        const subtaskRects = (todo.subtasks || []).map(st => `
+          <div class="todo-subtask-rect ${st.completed ? 'completed' : ''}" data-todo-id="${todo.id}" data-subtask-id="${st.id}">
+            <span class="subtask-title">${st.name}</span>
+            <button class="subtask-remove" data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Remove">×</button>
           </div>
-        ` : ''}
+        `).join('');
 
-        <!-- Inline Subtask Input (Toggled by + button) -->
-        <div class="subtask-add-inline" style="display: none; margin-top: 4px; width: 100%; gap: 4px; align-items: center;">
-          <input class="subtask-input" placeholder="Subtask name..." data-todo-id="${todo.id}" style="font-size: 9px; padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.25); background: rgba(0,0,0,0.6); color: #fff; flex: 1; min-width: 0;" />
-          <button class="subtask-add-btn" data-todo-id="${todo.id}" style="font-size: 9px; padding: 3px 6px; border-radius: 4px; background: var(--accent-gold, #fbbf24); color: #000; border: none; font-weight: bold; cursor: pointer;">Add</button>
+        const nodeHTML = `
+          <div class="task-card task-clickable task-card-todo todo-shape-wrapper todo-orbit-node ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" 
+               data-id="${todo.id}" 
+               data-type="todo" 
+               data-difficulty="${todo.difficulty || ''}" 
+               tabindex="0" 
+               style="left: calc(50% + ${x.toFixed(1)}px); top: calc(50% + ${y.toFixed(1)}px); --task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor};">
+            
+            <!-- Plain Deadline Counter Number directly on LEFT side -->
+            <div class="todo-plain-deadline-num" data-todo-id="${todo.id}" title="Click to change due deadline" style="color:${attrColor};">
+              ${plainNumText}
+            </div>
+
+            <!-- Card Main Stack (Top Deadline Badge + Shape + Subtasks) -->
+            <div class="todo-card-main-stack">
+              <!-- Regular deadline text on top -->
+              <div class="todo-deadline-card-badge-top" data-todo-id="${todo.id}" style="background:${attrColor}; color:${textColor};">
+                <span class="todo-deadline-date">${naturalDeadlineText}</span>
+              </div>
+
+              <!-- Main Shape Card -->
+              <div class="shape-task shape-${shapeClass} todo-main-shape" style="--task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor}; position: relative;">
+                ${todo.bloodOathActive ? `
+                  <div class="blood-oath-fire-container">
+                    <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+                    <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
+                  </div>
+                ` : ''}
+
+                <div class="task-shape-name">${displayName}</div>
+              </div>
+
+              <!-- Subtasks stuck directly to BOTTOM of shape -->
+              ${(todo.subtasks || []).length > 0 ? `
+                <div class="todo-orbit-subtasks-stuck-bottom" style="background:${attrColor}; color:${textColor};">
+                  ${subtaskRects}
+                </div>
+              ` : ''}
+            </div>
+
+          </div>
+        `;
+        nodesData.push(nodeHTML);
+      });
+    });
+
+    container.innerHTML = `
+      <div class="todo-orbit-viewport" id="todoOrbitViewport">
+        <div class="todo-orbit-controls">
+          <button class="orbit-control-btn" id="todoOrbitZoomIn" title="Zoom In">＋</button>
+          <button class="orbit-control-btn" id="todoOrbitZoomOut" title="Zoom Out">－</button>
+          <button class="orbit-control-btn" id="todoOrbitReset" title="Reset View">⊙</button>
         </div>
 
-        <!-- Compact Plus Button for Subtasks -->
-        <button class="btn-add-subtask-plus" data-todo-id="${todo.id}" title="Add subtask">+</button>
+        <div class="todo-orbit-canvas-container" id="todoOrbitCanvasContainer">
+          <svg class="todo-orbit-svg" viewBox="-500 -500 1000 1000" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="orbitCenterGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.8" />
+                <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="#d97706" stop-opacity="0" />
+              </radialGradient>
+              <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
+            <circle cx="0" cy="0" r="32" fill="url(#orbitCenterGlow)" />
+            <circle cx="0" cy="0" r="16" fill="#fbbf24" filter="url(#ringGlow)" />
+            <text x="0" y="4" text-anchor="middle" fill="#000" font-weight="900" font-size="10" font-family="'Orbitron', monospace">NOW</text>
+
+            <circle cx="0" cy="0" r="95" class="orbit-ring ring-0" vector-effect="non-scaling-stroke" />
+            <text x="0" y="-99" text-anchor="middle" class="orbit-ring-label ring-label-0">⚡ TODAY / OVERDUE</text>
+
+            <circle cx="0" cy="0" r="175" class="orbit-ring ring-1" vector-effect="non-scaling-stroke" />
+            <text x="0" y="-179" text-anchor="middle" class="orbit-ring-label ring-label-1">1 - 3 DAYS</text>
+
+            <circle cx="0" cy="0" r="255" class="orbit-ring ring-2" vector-effect="non-scaling-stroke" />
+            <text x="0" y="-259" text-anchor="middle" class="orbit-ring-label ring-label-2">4 - 7 DAYS</text>
+
+            <circle cx="0" cy="0" r="335" class="orbit-ring ring-3" vector-effect="non-scaling-stroke" />
+            <text x="0" y="-339" text-anchor="middle" class="orbit-ring-label ring-label-3">> 7 DAYS</text>
+
+            <circle cx="0" cy="0" r="415" class="orbit-ring ring-4" vector-effect="non-scaling-stroke" />
+            <text x="0" y="-419" text-anchor="middle" class="orbit-ring-label ring-label-4">NO DEADLINE</text>
+          </svg>
+
+          <div class="todo-orbit-nodes-layer" id="todoOrbitNodesLayer">
+            ${nodesData.join('')}
+          </div>
+        </div>
       </div>
-      `;
-    }).join('');
+
+      <!-- Viewport Floating HUD 1: Attributes + Difficulty -->
+      <div class="preset-hud-card hud-attr-diff" id="hudAttrDiff" style="left: 16px; top: 70px;">
+        <div class="hud-header">
+          <span class="hud-drag-handle">⠿ PRESETS HUD</span>
+          <button class="hud-collapse-btn" title="Toggle HUD">−</button>
+        </div>
+        <div class="hud-body">
+          <div class="preset-group preset-diff-group" title="Select Preset Difficulty Shape">
+            <span class="preset-label">DIFFICULTY</span>
+            <div class="preset-shape-selector" id="todoPresetDiffShapes">
+              <button class="preset-shape-btn shape-easy" data-diff="Easy" title="Easy (Circle)"><span class="shape-icon"></span></button>
+              <button class="preset-shape-btn shape-medium active" data-diff="Medium" title="Medium (Diamond)"><span class="shape-icon"></span></button>
+              <button class="preset-shape-btn shape-hard" data-diff="Hard" title="Hard (Square)"><span class="shape-icon"></span></button>
+              <button class="preset-shape-btn shape-ultra" data-diff="Ultra" title="Ultra (Octagon)"><span class="shape-icon"></span></button>
+            </div>
+          </div>
+          <div class="preset-group preset-orbit-group" title="Select Preset Attribute">
+            <span class="preset-label">ATTRIBUTE</span>
+            <div class="preset-orbit-container" id="todoPresetOrbit">
+              <div class="preset-orbit-center" id="todoPresetAttrCenter" data-selected-attr="STR">STR</div>
+              <div class="preset-orbit-nodes" id="todoPresetOrbitNodes"></div>
+            </div>
+          </div>
+        </div>
+        <div class="hud-resizer"></div>
+      </div>
+
+      <!-- Viewport Floating HUD 2: Deadline -->
+      <div class="preset-hud-card hud-deadline" id="hudDeadline" style="right: 16px; top: 70px;">
+        <div class="hud-header">
+          <span class="hud-drag-handle">⠿ DEADLINE HUD</span>
+          <button class="hud-collapse-btn" title="Toggle HUD">−</button>
+        </div>
+        <div class="hud-body">
+          <span class="preset-label">DUE DEADLINE</span>
+          <div class="preset-date-vertical-cells">
+            <div class="preset-date-chips-column">
+              <button class="preset-chip" data-days="0">Today</button>
+              <button class="preset-chip active" data-days="1">Tomorrow</button>
+              <button class="preset-chip" data-days="3">+3 Days</button>
+              <button class="preset-chip" data-days="7">+7 Days</button>
+            </div>
+            <input type="date" id="todoPresetDate" class="preset-input" title="Preset Deadline Date" />
+          </div>
+        </div>
+        <div class="hud-resizer"></div>
+      </div>
+    `;
 
     this.bindTaskInteractions();
     this.bindTodoBoardInteractions();
-    this.positionTodoCards();
+    this.setupTodoOrbitPanZoom();
     this.renderTodoNotes();
+    this.setupPresetHuds();
     this.startUltraSkullEmitters();
+    try { this.updateTodoJoystickUI(); } catch (e) {}
+  }
+
+  static hudStates = {};
+
+  static saveTodoHudStates() {
+    try {
+      localStorage.setItem('nemesis_todo_hud_states', JSON.stringify(this.hudStates || {}));
+      const state = getGameState();
+      if (state) state.todoHudStates = this.hudStates;
+    } catch (e) {
+      console.error('Failed to save todo HUD states', e);
+    }
+  }
+
+  static loadTodoHudStates() {
+    try {
+      const saved = localStorage.getItem('nemesis_todo_hud_states');
+      if (saved) {
+        this.hudStates = JSON.parse(saved);
+      } else {
+        const state = getGameState();
+        if (state?.todoHudStates) this.hudStates = state.todoHudStates;
+        else this.hudStates = {};
+      }
+    } catch (e) {
+      this.hudStates = {};
+    }
+  }
+
+  static setupPresetHuds() {
+    this.loadTodoHudStates();
+    this.hudStates = this.hudStates || {};
+    const huds = document.querySelectorAll('.preset-hud-card');
+
+    huds.forEach(hud => {
+      const hudId = hud.id;
+      const saved = this.hudStates[hudId];
+      if (saved) {
+        if (saved.left !== undefined) {
+          hud.style.left = saved.left;
+          hud.style.right = 'auto';
+        }
+        if (saved.top !== undefined) {
+          hud.style.top = saved.top;
+        }
+        if (saved.width !== undefined) {
+          hud.style.width = saved.width;
+        }
+        if (saved.height !== undefined) {
+          hud.style.height = saved.height;
+        }
+        if (saved.collapsed) {
+          hud.classList.add('collapsed');
+        }
+      }
+
+      const header = hud.querySelector('.hud-header');
+      const resizer = hud.querySelector('.hud-resizer');
+      const collapseBtn = hud.querySelector('.hud-collapse-btn');
+      const body = hud.querySelector('.hud-body');
+
+      if (collapseBtn && body) {
+        if (hud.classList.contains('collapsed')) {
+          collapseBtn.textContent = '+';
+        }
+        collapseBtn.onclick = (e) => {
+          e.stopPropagation();
+          hud.classList.toggle('collapsed');
+          const isCollapsed = hud.classList.contains('collapsed');
+          collapseBtn.textContent = isCollapsed ? '+' : '−';
+          this.hudStates[hudId] = this.hudStates[hudId] || {};
+          this.hudStates[hudId].collapsed = isCollapsed;
+          this.saveTodoHudStates();
+        };
+      }
+
+      if (header) {
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let initLeft = 0, initTop = 0;
+
+        header.onpointerdown = (e) => {
+          if (e.target.closest('.hud-collapse-btn')) return;
+          e.stopPropagation();
+          isDragging = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          initLeft = parseFloat(hud.style.left) || hud.offsetLeft;
+          initTop = parseFloat(hud.style.top) || hud.offsetTop;
+          try { header.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+
+        header.onpointermove = (e) => {
+          if (!isDragging) return;
+          e.stopPropagation();
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          const leftPx = `${initLeft + dx}px`;
+          const topPx = `${initTop + dy}px`;
+          hud.style.left = leftPx;
+          hud.style.top = topPx;
+          hud.style.right = 'auto';
+
+          this.hudStates[hudId] = this.hudStates[hudId] || {};
+          this.hudStates[hudId].left = leftPx;
+          this.hudStates[hudId].top = topPx;
+        };
+
+        const stopDrag = (e) => {
+          if (!isDragging) return;
+          e.stopPropagation();
+          isDragging = false;
+          try { header.releasePointerCapture(e.pointerId); } catch (err) {}
+          this.saveTodoHudStates();
+        };
+
+        header.onpointerup = stopDrag;
+        header.onpointercancel = stopDrag;
+      }
+
+      if (resizer) {
+        let isResizing = false;
+        let startX = 0, startY = 0;
+        let initWidth = 0, initHeight = 0;
+
+        resizer.onpointerdown = (e) => {
+          e.stopPropagation();
+          isResizing = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          initWidth = hud.offsetWidth;
+          initHeight = hud.offsetHeight;
+          try { resizer.setPointerCapture(e.pointerId); } catch (err) {}
+        };
+
+        resizer.onpointermove = (e) => {
+          if (!isResizing) return;
+          e.stopPropagation();
+          const dw = e.clientX - startX;
+          const dh = e.clientY - startY;
+          const widthPx = `${Math.max(130, initWidth + dw)}px`;
+          const heightPx = `${Math.max(100, initHeight + dh)}px`;
+          hud.style.width = widthPx;
+          hud.style.height = heightPx;
+
+          this.hudStates[hudId] = this.hudStates[hudId] || {};
+          this.hudStates[hudId].width = widthPx;
+          this.hudStates[hudId].height = heightPx;
+        };
+
+        const stopResize = (e) => {
+          if (!isResizing) return;
+          e.stopPropagation();
+          isResizing = false;
+          try { resizer.releasePointerCapture(e.pointerId); } catch (err) {}
+          this.saveTodoHudStates();
+        };
+
+        resizer.onpointerup = stopResize;
+        resizer.onpointercancel = stopResize;
+      }
+    });
+
+    this.initPresetOrbitNodes();
+    this.initPresetShapeSelector();
+    this.initPresetDeadlineHud();
+  }
+
+  static initPresetShapeSelector() {
+    const selector = document.getElementById('todoPresetDiffShapes');
+    if (!selector) return;
+
+    const hudId = 'hudAttrDiff';
+    const savedDiff = this.hudStates[hudId]?.selectedDiff || 'Medium';
+    this.presetDifficulty = savedDiff;
+
+    selector.querySelectorAll('.preset-shape-btn').forEach(btn => {
+      const diff = btn.dataset.diff;
+      btn.classList.toggle('active', diff === savedDiff);
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        selector.querySelectorAll('.preset-shape-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.hudStates[hudId] = this.hudStates[hudId] || {};
+        this.hudStates[hudId].selectedDiff = diff;
+        this.presetDifficulty = diff;
+        this.saveTodoHudStates();
+      };
+    });
+  }
+
+  static initPresetDeadlineHud() {
+    const deadlineHud = document.getElementById('hudDeadline');
+    if (!deadlineHud) return;
+
+    const hudId = 'hudDeadline';
+    const chipsColumn = deadlineHud.querySelector('.preset-date-chips-column');
+    const dateInput = deadlineHud.querySelector('#todoPresetDate');
+
+    const savedDays = this.hudStates[hudId]?.selectedDays;
+    const savedDate = this.hudStates[hudId]?.selectedDate;
+
+    if (savedDate && dateInput) {
+      dateInput.value = savedDate;
+      const target = new Date(savedDate);
+      target.setHours(23, 59, 0, 0);
+      const dTs = target.getTime();
+      if (!isNaN(dTs)) UIManager.quickDayDeadline = dTs;
+    } else if (savedDays !== undefined && savedDays !== null) {
+      const daysNum = Number(savedDays);
+      const target = new Date();
+      if (daysNum === 0) {
+        target.setHours(23, 59, 0, 0);
+      } else {
+        target.setDate(target.getDate() + daysNum);
+        target.setHours(23, 59, 0, 0);
+      }
+      UIManager.quickDayDeadline = target.getTime();
+      if (dateInput) {
+        const y = target.getFullYear();
+        const m = String(target.getMonth() + 1).padStart(2, '0');
+        const day = String(target.getDate()).padStart(2, '0');
+        dateInput.value = `${y}-${m}-${day}`;
+      }
+    }
+
+    if (chipsColumn) {
+      chipsColumn.querySelectorAll('.preset-chip').forEach(chip => {
+        const days = chip.dataset.days;
+        if (savedDays !== undefined && String(savedDays) === String(days)) {
+          chip.classList.add('active');
+        } else if (savedDays === undefined && days === '1') {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+
+        chip.onclick = (e) => {
+          e.stopPropagation();
+          chipsColumn.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+
+          const daysNum = Number(days);
+          const target = new Date();
+          if (daysNum === 0) {
+            target.setHours(23, 59, 0, 0);
+          } else {
+            target.setDate(target.getDate() + daysNum);
+            target.setHours(23, 59, 0, 0);
+          }
+          UIManager.quickDayDeadline = target.getTime();
+
+          if (dateInput) {
+            const y = target.getFullYear();
+            const m = String(target.getMonth() + 1).padStart(2, '0');
+            const d = String(target.getDate()).padStart(2, '0');
+            dateInput.value = `${y}-${m}-${d}`;
+          }
+
+          this.hudStates[hudId] = this.hudStates[hudId] || {};
+          this.hudStates[hudId].selectedDays = days;
+          this.hudStates[hudId].selectedDate = dateInput ? dateInput.value : null;
+          this.saveTodoHudStates();
+        };
+      });
+    }
+
+    if (dateInput) {
+      dateInput.onchange = (e) => {
+        e.stopPropagation();
+        if (!dateInput.value) {
+          UIManager.quickDayDeadline = null;
+        } else {
+          const target = new Date(dateInput.value);
+          target.setHours(23, 59, 0, 0);
+          UIManager.quickDayDeadline = target.getTime();
+        }
+        if (chipsColumn) {
+          chipsColumn.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+        }
+        this.hudStates[hudId] = this.hudStates[hudId] || {};
+        delete this.hudStates[hudId].selectedDays;
+        this.hudStates[hudId].selectedDate = dateInput.value;
+        this.saveTodoHudStates();
+      };
+    }
+  }
+
+  static initPresetOrbitNodes() {
+    const attributes = getGameState().config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
+    const orbitNodesContainer = document.getElementById('todoPresetOrbitNodes');
+    const orbitCenter = document.getElementById('todoPresetAttrCenter');
+
+    const hudId = 'hudAttrDiff';
+    const savedAttr = this.hudStates[hudId]?.selectedAttr || (attributes[0] || 'STR');
+    this.presetAttribute = savedAttr;
+
+    if (orbitNodesContainer) {
+      const angleStep = 360 / attributes.length;
+      const radius = 45;
+      const centerXY = 63;
+      orbitNodesContainer.innerHTML = attributes.map((attr, i) => {
+        const angle = angleStep * i - 90;
+        const rad = (angle * Math.PI) / 180;
+        const x = Math.round(centerXY + radius * Math.cos(rad));
+        const y = Math.round(centerXY + radius * Math.sin(rad));
+        const color = getGameState().config.attributeColors?.[attr] || '#4facfe';
+        const isActive = attr === savedAttr;
+        return `<div class="preset-orbit-node ${isActive ? 'active' : ''}" data-attr="${attr}" style="left:${x}px; top:${y}px; --attr-color:${color};" title="${attr}">${attr}</div>`;
+      }).join('');
+
+      if (orbitCenter) {
+        orbitCenter.textContent = savedAttr;
+        orbitCenter.dataset.selectedAttr = savedAttr;
+        const col = getGameState().config.attributeColors?.[savedAttr] || '#4facfe';
+        orbitCenter.style.color = col;
+        orbitCenter.style.borderColor = col;
+      }
+
+      orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach((node) => {
+        node.onclick = (e) => {
+          e.stopPropagation();
+          orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach((n) => n.classList.remove('active'));
+          node.classList.add('active');
+          const attr = node.dataset.attr;
+          if (orbitCenter) {
+            orbitCenter.textContent = attr;
+            orbitCenter.dataset.selectedAttr = attr;
+            const color = getGameState().config.attributeColors?.[attr] || '#4facfe';
+            orbitCenter.style.color = color;
+            orbitCenter.style.borderColor = color;
+          }
+          this.hudStates[hudId] = this.hudStates[hudId] || {};
+          this.hudStates[hudId].selectedAttr = attr;
+          this.presetAttribute = attr;
+          this.saveTodoHudStates();
+        };
+      });
+    }
+  }
+
+  static setupTodoOrbitPanZoom() {
+    const viewport = document.getElementById('todoOrbitViewport');
+    const container = document.getElementById('todoOrbitCanvasContainer');
+    if (!viewport || !container) return;
+
+    this.applyOrbitTransform();
+
+    viewport.onwheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1.12 : 0.88;
+      this.orbitScale = Math.max(0.35, Math.min(2.8, this.orbitScale * delta));
+      this.applyOrbitTransform();
+    };
+
+    document.getElementById('todoOrbitZoomIn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.orbitScale = Math.min(2.8, this.orbitScale * 1.25);
+      this.applyOrbitTransform();
+    });
+    document.getElementById('todoOrbitZoomOut')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.orbitScale = Math.max(0.35, this.orbitScale / 1.25);
+      this.applyOrbitTransform();
+    });
+    document.getElementById('todoOrbitReset')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.orbitPanX = 0;
+      this.orbitPanY = 0;
+      this.orbitScale = 1;
+      this.applyOrbitTransform();
+    });
+
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let initPanX = 0, initPanY = 0;
+
+    viewport.onpointerdown = (e) => {
+      if (e.target.closest('.task-card-todo, .todo-subtask-rect, .subtask-remove, .orbit-control-btn')) return;
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      initPanX = this.orbitPanX;
+      initPanY = this.orbitPanY;
+      viewport.style.cursor = 'grabbing';
+      try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
+    };
+
+    viewport.onpointermove = (e) => {
+      if (!isDragging) return;
+      this.orbitPanX = initPanX + (e.clientX - startX);
+      this.orbitPanY = initPanY + (e.clientY - startY);
+      this.applyOrbitTransform();
+    };
+
+    const stopPan = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      viewport.style.cursor = 'grab';
+      try { viewport.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+
+    viewport.onpointerup = stopPan;
+    viewport.onpointercancel = stopPan;
+  }
+
+  static applyOrbitTransform() {
+    const container = document.getElementById('todoOrbitCanvasContainer');
+    if (container) {
+      container.style.transform = `translate3d(${this.orbitPanX.toFixed(1)}px, ${this.orbitPanY.toFixed(1)}px, 0px) scale(${this.orbitScale.toFixed(3)})`;
+    }
+    const invScale = (1 / (this.orbitScale || 1)).toFixed(3);
+    document.querySelectorAll('.todo-note-card').forEach(n => {
+      n.style.transform = `scale(${invScale})`;
+      n.style.transformOrigin = 'center center';
+    });
   }
 
   static getRingInfo(index, totalCount) {
@@ -10064,8 +10623,13 @@ class UIManager {
       if (!card || !layer.contains(card) || card.classList.contains('dead')) return;
 
       const enemyId = card.dataset.enemyId;
-      // Replace click-to-attack: show mutator popup for clicked enemy
-      try { this.showMutatorPopup(enemyId); } catch (e) { console.warn('Failed to show mutator popup', e); }
+      const state = getGameState();
+      if (state && state.combatState) {
+        state.combatState.currentTarget = enemyId;
+      }
+
+      document.querySelectorAll('.enemy-card').forEach(c => c.classList.remove('targeted-attack'));
+      card.classList.add('targeted-attack');
     });
   }
 
@@ -10140,6 +10704,17 @@ class UIManager {
     return '☠️';
   }
 
+  static getWeaponIconHtml(weaponName, fallbackIcon = '⚔️') {
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    const imgPath = state?.config?.weaponImages?.[weaponName] || DEFAULT_GAME_CONFIG?.weaponImages?.[weaponName];
+    if (imgPath) {
+      return `<img src="${imgPath}" alt="${weaponName}" class="weapon-img-icon" style="width: 1em; height: 1em; vertical-align: middle; object-fit: contain;" />`;
+    }
+    const weaponCfg = state?.config?.weapons?.[weaponName];
+    const icon = weaponCfg?.icon || state?.config?.shopItemIcons?.[weaponName] || fallbackIcon;
+    return icon;
+  }
+
   static updateWeaponIcons() {
     const strip = document.getElementById('weaponStrip');
     if (!strip) return;
@@ -10152,8 +10727,7 @@ class UIManager {
       if (!weaponName) {
         return `<div class="weapon-chip-wrap"><button class="weapon-chip empty" disabled>—</button></div>`;
       }
-      const weaponCfg = state.config?.weapons?.[weaponName];
-      const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weaponName] || '⚔️';
+      const weaponIcon = UIManager.getWeaponIconHtml(weaponName);
       const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} <span class="weapon-elem-tag">${weaponElement}</span>` : `${weaponIcon} ${weaponName}`;
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
@@ -10325,10 +10899,13 @@ class UIManager {
     if (attackBtn) {
       const weaponCfg = weapon ? state.config?.weapons?.[weapon.name] : null;
       const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weapon?.name] || '⚔️';
-      const firstChild = attackBtn.firstChild;
-      if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-        firstChild.nodeValue = weaponIcon;
+      let iconEl = document.getElementById('attackIcon');
+      if (!iconEl) {
+        iconEl = document.createElement('span');
+        iconEl.id = 'attackIcon';
+        attackBtn.insertBefore(iconEl, attackBtn.firstChild);
       }
+      iconEl.innerHTML = weaponIcon;
     }
   }
 

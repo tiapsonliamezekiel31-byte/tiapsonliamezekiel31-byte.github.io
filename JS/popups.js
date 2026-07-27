@@ -4502,9 +4502,11 @@ class PopupsManager {
           const wPrice = (typeof ShopManager !== 'undefined' && typeof ShopManager.getWeaponPrice === 'function') ? ShopManager.getWeaponPrice(name) : null;
           const priceStr = wPrice !== null ? `${wPrice}💰` : (data.price ? `${data.price}💎` : 'Free');
 
+          const iconHtml = (typeof UIManager !== 'undefined' && typeof UIManager.getWeaponIconHtml === 'function') ? UIManager.getWeaponIconHtml(name) : (data.icon || '⚔️');
+
           html += `
             <div class="compendium-card weapon-card">
-              <h3>${name}</h3>
+              <h3><span class="compendium-card-icon">${iconHtml}</span> ${name}</h3>
               <div class="weapon-type-badge">${data.type}</div>
               <div class="compendium-card-stats">
                 <span>AP Cost: <strong>${data.baseApCost}</strong></span>

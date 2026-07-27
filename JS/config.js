@@ -684,6 +684,23 @@ const DEFAULT_GAME_CONFIG = {
     'Echo Bow': '🏹',
     Aegis: '🛡️'
   },
+  weaponImages: {
+    'Rusty Sword': 'assets/weapons/Untitled_Artwork-1.png',
+    'Great Hammer': 'assets/weapons/Untitled_Artwork-2.png',
+    'Dagger': 'assets/weapons/Untitled_Artwork-3.png',
+    'Bomb': 'assets/weapons/Untitled_Artwork-4.png',
+    'Buckler': 'assets/weapons/Untitled_Artwork-5.png',
+    'Grimoire': 'assets/weapons/Untitled_Artwork-6.png',
+    'Vampire Dagger': 'assets/weapons/Untitled_Artwork-7.png',
+    'Bazooka': 'assets/weapons/Untitled_Artwork-8.png',
+    'Uzi': 'assets/weapons/Untitled_Artwork-9.png',
+    'Thunder Hammer': 'assets/weapons/Untitled_Artwork-10.png',
+    'Lazer': 'assets/weapons/Untitled_Artwork-11.png',
+    'Vine Spell': 'assets/weapons/Untitled_Artwork-12.png',
+    'Death Spell': 'assets/weapons/Untitled_Artwork-13.png',
+    'Echo Bow': 'assets/weapons/Untitled_Artwork-14.png',
+    'Aegis': 'assets/weapons/Untitled_Artwork-15.png'
+  },
   
   // ============================================================
   // SPECIAL EVENTS & TALISMANS
