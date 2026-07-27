@@ -2663,6 +2663,7 @@ class PopupsManager {
     const clampedX = Math.max(halfWidth + 16, Math.min(winWidth - halfWidth - 16, xPx));
     const clampedY = Math.max(halfHeight + 16, Math.min(winHeight - halfHeight - 16, yPx));
 
+    const popup = document.createElement('div');
     popup.className = 'add-todo-wizard floating-wizard fast-todo-popup';
     popup.style.position = 'fixed';
     popup.style.left = clampedX + 'px';
@@ -4434,7 +4435,10 @@ class PopupsManager {
 
           html += `
             <div class="compendium-card weapon-card">
-              <h3>${name}</h3>
+              <div class="compendium-card-header">
+                <span class="compendium-card-icon">${data.icon || '⚔️'}</span>
+                <h3>${name}</h3>
+              </div>
               <div class="weapon-type-badge">${data.type}</div>
               <div class="compendium-card-stats">
                 <span>AP Cost: <strong>${data.baseApCost}</strong></span>
@@ -5261,5 +5265,10 @@ class PopupsManager {
       });
     });
   }
+}
+
+if (typeof window !== 'undefined') {
+  window.PopupsManager = PopupsManager;
+  window.PopupManager = PopupsManager;
 }
 

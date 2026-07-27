@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nemesis-ultimate-roguelike-20260727-1649';
+const CACHE_NAME = 'nemesis-ultimate-roguelike-20260727-2103';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -21,8 +21,8 @@ const ASSETS_TO_CACHE = [
   './JS/multiplayer.js',
   './JS/tycoon_worker_code.js',
   './JS/tycoon.js',
-  './trees.png',
-  './cropsstylesheet.png'
+  './assets/textures/trees.png',
+  './assets/textures/cropsstylesheet.png'
 ];
 
 // Install: cache all core assets

@@ -62,7 +62,7 @@
       this.ctx = null;
       this.worker = null;
       this.cropsImage = new Image();
-      this.cropsImage.src = 'cropsstylesheet.png';
+      this.cropsImage.src = 'assets/textures/cropsstylesheet.png';
       this.farmerImageCache = {};
       
       // Camera state
@@ -1476,7 +1476,7 @@
         if (item.type === TILE_TYPES.PRODUCER) {
           const row = Math.floor((item.subType - 1) / 3);
           const col = (item.subType - 1) % 3;
-          displayHtml = `<div class="tycoon-shop-item-sprite" style="width: 36px; height: 36px; background-image: url('cropsstylesheet.png'); background-size: 108px 216px; background-position: -${col * 36}px -${row * 36}px; margin-bottom: 4px; display: inline-block;"></div>`;
+          displayHtml = `<div class="tycoon-shop-item-sprite" style="width: 36px; height: 36px; background-image: url('assets/textures/cropsstylesheet.png'); background-size: 108px 216px; background-position: -${col * 36}px -${row * 36}px; margin-bottom: 4px; display: inline-block;"></div>`;
         }
         
         card.innerHTML = `

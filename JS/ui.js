@@ -1630,7 +1630,7 @@ class UIManager {
     const ring = document.querySelector('.action-ring');
     if (!ring) return;
     ring.innerHTML = `
-      <button id="attackBtn" class="btn-action-circle">⚔️<div class="cost-text" id="attackCostText"></div></button>
+      <button id="attackBtn" class="btn-action-circle"><span id="attackIcon">⚔️</span><div class="cost-text" id="attackCostText"></div></button>
       <button id="skillBtn" class="btn-action-circle">✨</button>
       <button id="dodgeBtn" class="btn-action-circle dodge-button">🛡️<div class="cost-text" id="dodgeCostText"></div></button>
     `;
@@ -6026,7 +6026,17 @@ class UIManager {
       if (target) return target;
     }
 
-    return this.getSpinnerTargetEnemy();
+    const spinnerTarget = this.getSpinnerTargetEnemy();
+    if (spinnerTarget) return spinnerTarget;
+
+    const state = getGameState();
+    const savedId = state.combatState?.currentTarget;
+    if (savedId) {
+      const saved = StageManager.getAllEnemies().find(e => String(e.id) === String(savedId) && !e.isDead);
+      if (saved) return saved;
+    }
+
+    return null;
   }
 
   static async handleAttackClick(targetEnemyId = null) {
@@ -6122,6 +6132,9 @@ class UIManager {
           console.error('[UI] attack failed', attackError);
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack failed', { color: '#ff6666' });
           try { state.resetCombo(); } catch (e) { }
+          state.combatState.attackInProgress = false;
+          this.finishAttackSpinner();
+          settleQueue();
           return;
         }
 
@@ -6140,6 +6153,9 @@ class UIManager {
             ScreenEffects.shake(2, 80);
             try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           }
+          state.combatState.attackInProgress = false;
+          this.finishAttackSpinner();
+          settleQueue();
           return;
         }
 
@@ -6769,32 +6785,23 @@ class UIManager {
       });
     };
 
-    const getTargetEnemyByProximity = (pointerX, pointerY) => {
+    const getTargetEnemyByProximity = (clientX, clientY) => {
       const state = getGameState();
       const enemies = (state.stageState.enemies || []).filter(e => !e.isDead);
       if (enemies.length === 0) return null;
-
-      const rect = circleRect || UIManager.getCircleRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const radius = Math.min(rect.width, rect.height) / 2;
 
       let bestEnemy = null;
       let minDistanceSq = Infinity;
 
       enemies.forEach((enemy) => {
-        const index = state.stageState.enemies.indexOf(enemy);
-        if (index === -1) return;
+        const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
 
-        const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(index, state.stageState.enemies.length);
-        const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
-
-        const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
-        const cardX = centerX + Math.cos(angle) * currentRadius;
-        const cardY = centerY + Math.sin(angle) * currentRadius;
-
-        const dx = pointerX - cardX;
-        const dy = pointerY - cardY;
+        const dx = clientX - cardCenterX;
+        const dy = clientY - cardCenterY;
         const distSq = dx * dx + dy * dy;
 
         if (distSq < minDistanceSq) {
@@ -6919,7 +6926,7 @@ class UIManager {
 
         line.className.baseVal = dragType;
 
-        const targetedEnemy = getTargetEnemyByProximity(pointerX, pointerY);
+        const targetedEnemy = getTargetEnemyByProximity(event.clientX, event.clientY);
         clearHighlights();
 
         if (targetedEnemy) {
@@ -6954,8 +6961,10 @@ class UIManager {
       clearHighlights();
 
       if (hasDraggedPastDeadzone) {
-        if (currentTargetEnemyId) {
-          const enemy = StageManager.getAllEnemies().find(e => String(e.id) === String(currentTargetEnemyId) && !e.isDead);
+        const dragTargetEnemy = getTargetEnemyByProximity(event.clientX, event.clientY);
+        const finalTargetId = currentTargetEnemyId || (dragTargetEnemy ? dragTargetEnemy.id : null);
+        if (finalTargetId) {
+          const enemy = StageManager.getAllEnemies().find(e => String(e.id) === String(finalTargetId) && !e.isDead);
           if (enemy) {
             if (dragType === 'attack') {
               UIManager.handleAttackClick(enemy.id);
@@ -7059,27 +7068,16 @@ class UIManager {
           FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
         } else {
           if (dragType === 'attack') {
-            let target = aliveEnemies[0];
-            let lowestHpPct = target.hp / target.maxHp;
-            aliveEnemies.forEach(e => {
-              const pct = e.hp / e.maxHp;
-              if (pct < lowestHpPct) {
-                lowestHpPct = pct;
-                target = e;
-              }
-            });
+            const savedId = state.combatState?.currentTarget;
+            let target = savedId ? aliveEnemies.find(e => String(e.id) === String(savedId)) : null;
+            if (!target) {
+              target = aliveEnemies[0];
+            }
             UIManager.handleAttackClick(target.id);
           } else if (dragType === 'skill') {
             if (isTargetingSkill) {
-              let target = aliveEnemies[0];
-              let lowestHpPct = target.hp / target.maxHp;
-              aliveEnemies.forEach(e => {
-                const pct = e.hp / e.maxHp;
-                if (pct < lowestHpPct) {
-                  lowestHpPct = pct;
-                  target = e;
-                }
-              });
+              const savedId = state.combatState?.currentTarget;
+              let target = savedId ? aliveEnemies.find(e => String(e.id) === String(savedId)) : aliveEnemies[0];
               UIManager.handleSkillClick(target.id);
             } else {
               UIManager.handleSkillClick();
@@ -10625,8 +10623,13 @@ class UIManager {
       if (!card || !layer.contains(card) || card.classList.contains('dead')) return;
 
       const enemyId = card.dataset.enemyId;
-      // Replace click-to-attack: show mutator popup for clicked enemy
-      try { this.showMutatorPopup(enemyId); } catch (e) { console.warn('Failed to show mutator popup', e); }
+      const state = getGameState();
+      if (state && state.combatState) {
+        state.combatState.currentTarget = enemyId;
+      }
+
+      document.querySelectorAll('.enemy-card').forEach(c => c.classList.remove('targeted-attack'));
+      card.classList.add('targeted-attack');
     });
   }
 
@@ -10713,9 +10716,7 @@ class UIManager {
       if (!weaponName) {
         return `<div class="weapon-chip-wrap"><button class="weapon-chip empty" disabled>—</button></div>`;
       }
-      const weaponCfg = state.config?.weapons?.[weaponName];
-      const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weaponName] || '⚔️';
-      const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} <span class="weapon-elem-tag">${weaponElement}</span>` : `${weaponIcon} ${weaponName}`;
+      const weaponLabel = weaponElement ? `${weaponName} <span class="weapon-elem-tag">${weaponElement}</span>` : `${weaponName}`;
 
       return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
     }).join('');
@@ -10886,10 +10887,13 @@ class UIManager {
     if (attackBtn) {
       const weaponCfg = weapon ? state.config?.weapons?.[weapon.name] : null;
       const weaponIcon = weaponCfg?.icon || state.config?.shopItemIcons?.[weapon?.name] || '⚔️';
-      const firstChild = attackBtn.firstChild;
-      if (firstChild && firstChild.nodeType === Node.TEXT_NODE) {
-        firstChild.nodeValue = weaponIcon;
+      let iconEl = document.getElementById('attackIcon');
+      if (!iconEl) {
+        iconEl = document.createElement('span');
+        iconEl.id = 'attackIcon';
+        attackBtn.insertBefore(iconEl, attackBtn.firstChild);
       }
+      iconEl.innerHTML = weaponIcon;
     }
   }
 

@@ -433,7 +433,7 @@ const DEFAULT_GAME_CONFIG = {
     // BASIC WEAPONS (6)
     'Rusty Sword': {
       type: 'Standard',
-      icon: '🗡️',
+      icon: '<img src="assets/weapons/Untitled_Artwork-1.png" class="weapon-icon-img" alt="Rusty Sword" />',
       baseApCost: 15,
       damageMultiplier: 1.0,
       critChance: 0.05,
@@ -443,7 +443,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Great Hammer': {
       type: 'Heavy',
-      icon: '🔨',
+      icon: '<img src="assets/weapons/Untitled_Artwork-2.png" class="weapon-icon-img" alt="Great Hammer" />',
       baseApCost: 28,
       damageMultiplier: 1.8,
       critChance: 0.05,
@@ -453,7 +453,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Dagger': {
       type: 'Light',
-      icon: '🗡️',
+      icon: '<img src="assets/weapons/Untitled_Artwork-3.png" class="weapon-icon-img" alt="Dagger" />',
       baseApCost: 11,
       damageMultiplier: 0.6,
       critChance: 0.5,
@@ -463,7 +463,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bomb': {
       type: 'AoE',
-      icon: '💣',
+      icon: '<img src="assets/weapons/Untitled_Artwork-4.png" class="weapon-icon-img" alt="Bomb" />',
       baseApCost: 28,
       damageMultiplier: 0.2,
       critChance: 0.08,
@@ -473,7 +473,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Buckler': {
       type: 'Shield',
-      icon: '🛡️',
+      icon: '<img src="assets/weapons/Untitled_Artwork-5.png" class="weapon-icon-img" alt="Buckler" />',
       baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
@@ -485,7 +485,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Grimoire': {
       type: 'Special',
-      icon: '📖',
+      icon: '<img src="assets/weapons/Untitled_Artwork-6.png" class="weapon-icon-img" alt="Grimoire" />',
       baseApCost: 20,
       damageMultiplier: 1.1,
       critChance: 0.1,
@@ -494,10 +494,10 @@ const DEFAULT_GAME_CONFIG = {
       special: 'Gain 20 mana when you kill an enemy'
     },
     
-    // EXPANDED WEAPONS (10 more)
+    // EXPANDED WEAPONS
     'Vampire Dagger': {
       type: 'Light/Leg',
-      icon: '🧛',
+      icon: '<img src="assets/weapons/Untitled_Artwork-7.png" class="weapon-icon-img" alt="Vampire Dagger" />',
       baseApCost: 19,
       damageMultiplier: 0.7,
       critChance: 0.28,
@@ -507,7 +507,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Bazooka': {
       type: 'Heavy/AoE',
-      icon: '🚀',
+      icon: '<img src="assets/weapons/Untitled_Artwork-8.png" class="weapon-icon-img" alt="Bazooka" />',
       baseApCost: 33,
       damageMultiplier: 2.2,
       critChance: 0.0,
@@ -517,7 +517,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Uzi': {
       type: 'Light',
-      icon: '🔫',
+      icon: '<img src="assets/weapons/Untitled_Artwork-9.png" class="weapon-icon-img" alt="Uzi" />',
       baseApCost: 6,
       damageMultiplier: 2.0,
       critChance: 0.08,
@@ -530,8 +530,8 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Thunder Hammer': {
       type: 'Heavy/Leg',
-      icon: '⚡',
-      baseApCost: 50,
+      icon: '<img src="assets/weapons/Untitled_Artwork-10.png" class="weapon-icon-img" alt="Thunder Hammer" />',
+      baseApCost: 150,
       damageMultiplier: 1.5,
       critChance: 0.15,
       fireRate: 1,
@@ -540,7 +540,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Lazer': {
       type: 'Special',
-      icon: '🔴',
+      icon: '<img src="assets/weapons/Untitled_Artwork-11.png" class="weapon-icon-img" alt="Lazer" />',
       baseApCost: 25,
       damageMultiplier: 0.8,
       critChance: 0.2,
@@ -552,7 +552,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Vine Spell': {
       type: 'Special/AoE',
-      icon: '🌿',
+      icon: '<img src="assets/weapons/Untitled_Artwork-12.png" class="weapon-icon-img" alt="Vine Spell" />',
       baseApCost: 22,
       damageMultiplier: 0.5,
       critChance: 0.08,
@@ -564,7 +564,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Death Spell': {
       type: 'Legendary',
-      icon: '💀',
+      icon: '<img src="assets/weapons/Untitled_Artwork-13.png" class="weapon-icon-img" alt="Death Spell" />',
       baseApCost: 150,
       damageMultiplier: Infinity, // instakill
       critChance: 0,
@@ -572,19 +572,9 @@ const DEFAULT_GAME_CONFIG = {
       price: 8,
       special: 'Kills enemy at ≤40% HP instantly'
     },
-    'Heavy Hammer': {
-      type: 'Heavy',
-      icon: '🔨',
-      baseApCost: 28,
-      damageMultiplier: 2.2,
-      critChance: 0.15,
-      fireRate: 1,
-      price: 5,
-      special: 'removes the enemy and its adjacent enemy\'s mutations upon hit'
-    },
     'Echo Bow': {
       type: 'Light/Spec',
-      icon: '🏹',
+      icon: '<img src="assets/weapons/Untitled_Artwork-15.png" class="weapon-icon-img" alt="Echo Bow" />',
       baseApCost: 18,
       damageMultiplier: 1.0,
       critChance: 0.1,
@@ -594,7 +584,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Aegis': {
       type: 'Shield/Leg',
-      icon: '🛡️',
+      icon: '<img src="assets/weapons/Untitled_Artwork-14.png" class="weapon-icon-img" alt="Aegis" />',
       baseApCost: 25,
       damageMultiplier: 0.1,
       critChance: 0.05,
@@ -678,22 +668,21 @@ const DEFAULT_GAME_CONFIG = {
     Prayer: '🙏',
     Rift: '🕳️',
     Echo: '🔁',
-    'Rusty Sword': '🗡️',
-    'Great Hammer': '🔨',
-    Dagger: '🗡️',
-    Bomb: '💣',
-    Buckler: '🛡️',
-    Grimoire: '📖',
-    'Vampire Dagger': '🧛',
-    Bazooka: '🚀',
-    Uzi: '🔫',
-    'Thunder Hammer': '⚡',
-    Lazer: '🔴',
-    'Vine Spell': '🌿',
-    'Death Spell': '💀',
-    'Heavy Hammer': '🔨',
-    'Echo Bow': '🏹',
-    Aegis: '🛡️'
+    'Rusty Sword': '<img src="assets/weapons/Untitled_Artwork-1.png" class="weapon-icon-img" alt="Rusty Sword" />',
+    'Great Hammer': '<img src="assets/weapons/Untitled_Artwork-2.png" class="weapon-icon-img" alt="Great Hammer" />',
+    Dagger: '<img src="assets/weapons/Untitled_Artwork-3.png" class="weapon-icon-img" alt="Dagger" />',
+    Bomb: '<img src="assets/weapons/Untitled_Artwork-4.png" class="weapon-icon-img" alt="Bomb" />',
+    Buckler: '<img src="assets/weapons/Untitled_Artwork-5.png" class="weapon-icon-img" alt="Buckler" />',
+    Grimoire: '<img src="assets/weapons/Untitled_Artwork-6.png" class="weapon-icon-img" alt="Grimoire" />',
+    'Vampire Dagger': '<img src="assets/weapons/Untitled_Artwork-7.png" class="weapon-icon-img" alt="Vampire Dagger" />',
+    Bazooka: '<img src="assets/weapons/Untitled_Artwork-8.png" class="weapon-icon-img" alt="Bazooka" />',
+    Uzi: '<img src="assets/weapons/Untitled_Artwork-9.png" class="weapon-icon-img" alt="Uzi" />',
+    'Thunder Hammer': '<img src="assets/weapons/Untitled_Artwork-10.png" class="weapon-icon-img" alt="Thunder Hammer" />',
+    Lazer: '<img src="assets/weapons/Untitled_Artwork-11.png" class="weapon-icon-img" alt="Lazer" />',
+    'Vine Spell': '<img src="assets/weapons/Untitled_Artwork-12.png" class="weapon-icon-img" alt="Vine Spell" />',
+    'Death Spell': '<img src="assets/weapons/Untitled_Artwork-13.png" class="weapon-icon-img" alt="Death Spell" />',
+    'Echo Bow': '<img src="assets/weapons/Untitled_Artwork-15.png" class="weapon-icon-img" alt="Echo Bow" />',
+    Aegis: '<img src="assets/weapons/Untitled_Artwork-14.png" class="weapon-icon-img" alt="Aegis" />'
   },
   
   // ============================================================
