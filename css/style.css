@@ -1728,6 +1728,13 @@ body::before {
   -webkit-overflow-scrolling: touch;
 }
 
+#dailiesPanel {
+  background-image: url('../dailygalaxy.jpg'), url('dailygalaxy.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
 .left-tab.open .tab-header {
   position: sticky;
   top: 0;
@@ -8996,68 +9003,343 @@ button:hover,
    INLINE BULK ADD & WHITEBOARD STICKERS (GRID, ARROW, CALENDAR)
    ============================================================ */
 
-.bulk-add-inline-container {
+/* Movable & Resizable HUD Cards inside To-Do Space */
+.preset-hud-card {
+  position: absolute;
+  z-index: 99;
+  background: rgba(14, 18, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(14px);
+  user-select: none;
+  min-width: 130px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
-  background: rgba(16, 18, 26, 0.65);
-  border-bottom: 1px solid var(--planner-border);
-  padding: 8px 12px;
-  position: relative;
-  z-index: 98;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.bulk-toggle-header-btn {
+.preset-hud-card:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
+}
+
+.hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: grab;
+}
+
+.hud-header:active {
+  cursor: grabbing;
+}
+
+.hud-drag-handle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.hud-collapse-btn {
   background: transparent;
   border: none;
-  color: #fff0b8;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 8px;
-  text-align: left;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 10px;
+  font-weight: 800;
   cursor: pointer;
-  padding: 2px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  outline: none;
+  padding: 0 4px;
+  line-height: 1;
 }
 
-.bulk-toggle-header-btn:hover {
-  color: #ffffff;
+.hud-collapse-btn:hover {
+  color: #fff;
 }
 
-.bulk-add-inline-content {
+.hud-body {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
-  margin-top: 6px;
-  padding-bottom: 4px;
+  flex: 1;
 }
 
-#bulkAddInlineTextarea {
+.preset-hud-card.collapsed .hud-body,
+.preset-hud-card.collapsed .hud-resizer {
+  display: none;
+}
+
+.hud-resizer {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
+  border-right: 2px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  border-bottom-right-radius: 3px;
+}
+
+.preset-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   width: 100%;
+}
+
+.preset-group.preset-orbit-group {
+  align-items: center;
+  justify-content: center;
+}
+
+.preset-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Orbit Wheel Container & Nodes (192px Centered - 3x bigger) */
+.preset-orbit-container {
+  position: relative;
+  width: 192px;
+  height: 192px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.8);
+}
+
+.preset-orbit-center {
+  width: 72px;
   height: 72px;
-  min-height: 50px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  color: #f5f5f7;
+  border-radius: 50%;
+  background: rgba(10, 12, 18, 0.95);
+  border: 4.5px solid #4facfe;
+  color: #4facfe;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(79, 172, 254, 0.6);
+  transition: all 0.25s ease;
+  z-index: 2;
+  user-select: none;
+}
+
+.preset-orbit-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+}
+
+.preset-orbit-node {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(16, 20, 30, 0.95);
+  border: 2.5px solid var(--attr-color, #888);
+  color: var(--attr-color, #fff);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: 'Orbitron', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.preset-orbit-node:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 12px var(--attr-color, #fff);
+}
+
+.preset-orbit-node.active {
+  background: var(--attr-color, #4facfe);
+  color: #000;
+  box-shadow: 0 0 15px var(--attr-color, #4facfe);
+  transform: translate(-50%, -50%) scale(1.35);
+}
+
+/* Shape Silhouette Selector */
+.preset-shape-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 3px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.preset-shape-btn {
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  opacity: 0.45;
+  transition: all 0.2s ease;
+}
+
+.preset-shape-btn .shape-icon {
+  width: 11px;
+  height: 11px;
+  display: block;
+  background: #aaa;
+  transition: all 0.2s ease;
+}
+
+.preset-shape-btn.shape-easy .shape-icon {
+  border-radius: 50%;
+}
+
+.preset-shape-btn.shape-medium .shape-icon {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.preset-shape-btn.shape-hard .shape-icon {
+  border-radius: 1px;
+}
+
+.preset-shape-btn.shape-ultra .shape-icon {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+}
+
+.preset-shape-btn:hover {
+  opacity: 0.8;
+  transform: scale(1.15);
+}
+
+.preset-shape-btn.active {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+.preset-shape-btn.active.shape-easy .shape-icon { background: #4facfe; box-shadow: 0 0 8px #4facfe; }
+.preset-shape-btn.active.shape-medium .shape-icon { background: #ffd700; box-shadow: 0 0 8px #ffd700; }
+.preset-shape-btn.active.shape-hard .shape-icon { background: #ff7675; box-shadow: 0 0 8px #ff7675; }
+.preset-shape-btn.active.shape-ultra .shape-icon { background: #a29bfe; box-shadow: 0 0 8px #a29bfe; }
+
+/* Date Vertical Cells */
+.preset-date-vertical-cells {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.preset-date-chips-column {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.preset-chip {
   font-family: inherit;
   font-size: 8px;
-  line-height: 1.4;
-  padding: 6px;
-  box-sizing: border-box;
-  resize: vertical;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ccc;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.preset-chip:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.preset-chip.active {
+  background: rgba(79, 172, 254, 0.25);
+  border-color: #4facfe;
+  color: #4facfe;
+  box-shadow: 0 0 8px rgba(79, 172, 254, 0.4);
+}
+
+.preset-input {
+  font-family: inherit;
+  font-size: 9px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  color: #f5f5f7;
+  cursor: pointer;
   outline: none;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-#bulkAddInlineTextarea:focus {
-  border-color: var(--accent-gold);
+@media (max-width: 700px) {
+  .todo-preset-bar {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .preset-compartment {
+    padding: 6px 10px;
+    gap: 8px;
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
 }
 
-.bulk-add-inline-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.fast-todo-popup {
+  animation: fastTodoFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fastTodoFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
   gap: 8px;
 }
 
@@ -11475,4 +11757,327 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   font-size: 11px;
   position: relative;
   top: 1px;
+}
+
+/* =========================================================================
+   TODO ORBIT SECTION & ZOOM/PAN STYLES
+   ========================================================================= */
+#todosPanel.open {
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100dvh !important;
+}
+
+#todosPanel.open .tab-content.todo-board {
+  flex: 1 1 0% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  position: relative !important;
+  padding: 0 !important;
+}
+
+.todo-board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+  background: #030712;
+}
+
+.todo-board::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: url('../galaxy.jpg') center/cover no-repeat;
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 0;
+  animation: rotateGalaxy 180s linear infinite;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+@keyframes rotateGalaxy {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.todo-orbit-viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.todo-orbit-viewport:active {
+  cursor: grabbing;
+}
+
+.todo-orbit-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  gap: 6px;
+}
+
+.orbit-control-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
+}
+
+.orbit-control-btn:hover {
+  background: rgba(59, 130, 246, 0.6);
+  border-color: rgba(147, 197, 253, 0.6);
+  transform: scale(1.08);
+}
+
+.todo-orbit-canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.todo-orbit-svg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1000px;
+  height: 1000px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orbit-ring {
+  fill: none;
+  stroke-dasharray: 4 6;
+  stroke-width: 1.8px;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.95;
+  transition: stroke 0.3s ease, filter 0.3s ease;
+}
+
+.orbit-ring.ring-0 {
+  stroke: #ef4444;
+  filter: drop-shadow(0 0 6px #ef4444) drop-shadow(0 0 12px rgba(239, 68, 68, 0.7));
+}
+
+.orbit-ring.ring-1 {
+  stroke: #f59e0b;
+  filter: drop-shadow(0 0 6px #f59e0b) drop-shadow(0 0 12px rgba(245, 158, 11, 0.7));
+}
+
+.orbit-ring.ring-2 {
+  stroke: #3b82f6;
+  filter: drop-shadow(0 0 6px #3b82f6) drop-shadow(0 0 12px rgba(59, 130, 246, 0.7));
+}
+
+.orbit-ring.ring-3 {
+  stroke: #a855f7;
+  filter: drop-shadow(0 0 6px #a855f7) drop-shadow(0 0 12px rgba(168, 85, 247, 0.7));
+}
+
+.orbit-ring.ring-4 {
+  stroke: #94a3b8;
+  filter: drop-shadow(0 0 5px rgba(148, 163, 184, 0.6));
+}
+
+.orbit-ring-label {
+  font-family: 'Orbitron', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  fill: rgba(255, 255, 255, 0.4);
+}
+
+.ring-label-0 { fill: rgba(239, 68, 68, 0.7); }
+.ring-label-1 { fill: rgba(245, 158, 11, 0.7); }
+.ring-label-2 { fill: rgba(59, 130, 246, 0.7); }
+.ring-label-3 { fill: rgba(168, 85, 247, 0.7); }
+.ring-label-4 { fill: rgba(148, 163, 184, 0.5); }
+
+.todo-orbit-nodes-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.todo-orbit-node {
+  position: absolute;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(0.72);
+  transform-origin: center center;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, z-index 0.2s ease;
+  margin: 0 !important;
+  z-index: 10;
+}
+
+.todo-orbit-node:hover {
+  transform: translate(-50%, -50%) scale(0.85) !important;
+  z-index: 50 !important;
+  box-shadow: 0 0 25px var(--task-accent, rgba(255, 255, 255, 0.5));
+}
+
+.task-card-todo:focus,
+.todo-orbit-node:focus,
+.todo-orbit-node.selected {
+  outline: none !important;
+  border: none !important;
+  transform: translate(-50%, -50%) scale(0.88) !important;
+  z-index: 100 !important;
+  box-shadow: 0 0 25px var(--task-accent, rgba(255, 255, 255, 0.6)) !important;
+}
+
+/* Deadline badge stuck directly on TOP of shape */
+.todo-deadline-card-badge-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 2px 4px;
+  background: inherit;
+  border-radius: 6px 6px 0 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  color: var(--task-ink, #ffffff);
+  font-family: 'Orbitron', monospace;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  box-sizing: border-box;
+  margin-bottom: 0 !important;
+}
+
+.todo-days-num {
+  font-weight: 900;
+  color: inherit;
+}
+
+.todo-deadline-date {
+  opacity: 0.85;
+  font-size: 6.5px;
+  white-space: nowrap;
+}
+
+/* Subtasks stuck directly to BOTTOM of shape, half size, same background color */
+.todo-orbit-subtasks-stuck-bottom {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-top: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.todo-orbit-subtasks-stuck-bottom .todo-subtask-rect {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 1.5px 5px !important;
+  height: 15px !important;
+  min-height: 15px !important;
+  font-size: 7px !important;
+  line-height: 1 !important;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  background: inherit !important;
+  color: inherit !important;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.todo-orbit-subtasks-stuck-bottom .todo-subtask-rect:last-child {
+  border-bottom: none;
+}
+
+/* Subtasks MUST NOT disappear when completed, just be greyed out */
+.todo-orbit-subtasks-stuck-bottom .todo-subtask-rect.completed {
+  display: flex !important;
+  opacity: 0.45 !important;
+  filter: grayscale(0.8) !important;
+  text-decoration: line-through !important;
+}
+
+.todo-orbit-subtasks-stuck-bottom .subtask-title {
+  font-size: 7px !important;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-orbit-subtasks-stuck-bottom .subtask-remove {
+  font-size: 8px !important;
+  padding: 0 2px !important;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.todo-orbit-subtasks-stuck-bottom .subtask-remove:hover {
+  opacity: 1;
+  color: #ff4d4d;
+}
+
+/* Todo Joystick styling overrides */
+.nemesis-todo-joystick .nemesis-joystick-label.active-done {
+  color: #22c55e;
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.nemesis-todo-joystick .nemesis-joystick-label.active-del {
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+
+.nemesis-todo-joystick .nemesis-joystick-handle.state-done {
+  background: radial-gradient(circle, #4ade80, #22c55e);
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
+}
+
+.nemesis-todo-joystick .nemesis-joystick-handle.state-del {
+  background: radial-gradient(circle, #f87171, #ef4444);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), inset 0 2px 2px rgba(255,255,255,0.4);
 }
