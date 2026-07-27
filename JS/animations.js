@@ -4006,7 +4006,6 @@ class WeaponHitAnimation {
         case 'Lazer': this._beamPierce(card, opts); break;
         case 'Vine Spell': this._vineWrap(card, opts); break;
         case 'Death Spell': this._reaperArc(card, opts); break;
-        case 'Heavy Hammer': this._anvilDrop(card, opts); break;
         case 'Echo Bow': this._arrowTrail(card, opts); break;
         case 'Aegis': this._aegisWard(card, opts); break;
         default: break;

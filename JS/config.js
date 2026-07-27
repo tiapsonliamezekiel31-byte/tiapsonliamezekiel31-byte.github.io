@@ -571,17 +571,7 @@ const DEFAULT_GAME_CONFIG = {
       fireRate: 1,
       price: 8,
       special: 'Kills enemy at ≤40% HP instantly'
-    },
-    'Heavy Hammer': {
-      type: 'Heavy',
-      icon: '🔨',
-      baseApCost: 28,
-      damageMultiplier: 2.2,
-      critChance: 0.15,
-      fireRate: 1,
-      price: 5,
-      special: 'removes the enemy and its adjacent enemy\'s mutations upon hit'
-    },
+
     'Echo Bow': {
       type: 'Light/Spec',
       icon: '🏹',
@@ -691,7 +681,6 @@ const DEFAULT_GAME_CONFIG = {
     Lazer: '🔴',
     'Vine Spell': '🌿',
     'Death Spell': '💀',
-    'Heavy Hammer': '🔨',
     'Echo Bow': '🏹',
     Aegis: '🛡️'
   },
