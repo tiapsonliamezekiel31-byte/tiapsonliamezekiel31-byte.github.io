@@ -7430,10 +7430,8 @@ class UIManager {
       const progressText = daily.locked ? 'LOCKED' : `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
-      // Streak saturation: positive boosts colour, negative washes it out, capped at |streak|=20
-      let streakSat = 1;
-      if (streak > 0) streakSat = +(1 + (Math.min(streak, 20) / 20) * 2.0).toFixed(3);
-      if (streak < 0) streakSat = +(1 - (Math.min(Math.abs(streak), 20) / 20) * 0.9).toFixed(3);
+      // Streak saturation: 0 (completely desaturated) at streak 0, 1 (fully saturated) at streak 21
+      const streakSat = +(Math.max(0, Math.min(21, Number(streak) || 0)) / 21).toFixed(3);
       const particleCount = (streak > 0 && !focusModeActive) ? Math.min(streak, 10) : 0;
 
       // Check for surplus multiplier indicator

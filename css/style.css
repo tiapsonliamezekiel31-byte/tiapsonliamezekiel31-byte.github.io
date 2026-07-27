@@ -1729,7 +1729,7 @@ body::before {
 }
 
 #dailiesPanel {
-  background-image: url('../dailygalaxy.jpg'), url('dailygalaxy.jpg');
+  background-image: url('../dailytx.jpg'), url('dailytx.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
