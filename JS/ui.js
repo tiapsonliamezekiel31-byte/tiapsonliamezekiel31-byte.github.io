@@ -7429,8 +7429,17 @@ class UIManager {
       const progressText = daily.locked ? 'LOCKED' : `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
-      // Streak saturation: 0 (completely desaturated) at streak 0, 1 (fully saturated) at streak 21
-      const streakSat = +(Math.max(0, Math.min(21, Number(streak) || 0)) / 21).toFixed(3);
+      // Streak saturation curve: -7 is 0 (fully desaturated), ramps up momentum around 5-7, max (1.0) at 21
+      const sVal = Number(streak) || 0;
+      let streakSat = 0;
+      if (sVal <= -7) {
+        streakSat = 0;
+      } else if (sVal >= 21) {
+        streakSat = 1;
+      } else {
+        const norm = (sVal + 7) / 28; // 0 at -7, 1 at 21
+        streakSat = +Math.pow(norm, 2.2).toFixed(3);
+      }
       const particleCount = (streak > 0 && !focusModeActive) ? Math.min(streak, 10) : 0;
 
       // Check for surplus multiplier indicator
@@ -10135,7 +10144,7 @@ class UIManager {
       activeEnemyIds.add(enemyId);
 
       const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
-      const currentRadius = ringLevel === 0 ? (radius + 30) : (radius - 45 - (ringLevel - 1) * 70);
+      const currentRadius = ringLevel === 0 ? (radius + 15) : (radius - 35 - (ringLevel - 1) * 60);
 
       const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
       const x = centerX + Math.cos(angle) * currentRadius;

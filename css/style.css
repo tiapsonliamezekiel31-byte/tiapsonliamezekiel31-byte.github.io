@@ -948,8 +948,8 @@ body::before {
 
 .enemy-circle-container {
   position: relative;
-  width: 520px;
-  height: 520px;
+  width: 400px;
+  height: 400px;
   border: 3px solid rgba(255, 215, 106, 0.65);
   border-radius: 50%;
   background:
@@ -12228,8 +12228,8 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 /* Weapon Image Icon Styling */
 .weapon-img-icon,
 .weapon-icon-img {
-  width: 3em;
-  height: 3em;
+  width: 6em;
+  height: 6em;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -12242,32 +12242,32 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 
 .weapon-chip .weapon-img-icon,
 .weapon-chip .weapon-icon-img {
-  width: 2.4em;
-  height: 2.4em;
+  width: 4.8em;
+  height: 4.8em;
 }
 
 .weapon-showcase-icon .weapon-img-icon,
 .weapon-showcase-icon .weapon-icon-img {
-  width: 72px;
-  height: 72px;
+  width: 144px;
+  height: 144px;
 }
 
 .shop-item-icon .weapon-img-icon,
 .shop-item-icon .weapon-icon-img {
-  width: 54px;
-  height: 54px;
+  width: 108px;
+  height: 108px;
 }
 
 .compendium-card-icon .weapon-img-icon,
 .compendium-card-icon .weapon-icon-img {
-  width: 48px;
-  height: 48px;
+  width: 96px;
+  height: 96px;
 }
 
 #attackBtn .weapon-img-icon,
 #attackBtn .weapon-icon-img {
-  width: 68px !important;
-  height: 68px !important;
+  width: 110px !important;
+  height: 110px !important;
   object-fit: contain;
   margin-top: -6px;
   pointer-events: none !important;

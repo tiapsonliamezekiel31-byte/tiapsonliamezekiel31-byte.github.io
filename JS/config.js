@@ -698,8 +698,8 @@ const DEFAULT_GAME_CONFIG = {
     'Lazer': 'assets/weapons/Untitled_Artwork-11.png',
     'Vine Spell': 'assets/weapons/Untitled_Artwork-12.png',
     'Death Spell': 'assets/weapons/Untitled_Artwork-13.png',
-    'Echo Bow': 'assets/weapons/Untitled_Artwork-14.png',
-    'Aegis': 'assets/weapons/Untitled_Artwork-15.png'
+    'Echo Bow': 'assets/weapons/Untitled_Artwork-15.png',
+    'Aegis': 'assets/weapons/Untitled_Artwork-14.png'
   },
   
   // ============================================================
