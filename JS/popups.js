@@ -2656,11 +2656,17 @@ class PopupsManager {
     const existing = document.querySelectorAll('.floating-wizard');
     existing.forEach(el => el.remove());
 
-    const popup = document.createElement('div');
+    const winWidth = window.innerWidth || document.documentElement.clientWidth || 1000;
+    const winHeight = window.innerHeight || document.documentElement.clientHeight || 800;
+    const halfWidth = 160;
+    const halfHeight = 110;
+    const clampedX = Math.max(halfWidth + 16, Math.min(winWidth - halfWidth - 16, xPx));
+    const clampedY = Math.max(halfHeight + 16, Math.min(winHeight - halfHeight - 16, yPx));
+
     popup.className = 'add-todo-wizard floating-wizard fast-todo-popup';
-    popup.style.position = 'absolute';
-    popup.style.left = xPx + 'px';
-    popup.style.top = yPx + 'px';
+    popup.style.position = 'fixed';
+    popup.style.left = clampedX + 'px';
+    popup.style.top = clampedY + 'px';
     popup.style.transform = 'translate(-50%, -50%)';
     popup.style.zIndex = '9999';
 
@@ -3214,22 +3220,25 @@ class PopupsManager {
         const ts = Number(btn.dataset.ts);
         UIManager.quickDayDeadline = ts;
         this.closeAllPopups();
-        if (typeof onConfirm === 'function') onConfirm();
+        if (typeof onConfirm === 'function') onConfirm(ts);
       });
     });
 
     const customInput = popup.querySelector('#quickDayCustomInput');
     popup.querySelector('#quickDayCustomBtn').addEventListener('click', () => {
       if (!customInput.value) return;
-      UIManager.quickDayDeadline = new Date(customInput.value).getTime();
+      const target = new Date(customInput.value);
+      target.setHours(23, 59, 0, 0);
+      const ts = target.getTime();
+      UIManager.quickDayDeadline = ts;
       this.closeAllPopups();
-      if (typeof onConfirm === 'function') onConfirm();
+      if (typeof onConfirm === 'function') onConfirm(ts);
     });
 
     popup.querySelector('#quickDayClearPopupBtn').addEventListener('click', () => {
       UIManager.quickDayDeadline = null;
       this.closeAllPopups();
-      if (typeof onConfirm === 'function') onConfirm();
+      if (typeof onConfirm === 'function') onConfirm(null);
     });
 
     overlay.appendChild(popup);

@@ -98,6 +98,7 @@ const USER_DATA_STORAGE_KEYS = [
   'nemesis_planner_data', 
   'nemesis_shop_data',
   'nemesis_hud_pos',
+  'nemesis_todo_hud_states',
   'nemesis_taunt_hud_pos',
   'nemesis_challenge_hud_pos',
   'nemesis_satchel_pos',

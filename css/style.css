@@ -1005,7 +1005,12 @@ body::before {
   border-left-color: var(--enemy-weak-color);
   border-right-color: var(--enemy-resist-color);
   border-radius: 0 !important;
-  background: linear-gradient(180deg, rgba(24, 18, 50, 0.98), rgba(12, 10, 26, 0.97));
+  background-image: url('../mainbuttons.jpg'), url('./mainbuttons.jpg'), url('mainbuttons.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  background-blend-mode: normal !important;
   padding: 18px 6px 16px 6px;
   /* extra bottom room keeps the HP bar fully visible */
   font-size: 8.5px;
@@ -1013,7 +1018,7 @@ body::before {
   box-shadow: 0 0 14px var(--enemy-border-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transform: translate(-50%, -50%);
   cursor: pointer;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, opacity 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
   overflow: visible;
 }
 
@@ -1038,7 +1043,12 @@ body::before {
 }
 
 .enemy-card.targeted {
-  background: linear-gradient(180deg, rgba(24, 50, 20, 0.96), rgba(10, 28, 10, 0.96));
+  background-image: url('../mainbuttons.jpg'), url('./mainbuttons.jpg'), url('mainbuttons.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(24, 80, 20, 0.35) !important;
+  background-blend-mode: normal !important;
   box-shadow: 0 0 20px rgba(68, 255, 68, 0.72);
 }
 
@@ -1127,10 +1137,6 @@ body::before {
 
 /* Brute archetype background saturation scaling */
 .enemy-card.archetype-brute {
-  background: linear-gradient(180deg, 
-    rgba(calc(55 + 20 * var(--brute-combo, 0)), 18, calc(30 - 4 * var(--brute-combo, 0)), 0.98), 
-    rgba(calc(35 + 15 * var(--brute-combo, 0)), 10, calc(15 - 2 * var(--brute-combo, 0)), 0.97)
-  ) !important;
   border-top-color: rgba(239, 68, 68, 0.9) !important;
   border-bottom-color: rgba(239, 68, 68, 0.9) !important;
   box-shadow: 0 0 calc(12px + 4px * var(--brute-combo, 0)) rgba(239, 68, 68, calc(0.35 + 0.15 * var(--brute-combo, 0))),
@@ -1606,6 +1612,16 @@ body::before {
 /* Hide Spinner elements */
 .spinner-container {
   display: none !important;
+}
+
+/* Enemy Card Background Texture */
+.enemy-card {
+  background-image: url('../mainbuttons.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.85) !important;
+  background-blend-mode: overlay !important;
 }
 
 /* Glowing target highlights for drag targeting */
@@ -8819,11 +8835,15 @@ button:hover,
   resize: none !important;
   overflow: visible !important;
   touch-action: none;
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: none !important;
-  box-shadow: none !important;
+  background-image: url('../Hudtexture.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.92) !important;
+  background-blend-mode: overlay !important;
+  border: 6px solid transparent !important;
+  border-image: url('../goldleafborders.jpg') 30 stretch !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -8831,6 +8851,7 @@ button:hover,
   font-family: 'Orbitron', monospace;
   box-sizing: border-box;
   user-select: none;
+  padding: 4px !important;
   transition: opacity 0.2s ease;
 }
 
@@ -8845,14 +8866,17 @@ button:hover,
 .stats-hud-header {
   height: auto;
   min-height: 0;
-  background: linear-gradient(180deg, rgba(20, 13, 38, 0.92), rgba(10, 6, 20, 0.95)) !important;
-  border: 1px solid rgba(232, 184, 74, 0.5) !important;
-  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(232, 184, 74, 0.4) !important;
+  border-radius: 4px !important;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 3px 8px !important;
-  margin-bottom: 5px !important;
+  padding: 4px 8px !important;
+  margin-bottom: 4px !important;
+  width: 100%;
+  box-sizing: border-box;
   cursor: grab;
   font-size: 8px;
   font-weight: bold;
@@ -9117,33 +9141,33 @@ button:hover,
 /* Orbit Wheel Container & Nodes (192px Centered - 3x bigger) */
 .preset-orbit-container {
   position: relative;
-  width: 192px;
-  height: 192px;
+  width: 125px;
+  height: 125px;
   margin: 0 auto;
   border-radius: 50%;
-  border: 2px dashed rgba(255, 255, 255, 0.35);
+  border: 1.5px dashed rgba(255, 255, 255, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.55);
   flex-shrink: 0;
-  box-shadow: 0 0 16px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8);
 }
 
 .preset-orbit-center {
-  width: 72px;
-  height: 72px;
+  width: 47px;
+  height: 47px;
   border-radius: 50%;
   background: rgba(10, 12, 18, 0.95);
-  border: 4.5px solid #4facfe;
+  border: 3px solid #4facfe;
   color: #4facfe;
   font-family: 'Orbitron', sans-serif;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 16px rgba(79, 172, 254, 0.6);
+  box-shadow: 0 0 12px rgba(79, 172, 254, 0.6);
   transition: all 0.25s ease;
   z-index: 2;
   user-select: none;
@@ -9160,13 +9184,13 @@ button:hover,
 
 .preset-orbit-node {
   position: absolute;
-  width: 42px;
-  height: 42px;
+  width: 27px;
+  height: 27px;
   border-radius: 50%;
   background: rgba(16, 20, 30, 0.95);
-  border: 2.5px solid var(--attr-color, #888);
+  border: 2px solid var(--attr-color, #888);
   color: var(--attr-color, #fff);
-  font-size: 12px;
+  font-size: 8px;
   font-weight: 800;
   font-family: 'Orbitron', sans-serif;
   display: flex;
@@ -9339,8 +9363,6 @@ button:hover,
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
-}
-  gap: 8px;
 }
 
 .inline-control-selects {
@@ -11172,33 +11194,52 @@ body:has(.popup-overlay) .draggable-challenge-hud {
    COHESIVE GLASSMORPHIC HUD PANELS SYSTEM
    ============================================================ */
 .draggable-hud,
+.draggable-taunt-hud,
 .draggable-challenge-hud,
 .draggable-stats-hud,
 .run-completion-panel,
 .weekly-heatmap-panel,
 .event-banner-panel,
-.satchel-panel {
-  background: linear-gradient(180deg, rgba(20, 13, 38, 0.8), rgba(10, 6, 20, 0.9)) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(232, 184, 74, 0.45) !important;
-  border-radius: 10px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+.satchel-panel,
+.preset-hud-card,
+.weapon-panel,
+.draggable-run-graph,
+.unfolded-central-square,
+.unfolded-flap,
+.stats-hud-header {
+  background-image: url('../Hudtexture.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.88) !important;
+  background-blend-mode: overlay !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 3px solid transparent !important;
+  border-image: url('../goldleafborders.jpg') 16 stretch !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.6) !important;
   font-family: 'Orbitron', monospace !important;
   color: #f3f4f6 !important;
   box-sizing: border-box !important;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease !important;
+  transition: box-shadow 0.15s ease !important;
 }
 
 .draggable-hud.is-dragging,
+.draggable-taunt-hud.is-dragging,
 .draggable-challenge-hud.is-dragging,
 .draggable-stats-hud.is-dragging,
 .run-completion-panel.is-dragging,
 .weekly-heatmap-panel.is-dragging,
 .event-banner-panel.is-dragging,
-.satchel-panel.is-dragging {
-  border-color: rgba(232, 184, 74, 0.9) !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(232, 184, 74, 0.45) !important;
+.satchel-panel.is-dragging,
+.preset-hud-card.is-dragging,
+.weapon-panel.is-dragging,
+.draggable-run-graph.is-dragging {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  will-change: left, top;
+  border-image: url('../goldleafborders.jpg') 16 stretch !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 14px rgba(232, 184, 74, 0.6) !important;
 }
 
 /* Header & Title Standardization */
@@ -11448,13 +11489,17 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 }
 
 .draggable-stats-hud .stats-hud-header {
-  background: linear-gradient(180deg, rgba(20, 13, 38, 0.92), rgba(10, 6, 20, 0.95)) !important;
-  border: 1px solid rgba(232, 184, 74, 0.5) !important;
+  background-image: url('../Hudtexture.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.88) !important;
+  background-blend-mode: overlay !important;
+  border: 3px solid transparent !important;
+  border-image: url('../goldleafborders.jpg') 16 stretch !important;
   border-radius: 6px !important;
   padding: 4px 8px !important;
   margin-bottom: 5px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
 }
 
@@ -11478,17 +11523,21 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .unfolded-central-square {
   width: 145px;
   height: 135px;
-  background: linear-gradient(135deg, rgba(22, 14, 42, 0.95), rgba(10, 6, 20, 0.98)) !important;
-  border: 1.5px solid rgba(232, 184, 74, 0.6) !important;
+  background-image: url('../Hudtexture.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.88) !important;
+  background-blend-mode: overlay !important;
+  border: 3px solid transparent !important;
+  border-image: url('../goldleafborders.jpg') 16 stretch !important;
   border-radius: 8px;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(232, 184, 74, 0.15);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.5);
   z-index: 5;
 }
 
@@ -11515,11 +11564,15 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 
 /* Separate Connected Flap Panels */
 .unfolded-flap {
-  background: linear-gradient(180deg, rgba(18, 11, 32, 0.92), rgba(8, 4, 16, 0.95)) !important;
-  border: 1px solid rgba(232, 184, 74, 0.45) !important;
+  background-image: url('../Hudtexture.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(14, 18, 28, 0.88) !important;
+  background-blend-mode: overlay !important;
+  border: 3px solid transparent !important;
+  border-image: url('../goldleafborders.jpg') 16 stretch !important;
   border-radius: 6px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   position: relative;
   transition: transform 0.2s ease, border-color 0.2s ease;
@@ -11529,7 +11582,6 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   width: 135px;
   padding: 3px 6px;
   margin-bottom: -1px;
-  border-bottom: 2px solid var(--accent-gold, #e8b84a) !important;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   z-index: 3;
@@ -11541,7 +11593,6 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   gap: 4px;
   padding: 6px 4px;
   margin-right: -1px;
-  border-right: 2px solid var(--accent-gold, #e8b84a) !important;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   z-index: 3;
@@ -11553,7 +11604,6 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   gap: 4px;
   padding: 6px 4px;
   margin-left: -1px;
-  border-left: 2px solid var(--accent-gold, #e8b84a) !important;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
   z-index: 3;
@@ -11964,35 +12014,76 @@ body:has(.popup-overlay) .draggable-challenge-hud {
   box-shadow: 0 0 25px var(--task-accent, rgba(255, 255, 255, 0.6)) !important;
 }
 
-/* Deadline badge stuck directly on TOP of shape */
-.todo-deadline-card-badge-top {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 100%;
-  padding: 2px 4px;
-  background: inherit;
-  border-radius: 6px 6px 0 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-  color: var(--task-ink, #ffffff);
-  font-family: 'Orbitron', monospace;
-  font-size: 7px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  box-sizing: border-box;
-  margin-bottom: 0 !important;
+.task-card-todo {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  position: absolute !important;
+  transform: translate(-50%, -50%) scale(0.72);
+  transform-origin: center center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  user-select: none;
+  cursor: pointer;
+  z-index: 40;
 }
 
-.todo-days-num {
-  font-weight: 900;
-  color: inherit;
+.todo-card-main-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+/* Plain deadline counter number attached directly to left side */
+.todo-plain-deadline-num {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-family: 'Orbitron', monospace !important;
+  font-size: 32px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  margin-right: 4px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.95), 0 2px 6px rgba(0, 0, 0, 0.95) !important;
+  transition: transform 0.15s ease, filter 0.15s ease !important;
+}
+
+.todo-plain-deadline-num:hover {
+  transform: scale(1.2) !important;
+  filter: drop-shadow(0 0 10px currentColor) !important;
+}
+
+/* Regular deadline text badge on top of shape card */
+.todo-deadline-card-badge-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 2px 6px !important;
+  background: inherit !important;
+  border-radius: 6px 6px 0 0 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+  color: var(--task-ink, #ffffff) !important;
+  font-family: 'Orbitron', monospace !important;
+  font-size: 7px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  box-sizing: border-box !important;
+  margin-bottom: 0 !important;
+  cursor: pointer !important;
+  transition: filter 0.15s ease !important;
+}
+
+.todo-deadline-card-badge-top:hover {
+  filter: brightness(1.2) !important;
 }
 
 .todo-deadline-date {
-  opacity: 0.85;
-  font-size: 6.5px;
-  white-space: nowrap;
+  opacity: 0.9 !important;
+  font-size: 7px !important;
+  white-space: nowrap !important;
 }
 
 /* Subtasks stuck directly to BOTTOM of shape, half size, same background color */
