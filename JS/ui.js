@@ -10640,6 +10640,9 @@ class UIManager {
 
       document.querySelectorAll('.enemy-card').forEach(c => c.classList.remove('targeted-attack'));
       card.classList.add('targeted-attack');
+
+      // Show enemy info popup on card click
+      try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup on card click failed', e); }
     });
   }
 
