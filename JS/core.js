@@ -1328,7 +1328,9 @@ class GameState {
           damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
         }
 
-        if (dodgeTargets.includes(enemy.id)) {
+        // Swift mutator can bypass player dodge (matches actual resolveOneAttack logic)
+        const swiftBypassDodge = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassDodge ?? false);
+        if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
           const idx = dodgeTargets.indexOf(enemy.id);
           if (idx > -1) dodgeTargets.splice(idx, 1);
           return;
@@ -1338,31 +1340,36 @@ class GameState {
           damage *= passive.damageTaken;
         }
 
-        if (tempShieldCharges > 0) {
-          damage *= (typeof skillFx.shieldDamageMultiplier === 'number' ? skillFx.shieldDamageMultiplier : 0.4);
-          tempShieldCharges--;
-        }
+        // Swift mutator can bypass shields and flat reductions (matches actual resolveOneAttack logic)
+        const swiftBypassShields = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassShields ?? false);
 
-        if (tempFortressCharges > 0) {
-          damage = 0;
-          tempFortressCharges--;
-        }
+        if (!swiftBypassShields) {
+          if (tempShieldCharges > 0) {
+            damage *= (typeof skillFx.shieldDamageMultiplier === 'number' ? skillFx.shieldDamageMultiplier : 0.4);
+            tempShieldCharges--;
+          }
 
-        let totalReduction = 0;
-        if (passive && typeof passive.damageReduction === 'number') {
-          totalReduction += passive.damageReduction;
-        }
-        if (state.hasBuff('Iron Skin')) {
-          const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
-          if (typeof reduction === 'number') {
-            totalReduction += reduction;
+          if (tempFortressCharges > 0) {
+            damage = 0;
+            tempFortressCharges--;
           }
-        }
-        if (totalReduction > 0) {
-          if (state.playerState.talismans?.includes("Titan's Mantle")) {
-            totalReduction *= 2;
+
+          let totalReduction = 0;
+          if (passive && typeof passive.damageReduction === 'number') {
+            totalReduction += passive.damageReduction;
           }
-          damage = Math.max(0, damage - totalReduction);
+          if (state.hasBuff('Iron Skin')) {
+            const reduction = state.config.buffs?.['Iron Skin']?.effect?.damageReduction;
+            if (typeof reduction === 'number') {
+              totalReduction += reduction;
+            }
+          }
+          if (totalReduction > 0) {
+            if (state.playerState.talismans?.includes("Titan's Mantle")) {
+              totalReduction *= 2;
+            }
+            damage = Math.max(0, damage - totalReduction);
+          }
         }
 
         const reactiveWeapon = enemy.statusEffects?.reactiveWeapon;
@@ -1391,6 +1398,7 @@ class GameState {
       console.warn('Late todo damage calculation in calculateExactPendingDamage failed', e);
     }
 
+    // Shield consumable stacks: -25% total damage per stack (applied during actual retaliation too)
     const shieldStacks = state.playerState?.shieldConsumableStacks || 0;
     if (shieldStacks > 0) {
       const reductionFactor = Math.max(0, 1.0 - 0.25 * shieldStacks);
@@ -1978,6 +1986,12 @@ function performCheckIn() {
           }
           damage = Math.round(damage * checkinDamageMultiplier);
 
+          // Shield consumable: -25% damage per stack (stackable)
+          const shieldConsumStacksReg = state.playerState?.shieldConsumableStacks || 0;
+          if (shieldConsumStacksReg > 0) {
+            damage = Math.round(damage * Math.max(0, 1.0 - 0.25 * shieldConsumStacksReg));
+          }
+
           retaliationSteps.push({
             enemyId: bossEnemy.id,
             name: `${bossEnemy.name} (Regular Strike)`,
@@ -1999,6 +2013,13 @@ function performCheckIn() {
             }
           }
           damage = Math.round(damage * checkinDamageMultiplier);
+
+          // Shield consumable: -25% damage per stack (stackable)
+          const shieldConsumStacksCrit = state.playerState?.shieldConsumableStacks || 0;
+          if (shieldConsumStacksCrit > 0) {
+            damage = Math.round(damage * Math.max(0, 1.0 - 0.25 * shieldConsumStacksCrit));
+          }
+
           retaliationSteps.push({
             enemyId: bossEnemy.id,
             name: `${bossEnemy.name} (Critical Strike ⚡)`,
@@ -2059,6 +2080,12 @@ function performCheckIn() {
             }
           }
           damage = Math.round(damage * checkinDamageMultiplier);
+
+          // Shield consumable: -25% damage per stack (stackable)
+          const shieldConsumStacksHvy = state.playerState?.shieldConsumableStacks || 0;
+          if (shieldConsumStacksHvy > 0) {
+            damage = Math.round(damage * Math.max(0, 1.0 - 0.25 * shieldConsumStacksHvy));
+          }
 
           retaliationSteps.push({
             enemyId: bossEnemy.id,
@@ -2267,6 +2294,13 @@ function performCheckIn() {
         const reactiveWeapon = enemy?.statusEffects?.reactiveWeapon;
         if (reactiveWeapon && reactiveWeapon.pending) {
           damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
+        }
+
+        // Shield consumable: -25% damage per stack (stackable)
+        const shieldConsumStacks = state.playerState?.shieldConsumableStacks || 0;
+        if (shieldConsumStacks > 0) {
+          const reductionFactor = Math.max(0, 1.0 - 0.25 * shieldConsumStacks);
+          damage = Math.round(damage * reductionFactor);
         }
 
         retaliationSteps.push({
