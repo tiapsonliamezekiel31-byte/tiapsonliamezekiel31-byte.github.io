@@ -536,7 +536,7 @@ const DEFAULT_GAME_CONFIG = {
       critChance: 0.15,
       fireRate: 1,
       price: 7,
-      special: 'Automatically dodges target on attack'
+      special: 'x0.9 universal dodge cost on attack until check in'
     },
     'Lazer': {
       type: 'Special',
@@ -712,7 +712,7 @@ const DEFAULT_GAME_CONFIG = {
   talismans: {
     'Bloodpact Seal': {
       icon: '🩸',
-      description: 'Each consecutive attack in a streak adds +5% max AP damage. Unlimited stacking. Resets on taking damage.'
+      description: 'Every enemy kill grants +1 Max HP.'
     },
     'Starweave': {
       icon: '✨',
@@ -736,7 +736,7 @@ const DEFAULT_GAME_CONFIG = {
     },
     'Predator\'s Eye': {
       icon: '👁️',
-      description: 'Critical hits against enemies below 50% HP deal an extra ×1.5 bonus damage.'
+      description: 'Critical hits against enemies below 50% HP deal an extra ×2.0 bonus damage.'
     },
     'Titan\'s Mantle': {
       icon: '🏔️',
@@ -823,6 +823,14 @@ const DEFAULT_GAME_CONFIG = {
     'Cosmic': { name: 'Cosmic Twinkle', desc: 'Shimmering stars rising upwards', tier: 'premium', previewIcon: '⭐' },
     'Matrix': { name: 'Glitch Matrix', desc: 'Matrix falling digital green code', tier: 'premium', previewIcon: '📟' },
     'Holy Beam': { name: 'Holy Beam', desc: 'Pillar of divine golden light striking down', tier: 'premium', previewIcon: '⚡' }
+  },
+  streakUnlocks: {
+    pet: { streak: 1, name: 'Pet' },
+    consumables: { streak: 3, name: 'Consumables' },
+    sacredTree: { streak: 5, name: 'Sacred Tree' },
+    lockIn: { streak: 7, name: 'Lock In Feature' },
+    statue: { streak: 8, name: 'Statue' },
+    shrine: { streak: 9, name: 'Shrine' }
   }
 };
 

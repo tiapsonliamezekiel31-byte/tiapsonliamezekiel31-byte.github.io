@@ -98,10 +98,6 @@ class WeaponAttack {
     }
 
     // --- TALISMANS (Damage calculation) ---
-    if (state.playerState.talismans?.includes('Bloodpact Seal')) {
-      const bloodpactBonus = comboCount * 0.05;
-      damage *= (1 + bloodpactBonus);
-    }
 
     if (state.playerState.talismans?.includes('Wrathstone')) {
       const hpPct = state.playerState.maxHp > 0 ? state.playerState.hp / state.playerState.maxHp : 1;
@@ -113,7 +109,7 @@ class WeaponAttack {
     if (isCrit && state.playerState.talismans?.includes('Predator\'s Eye')) {
       const tgtHpPct = target && target.maxHp > 0 ? target.hp / target.maxHp : 1;
       if (tgtHpPct < 0.5) {
-        damage *= 1.5;
+        damage *= 2.0;
       }
     }
 
@@ -541,7 +537,7 @@ class CombatManager {
       }
 
       // Final Stand check (use enforcedDamage)
-      const survivesFinalStand = EnemyManager.applyFinalStand(tgt, enforcedDamage);
+      const survivesFinalStand = (attackPlan.weaponName === 'Death Spell') ? false : EnemyManager.applyFinalStand(tgt, enforcedDamage);
       if (!survivesFinalStand) {
         tgt.takeDamage(enforcedDamage);
 
@@ -671,11 +667,8 @@ class CombatManager {
         }
 
         if (weapon.name === 'Thunder Hammer' && !tgt.isDead && isPrimaryTarget) {
-          const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-            ? state.combatState.dodgeTarget
-            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-          state.combatState.dodgeTarget = [...currentDodges, tgt.id];
-          pushSpecialPopup('AUTO DODGE', '#facc15');
+          state.playerState.dodgeCostMultiplier = (state.playerState.dodgeCostMultiplier || 1.0) * 0.9;
+          pushSpecialPopup('DODGE COST -10%', '#facc15');
         }
 
         // Boss phase-2 trigger at <= 40% HP (dialogue + phase flag only)
@@ -768,6 +761,11 @@ class CombatManager {
           if (weapon.name === 'Vampire Dagger') {
             state.addHp(30);
           }
+          if (state.playerState.talismans?.includes('Bloodpact Seal')) {
+            state.playerState.maxHp = (state.playerState.maxHp || 100) + 1;
+            state.addHp(1);
+            pushSpecialPopup('+1 MAX HP', '#ff4444');
+          }
 
           state.eventBus.emit(EVENTS.KILL_ENEMY, {
             enemyId: tgt.id,
@@ -813,11 +811,8 @@ class CombatManager {
         });
 
         if (weapon.name === 'Thunder Hammer' && !tgt.isDead && isPrimaryTarget) {
-          const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-            ? state.combatState.dodgeTarget
-            : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-          state.combatState.dodgeTarget = [...currentDodges, tgt.id];
-          pushSpecialPopup('AUTO DODGE', '#facc15');
+          state.playerState.dodgeCostMultiplier = (state.playerState.dodgeCostMultiplier || 1.0) * 0.9;
+          pushSpecialPopup('DODGE COST -10%', '#facc15');
         }
       }
     });
@@ -975,6 +970,12 @@ class CombatManager {
     };
   }
   
+  static recordDodge() {
+    const state = getGameState();
+    if (!state.stageState) return;
+    state.stageState.dodgeCount = (state.stageState.dodgeCount || 0) + 1;
+  }
+
   static getDodgeCost(targetEnemy = null) {
     const state = getGameState();
     const multiplier = state.playerState.dodgeCostMultiplier || 1.0;
@@ -982,11 +983,16 @@ class CombatManager {
     const enemyCount = aliveEnemies.length || 1;
 
     const isBoss = targetEnemy ? !!targetEnemy.isBoss : aliveEnemies.some(e => e.isBoss);
+    let baseCost;
     if (isBoss) {
-      return Math.ceil((state.playerState.maxAp / 3) * multiplier);
+      baseCost = (state.playerState.maxAp / 3) * multiplier;
+    } else {
+      baseCost = ((state.playerState.maxAp * 1.5) / enemyCount) * multiplier;
     }
 
-    return Math.ceil(((state.playerState.maxAp * 1.5) / enemyCount) * multiplier);
+    const dodgeCount = state.stageState?.dodgeCount || 0;
+    const compoundingMultiplier = Math.pow(1.1, dodgeCount);
+    return Math.ceil(baseCost * compoundingMultiplier);
   }
 
   static attemptDodge() {
@@ -1005,6 +1011,7 @@ class CombatManager {
     }
     
     state.spendAp(dodgeCost);
+    CombatManager.recordDodge();
     state.combatState.isDodging = true;
     
     // Spinner speed doubles

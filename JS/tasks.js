@@ -1385,8 +1385,71 @@ class TaskManager {
       totalWeight += w;
     }
 
-    return totalWeight > 0 ? (totalWeightedStreak / totalWeight) : 0;
+    const avg = totalWeight > 0 ? (totalWeightedStreak / totalWeight) : 0;
+    this.checkAndUpdateStreakUnlocks(avg);
+    return avg;
   }
+
+  static checkAndUpdateStreakUnlocks(avgStreak) {
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (!state || !state.playerState) return;
+
+    if (!state.playerState.unlockedStreakFeatures) {
+      state.playerState.unlockedStreakFeatures = {};
+    }
+
+    const unlocks = state.config?.streakUnlocks || {
+      pet: { streak: 1 },
+      consumables: { streak: 3 },
+      sacredTree: { streak: 5 },
+      lockIn: { streak: 7 },
+      statue: { streak: 8 },
+      shrine: { streak: 9 }
+    };
+
+    const currentAvg = typeof avgStreak === 'number' ? avgStreak : this.getWeightedAverageStreak();
+
+    for (const key in unlocks) {
+      const required = unlocks[key]?.streak || 0;
+      if (currentAvg >= required) {
+        state.playerState.unlockedStreakFeatures[key] = true;
+      }
+    }
+  }
+
+  static isFeatureUnlocked(featureKey) {
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (!state || !state.playerState) return true;
+
+    if (!state.playerState.unlockedStreakFeatures) {
+      state.playerState.unlockedStreakFeatures = {};
+    }
+
+    // Persistent check
+    if (state.playerState.unlockedStreakFeatures[featureKey]) {
+      return true;
+    }
+
+    const unlocks = state.config?.streakUnlocks || {
+      pet: { streak: 1 },
+      consumables: { streak: 3 },
+      sacredTree: { streak: 5 },
+      lockIn: { streak: 7 },
+      statue: { streak: 8 },
+      shrine: { streak: 9 }
+    };
+
+    const required = unlocks[featureKey]?.streak || 0;
+    const avgStreak = this.getWeightedAverageStreak();
+
+    if (avgStreak >= required) {
+      state.playerState.unlockedStreakFeatures[featureKey] = true;
+      return true;
+    }
+
+    return false;
+  }
+
 
   static getDailyStreakDamageBonus() {
     const state = getGameState();

@@ -241,7 +241,8 @@ class GameState {
       enemies: [],
       bossData: null,
       nextBossAtLevel: 5,
-      stageClearedToday: false
+      stageClearedToday: false,
+      dodgeCount: 0
     };
     
     this.combatState = {
@@ -1060,7 +1061,7 @@ class GameState {
         }
       }
       if (this.systemState.nemesisDailyRewardRate === undefined) {
-        this.systemState.nemesisDailyRewardRate = 0.8 + Math.random() * 0.3;
+        this.systemState.nemesisDailyRewardRate = 0.8;
       }
       if (!Array.isArray(this.systemState.diamondRewards)) {
         this.systemState.diamondRewards = [];
@@ -2711,8 +2712,8 @@ function performCheckIn() {
 
       // Nemesis gains attribute points
       try {
-        // Daily Dailies: Nemesis gets 80-110% of player's potential attribute gain if they completed all scheduled dailies
-        const dailyGainFactor = 0.8 + Math.random() * 0.3; // 0.8 to 1.1
+        // Daily Dailies: Nemesis gets fixed 80% of player's potential attribute gain
+        const dailyGainFactor = 0.8;
         state.systemState.nemesisDailyRewardRate = dailyGainFactor;
         const todayKey = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
           ? TaskManager.getCurrentGameDateKey()

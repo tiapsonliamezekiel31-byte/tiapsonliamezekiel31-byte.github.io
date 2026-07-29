@@ -4207,6 +4207,11 @@ body::before {
    POPUPS & MODALS
    ============================================================ */
 
+@keyframes nmOverlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -4219,6 +4224,7 @@ body::before {
   align-items: center;
   z-index: 13000;
   backdrop-filter: blur(6px);
+  animation: nmOverlayFadeIn 180ms ease-out forwards;
 }
 
 .popup {

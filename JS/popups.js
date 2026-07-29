@@ -301,6 +301,26 @@ class PopupsManager {
     popup.className = 'popup satchel-popup';
     
     let html = '<h2>🎒 SATCHEL</h2><button class="btn-close">✕</button>';
+    
+    const isConsumablesUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+      ? TaskManager.isFeatureUnlocked('consumables')
+      : true;
+
+    if (!isConsumablesUnlocked) {
+      html += `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; gap: 8px;">
+          <span style="font-size: 36px;">🔒</span>
+          <span style="font-weight: bold; color: var(--accent-gold);">Unlocks at Streak 3</span>
+          <span style="font-size: 10px; color: var(--text-muted);">Maintain an average daily streak of 3 to unlock consumables.</span>
+        </div>
+      </div>`;
+      popup.innerHTML = html;
+      popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
+      return;
+    }
+
     html += '<div class="consumables-list">';
     
     const consumables = PlayerManager.getActiveConsumables();
@@ -4311,10 +4331,26 @@ class PopupsManager {
     const popup = document.createElement('div');
     popup.className = 'popup special-event-popup';
 
+    const eventUnlockMap = {
+      'Sacred Tree': { key: 'sacredTree', streak: 5 },
+      'Statue': { key: 'statue', streak: 8 },
+      'Shrine': { key: 'shrine', streak: 9 }
+    };
+
+    const req = eventUnlockMap[event?.type];
+    const isUnlocked = req && typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function'
+      ? TaskManager.isFeatureUnlocked(req.key)
+      : true;
+
     const icon = rewardData?.icon || '❓';
     const title = rewardData?.name || 'Mysterious Reward';
-    const description = rewardData?.description || 'You encounter a rare and mysterious phenomenon.';
-    const buttonText = rewardData?.claimButtonText || 'CLAIM REWARD';
+    let description = rewardData?.description || 'You encounter a rare and mysterious phenomenon.';
+    let buttonText = rewardData?.claimButtonText || 'CLAIM REWARD';
+
+    if (!isUnlocked && req) {
+      description += `<br><br><strong style="color:var(--accent-gold, #ffd700);">🔒 Unlocks at Streak ${req.streak}</strong>`;
+      buttonText = `Unlocks at Streak ${req.streak}`;
+    }
 
     popup.innerHTML = `
       <div class="special-event-icon-container">${icon}</div>
@@ -4322,17 +4358,19 @@ class PopupsManager {
       <p class="special-event-flavor">${description}</p>
       <div class="special-event-actions">
         <button class="btn-special-cancel">CANCEL</button>
-        <button class="btn-special-claim">${buttonText}</button>
+        <button class="btn-special-claim" ${!isUnlocked ? 'disabled style="opacity: 0.6; cursor: not-allowed;"' : ''}>${buttonText}</button>
       </div>
     `;
 
     popup.querySelector('.btn-special-cancel').addEventListener('click', () => this.closeAllPopups());
-    popup.querySelector('.btn-special-claim').addEventListener('click', () => {
-      this.closeAllPopups();
-      if (typeof onConfirm === 'function') {
-        onConfirm();
-      }
-    });
+    if (isUnlocked) {
+      popup.querySelector('.btn-special-claim').addEventListener('click', () => {
+        this.closeAllPopups();
+        if (typeof onConfirm === 'function') {
+          onConfirm();
+        }
+      });
+    }
 
     overlay.appendChild(popup);
     document.body.appendChild(overlay);

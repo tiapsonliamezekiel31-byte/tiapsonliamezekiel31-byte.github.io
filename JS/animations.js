@@ -34,14 +34,14 @@ function ensureAnimationStyles() {
     }
 
     @keyframes nmPopupScale {
-      0% { transform: scale(0); opacity: 0; }
-      70% { transform: scale(1.1); }
+      0% { transform: scale(0.92); opacity: 0; }
+      70% { transform: scale(1.02); opacity: 1; }
       100% { transform: scale(1); opacity: 1; }
     }
 
     @keyframes nmPopupScaleCentered {
-      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-      70% { transform: translate(-50%, -50%) scale(1.1); }
+      0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0; }
+      70% { transform: translate(-50%, -50%) scale(1.02); opacity: 1; }
       100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
     }
 
@@ -66,8 +66,8 @@ function ensureAnimationStyles() {
       100% { transform: scale(0.3); opacity: 0; }
     }
 
-    .nm-popup-scale { animation: nmPopupScale var(--nm-duration, 300ms) ease-out forwards; }
-    .nm-popup-scale-centered { animation: nmPopupScaleCentered var(--nm-duration, 300ms) ease-out forwards; }
+    .nm-popup-scale { animation: nmPopupScale var(--nm-duration, 220ms) ease-out forwards; }
+    .nm-popup-scale-centered { animation: nmPopupScaleCentered var(--nm-duration, 220ms) ease-out forwards; }
     .nm-meter-pulse { animation: nmMeterPulse var(--nm-duration, 300ms) ease-out; }
     .nm-meter-shimmer { animation: nmMeterShimmer var(--nm-duration, 400ms) ease-in-out; }
     .nm-combo-scale { animation: nmComboScale 200ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
@@ -80,7 +80,8 @@ function ensureAnimationStyles() {
 function restartAnimationClass(element, className) {
   if (!element) return;
   element.classList.remove(className);
-  requestAnimationFrame(() => element.classList.add(className));
+  void element.offsetWidth;
+  element.classList.add(className);
 }
 
 // Color helpers: resolve CSS color to RGB, convert to HSL, and produce slight hue/darkness variants
@@ -898,24 +899,20 @@ class ScreenEffects {
 
 // Popup animations (scale + fade)
 class PopupAnimation {
-  static scale(element, duration = 300) {
-    element.style.opacity = '0';
-    const delay = 100 + Math.random() * 200;
-    setTimeout(() => {
-      ensureAnimationStyles();
-      element.style.setProperty('--nm-duration', `${duration}ms`);
-      restartAnimationClass(element, 'nm-popup-scale');
-    }, delay);
+  static scale(element, duration = 220) {
+    if (!element) return;
+    ensureAnimationStyles();
+    element.style.opacity = '';
+    element.style.setProperty('--nm-duration', `${duration}ms`);
+    restartAnimationClass(element, 'nm-popup-scale');
   }
 
-  static scaleCentered(element, duration = 300) {
-    element.style.opacity = '0';
-    const delay = 100 + Math.random() * 200;
-    setTimeout(() => {
-      ensureAnimationStyles();
-      element.style.setProperty('--nm-duration', `${duration}ms`);
-      restartAnimationClass(element, 'nm-popup-scale-centered');
-    }, delay);
+  static scaleCentered(element, duration = 220) {
+    if (!element) return;
+    ensureAnimationStyles();
+    element.style.opacity = '';
+    element.style.setProperty('--nm-duration', `${duration}ms`);
+    restartAnimationClass(element, 'nm-popup-scale-centered');
   }
 }
 

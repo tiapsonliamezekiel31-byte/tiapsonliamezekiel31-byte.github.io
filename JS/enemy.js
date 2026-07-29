@@ -359,7 +359,7 @@ class EnemyManager {
       return false;
     }
 
-    if (enemy.finalStandUsed) {
+    if (enemy.finalStandUsed || damage === Infinity) {
       return false;
     }
 

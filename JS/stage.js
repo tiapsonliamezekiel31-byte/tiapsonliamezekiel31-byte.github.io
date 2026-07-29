@@ -131,6 +131,7 @@ class StageManager {
     
     state.stageState.stage = stage;
     state.stageState.level = 1;
+    state.stageState.dodgeCount = 0;
     state.systemState.dialogueSeen = {};
     state.systemState.runSeenEnemies = {};
     state.systemState.gameStartTime = Date.now();
@@ -343,6 +344,7 @@ class StageManager {
     state.stageState.stage++;
     state.stageState.stageVariation = this.pickStageVariation(state.stageState.stage);
     state.stageState.stageClearedToday = true;
+    state.stageState.dodgeCount = 0;
     
     // Resilience: gets +1 death defy every time move up a stage
     if (state.hasBuff('Resilience')) {

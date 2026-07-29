@@ -2139,7 +2139,13 @@ class UIManager {
       }
 
       // Consumables: use ShopManager.getAvailableConsumables and pricing rules from blueprint
-      if (ShopManager && ShopManager.getAvailableConsumables) {
+      const isConsumablesUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+        ? TaskManager.isFeatureUnlocked('consumables')
+        : true;
+
+      if (!isConsumablesUnlocked && shelfList) {
+        shelfList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--accent-gold); font-weight: bold;"><span style="font-size: 24px; display: block; margin-bottom: 8px;">🔒</span>Unlocks at Streak 3</div>';
+      } else if (ShopManager && ShopManager.getAvailableConsumables) {
         const consumables = [...new Set([
           'Health Potion',
           'Mana Potion',
@@ -2384,6 +2390,10 @@ class UIManager {
       }
 
       if (mode === 'lock') {
+        if (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function' && !TaskManager.isFeatureUnlocked('lockIn')) {
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
+          return;
+        }
         state.systemState.taskListFilters.lockModeDailies = true;
         state.systemState.taskListFilters.editModeDailies = false;
         state.systemState.taskListFilters.oathModeDailies = false;
@@ -3623,6 +3633,10 @@ class UIManager {
 
     btn.addEventListener('click', (e) => {
       if (e) e.stopPropagation();
+      if (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function' && !TaskManager.isFeatureUnlocked('lockIn')) {
+        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
+        return;
+      }
       openPopup();
     });
 
@@ -3666,6 +3680,20 @@ class UIManager {
   static updateConsistencyBtn() {
     const btn = document.getElementById('consistencyChallengeBtn');
     if (!btn) return;
+
+    const isLockInUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+      ? TaskManager.isFeatureUnlocked('lockIn')
+      : true;
+
+    if (!isLockInUnlocked) {
+      btn.classList.remove('active');
+      btn.textContent = `🔒 Unlocks at Streak 7`;
+      btn.style.opacity = '0.6';
+      btn.title = `Unlocks at Streak 7`;
+      return;
+    }
+
+    btn.style.opacity = '1';
     const state = getGameState();
     const days = state.systemState ? (state.systemState.lockInDaysLeft || state.systemState.consistencyDaysLeft || 0) : 0;
     const degree = state.systemState ? (state.systemState.lockInDegree || 4) : 4;
@@ -3897,6 +3925,32 @@ class UIManager {
 
         const event = gs.systemState.specialEvent;
 
+        const eventUnlockMap = {
+          'Sacred Tree': { key: 'sacredTree', streak: 5 },
+          'Statue': { key: 'statue', streak: 8 },
+          'Shrine': { key: 'shrine', streak: 9 }
+        };
+        const req = eventUnlockMap[event.type];
+        const isEventUnlocked = req && typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function'
+          ? TaskManager.isFeatureUnlocked(req.key)
+          : true;
+
+        if (!isEventUnlocked && req) {
+          if (typeof PopupsManager !== 'undefined' && PopupsManager.showSpecialEventClaimPopup) {
+            let lockedRewardData = {
+              name: `${event.type}`,
+              icon: event.type === 'Shrine' ? '⛩️' : event.type === 'Statue' ? '🗿' : '🌳',
+              description: `Maintain an average daily streak of ${req.streak} to unlock this event.`,
+              claimButtonText: `Unlocks at Streak ${req.streak}`
+            };
+            PopupsManager.showSpecialEventClaimPopup(event, lockedRewardData, () => {});
+          } else if (typeof FloatingDamageNumber !== 'undefined') {
+            const rect = emojiTarget.getBoundingClientRect();
+            FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top, `🔒 Unlocks at Streak ${req.streak}`, { color: '#ff6666' });
+          }
+          return;
+        }
+
         let isComplete = false;
         if (event.type === 'Shrine') {
           isComplete = TaskManager.isAllDailiesComplete() && (gs.dailiesState?.dailies?.length || 0) > 0;
@@ -4006,7 +4060,13 @@ class UIManager {
     document.getElementById('completeDayBtn')?.addEventListener('click', () => this.handleCompleteDayClick());
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
     document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
-    document.getElementById('dailiesLockModeBtn')?.addEventListener('click', () => this.toggleLockMode());
+    document.getElementById('dailiesLockModeBtn')?.addEventListener('click', () => {
+      if (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function' && !TaskManager.isFeatureUnlocked('lockIn')) {
+        try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
+        return;
+      }
+      this.toggleLockMode();
+    });
     document.getElementById('dailiesConnectionsBtn')?.addEventListener('click', () => this.toggleDailyConnections());
     document.getElementById('dailiesFocusBtn')?.addEventListener('click', () => this.toggleDailyFocus());
     document.getElementById('dailiesTableViewBtn')?.addEventListener('click', () => {
@@ -4671,6 +4731,34 @@ class UIManager {
 
   static updatePetUI() {
     const state = getGameState();
+    const isPetUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+      ? TaskManager.isFeatureUnlocked('pet')
+      : true;
+
+    const petBoard = document.querySelector('.pet-board');
+    if (petBoard) {
+      let lockOverlay = document.getElementById('petLockOverlay');
+      if (!isPetUnlocked) {
+        if (!lockOverlay) {
+          lockOverlay = document.createElement('div');
+          lockOverlay.id = 'petLockOverlay';
+          lockOverlay.style.cssText = 'position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; font-weight: bold; color: var(--accent-gold, #ffd700); font-size: 14px; background: rgba(18, 14, 30, 0.96); z-index: 100; border-radius: 12px; padding: 24px; pointer-events: auto;';
+          lockOverlay.innerHTML = `
+            <span style="font-size: 48px;">🔒</span>
+            <span>Unlocks at Streak 1</span>
+            <div style="font-size: 10px; color: var(--text-muted); font-weight: normal; max-width: 220px; line-height: 1.4;">
+              Reach an average daily streak of 1 to unlock your Pet companion!
+            </div>
+          `;
+          petBoard.style.position = 'relative';
+          petBoard.appendChild(lockOverlay);
+        }
+        lockOverlay.style.display = 'flex';
+        return;
+      } else if (lockOverlay) {
+        lockOverlay.style.display = 'none';
+      }
+    }
 
     const imgDisplay = document.getElementById('petImageDisplay');
     const levelVal = document.getElementById('petLevelVal');
@@ -4997,6 +5085,10 @@ class UIManager {
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
         
         if (event.target.closest('.btn-lock-daily')) {
+          if (!TaskManager.isFeatureUnlocked('lockIn')) {
+            try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
+            return;
+          }
           if (taskType === 'daily') {
             const daily = state.dailiesState.dailies.find(d => d.id === taskId);
             if (daily) {
@@ -5989,10 +6081,20 @@ class UIManager {
 
     const dailiesLockBtn = document.getElementById('dailiesLockModeBtn');
     if (dailiesLockBtn) {
-      const lockMode = !!state.systemState?.taskListFilters?.lockModeDailies;
-      dailiesLockBtn.textContent = lockMode ? 'Lock: ON' : 'Lock: off';
-      dailiesLockBtn.setAttribute('aria-pressed', String(lockMode));
-      dailiesLockBtn.classList.toggle('active', lockMode);
+      const isLockUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+        ? TaskManager.isFeatureUnlocked('lockIn')
+        : true;
+      if (!isLockUnlocked) {
+        dailiesLockBtn.textContent = '🔒 Unlocks at Streak 7';
+        dailiesLockBtn.style.opacity = '0.6';
+        dailiesLockBtn.title = 'Unlocks at Streak 7';
+      } else {
+        dailiesLockBtn.style.opacity = '1';
+        const lockMode = !!state.systemState?.taskListFilters?.lockModeDailies;
+        dailiesLockBtn.textContent = lockMode ? 'Lock: ON' : 'Lock: off';
+        dailiesLockBtn.setAttribute('aria-pressed', String(lockMode));
+        dailiesLockBtn.classList.toggle('active', lockMode);
+      }
     }
 
     if (connectionsBtn) {
@@ -6999,6 +7101,7 @@ class UIManager {
                     try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                   } else {
                     state.spendAp(dodgeCost);
+                    CombatManager.recordDodge();
                     rolledAttacks[firstNonNullIndex] = 'null';
                     if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
                       state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
@@ -7037,6 +7140,7 @@ class UIManager {
                     try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                   } else {
                     state.spendAp(dodgeCost);
+                    CombatManager.recordDodge();
                     FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700', scale: 0.8 });
 
                     state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
@@ -7120,6 +7224,7 @@ class UIManager {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                 } else {
                   state.spendAp(dodgeCost);
+                  CombatManager.recordDodge();
                   rolledAttacks[firstNonNullIndex] = 'null';
                   if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
                     state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
@@ -7158,6 +7263,7 @@ class UIManager {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                 } else {
                   state.spendAp(dodgeCost);
+                  CombatManager.recordDodge();
                   FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
 
                   state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
@@ -7993,9 +8099,6 @@ class UIManager {
         }
 
         noteEl.addEventListener('pointerdown', (event) => {
-          if (!getGameState().systemState?.taskListFilters?.editModeDailies) {
-            return;
-          }
           if (event.target.closest('.daily-note-delete')) return;
           if (event.target.closest('.daily-rect-resizer')) return;
           if (event.target.closest('button')) return;
@@ -8783,12 +8886,8 @@ class UIManager {
       if (!dragState.moved) {
         const distance = Math.hypot(event.clientX - dragState.startX, event.clientY - dragState.startY);
         if (distance > 6) {
-          // Only allow repositioning in edit mode
-          const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-          if (editModeDailies) {
-            dragState.moved = true;
-            dragState.card.classList.add('dragging');
-          }
+          dragState.moved = true;
+          dragState.card.classList.add('dragging');
         }
       }
 
@@ -11112,6 +11211,31 @@ class UIManager {
     let isComplete = false;
     let slotsHtml = '';
 
+    const eventUnlockMap = {
+      'Sacred Tree': { key: 'sacredTree', streak: 5 },
+      'Statue': { key: 'statue', streak: 8 },
+      'Shrine': { key: 'shrine', streak: 9 }
+    };
+    const req = eventUnlockMap[event.type];
+    const isEventUnlocked = req && typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function'
+      ? TaskManager.isFeatureUnlocked(req.key)
+      : true;
+
+    if (!isEventUnlocked && req) {
+      if (slotsEl) {
+        slotsEl.innerHTML = `
+          <div class="event-task-slot locked-event-slot" style="color: var(--accent-gold, #ffd700); font-weight: bold; font-size: 11px; padding: 4px 10px; border: 1px solid var(--accent-gold, #ffd700); border-radius: 6px; background: rgba(0,0,0,0.4);">
+            🔒 Unlocks at Streak ${req.streak}
+          </div>
+        `;
+      }
+      if (emojiEl) {
+        emojiEl.classList.remove('ready');
+        emojiEl.title = `Unlocks at Streak ${req.streak}`;
+      }
+      return;
+    }
+
     const attrColors = state.config?.attributeColors || {
       STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
     };
@@ -12334,6 +12458,19 @@ class UIManager {
     const panel = document.getElementById('satchelPanel');
     if (!panel) return;
     const state = getGameState();
+
+    const isConsumablesUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
+      ? TaskManager.isFeatureUnlocked('consumables')
+      : true;
+
+    if (!isConsumablesUnlocked) {
+      panel.innerHTML = `
+        <div class="satchel-popout-icon" title="Unlocks at Streak 3">🔒</div>
+        <div class="satchel-list" style="margin-top: 4px; font-size: 8px; color: var(--accent-gold); text-align: center; font-weight: bold;">Streak 3</div>
+      `;
+      return;
+    }
+
     const consumableIcons = state.config?.shopItemIcons || {};
     const active = (PlayerManager && typeof PlayerManager.getActiveConsumables === 'function') ? PlayerManager.getActiveConsumables() : (state.playerState && state.playerState.consumables) || {};
     const ordered = Object.entries(active || {}).filter(([, count]) => Number(count) > 0);
@@ -12876,8 +13013,8 @@ class StatsHUD {
       const strokeOffset = circumference * (1 - avgRate);
 
       // Determine nemesis reward rate:
-      // It is the current daily reward rate multiplier roll (0.8 - 1.1, i.e., 80% - 110%) applied to potential daily attribute gains
-      const nemesisRateMult = state.systemState?.nemesisDailyRewardRate ?? 0.95;
+      // It is the daily reward rate multiplier (0.8, i.e., 80%) applied to potential daily attribute gains
+      const nemesisRateMult = state.systemState?.nemesisDailyRewardRate ?? 0.8;
       const nemesisRatePct = Math.round(nemesisRateMult * 100);
 
       gasContainer.innerHTML = `
