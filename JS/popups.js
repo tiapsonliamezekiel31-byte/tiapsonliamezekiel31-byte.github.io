@@ -2673,54 +2673,42 @@ class PopupsManager {
     const state = getGameState();
     const attributes = state.config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
 
+    const hudAttr = (typeof UIManager !== 'undefined' && UIManager.presetAttribute) || 
+                    (typeof UIManager !== 'undefined' && UIManager.hudStates?.hudAttrDiff?.selectedAttr) || 
+                    attributes[0];
+    const hudDiff = (typeof UIManager !== 'undefined' && UIManager.presetDifficulty) || 
+                    (typeof UIManager !== 'undefined' && UIManager.hudStates?.hudAttrDiff?.selectedDiff) || 
+                    'Medium';
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(23, 59, 0, 0);
+    const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : tomorrow.getTime();
+    const deadlineDate = new Date(quickTs);
+    const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth()+1).padStart(2,'0')}-${String(deadlineDate.getDate()).padStart(2,'0')}`;
+
     this.closeAllPopups();
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup edit-todo-popup add-todo-popup';
 
-    const attrsOptions = attributes.map(a => `<option value="${a}">${a}</option>`).join('');
-
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : null;
-    const defaultDeadline = quickTs || tomorrow.getTime();
-    const defaultDeadlineDate = new Date(defaultDeadline);
-    const deadlineDate = defaultDeadlineDate.toISOString().slice(0, 10);
-    const deadlineTime = `${String(defaultDeadlineDate.getHours()).padStart(2, '0')}:${String(defaultDeadlineDate.getMinutes()).padStart(2, '0')}`;
-
-    let subtasks = [];
-
     popup.innerHTML = `
       <h2>ADD TO-DO</h2>
       <button class="btn-close">✕</button>
-      <div class="popup-scrollable-body">
-        <label>Name</label>
-        <input id="addTodoName" placeholder="Task name..." autofocus autocomplete="off" />
-        <label>Attribute</label>
-        <select id="addTodoAttr">${attrsOptions}</select>
-        <label>Difficulty</label>
-        <select id="addTodoDiff">
-          <option value="Easy">Easy</option>
-          <option value="Medium">Medium</option>
-          <option value="Hard">Hard</option>
-          <option value="Ultra">Ultra</option>
-        </select>
-        <label>Deadline</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input id="addTodoDeadline" type="date" value="${deadlineDate}" style="flex:1;min-width:0;" />
-          <input id="addTodoDeadlineTime" type="time" value="${deadlineTime}" style="width:80px;" />
+      <div class="popup-scrollable-body" style="padding-top: 10px;">
+        <div class="hud-preset-info" style="font-size: 10px; color: #a855f7; margin-bottom: 10px; padding: 6px 10px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: 6px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <span><strong>Attr:</strong> ${hudAttr}</span>
+          <span><strong>Diff:</strong> ${hudDiff}</span>
+          <span><strong>Deadline:</strong> ${deadlineStr}</span>
         </div>
-        <div class="edit-subtasks-panel" style="margin-top:10px;">
-          <h3>Subtasks</h3>
-          <div class="edit-subtasks-list" id="addTodoSubtasksList"></div>
-          <div class="edit-subtask-form">
-            <input id="newAddTodoSubtaskName" placeholder="Add subtask..." />
-            <button class="btn-small" id="addNewSubtaskBtn">ADD</button>
-          </div>
+        <label style="font-size: 11px;">Task & Subtasks (separated by space)</label>
+        <input id="quickAddInput" placeholder="TaskName Subtask1 Subtask2..." autofocus autocomplete="off" style="width: 100%; margin-top: 4px;" />
+        <div style="font-size: 9px; color: var(--text-muted, #888); margin-top: 6px;">
+          Format: <code>TaskName Subtask1 Subtask2 ...</code>
         </div>
       </div>
-      <div class="edit-todo-actions" style="margin-top:12px;">
-        <button class="btn-large" id="submitAddTodo">CREATE TO-DO</button>
+      <div class="edit-todo-actions" style="margin-top:14px;">
+        <button class="btn-large" id="submitAddTodo">ADD TO-DO</button>
       </div>
     `;
 
@@ -2728,57 +2716,18 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
-    const nameInput = popup.querySelector('#addTodoName');
-    setTimeout(() => nameInput?.focus(), 50);
-
-    const subtasksList = popup.querySelector('#addTodoSubtasksList');
-    const renderSubtasks = () => {
-      if (!subtasksList) return;
-      subtasksList.innerHTML = subtasks.length ? subtasks.map((st, i) => `
-        <div class="edit-subtask-row">
-          <span>${st}</span>
-          <button class="edit-subtask-remove" data-index="${i}">×</button>
-        </div>
-      `).join('') : '<div class="muted">No subtasks yet</div>';
-    };
-
-    renderSubtasks();
-
-    popup.querySelector('#addNewSubtaskBtn').addEventListener('click', () => {
-      const subInput = popup.querySelector('#newAddTodoSubtaskName');
-      const stName = (subInput.value || '').trim();
-      if (stName) {
-        subtasks.push(stName);
-        subInput.value = '';
-        renderSubtasks();
-      }
-    });
-
-    popup.addEventListener('click', (event) => {
-      const removeBtn = event.target.closest('.edit-subtask-remove');
-      if (removeBtn) {
-        const idx = Number(removeBtn.dataset.index);
-        subtasks.splice(idx, 1);
-        renderSubtasks();
-      }
-    });
+    const inputEl = popup.querySelector('#quickAddInput');
+    setTimeout(() => inputEl?.focus(), 50);
 
     const createAction = () => {
-      const name = (nameInput.value || '').trim();
-      if (!name) return;
-      const attr = popup.querySelector('#addTodoAttr').value;
-      const diff = popup.querySelector('#addTodoDiff').value;
-      const dDate = popup.querySelector('#addTodoDeadline').value;
-      const dTime = popup.querySelector('#addTodoDeadlineTime').value || '23:59';
-      
-      let deadlineTs = defaultDeadline;
-      if (dDate) {
-        const [year, month, day] = dDate.split('-').map(Number);
-        const [hours, minutes] = dTime.split(':').map(Number);
-        deadlineTs = new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
-      }
+      const rawText = (inputEl.value || '').trim();
+      if (!rawText) return;
 
-      const created = TaskManager.addTodo(name, diff, attr, deadlineTs, subtasks);
+      const parts = rawText.split(/\s+/).filter(Boolean);
+      const taskName = parts[0];
+      const subtasks = parts.slice(1);
+
+      const created = TaskManager.addTodo(taskName, hudDiff, hudAttr, quickTs, subtasks);
       if (created) {
         if (xPercent !== null && yPercent !== null) {
           TaskManager.updateTodoLayout(created.id, { x: xPercent, y: typeof yPercent === 'number' ? yPercent : 8 });
@@ -2794,7 +2743,7 @@ class PopupsManager {
     };
 
     popup.querySelector('#submitAddTodo').addEventListener('click', createAction);
-    nameInput.addEventListener('keydown', (e) => {
+    inputEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') createAction();
     });
 
