@@ -10079,6 +10079,7 @@ class UIManager {
               <button class="preset-chip" data-days="7">+7 Days</button>
             </div>
             <input type="date" id="todoPresetDate" class="preset-input" title="Preset Deadline Date" />
+            <input type="time" id="todoPresetTime" class="preset-input" value="23:59" title="Preset Deadline Time" style="margin-top: 4px;" />
           </div>
         </div>
         <div class="hud-resizer"></div>
@@ -10291,26 +10292,40 @@ class UIManager {
     const hudId = 'hudDeadline';
     const chipsColumn = deadlineHud.querySelector('.preset-date-chips-column');
     const dateInput = deadlineHud.querySelector('#todoPresetDate');
+    const timeInput = deadlineHud.querySelector('#todoPresetTime');
 
     const savedDays = this.hudStates[hudId]?.selectedDays;
     const savedDate = this.hudStates[hudId]?.selectedDate;
+    const savedTime = this.hudStates[hudId]?.selectedTime || '23:59';
+
+    if (timeInput) {
+      timeInput.value = savedTime;
+    }
+
+    const getTimeHoursMinutes = () => {
+      const timeVal = timeInput ? timeInput.value || '23:59' : '23:59';
+      const [h, m] = timeVal.split(':').map(Number);
+      return { hours: isNaN(h) ? 23 : h, minutes: isNaN(m) ? 59 : m };
+    };
+
+    const updateDeadlineTs = (targetDate) => {
+      const { hours, minutes } = getTimeHoursMinutes();
+      targetDate.setHours(hours, minutes, 0, 0);
+      const dTs = targetDate.getTime();
+      if (!isNaN(dTs)) UIManager.quickDayDeadline = dTs;
+    };
 
     if (savedDate && dateInput) {
       dateInput.value = savedDate;
       const target = new Date(savedDate);
-      target.setHours(23, 59, 0, 0);
-      const dTs = target.getTime();
-      if (!isNaN(dTs)) UIManager.quickDayDeadline = dTs;
+      updateDeadlineTs(target);
     } else if (savedDays !== undefined && savedDays !== null) {
       const daysNum = Number(savedDays);
       const target = new Date();
-      if (daysNum === 0) {
-        target.setHours(23, 59, 0, 0);
-      } else {
+      if (daysNum !== 0) {
         target.setDate(target.getDate() + daysNum);
-        target.setHours(23, 59, 0, 0);
       }
-      UIManager.quickDayDeadline = target.getTime();
+      updateDeadlineTs(target);
       if (dateInput) {
         const y = target.getFullYear();
         const m = String(target.getMonth() + 1).padStart(2, '0');
@@ -10337,13 +10352,10 @@ class UIManager {
 
           const daysNum = Number(days);
           const target = new Date();
-          if (daysNum === 0) {
-            target.setHours(23, 59, 0, 0);
-          } else {
+          if (daysNum !== 0) {
             target.setDate(target.getDate() + daysNum);
-            target.setHours(23, 59, 0, 0);
           }
-          UIManager.quickDayDeadline = target.getTime();
+          updateDeadlineTs(target);
 
           if (dateInput) {
             const y = target.getFullYear();
@@ -10355,28 +10367,39 @@ class UIManager {
           this.hudStates[hudId] = this.hudStates[hudId] || {};
           this.hudStates[hudId].selectedDays = days;
           this.hudStates[hudId].selectedDate = dateInput ? dateInput.value : null;
+          this.hudStates[hudId].selectedTime = timeInput ? timeInput.value || '23:59' : '23:59';
           this.saveTodoHudStates();
         };
       });
     }
 
+    const onDateOrTimeChange = (e) => {
+      e?.stopPropagation();
+      if (!dateInput || !dateInput.value) {
+        UIManager.quickDayDeadline = null;
+      } else {
+        const target = new Date(dateInput.value);
+        updateDeadlineTs(target);
+      }
+      this.hudStates[hudId] = this.hudStates[hudId] || {};
+      this.hudStates[hudId].selectedDate = dateInput ? dateInput.value : null;
+      this.hudStates[hudId].selectedTime = timeInput ? timeInput.value || '23:59' : '23:59';
+      this.saveTodoHudStates();
+    };
+
     if (dateInput) {
       dateInput.onchange = (e) => {
-        e.stopPropagation();
-        if (!dateInput.value) {
-          UIManager.quickDayDeadline = null;
-        } else {
-          const target = new Date(dateInput.value);
-          target.setHours(23, 59, 0, 0);
-          UIManager.quickDayDeadline = target.getTime();
-        }
         if (chipsColumn) {
           chipsColumn.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
         }
-        this.hudStates[hudId] = this.hudStates[hudId] || {};
-        delete this.hudStates[hudId].selectedDays;
-        this.hudStates[hudId].selectedDate = dateInput.value;
-        this.saveTodoHudStates();
+        delete this.hudStates[hudId]?.selectedDays;
+        onDateOrTimeChange(e);
+      };
+    }
+
+    if (timeInput) {
+      timeInput.onchange = (e) => {
+        onDateOrTimeChange(e);
       };
     }
   }

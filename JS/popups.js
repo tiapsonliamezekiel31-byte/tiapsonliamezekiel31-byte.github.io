@@ -2685,7 +2685,8 @@ class PopupsManager {
     tomorrow.setHours(23, 59, 0, 0);
     const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : tomorrow.getTime();
     const deadlineDate = new Date(quickTs);
-    const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth()+1).padStart(2,'0')}-${String(deadlineDate.getDate()).padStart(2,'0')}`;
+    const deadlineTimeStr = `${String(deadlineDate.getHours()).padStart(2,'0')}:${String(deadlineDate.getMinutes()).padStart(2,'0')}`;
+    const deadlineStr = `${deadlineDate.getFullYear()}-${String(deadlineDate.getMonth()+1).padStart(2,'0')}-${String(deadlineDate.getDate()).padStart(2,'0')} ${deadlineTimeStr}`;
 
     this.closeAllPopups();
     const overlay = this.createPopupOverlay();
