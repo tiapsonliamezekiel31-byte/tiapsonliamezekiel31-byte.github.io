@@ -2701,10 +2701,10 @@ class PopupsManager {
           <span><strong>Diff:</strong> ${hudDiff}</span>
           <span><strong>Deadline:</strong> ${deadlineStr}</span>
         </div>
-        <label style="font-size: 11px;">Task & Subtasks (separated by space)</label>
-        <input id="quickAddInput" placeholder="TaskName Subtask1 Subtask2..." autofocus autocomplete="off" style="width: 100%; margin-top: 4px;" />
-        <div style="font-size: 9px; color: var(--text-muted, #888); margin-top: 6px;">
-          Format: <code>TaskName Subtask1 Subtask2 ...</code>
+        <label style="font-size: 11px;">Tasks & Subtasks (- for subtasks)</label>
+        <textarea id="quickAddInput" placeholder="Task Name&#10;- Subtask 1&#10;- Subtask 2" autofocus spellcheck="false" style="width: 100%; height: 140px; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px; font-family: inherit; font-size: 11px; border-radius: 4px; resize: vertical; line-height: 1.5; margin-top: 4px;"></textarea>
+        <div style="font-size: 9px; color: var(--text-muted, #888); margin-top: 6px; line-height: 1.4;">
+          Press Enter for new line. Prefix subtasks with <code>-</code> (e.g. <code>- Subtask</code>).
         </div>
       </div>
       <div class="edit-todo-actions" style="margin-top:14px;">
@@ -2716,22 +2716,36 @@ class PopupsManager {
     overlay.appendChild(popup);
     document.body.appendChild(overlay);
 
-    const inputEl = popup.querySelector('#quickAddInput');
-    setTimeout(() => inputEl?.focus(), 50);
+    const textarea = popup.querySelector('#quickAddInput');
+    setTimeout(() => textarea?.focus(), 80);
 
     const createAction = () => {
-      const rawText = (inputEl.value || '').trim();
-      if (!rawText) return;
+      const textVal = (textarea.value || '').trim();
+      if (!textVal) return;
 
-      const parts = rawText.split(/\s+/).filter(Boolean);
-      const taskName = parts[0];
-      const subtasks = parts.slice(1);
+      const parsedTasks = TaskManager.parseBulkAddText(textVal, hudAttr, hudDiff, quickTs);
+      if (parsedTasks.length === 0) return;
 
-      const created = TaskManager.addTodo(taskName, hudDiff, hudAttr, quickTs, subtasks);
-      if (created) {
-        if (xPercent !== null && yPercent !== null) {
-          TaskManager.updateTodoLayout(created.id, { x: xPercent, y: typeof yPercent === 'number' ? yPercent : 8 });
+      let addedCount = 0;
+      parsedTasks.forEach(t => {
+        const created = TaskManager.addTodo(t.name, t.difficulty, t.attribute, t.deadline, t.subtasks);
+        if (created) {
+          if (t.clusterAttributes) {
+            created.clusterAttributes = t.clusterAttributes;
+          }
+          if (xPercent !== null && yPercent !== null) {
+            const offsetX = (addedCount % 4) * 3;
+            const offsetY = (addedCount % 4) * 3;
+            TaskManager.updateTodoLayout(created.id, { 
+              x: Math.min(92, Math.max(4, xPercent + offsetX)), 
+              y: Math.min(92, Math.max(4, (typeof yPercent === 'number' ? yPercent : 8) + offsetY)) 
+            });
+          }
+          addedCount++;
         }
+      });
+
+      if (addedCount > 0) {
         this.closeAllPopups();
         if (typeof UIManager !== 'undefined') {
           UIManager.updateTodosList();
@@ -2743,8 +2757,12 @@ class PopupsManager {
     };
 
     popup.querySelector('#submitAddTodo').addEventListener('click', createAction);
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') createAction();
+
+    textarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        createAction();
+      }
     });
 
     if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
