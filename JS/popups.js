@@ -2691,24 +2691,24 @@ class PopupsManager {
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup edit-todo-popup add-todo-popup';
+    popup.style.cssText = 'background: rgba(14, 14, 20, 0.75) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; box-shadow: none !important; text-shadow: none !important; padding: 16px;';
 
     popup.innerHTML = `
-      <h2>ADD TO-DO</h2>
-      <button class="btn-close">✕</button>
-      <div class="popup-scrollable-body" style="padding-top: 10px;">
-        <div class="hud-preset-info" style="font-size: 10px; color: #a855f7; margin-bottom: 10px; padding: 6px 10px; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3); border-radius: 6px; display: flex; gap: 12px; flex-wrap: wrap;">
-          <span><strong>Attr:</strong> ${hudAttr}</span>
-          <span><strong>Diff:</strong> ${hudDiff}</span>
-          <span><strong>Deadline:</strong> ${deadlineStr}</span>
+      <h2 style="font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; text-shadow: none;">ADD TO-DO</h2>
+      <button class="btn-close" style="box-shadow: none; text-shadow: none;">✕</button>
+      <div class="popup-scrollable-body" style="padding-top: 4px;">
+        <div class="hud-preset-info" style="font-size: 9px; font-weight: 600; margin-bottom: 10px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; opacity: 0.9;">
+          <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0;">⚡ ${hudAttr}</span>
+          <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0;">🎯 ${hudDiff}</span>
+          <span style="background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #e2e8f0;">📅 ${deadlineStr}</span>
         </div>
-        <label style="font-size: 11px;">Tasks & Subtasks (- for subtasks)</label>
-        <textarea id="quickAddInput" placeholder="Task Name&#10;- Subtask 1&#10;- Subtask 2" autofocus spellcheck="false" style="width: 100%; height: 140px; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 8px; font-family: inherit; font-size: 11px; border-radius: 4px; resize: vertical; line-height: 1.5; margin-top: 4px;"></textarea>
-        <div style="font-size: 9px; color: var(--text-muted, #888); margin-top: 6px; line-height: 1.4;">
-          Press Enter for new line. Prefix subtasks with <code>-</code> (e.g. <code>- Subtask</code>).
+        <textarea id="quickAddInput" placeholder="Task Name&#10;- Subtask 1&#10;- Subtask 2" autofocus spellcheck="false" style="width: 100%; height: 160px; box-sizing: border-box; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; padding: 12px; font-family: inherit; font-size: 14px; line-height: 1.5; border-radius: 8px; resize: vertical; margin-top: 4px; box-shadow: none; outline: none;"></textarea>
+        <div style="font-size: 9.5px; color: rgba(255,255,255,0.5); margin-top: 6px; line-height: 1.4;">
+          Enter = line break • <code>-</code> = subtask
         </div>
       </div>
-      <div class="edit-todo-actions" style="margin-top:14px;">
-        <button class="btn-large" id="submitAddTodo">ADD TO-DO</button>
+      <div class="edit-todo-actions" style="margin-top: 12px;">
+        <button class="btn-large" id="submitAddTodo" style="box-shadow: none; text-shadow: none; font-size: 11px;">ADD TO-DO</button>
       </div>
     `;
 
