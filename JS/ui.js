@@ -10520,6 +10520,37 @@ class UIManager {
 
     viewport.onpointerup = stopPan;
     viewport.onpointercancel = stopPan;
+
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        isDragging = false;
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        pinchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        pinchStartScale = this.orbitScale || 1;
+      }
+    }, { passive: true });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && pinchStartDist > 0) {
+        if (e.cancelable) e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const factor = dist / pinchStartDist;
+        this.orbitScale = Math.max(0.35, Math.min(2.8, pinchStartScale * factor));
+        this.applyOrbitTransform();
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) {
+        pinchStartDist = 0;
+      }
+    }, { passive: true });
   }
 
   static applyOrbitTransform() {
