@@ -3,6 +3,262 @@
  * HUD, enemy circle, spinner, buttons, pull-tabs
  */
 
+class HUDMinimizer {
+  static huds = {
+    draggableHud: {
+      id: 'draggableHud',
+      name: 'PLAYER HUD',
+      icon: '❤️',
+      storageKey: 'nemesis_hud_minimized_draggableHud'
+    },
+    statsHudWidget: {
+      id: 'statsHudWidget',
+      name: 'RUN STATS',
+      icon: '📊',
+      storageKey: 'nemesis_hud_minimized_statsHudWidget'
+    },
+    nemesisTauntHud: {
+      id: 'nemesisTauntHud',
+      name: 'TAUNT',
+      icon: '👾',
+      storageKey: 'nemesis_hud_minimized_nemesisTauntHud'
+    },
+    nemesisChallengeHud: {
+      id: 'nemesisChallengeHud',
+      name: 'CHALLENGE',
+      icon: '🎯',
+      storageKey: 'nemesis_hud_minimized_nemesisChallengeHud'
+    },
+    weeklyHeatmapPanel: {
+      id: 'weeklyHeatmapPanel',
+      name: 'HEATMAP',
+      icon: '🔥',
+      storageKey: 'nemesis_hud_minimized_weeklyHeatmapPanel'
+    },
+    weaponStrip: {
+      id: 'weaponStrip',
+      name: 'WEAPONS',
+      icon: '⚔️',
+      storageKey: 'nemesis_hud_minimized_weaponStrip'
+    },
+    satchelPanel: {
+      id: 'satchelPanel',
+      name: 'SATCHEL',
+      icon: '🎒',
+      storageKey: 'nemesis_hud_minimized_satchelPanel'
+    },
+    runCompletionPanel: {
+      id: 'runCompletionPanel',
+      name: 'RUN COMPLETION',
+      icon: '🏁',
+      storageKey: 'nemesis_hud_minimized_runCompletionPanel'
+    },
+    eventBannerPanel: {
+      id: 'eventBannerPanel',
+      name: 'EVENTS',
+      icon: '⛩️',
+      storageKey: 'nemesis_hud_minimized_eventBannerPanel'
+    },
+    buffPanel: {
+      id: 'buffPanel',
+      name: 'BUFFS',
+      icon: '✨',
+      storageKey: 'nemesis_hud_minimized_buffPanel'
+    }
+  };
+
+  static init() {
+    if (localStorage.getItem('nemesis_stats_hud_collapsed') === 'true') {
+      localStorage.setItem('nemesis_hud_minimized_statsHudWidget', 'true');
+      localStorage.removeItem('nemesis_stats_hud_collapsed');
+    }
+    this.renderDock();
+  }
+
+  static isMinimized(hudId) {
+    const config = this.huds[hudId];
+    if (!config) return false;
+    return localStorage.getItem(config.storageKey) === 'true';
+  }
+
+  static minimize(hudId) {
+    const config = this.huds[hudId];
+    if (!config) return;
+    localStorage.setItem(config.storageKey, 'true');
+    const el = document.getElementById(hudId);
+    if (el) {
+      el.classList.add('is-hud-minimized');
+    }
+    this.renderDock();
+  }
+
+  static unminimize(hudId) {
+    const config = this.huds[hudId];
+    if (!config) return;
+    localStorage.setItem(config.storageKey, 'false');
+    const el = document.getElementById(hudId);
+    if (el) {
+      el.classList.remove('is-hud-minimized');
+    }
+    this.renderDock();
+  }
+
+  static toggle(hudId) {
+    if (this.isMinimized(hudId)) {
+      this.unminimize(hudId);
+    } else {
+      this.minimize(hudId);
+    }
+  }
+
+  static attachDblClick(el, hudId) {
+    if (!el || el._hasDblClickMin) return;
+    el._hasDblClickMin = true;
+    el.title = (el.title ? el.title + ' | ' : '') + 'Double-click to minimize';
+    el.addEventListener('dblclick', (e) => {
+      if (e.target.closest('input, textarea, select, button, a')) return;
+      e.stopPropagation();
+      HUDMinimizer.minimize(hudId);
+    });
+  }
+
+  static setupDockInteractions(dock) {
+    if (!dock || dock._hasInteractions) return;
+    dock._hasInteractions = true;
+
+    let isScrubbing = false;
+    let activeChip = null;
+
+    const getChipAtPoint = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.closest('.minimized-hud-chip') : null;
+    };
+
+    const updateScrubHighlight = (x, y) => {
+      const chip = getChipAtPoint(x, y);
+      if (chip !== activeChip) {
+        if (activeChip) activeChip.classList.remove('is-scrub-active');
+        activeChip = chip;
+        if (activeChip) activeChip.classList.add('is-scrub-active');
+      }
+    };
+
+    const onPointerDown = (e) => {
+      isScrubbing = true;
+      dock.classList.add('is-scrubbing');
+      updateScrubHighlight(e.clientX, e.clientY);
+      try { dock.setPointerCapture(e.pointerId); } catch (err) {}
+    };
+
+    const onPointerMove = (e) => {
+      if (!isScrubbing) return;
+      updateScrubHighlight(e.clientX, e.clientY);
+    };
+
+    const onPointerUp = (e) => {
+      if (!isScrubbing) return;
+      isScrubbing = false;
+      dock.classList.remove('is-scrubbing');
+      
+      const targetChip = activeChip || getChipAtPoint(e.clientX, e.clientY);
+      if (activeChip) {
+        activeChip.classList.remove('is-scrub-active');
+        activeChip = null;
+      }
+
+      if (targetChip && targetChip.dataset.hudId) {
+        HUDMinimizer.unminimize(targetChip.dataset.hudId);
+      }
+      try { dock.releasePointerCapture(e.pointerId); } catch (err) {}
+    };
+
+    dock.addEventListener('pointerdown', onPointerDown);
+    dock.addEventListener('pointermove', onPointerMove);
+    dock.addEventListener('pointerup', onPointerUp);
+    dock.addEventListener('pointercancel', onPointerUp);
+  }
+
+  static renderDock() {
+    let dock = document.getElementById('minimizedHudDock');
+    if (!dock) {
+      dock = document.createElement('div');
+      dock.id = 'minimizedHudDock';
+      dock.className = 'minimized-hud-dock';
+      document.body.appendChild(dock);
+    }
+
+    dock.innerHTML = '';
+    this.setupDockInteractions(dock);
+
+    const isTycoon = document.body.classList.contains('tycoon-active');
+    let activeMinCount = 0;
+
+    Object.keys(this.huds).forEach(hudId => {
+      const config = this.huds[hudId];
+      const el = document.getElementById(hudId);
+      
+      if (!el) return;
+
+      this.attachDblClick(el, hudId);
+
+      if (hudId === 'weaponStrip') {
+        const topLeft = document.querySelector('.game-top-left');
+        if (topLeft) {
+          this.attachDblClick(topLeft, 'weaponStrip');
+        }
+      }
+
+      const isMin = this.isMinimized(hudId);
+
+      if (isMin) {
+        el.classList.add('is-hud-minimized');
+        if (hudId === 'weaponStrip') {
+          const topLeft = document.querySelector('.game-top-left');
+          if (topLeft) topLeft.classList.add('is-hud-minimized');
+        }
+
+        if (!isTycoon) {
+          if (hudId === 'nemesisChallengeHud') {
+            const state = (typeof getGameState === 'function') ? getGameState() : null;
+            if (!state?.systemState?.dailyChallenge?.active) return;
+          }
+          if (hudId === 'eventBannerPanel') {
+            if (el.style.display === 'none' && !el.classList.contains('is-hud-minimized')) return;
+          }
+          if (hudId === 'buffPanel') {
+            if (!el.children || el.children.length === 0) return;
+          }
+
+          activeMinCount++;
+          const chip = document.createElement('div');
+          chip.className = 'minimized-hud-chip';
+          chip.dataset.hudId = hudId;
+          chip.dataset.hudName = config.name;
+          chip.title = `${config.name} — Hold & slide to select`;
+          chip.innerHTML = `<span class="chip-icon">${config.icon}</span>`;
+          dock.appendChild(chip);
+        }
+      } else {
+        el.classList.remove('is-hud-minimized');
+        if (hudId === 'weaponStrip') {
+          const topLeft = document.querySelector('.game-top-left');
+          if (topLeft) topLeft.classList.remove('is-hud-minimized');
+        }
+      }
+    });
+
+    if (activeMinCount === 0) {
+      dock.style.display = 'none';
+    } else {
+      dock.style.display = 'flex';
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.HUDMinimizer = HUDMinimizer;
+}
+
 class UIManager {
   static checkInSequenceToken = 0;
   static eventListenersBound = false;
@@ -313,6 +569,9 @@ class UIManager {
     this.createChallengeHud();
     this.createNavigationMenu();
     this.createGameArea();
+    if (typeof HUDMinimizer !== 'undefined') {
+      HUDMinimizer.init();
+    }
     this.createActionButtons();
     this.createPullTabs();
     this.createShopPanel();
@@ -358,6 +617,7 @@ class UIManager {
     hud.id = 'draggableHud';
     hud.className = 'draggable-hud';
     hud.innerHTML = `
+      <button class="hud-minimize-btn" title="Minimize Player HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('draggableHud')">－</button>
       <div class="impending-damage-number" id="pendingDmgRow" style="display: none;">
         <span id="pendingDmgValue">-0</span>
       </div>
@@ -501,6 +761,7 @@ class UIManager {
     hud.id = 'nemesisTauntHud';
     hud.className = 'draggable-taunt-hud';
     hud.innerHTML = `
+      <button class="hud-minimize-btn" title="Minimize Taunt HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisTauntHud')">－</button>
       <div class="taunt-avatar">👾</div>
       <div class="taunt-body" id="nemesisTauntContent">I'm preparing...</div>
     `;
@@ -814,6 +1075,7 @@ class UIManager {
     const statusText = allCompleted ? 'SAFE ✨' : 'NEMESIS 👾';
 
     hud.innerHTML = `
+      <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')">－</button>
       <div class="challenge-hud-content">
         <div class="challenge-stolen-row">
           <div class="challenge-stolen-card">
@@ -836,6 +1098,10 @@ class UIManager {
         <div class="challenge-dailies-list">${dailiesHtml}</div>
       </div>
     `;
+
+    if (typeof HUDMinimizer !== 'undefined') {
+      HUDMinimizer.renderDock();
+    }
   }
 
   static createStatsHudWidget() {
@@ -1736,6 +2002,13 @@ class UIManager {
           <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Lock: off</button>
           <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
           <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Focus: off</button>
+          <select id="dailiesFilterSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; padding-right: 24px; line-height: 1.5;" title="Daily Filter & Heatmap">
+            <option value="regular">Filter: Regular</option>
+            <option value="streak">Filter: Streak</option>
+            <option value="completion">Filter: Completion Rate</option>
+            <option value="rewards">Filter: Rewards</option>
+            <option value="safety">Filter: Safety</option>
+          </select>
           <button id="dailiesTableViewBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">📋 Table</button>
           <button id="dailiesAddBtn" class="btn-add">＋</button>
           <button class="tab-close">✕</button>
@@ -4103,6 +4376,13 @@ class UIManager {
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
+    document.getElementById('dailiesFilterSelect')?.addEventListener('change', (e) => {
+      const state = getGameState();
+      if (!state.systemState.taskListFilters) state.systemState.taskListFilters = {};
+      state.systemState.taskListFilters.dailyColorFilter = e.target.value;
+      state.save();
+      this.updateDailiesList();
+    });
     document.getElementById('addDailyRectBtn')?.addEventListener('click', () => {
       UIManager.isDrawingRect = !UIManager.isDrawingRect;
       const board = document.getElementById('dailiesList');
@@ -6057,6 +6337,11 @@ class UIManager {
     const connectionsBtn = document.getElementById('dailiesConnectionsBtn');
     const focusBtn = document.getElementById('dailiesFocusBtn');
     const todosBtn = document.getElementById('todosShowCompletedBtn');
+    const filterSelect = document.getElementById('dailiesFilterSelect');
+
+    if (filterSelect) {
+      filterSelect.value = state.systemState?.taskListFilters?.dailyColorFilter || 'regular';
+    }
 
     if (dailiesBtn) {
       const show = !!state.systemState?.taskListFilters?.showCompletedDailies;
@@ -7501,7 +7786,36 @@ class UIManager {
     };
 
     const focusModeActive = !!getGameState().systemState?.taskListFilters?.focusModeDailies;
+    const activeColorFilter = getGameState().systemState?.taskListFilters?.dailyColorFilter || 'regular';
     const sortedByRate = focusModeActive ? [...visibleDailies].sort((a, b) => (a.completionRate || 0) - (b.completionRate || 0)) : [];
+
+    const interpolateColor = (c1Hex, c2Hex, ratio) => {
+      const t = Math.max(0, Math.min(1, ratio));
+      const p = (hex) => {
+        const h = String(hex || '').replace('#', '');
+        return [parseInt(h.slice(0, 2), 16) || 0, parseInt(h.slice(2, 4), 16) || 0, parseInt(h.slice(4, 6), 16) || 0];
+      };
+      const r1 = p(c1Hex), r2 = p(c2Hex);
+      const r = Math.round(r1[0] + (r2[0] - r1[0]) * t);
+      const g = Math.round(r1[1] + (r2[1] - r1[1]) * t);
+      const b = Math.round(r1[2] + (r2[2] - r1[2]) * t);
+      const toH = (v) => v.toString(16).padStart(2, '0');
+      return `#${toH(r)}${toH(g)}${toH(b)}`;
+    };
+
+    let minStreakVal = 0, maxStreakVal = 0;
+    let minRewardVal = 0, maxRewardVal = 0;
+
+    if (activeColorFilter === 'streak' && visibleDailies.length > 0) {
+      const streakVals = visibleDailies.map(d => computeDailyStreak(d.id));
+      minStreakVal = Math.min(...streakVals);
+      maxStreakVal = Math.max(...streakVals);
+    } else if (activeColorFilter === 'rewards' && visibleDailies.length > 0) {
+      const getReward = (d) => getGameState().config?.taskRewards?.[d.difficulty]?.ap || 10;
+      const rewardVals = visibleDailies.map(getReward);
+      minRewardVal = Math.min(...rewardVals);
+      maxRewardVal = Math.max(...rewardVals);
+    }
 
     let html = '';
     const gs = getGameState();
@@ -7521,7 +7835,28 @@ class UIManager {
       const sizeScale = Math.max(0.5, (Number(daily.size) || 1) * globalSizeMod);
 
       let attributeColor = getAttributeColor(daily.attribute);
-      if (focusModeActive && visibleDailies.length > 0) {
+      if (activeColorFilter === 'streak' && visibleDailies.length > 0) {
+        const curStreak = computeDailyStreak(daily.id);
+        const norm = maxStreakVal > minStreakVal ? (curStreak - minStreakVal) / (maxStreakVal - minStreakVal) : 0.5;
+        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+      } else if (activeColorFilter === 'completion') {
+        let rate = typeof daily.completionRate === 'number' ? daily.completionRate : null;
+        if (rate === null && typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyCompletionRate === 'function') {
+          rate = TaskManager.computeDailyCompletionRate(daily.id);
+        }
+        if (rate === null) {
+          rate = daily.completed ? 1.0 : (completionsToday / maxCompletions);
+        }
+        const norm = Math.max(0, Math.min(1, Number(rate) || 0));
+        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+      } else if (activeColorFilter === 'rewards' && visibleDailies.length > 0) {
+        const curReward = gs.config?.taskRewards?.[daily.difficulty]?.ap || 10;
+        const norm = maxRewardVal > minRewardVal ? (curReward - minRewardVal) / (maxRewardVal - minRewardVal) : 0.5;
+        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+      } else if (activeColorFilter === 'safety') {
+        const isSafe = !!(daily.streakSaver || daily.streakSaverActive || daily.hasStreakSaver);
+        attributeColor = isSafe ? '#a855f7' : '#ef4444';
+      } else if (focusModeActive && visibleDailies.length > 0) {
         const rankIndex = sortedByRate.findIndex(d => d.id === daily.id);
         const normRank = sortedByRate.length > 1 ? rankIndex / (sortedByRate.length - 1) : 1.0;
         const c = Math.round(normRank * 255);
@@ -7538,7 +7873,9 @@ class UIManager {
       // Streak saturation curve: -7 is 0 (fully desaturated), ramps up momentum around 5-7, max (1.0) at 21
       const sVal = Number(streak) || 0;
       let streakSat = 0;
-      if (sVal <= -7) {
+      if (activeColorFilter !== 'regular') {
+        streakSat = 1;
+      } else if (sVal <= -7) {
         streakSat = 0;
       } else if (sVal >= 21) {
         streakSat = 1;
@@ -12898,11 +13235,11 @@ class StatsHUD {
     if (toggleBtn) {
       toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const collapsed = hud.classList.toggle('collapsed');
-        toggleBtn.textContent = collapsed ? '＋' : '－';
-        localStorage.setItem('nemesis_stats_hud_collapsed', String(collapsed));
-        if (!collapsed) {
-          StatsHUD.update();
+        if (typeof HUDMinimizer !== 'undefined') {
+          HUDMinimizer.toggle('statsHudWidget');
+        } else {
+          const collapsed = hud.classList.toggle('collapsed');
+          toggleBtn.textContent = collapsed ? '＋' : '－';
         }
       });
     }

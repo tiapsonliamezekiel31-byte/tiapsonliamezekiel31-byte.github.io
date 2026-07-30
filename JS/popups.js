@@ -81,15 +81,19 @@ class PopupsManager {
     
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
-    popup.className = 'popup attributes-popup';
+    popup.className = 'popup attributes-popup wide-attributes-popup';
     
     let html = '<h2>ATTRIBUTES</h2><button class="btn-close">✕</button>';
-    html += '<div class="attributes-grid">';
+    html += '<div class="attributes-sabotage-hint">⚡ Double-click any attribute bar to Sabotage Nemesis (30 Mana)</div>';
+    html += '<div class="attributes-grid compact-attributes-grid">';
 
-    // Get thresholds array from config (function or array)
     const thresholds = typeof state.config.attributeLevelThresholds === 'function'
       ? state.config.attributeLevelThresholds()
       : (Array.isArray(state.config.attributeLevelThresholds) ? state.config.attributeLevelThresholds : []);
+
+    const attrColors = state.config?.attributeColors || {
+      STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
+    };
 
     state.config.attributes.forEach(attr => {
       const data = state.playerState.attributes[attr] || { points: 0, level: 1 };
@@ -101,37 +105,23 @@ class PopupsManager {
       const pPts = Math.round(data.points * 100) / 100;
       const nPts = Math.round(nemData.points * 100) / 100;
       const total = pPts + nPts;
-      const playerPercent = total > 0 ? (pPts / total) * 100 : 50;
+      const playerPercent = total > 0 ? Math.min(95, Math.max(5, (pPts / total) * 100)) : 50;
+      const barColor = attrColors[attr.toUpperCase()] || '#e8b84a';
 
       html += `
-        <div class="attr-row">
-          <div class="attr-row-header">
-            <div class="attr-side attr-left">
-              <span class="attr-val player-val">${pPts}</span>
+        <div class="attr-row embedded-attr-row" data-attr="${attr}" title="Double-click to Sabotage ${attr} (30 Mana)">
+          <div class="attr-bar-container thick-attr-bar">
+            <div class="attr-bar-player" style="width: ${playerPercent}%; background: ${barColor}; box-shadow: 0 0 10px ${barColor}80;"></div>
+            <div class="attr-embedded-overlay">
+              <span class="embedded-val player-val">${pPts} ${playerLeads ? '⬆️' : ''}</span>
+              <span class="embedded-center"><strong style="color: ${barColor}; text-shadow: 0 0 6px ${barColor}80;">${attr}</strong> <span class="embedded-lvl">Lv.${data.level}</span></span>
+              <span class="embedded-val nem-val">${nemesisLeads ? '⚠️ ' : ''}${nPts}</span>
             </div>
-            <div class="attr-center">
-              <span class="attr-name">${attr}</span>
-              <span class="attr-level">Lv.${data.level}</span>
-            </div>
-            <div class="attr-side attr-right">
-              <span class="attr-lead">
-                ${playerLeads ? '⬆️' : ''}
-                ${nemesisLeads ? '⚠️' : ''}
-              </span>
-              <span class="attr-val nem-val">${nPts}</span>
-            </div>
-          </div>
-          <div class="attr-bar-container">
-            <div class="attr-bar-player" style="width: ${playerPercent}%"></div>
-          </div>
-          <div class="attr-sabotage-wrap" style="display: flex; justify-content: center; margin-top: 4px;">
-            <button class="btn-sabotage" data-attr="${attr}">Sabotage (30 Mana)</button>
           </div>
         </div>
       `;
     });
     
-    // Recompute nemesis leads count explicitly by attribute keys
     let nemesisLeadsCount = 0;
     (state.config.attributes || []).forEach(a => {
       const p = state.playerState.attributes?.[a]?.points || 0;
@@ -145,13 +135,14 @@ class PopupsManager {
     popup.innerHTML = html;
     popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
     
-    // Bind Sabotage button listeners
-    popup.querySelectorAll('.btn-sabotage').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    // Bind Double-Click Sabotage listener on attribute rows
+    popup.querySelectorAll('.embedded-attr-row').forEach(row => {
+      row.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
         const attr = e.currentTarget.dataset.attr;
         const pState = state.playerState;
         if ((pState.mana || 0) < 30) {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana', { color: '#ff6666' });
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana (30 required)', { color: '#ff6666' });
           return;
         }
 
