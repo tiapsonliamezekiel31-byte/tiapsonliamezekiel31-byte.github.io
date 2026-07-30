@@ -2692,7 +2692,7 @@ class PopupsManager {
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
     popup.className = 'popup edit-todo-popup add-todo-popup';
-    popup.style.cssText = 'background: rgba(14, 14, 20, 0.75) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; box-shadow: none !important; text-shadow: none !important; padding: 16px;';
+    popup.style.cssText = 'background: rgba(12, 12, 16, 0.94) !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; box-shadow: none !important; text-shadow: none !important; padding: 16px;';
 
     popup.innerHTML = `
       <h2 style="font-size: 14px; letter-spacing: 1px; margin-bottom: 10px; text-shadow: none;">ADD TO-DO</h2>
