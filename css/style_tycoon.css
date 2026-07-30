@@ -345,8 +345,11 @@ body.tycoon-active> :not(#tycoon-container):not(#dailiesPanel):not(#leftTabHandl
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  transform: translateZ(0);
+  will-change: opacity, backdrop-filter;
   z-index: 10002;
   display: none;
   align-items: center;
