@@ -2649,6 +2649,7 @@ function performCheckIn() {
       delete skillFx.shadowPet;
       delete skillFx.stormVolley;
       delete skillFx.chronoShiftCharges;
+      delete skillFx.bypassFinalStand;
     }
 
     // Clear unstableConcoction status effects from enemies

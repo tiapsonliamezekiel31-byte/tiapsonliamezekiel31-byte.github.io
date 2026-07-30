@@ -289,8 +289,8 @@ class StageManager {
 
     try {
       PopupsManager.showConfiguredDialogue('bossFirstSeen', {
-        title: 'Boss Encounter',
-        text: `text\n${bossName}`
+        title: bossName,
+        enemyName: bossName
       }, `bossFirstSeen:${bossName}`);
     } catch (e) {}
 

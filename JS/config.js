@@ -100,7 +100,7 @@ const DEFAULT_GAME_CONFIG = {
     Wizard: {
       hp: 90, mana: 300, hpRegen: 10, manaRegen: 140,
       passive: 'Elemental Attunement: attacking an enemy\'s weakness auto-crits',
-      skill: 'Chrono-Shift – bend time; your next 3 attacks are echoed at 50% damage at the end of the turn (cost: 50 mana)'
+      skill: 'Bypass Final Stand – bypass final stand on next attack (cost: 50 mana)'
     },
     Brute: {
       hp: 100, mana: 300, hpRegen: 15, manaRegen: 160,
@@ -169,10 +169,10 @@ const DEFAULT_GAME_CONFIG = {
       flavorText: '"You never saw the blade."'
     },
     Wizard: {
-      name: 'Chrono-Shift',
-      icon: '⏳',
+      name: 'Bypass Final Stand',
+      icon: '🔮',
       color: '#a855f7',
-      flavorText: '"Time is a loop. Let it replay."'
+      flavorText: '"No mortal defense can withstand this spell."'
     },
     Brute: {
       name: 'Wrath Unleashed',
@@ -222,7 +222,15 @@ const DEFAULT_GAME_CONFIG = {
   overkillThreshold: 0.6, // 60% of max HP
   overkillChance: 0.4,
   finalStandThreshold: 0.2, // 20% of max HP
-  finalStandChance: 0.65, // 65% chance
+  finalStandChance: 0.50, // 50% baseline chance (Grade C)
+  finalStandGradeChances: {
+    A: 0.80,
+    B: 0.70,
+    C: 0.50,
+    D: 0.40,
+    E: 0.30,
+    F: 0.20
+  },
   dodgeCost: 0.15, // 15% of MAX_AP
   dodgeSpinnerMultiplier: 2,
   dodgeDamageReduction: 0.7, // for next attack
@@ -256,10 +264,9 @@ const DEFAULT_GAME_CONFIG = {
     Fire: '#ff9a2e',
     Water: '#4ea3ff',
     Aether: '#ffd76a',
-    Light: '#ffee55',
     default: '#9d6bff'
   },
-  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether', 'Light'],
+  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether'],
   enemyArchetypes: {
     Brute: {
       description: 'Consecutive attack multiplier M = 1 + stage/10. Each consecutive day, damage ×M up to M^5.'
@@ -773,6 +780,157 @@ const DEFAULT_GAME_CONFIG = {
       title: 'Victory',
       text: 'text',
       image: null
+    }
+  },
+
+  eldenRingDialogues: {
+    // Stage 1 – Forest
+    'Gorilla Rebel': { firstEncounter: "Foul intruder of the iron canopy... state thy business, or be broken upon the roots." },
+    'Wolf': { firstEncounter: "A ravenous howl echoes through the mist. The red-eyed stalkers of the wood know no mercy for lost tarnished." },
+    'Goblin': { firstEncounter: "A wretched creature lurking in the underbrush, clutching crude iron and festering malice." },
+    'Goblin Wizard': { firstEncounter: "A squalid chanter of forbidden hexes. Its twisted staff hums with corrupted grace." },
+    'Bear': { firstEncounter: "An ancient beast of muscle and scar, guardian of forgotten thickets." },
+    'Lion': { firstEncounter: "Golden-maned apex predator. Its roar shakes the earth and commands the wild." },
+    
+    // Stage 1 – Desert
+    'Marcher': { firstEncounter: "A hollowed soldier, condemned to march endlessly across sun-bleached sand and forgotten graves." },
+    'Beetle': { firstEncounter: "Chitin like hardened abyssal plate. A relentless crawler of the desolate dunes." },
+    'Grave Guardian': { firstEncounter: "Bound by solemn oath to protect forgotten tombs. It will not yield a single step." },
+    'Drone': { firstEncounter: "An ancient, humming construct. Its lifeless eye scans for living trespassers." },
+    'Raptor': { firstEncounter: "Swift predator born of prehistoric fury. Teeth like obsidian needles." },
+    
+    // Stage 2 – Crimson Cave
+    'Tarantulator': { firstEncounter: "Eight-legged nightmare of the dark caverns. It weaves webs of blood and shadow." },
+    'Brain Eaters': { firstEncounter: "Wretched entities craving mind and soul. They feast upon the memories of the fallen." },
+    'Dark Sorcerer': { firstEncounter: "Master of dark weave and ruinous cantrips. Thy mind shall shatter before his gaze." },
+    'Death Bringer': { firstEncounter: "Harbinger of final quietus. Wields a heavy scythe bathed in gloom." },
+    
+    // Stage 2 – Infected Swamp
+    'Leech': { firstEncounter: "Parasite of the stagnant mire. It hungers for warm blood and vitality." },
+    'Plagued': { firstEncounter: "A soul afflicted with corruptive rot. Every step spreads pestilence." },
+    'Giant Frog': { firstEncounter: "Amphibian horror of the toxic deeps. Its venomous tongue snaps like a whip." },
+    'Zombie': { firstEncounter: "Corpse reanimated by spite. It knows neither pain nor reprieve." },
+    'Croc': { firstEncounter: "Armored terror lurking beneath murky waters, waiting with jaws agape." },
+    
+    // Stage 3 – Glacier
+    'Ice Spirit': { firstEncounter: "Frost-bound anomaly. Its touch freezes blood and stifles courage." },
+    'Yeti Mage': { firstEncounter: "Shaman of the frozen wastes. Commands blizzards and howling winds." },
+    'Yeti Smasher': { firstEncounter: "Colossal beast of frost and bone. Its fists crush boulders into powder." },
+    'Yeti Hunter': { firstEncounter: "Stalker of the snowdrifts. Its icy spears strike without warning." },
+    
+    // Stage 3 – Ruins
+    'Stone Lizard': { firstEncounter: "Scales forged from basalt rock. Indifferent to blade and fire." },
+    'Golem': { firstEncounter: "Ancient stone titan awakened from centuries of silence." },
+    'Termite': { firstEncounter: "Devourer of wood and iron. Swarms that consume all in their path." },
+    'Turret': { firstEncounter: "Automated fortress eye. Fires bolts of condensed ether." },
+    
+    // Stage 4 – Graveyard
+    'Skeleton': { firstEncounter: "Rattling bones driven by residual malice and ancient spite." },
+    'Ghost': { firstEncounter: "Spectral remnant clinging to unfulfilled vows." },
+    'Coffin Carrier': { firstEncounter: "Grim bearer of eternal rest. Drags heavy caskets across desolate lands." },
+    'Ferryman': { firstEncounter: "Silent rower upon abyssal waters. Collects tribute from the departed." },
+    
+    // Stage 4 – Castle
+    'Flying Skull': { firstEncounter: "Fiery skull hovering on spectral winds, searching for victims to scorch." },
+    'Knight': { firstEncounter: "Disgraced champion clad in rusted plate. Holds his blade with unwavering resolve." },
+    'Paladin': { firstEncounter: "Holy defender of a ruined faith. Shield ablaze with divine vengeance." },
+    'Fire Mage': { firstEncounter: "Master of pyromancy. Burns all who dare tread upon his sanctuary." },
+    'Baby Dragon': { firstEncounter: "Wyrmling of dragon blood. Small in size, but fierce with flame." },
+    
+    // Stage 5 – Volcano
+    'Magma Blob': { firstEncounter: "Seething mass of molten rock. Burns through steel and flesh alike." },
+    'Ninja': { firstEncounter: "Shadow walker trained in silent lethality. Strike before thou art seen." },
+    'Master': { firstEncounter: "Venerable martial lord. His strikes carry the weight of a thousand battles." },
+    'Priest': { firstEncounter: "Devout servant of holy light. Heals the wicked and smites the unworthy." },
+    
+    // Stage 5 – Dragon Isle
+    'Air Wyvern': { firstEncounter: "Ruler of the howling skies. Wings cut through gales like razor steel." },
+    'Water Drake': { firstEncounter: "Serpent of the depths. Commands tides and crushing torrents." },
+    'Earth Wyrm': { firstEncounter: "Subterranean leviathan. Its burrowing shakes the foundations of the earth." },
+    'Aetherian Hydra': { firstEncounter: "Multi-headed terror born of cosmic ether. Cut one head, two take its place." },
+    
+    // Stage 6 – Golden Mountain
+    'Dwarf': { firstEncounter: "Stout subterranean miner. Wields pick and hammer with brutal efficiency." },
+    'Driller': { firstEncounter: "Mechanical terror of the deep mines. Its massive drill grinds through bedrock." },
+    'Atom': { firstEncounter: "Concentrated ball of raw energy. Unstable and devastating upon impact." },
+    
+    // Stage 6 – Abyssal Sea
+    'Kraken': { firstEncounter: "Abyssal sea titan. Tentacles drag entire ships into darkness." },
+    'World Eating Snake': { firstEncounter: "Mythic serpent that encircles the world. Its hunger is endless." },
+    'Constellation Crusher': { firstEncounter: "Celestial behemoth forged from dying stars." },
+    'Megalodon': { firstEncounter: "Ancient lord of the ocean depths. Apex predator of forgotten eras." },
+    
+    // Stage 7 – The Void
+    'Bat': { firstEncounter: "Winged horror of the abyssal cave. Attacks from shadows in blind fury." },
+    'Slug': { firstEncounter: "Abyssal gastropod coated in corrosive bile." },
+    'Porcupine': { firstEncounter: "Spined beast of the underworld. Launches needle-sharp quills." },
+    'Phoenix': { firstEncounter: "Immortal bird of sacred flame. Reborn from ashes in blinding radiance." },
+
+    // BOSSES
+    'Demon': {
+      intro: "Brave tarnished... step into the hellfire and offer thy soul unto the pyre!",
+      phase2: "Thou thinkest flame can be extinguished? Behold... TRUE INFERNO!",
+      defeat: "The ash... returns to dust... but the embers... shall burn forever..."
+    },
+    'Mummified Marcher': {
+      intro: "For ten thousand years I have guarded this tomb. Thou shalt not disturb our eternal sleep!",
+      phase2: "Curse thy insolence! The sands of antiquity rise to claim thee!",
+      defeat: "At last... rest... takes me..."
+    },
+    'Crimson Wizard': {
+      intro: "Ah... another seeker of forbidden arcana. Come, let thy blood ink my spellbooks.",
+      phase2: "Witness the crimson weave! Reality bends to my decree!",
+      defeat: "My spells... unraveled... how...?"
+    },
+    'Worm Eater': {
+      intro: "Deep within the toxic mire, all things rot. Thou shalt be no exception.",
+      phase2: "The mire hungers! Feed upon their flesh!",
+      defeat: "Returned... to the muck..."
+    },
+    'Jade Giant': {
+      intro: "I am the bedrock of the earth. Unyielding. Unbroken.",
+      phase2: "Earth crumble! Mountains shatter!",
+      defeat: "Even granite... breaks..."
+    },
+    'Star Computer': {
+      intro: "CALCULATING PROBABILITY OF SURVIVAL... 0.00%. INITIATING ERADICATION.",
+      phase2: "CRITICAL THREAT DETECTED. OVERCLOCKING SYSTEM CORE.",
+      defeat: "SYSTEM CRITICAL FAILURE... SHUTTING DOWN..."
+    },
+    'Angel': {
+      intro: "Humble mortal, bow before the grace of the heavens, or be cleansed in holy light.",
+      phase2: "Thou hast rejected grace! Suffer the wrath of divine judgment!",
+      defeat: "Forgive them... for they know not... what they have slain..."
+    },
+    'Killer Queen': {
+      intro: "Kneel before the Queen, peasant, or face absolute destruction!",
+      phase2: "How dare thou soil my throne! OFF WITH THY HEAD!",
+      defeat: "My kingdom... fallen... my crown..."
+    },
+    "Satan's Shark": {
+      intro: "Blood in the water... I smell thy fear, tarnished one!",
+      phase2: "FEEDING FRENZY! DEVOUR EVERYTHING!",
+      defeat: "Dragged... into the abyss..."
+    },
+    'Fire Turtle': {
+      intro: "An ancient shell forged in volcanic heart. Thy blades shall shatter upon me!",
+      phase2: "ERUPTION IMMINENT! BURN IN MOLTEN LAVA!",
+      defeat: "The magma... grows cold..."
+    },
+    'Banished King': {
+      intro: "Stripped of my crown, cast into darkness... yet here I stand, King of the Forgotten!",
+      phase2: "RECALL THE ROYAL GUARD! RISE, MY LOYAL SUBJECTS!",
+      defeat: "A king without a kingdom... dies alone..."
+    },
+    'The Sun': {
+      intro: "I am the light that pierces all darkness. Canst thou withstand my radiance?",
+      phase2: "SOLAR FLARE! CONSUME ALL LIFE IN THE REALM!",
+      defeat: "The sun... sets at last..."
+    },
+    'Nemesis': {
+      intro: "I am thy shadow, thy mirror, thy inevitable doom. All thy efforts end here.",
+      phase2: "THOU CANST NOT ESCAPE THYSELF! WITNESS THE VOID!",
+      defeat: "Until... we meet again... in the shadows..."
     }
   },
   

@@ -6470,8 +6470,8 @@ class UIManager {
           const dialogueEnabled = state.systemState.dialoguePopupsEnabled !== false;
           if (dialogueEnabled) {
             PopupsManager.showConfiguredDialogue('enemyFirstSeen', {
-              title: 'First Encounter',
-              text: `text\n${target.name}`
+              title: target.name,
+              enemyName: target.name
             }, `enemyFirstSeen:${target.name}`);
           }
           state.systemState.runSeenEnemies[target.name] = true;
@@ -6798,8 +6798,12 @@ class UIManager {
             break;
 
           case 'Wizard':
-            // Chrono-Shift: next 3 attacks are echoed at 50% damage
-            state.combatState.skillEffects.chronoShiftCharges = (state.combatState.skillEffects.chronoShiftCharges || 0) + 3;
+          case 'Mage':
+            // Bypass Final Stand: next attack bypasses Final Stand
+            state.combatState.skillEffects.bypassFinalStand = true;
+            if (typeof FloatingDamageNumber !== 'undefined') {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Bypass Final Stand Ready!', { color: '#a855f7' });
+            }
             break;
 
           case 'Brute':
@@ -10582,10 +10586,14 @@ class UIManager {
       const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
       const currentRadius = ringLevel === 0 ? (radius + 15) : (radius - 35 - (ringLevel - 1) * 60);
 
-      const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2;
+      const isBoss = !!enemy.isBoss;
+      const now = performance.now();
+      const speed = 0.00008;
+      const dir = (ringLevel % 2 === 0) ? 1 : -1;
+      const angle = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2 + (isBoss ? 0 : (dir * now * speed));
       const x = centerX + Math.cos(angle) * currentRadius;
       let y = centerY + Math.sin(angle) * currentRadius;
-      if (enemy.isBoss) {
+      if (isBoss) {
         y += 28;
       }
 
@@ -10676,6 +10684,76 @@ class UIManager {
       console.warn('Failed to draw canvas connections', e);
     }
 
+    // Continuous slow orbit rotation loop
+    if (!window.enemyOrbitLoopActive && enemies.length > 0) {
+      window.enemyOrbitLoopActive = true;
+      const tickOrbit = () => {
+        const layerEl = document.getElementById('enemyLayer');
+        if (!layerEl || !layerEl.querySelector('.enemy-card')) {
+          window.enemyOrbitLoopActive = false;
+          return;
+        }
+        const curState = getGameState();
+        const curEnemies = curState.stageState.enemies || [];
+        if (!curEnemies.length) {
+          window.enemyOrbitLoopActive = false;
+          return;
+        }
+        
+        const cache = UIManager.circleRectCache || { width: 620, height: 620 };
+        const cX = cache.width / 2;
+        const cY = cache.height / 2;
+        const rBase = Math.min(cache.width, cache.height) / 2;
+        const nowMs = performance.now();
+        const rotSpeed = 0.00008;
+
+        curEnemies.forEach((eItem, idx) => {
+          if (eItem.isBoss) return; // Do not rotate bosses
+
+          const eId = String(eItem.id);
+          const cardEl = layerEl.querySelector(`.enemy-card[data-enemy-id="${eId}"]`);
+          if (!cardEl) return;
+          const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(idx, curEnemies.length);
+          const cRadius = ringLevel === 0 ? (rBase + 15) : (rBase - 35 - (ringLevel - 1) * 60);
+          const direction = (ringLevel % 2 === 0) ? 1 : -1;
+          const a = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2 + (direction * nowMs * rotSpeed);
+          const px = cX + Math.cos(a) * cRadius;
+          const py = cY + Math.sin(a) * cRadius;
+
+          const dx = px - cX;
+          const dy = py - cY;
+          const isTargeted = cardEl.classList.contains('targeted-attack') ||
+                             cardEl.classList.contains('targeted-skill') ||
+                             cardEl.classList.contains('targeted-dodge') ||
+                             cardEl.classList.contains('targeted');
+          const baseScale = eItem.isElite ? 1.4 : 1.0;
+          const finalScale = isTargeted ? baseScale * 1.08 : baseScale;
+          const scaleStr = finalScale !== 1.0 ? ` scale(${finalScale.toFixed(2)})` : '';
+
+          cardEl.style.left = cX + 'px';
+          cardEl.style.top = cY + 'px';
+          cardEl.style.willChange = 'transform';
+          cardEl.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0px) translate(-50%, -50%)${scaleStr}`;
+
+          if (cardEl._state) {
+            cardEl._state.x = px;
+            cardEl._state.y = py;
+          }
+
+          if (UIManager.enemyPositionsCache) {
+            const cItem = UIManager.enemyPositionsCache.find(p => p.id === eId);
+            if (cItem) {
+              cItem.x = px;
+              cItem.y = py;
+            }
+          }
+        });
+        
+        requestAnimationFrame(tickOrbit);
+      };
+      requestAnimationFrame(tickOrbit);
+    }
+
     // Bind click handlers to enemy cards for targeting
     this.bindEnemyTargeting();
   }
@@ -10719,8 +10797,31 @@ class UIManager {
     const weakColor = this.getEnemyElementColor(enemy?.weak);
 
     // Diff-guard main property updates
-    if (card._state.x !== x) { card.style.left = x + 'px'; card.dataset.x = x; card._state.x = x; }
-    if (card._state.y !== y) { card.style.top = y + 'px'; card.dataset.y = y; card._state.y = y; }
+    const isBoss = !!enemy.isBoss;
+    if (isBoss) {
+      if (card._state.x !== x) { card.style.left = x + 'px'; card.dataset.x = x; card._state.x = x; }
+      if (card._state.y !== y) { card.style.top = y + 'px'; card.dataset.y = y; card._state.y = y; }
+    } else {
+      const cache = this.circleRectCache || { width: 620, height: 620 };
+      const cX = cache.width / 2;
+      const cY = cache.height / 2;
+      const dx = x - cX;
+      const dy = y - cY;
+      const isTargetedCard = isTargeted ||
+                             card.classList.contains('targeted-attack') ||
+                             card.classList.contains('targeted-skill') ||
+                             card.classList.contains('targeted-dodge');
+      const baseScale = enemy.isElite ? 1.4 : 1.0;
+      const finalScale = isTargetedCard ? baseScale * 1.08 : baseScale;
+      const scaleStr = finalScale !== 1.0 ? ` scale(${finalScale.toFixed(2)})` : '';
+
+      card.style.left = cX + 'px';
+      card.style.top = cY + 'px';
+      card.style.willChange = 'transform';
+      card.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0px) translate(-50%, -50%)${scaleStr}`;
+      card._state.x = x;
+      card._state.y = y;
+    }
     if (card._state.resistColor !== resistColor) { card.style.setProperty('--enemy-resist-color', resistColor); card._state.resistColor = resistColor; }
     if (card._state.weakColor !== weakColor) { card.style.setProperty('--enemy-weak-color', weakColor); card._state.weakColor = weakColor; }
 
@@ -10946,19 +11047,7 @@ class UIManager {
       return;
     }
 
-    // 1. Draw standard background red web connection line
-    if (alivePositions.length > 1) {
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.45)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < alivePositions.length; i++) {
-        for (let j = i + 1; j < alivePositions.length; j++) {
-          ctx.moveTo(alivePositions[i].x, alivePositions[i].y);
-          ctx.lineTo(alivePositions[j].x, alivePositions[j].y);
-        }
-      }
-      ctx.stroke();
-    }
+    // 1. Red web connection lines removed per request
 
     // 2. Draw Healer zigzag green lines
     alivePositions.forEach(pos => {

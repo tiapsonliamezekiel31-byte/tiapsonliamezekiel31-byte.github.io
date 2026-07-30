@@ -537,7 +537,8 @@ class CombatManager {
       }
 
       // Final Stand check (use enforcedDamage)
-      const survivesFinalStand = (attackPlan.weaponName === 'Death Spell') ? false : EnemyManager.applyFinalStand(tgt, enforcedDamage);
+      const bypassFinalStand = (attackPlan.weaponName === 'Death Spell') || Boolean(skillFx.bypassFinalStand);
+      const survivesFinalStand = bypassFinalStand ? false : EnemyManager.applyFinalStand(tgt, enforcedDamage, attackPlan.weaponElement);
       if (!survivesFinalStand) {
         tgt.takeDamage(enforcedDamage);
 
@@ -688,7 +689,7 @@ class CombatManager {
               }
               PopupsManager.showConfiguredDialogue('bossPhase2', {
                 title: `${tgt.name} - Phase 2`,
-                text: `text\n${tgt.name} is enraged.`
+                enemyName: tgt.name
               }, `bossPhase2:${tgt.name}`);
             } catch (e) {}
           }
@@ -700,8 +701,8 @@ class CombatManager {
           if (tgt.isBoss) {
             try {
               PopupsManager.showConfiguredDialogue('bossDefeat', {
-                title: 'Boss Defeated',
-                text: `text\n${tgt.name} has fallen.`
+                title: `${tgt.name} - Fallen`,
+                enemyName: tgt.name
               }, `bossDefeat:${tgt.name}`);
             } catch (e) {}
           }
@@ -953,6 +954,10 @@ class CombatManager {
       if (skillFx.chronoShiftCharges <= 0) {
         delete skillFx.chronoShiftCharges;
       }
+    }
+
+    if (skillFx.bypassFinalStand) {
+      delete skillFx.bypassFinalStand;
     }
 
     return {

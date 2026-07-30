@@ -60,8 +60,35 @@ class PopupsManager {
 
     const configCard = state.config?.dialogueCards?.[triggerKey] || {};
     const card = { ...configCard, ...overrides };
+
+    const rawTargetName = card.enemyName || card.targetName || (onceKey && onceKey.includes(':') ? onceKey.split(':')[1] : null);
+    if (rawTargetName && state.config?.eldenRingDialogues) {
+      const erData = state.config.eldenRingDialogues[rawTargetName];
+      if (erData) {
+        if (triggerKey === 'enemyFirstSeen' && erData.firstEncounter) {
+          card.title = card.title || rawTargetName;
+          card.text = erData.firstEncounter;
+        } else if (triggerKey === 'bossFirstSeen' && erData.intro) {
+          card.title = card.title || rawTargetName;
+          card.text = erData.intro;
+        } else if (triggerKey === 'bossPhase2' && erData.phase2) {
+          card.title = card.title || `${rawTargetName} - Phase 2`;
+          card.text = erData.phase2;
+        } else if (triggerKey === 'bossDefeat' && erData.defeat) {
+          card.title = card.title || `${rawTargetName} - Fallen`;
+          card.text = erData.defeat;
+        }
+      }
+    }
+
+    let emoji = card.emoji || null;
+    if (!emoji && rawTargetName && typeof UIManager !== 'undefined' && typeof UIManager.getEnemyEmoji === 'function') {
+      emoji = UIManager.getEnemyEmoji({ name: rawTargetName });
+    }
+
     const shown = this.showDialogue(card.title || 'Dialogue', card.text || 'text', {
       image: card.image || null,
+      emoji: emoji,
       clickToClose: true
     });
     if (shown && onceKey) {
@@ -1582,6 +1609,11 @@ class PopupsManager {
   static showDialogue(speakerName, message, media = null) {
     const options = (media && typeof media === 'object') ? media : { image: media };
     const image = options?.image || null;
+    let emoji = options?.emoji || null;
+
+    if (!image && !emoji && typeof UIManager !== 'undefined' && typeof UIManager.getEnemyEmoji === 'function') {
+      emoji = UIManager.getEnemyEmoji({ name: speakerName });
+    }
 
     const overlay = this.createPopupOverlay();
     const popup = document.createElement('div');
@@ -1589,11 +1621,11 @@ class PopupsManager {
 
     popup.innerHTML = `
       <div class="dialogue-media" aria-label="${speakerName}">
-        ${image ? `<img src="${image}" alt="${speakerName}">` : '<div class="dialogue-media-placeholder">text</div>'}
+        ${image ? `<img src="${image}" alt="${speakerName}">` : (emoji ? `<div class="dialogue-emoji-avatar">${emoji}</div>` : '<div class="dialogue-media-placeholder">⚔️</div>')}
       </div>
       <div class="dialogue-content">
         <div class="dialogue-title">${speakerName}</div>
-        <div class="dialogue-text">${message || 'text'}</div>
+        <div class="dialogue-text">${message || ''}</div>
       </div>
     `;
 

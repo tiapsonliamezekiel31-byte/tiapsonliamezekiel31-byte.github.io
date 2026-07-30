@@ -352,7 +352,7 @@ class EnemyManager {
     return perAdjacentEnemy;
   }
   
-  static applyFinalStand(enemy, damage) {
+  static applyFinalStand(enemy, damage, weaponElement = null) {
     const state = getGameState();
     // Only apply if the attack is lethal
     if (enemy.hp - damage > 0) {
@@ -363,10 +363,32 @@ class EnemyManager {
       return false;
     }
 
-    // 65% chance to survive with 1 HP
+    // Determine final stand chance based on enemy resistance/weakness grade against weaponElement
+    let grade = 'C';
+    if (weaponElement && enemy) {
+      if (enemy.resist) {
+        const resistEntries = String(enemy.resist).split(',').map(part => part.trim()).filter(Boolean);
+        const matchedResist = resistEntries.find(entry => entry.startsWith(weaponElement));
+        if (matchedResist) {
+          const g = matchedResist.split(' ').pop().toUpperCase();
+          if (['A', 'B', 'C', 'D', 'E', 'F'].includes(g)) grade = g;
+        }
+      }
+      if (grade === 'C' && enemy.weak) {
+        const weakEntries = String(enemy.weak).split(',').map(part => part.trim()).filter(Boolean);
+        const matchedWeak = weakEntries.find(entry => entry.startsWith(weaponElement));
+        if (matchedWeak) {
+          const g = matchedWeak.split(' ').pop().toUpperCase();
+          if (['A', 'B', 'C', 'D', 'E', 'F'].includes(g)) grade = g;
+        }
+      }
+    }
+
+    const gradeChances = state.config.finalStandGradeChances || { A: 0.8, B: 0.7, C: 0.5, D: 0.4, E: 0.3, F: 0.2 };
+    const chance = gradeChances[grade] ?? (state.config.finalStandChance ?? 0.5);
+
     const roll = Math.random();
-    const chance = state.config.finalStandChance;
-    console.debug(`[EnemyManager.applyFinalStand] roll=${roll} chance=${chance}`);
+    console.debug(`[EnemyManager.applyFinalStand] roll=${roll} chance=${chance} (grade=${grade}, element=${weaponElement})`);
     if (roll < chance) {
       enemy.hp = 1;
       enemy.finalStandUsed = true;
