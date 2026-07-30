@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nemesis-ultimate-roguelike-20260730-1815';
+const CACHE_NAME = 'nemesis-ultimate-roguelike-20260730-2131';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
