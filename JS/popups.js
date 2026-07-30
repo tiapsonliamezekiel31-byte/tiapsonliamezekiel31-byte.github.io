@@ -2669,229 +2669,144 @@ class PopupsManager {
   // WIZARDS & EDIT DAILY / TODO
   // ============================================================
 
-  static showAddTodoWizard(xPercent, yPercent, xPx, yPx) {
+  static showAddTodoPopup(xPercent = 50, yPercent = 20, xPx = null, yPx = null) {
     const state = getGameState();
     const attributes = state.config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
-    
-    // Default deadline: use quickDayDeadline if set, otherwise tomorrow
+
+    this.closeAllPopups();
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup edit-todo-popup add-todo-popup';
+
+    const attrsOptions = attributes.map(a => `<option value="${a}">${a}</option>`).join('');
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const quickTs = (typeof UIManager !== 'undefined' && UIManager.quickDayDeadline) ? UIManager.quickDayDeadline : null;
     const defaultDeadline = quickTs || tomorrow.getTime();
     const defaultDeadlineDate = new Date(defaultDeadline);
-    const tomorrowStr = defaultDeadlineDate.toISOString().slice(0,10);
+    const deadlineDate = defaultDeadlineDate.toISOString().slice(0, 10);
+    const deadlineTime = `${String(defaultDeadlineDate.getHours()).padStart(2, '0')}:${String(defaultDeadlineDate.getMinutes()).padStart(2, '0')}`;
 
-    const wizardData = {
-      name: '',
-      attribute: attributes[0],
-      difficulty: 'Easy',
-      deadline: defaultDeadline,
-      subtasks: []
+    let subtasks = [];
+
+    popup.innerHTML = `
+      <h2>ADD TO-DO</h2>
+      <button class="btn-close">✕</button>
+      <div class="popup-scrollable-body">
+        <label>Name</label>
+        <input id="addTodoName" placeholder="Task name..." autofocus autocomplete="off" />
+        <label>Attribute</label>
+        <select id="addTodoAttr">${attrsOptions}</select>
+        <label>Difficulty</label>
+        <select id="addTodoDiff">
+          <option value="Easy">Easy</option>
+          <option value="Medium">Medium</option>
+          <option value="Hard">Hard</option>
+          <option value="Ultra">Ultra</option>
+        </select>
+        <label>Deadline</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="addTodoDeadline" type="date" value="${deadlineDate}" style="flex:1;min-width:0;" />
+          <input id="addTodoDeadlineTime" type="time" value="${deadlineTime}" style="width:80px;" />
+        </div>
+        <div class="edit-subtasks-panel" style="margin-top:10px;">
+          <h3>Subtasks</h3>
+          <div class="edit-subtasks-list" id="addTodoSubtasksList"></div>
+          <div class="edit-subtask-form">
+            <input id="newAddTodoSubtaskName" placeholder="Add subtask..." />
+            <button class="btn-small" id="addNewSubtaskBtn">ADD</button>
+          </div>
+        </div>
+      </div>
+      <div class="edit-todo-actions" style="margin-top:12px;">
+        <button class="btn-large" id="submitAddTodo">CREATE TO-DO</button>
+      </div>
+    `;
+
+    popup.querySelector('.btn-close').addEventListener('click', () => this.closeAllPopups());
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    const nameInput = popup.querySelector('#addTodoName');
+    setTimeout(() => nameInput?.focus(), 50);
+
+    const subtasksList = popup.querySelector('#addTodoSubtasksList');
+    const renderSubtasks = () => {
+      if (!subtasksList) return;
+      subtasksList.innerHTML = subtasks.length ? subtasks.map((st, i) => `
+        <div class="edit-subtask-row">
+          <span>${st}</span>
+          <button class="edit-subtask-remove" data-index="${i}">×</button>
+        </div>
+      `).join('') : '<div class="muted">No subtasks yet</div>';
     };
 
-    // Remove existing floating wizards
-    const existing = document.querySelectorAll('.floating-wizard');
-    existing.forEach(el => el.remove());
-    
-    const popup = document.createElement('div');
-    popup.className = 'add-todo-wizard floating-wizard';
-    popup.style.position = 'absolute';
-    popup.style.left = xPx + 'px';
-    popup.style.top = yPx + 'px';
-    // Center it relative to the click
-    popup.style.transform = 'translate(-50%, -50%)';
+    renderSubtasks();
 
-    // Prevent clicks inside the wizard from bubbling up and closing it
-    popup.addEventListener('click', (e) => e.stopPropagation());
-    
-    // We will update the HTML inside popup based on step
-    let currentStep = 1;
-
-    const renderStep = () => {
-      if (currentStep === 1) {
-        popup.innerHTML = `
-          <div class="wizard-step">
-            <h3 class="clear-title">What's your To-Do?</h3>
-            <input type="text" id="wizardTodoName" placeholder="Task name..." autocomplete="off" />
-            <button class="btn-small mt-8" id="wizardNameNext">ENTER</button>
-          </div>
-        `;
-        const input = popup.querySelector('#wizardTodoName');
-        input.value = wizardData.name;
-        // Need timeout for autofocus to work after DOM injection
-        setTimeout(() => input.focus(), 50);
-
-        const proceed = () => {
-          const val = input.value.trim();
-          if (val) {
-            wizardData.name = val;
-            currentStep = 2;
-            renderStep();
-          }
-        };
-
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') proceed();
-        });
-        popup.querySelector('#wizardNameNext').addEventListener('click', proceed);
-      } else if (currentStep === 2) {
-        const anglePerItem = 360 / attributes.length;
-        const wheelHTML = attributes.map((attr, i) => {
-          const angle = anglePerItem * i - 90; // Start at top
-          // Calculate position around a circle of radius 60px
-          const x = 50 + 40 * Math.cos(angle * Math.PI / 180);
-          const y = 50 + 40 * Math.sin(angle * Math.PI / 180);
-          const color = state.config.attributeColors?.[attr] || '#fff';
-          return `
-            <div class="wizard-attr-item" data-attr="${attr}" style="left: ${x}%; top: ${y}%; box-shadow: 0 0 10px ${color}88, inset 0 0 8px ${color}44; border-color: ${color};">
-              <span>${attr}</span>
-            </div>
-          `;
-        }).join('');
-
-        popup.innerHTML = `
-          <div class="wizard-step">
-            <h3 class="clear-title">Select Attribute</h3>
-            <div class="wizard-wheel-container">
-              ${wheelHTML}
-              <div class="wizard-wheel-center">Select</div>
-            </div>
-          </div>
-        `;
-
-        popup.querySelectorAll('.wizard-attr-item').forEach(item => {
-          item.addEventListener('click', () => {
-            wizardData.attribute = item.dataset.attr;
-            currentStep = 3;
-            renderStep();
-          });
-        });
-
-      } else if (currentStep === 3) {
-        popup.innerHTML = `
-          <div class="wizard-step">
-            <h3 class="clear-title">Details</h3>
-            <div class="wizard-details-col">
-              <div class="wizard-diff-col">
-                <label class="clear-label">Difficulty</label>
-                <div class="wizard-diff-options">
-                  <button class="btn-diff ${wizardData.difficulty==='Easy'?'active':''}" data-val="Easy">Easy</button>
-                  <button class="btn-diff ${wizardData.difficulty==='Medium'?'active':''}" data-val="Medium">Medium</button>
-                  <button class="btn-diff ${wizardData.difficulty==='Hard'?'active':''}" data-val="Hard">Hard</button>
-                  <button class="btn-diff ${wizardData.difficulty==='Ultra'?'active':''}" data-val="Ultra">Ultra</button>
-                </div>
-              </div>
-              <div class="wizard-deadline-col">
-                <label class="clear-label">Deadline Date</label>
-                <input type="date" class="clear-input wizard-deadline-input" id="wizardTodoDeadline" value="${tomorrowStr}" />
-              </div>
-              <div class="wizard-deadline-col">
-                <label class="clear-label">Deadline Time</label>
-                <input type="time" class="clear-input wizard-deadline-time-input" id="wizardTodoDeadlineTime" value="23:59" />
-              </div>
-            </div>
-            <button class="btn-small mt-8" id="wizardStep3Next">NEXT</button>
-          </div>
-        `;
-        
-        popup.querySelectorAll('.btn-diff').forEach(btn => {
-          btn.addEventListener('click', () => {
-            popup.querySelectorAll('.btn-diff').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            wizardData.difficulty = btn.dataset.val;
-          });
-        });
-
-        popup.querySelector('#wizardStep3Next').addEventListener('click', () => {
-          const dlInput = popup.querySelector('#wizardTodoDeadline').value;
-          const timeInput = popup.querySelector('#wizardTodoDeadlineTime').value || '23:59';
-          if (dlInput) {
-            const [year, month, day] = dlInput.split('-').map(Number);
-            const [hours, minutes] = timeInput.split(':').map(Number);
-            wizardData.deadline = new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
-          }
-          currentStep = 4;
-          renderStep();
-        });
-      } else if (currentStep === 4) {
-        popup.innerHTML = `
-          <div class="wizard-step">
-            <h3 class="clear-title">Subtasks (Optional)</h3>
-            <div id="wizardSubtaskList" class="wizard-subtask-list"></div>
-            <div class="wizard-subtask-form">
-              <input type="text" class="clear-input" id="wizardSubtaskName" placeholder="Add subtask..." />
-              <button class="btn-small" id="wizardAddSubtask">ADD</button>
-            </div>
-            <button class="btn-small mt-8 btn-success" id="wizardFinish">FINISH</button>
-          </div>
-        `;
-        
-        const renderSubtasks = () => {
-          const list = popup.querySelector('#wizardSubtaskList');
-          if (!list) return;
-          list.innerHTML = wizardData.subtasks.length ? wizardData.subtasks.map((st, i) => `
-            <div class="edit-subtask-row">
-              <span>${st}</span>
-              <button class="edit-subtask-remove" data-index="${i}">×</button>
-            </div>
-          `).join('') : '<div class="muted">No subtasks yet</div>';
-        };
-
+    popup.querySelector('#addNewSubtaskBtn').addEventListener('click', () => {
+      const subInput = popup.querySelector('#newAddTodoSubtaskName');
+      const stName = (subInput.value || '').trim();
+      if (stName) {
+        subtasks.push(stName);
+        subInput.value = '';
         renderSubtasks();
+      }
+    });
 
-        const input = popup.querySelector('#wizardSubtaskName');
-        const addSubtask = () => {
-          const name = (input.value || '').trim();
-          if (name) {
-            wizardData.subtasks.push(name);
-            input.value = '';
-            renderSubtasks();
-            input.focus();
-          }
-        };
+    popup.addEventListener('click', (event) => {
+      const removeBtn = event.target.closest('.edit-subtask-remove');
+      if (removeBtn) {
+        const idx = Number(removeBtn.dataset.index);
+        subtasks.splice(idx, 1);
+        renderSubtasks();
+      }
+    });
 
-        popup.querySelector('#wizardAddSubtask').addEventListener('click', addSubtask);
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') addSubtask();
-        });
-
-        popup.addEventListener('click', (event) => {
-          const removeBtn = event.target.closest('.edit-subtask-remove');
-          if (removeBtn && popup.contains(removeBtn)) {
-            const i = Number(removeBtn.dataset.index);
-            wizardData.subtasks.splice(i, 1);
-            renderSubtasks();
-          }
-        });
-
-        popup.querySelector('#wizardFinish').addEventListener('click', () => {
-          const created = TaskManager.addTodo(
-            wizardData.name, 
-            wizardData.difficulty, 
-            wizardData.attribute, 
-            wizardData.deadline, 
-            wizardData.subtasks
-          );
-          if (created) {
-            // Apply coordinates based on wizard invocation, but force spawning at the top
-            TaskManager.updateTodoLayout(created.id, { x: xPercent, y: 8 + (Math.random() * 8) });
-            this.closeAllPopups();
-            UIManager.updateTodosList();
-            UIManager.positionTodoCards();
-            getGameState().save();
-          }
-        });
+    const createAction = () => {
+      const name = (nameInput.value || '').trim();
+      if (!name) return;
+      const attr = popup.querySelector('#addTodoAttr').value;
+      const diff = popup.querySelector('#addTodoDiff').value;
+      const dDate = popup.querySelector('#addTodoDeadline').value;
+      const dTime = popup.querySelector('#addTodoDeadlineTime').value || '23:59';
+      
+      let deadlineTs = defaultDeadline;
+      if (dDate) {
+        const [year, month, day] = dDate.split('-').map(Number);
+        const [hours, minutes] = dTime.split(':').map(Number);
+        deadlineTs = new Date(year, month - 1, day, hours, minutes, 0, 0).getTime();
       }
 
-      const closeBtn = popup.querySelector('.btn-close');
-      if (closeBtn) closeBtn.addEventListener('click', () => this.closeAllPopups());
-      PopupAnimation.scaleCentered(popup);
+      const created = TaskManager.addTodo(name, diff, attr, deadlineTs, subtasks);
+      if (created) {
+        if (xPercent !== null && yPercent !== null) {
+          TaskManager.updateTodoLayout(created.id, { x: xPercent, y: typeof yPercent === 'number' ? yPercent : 8 });
+        }
+        this.closeAllPopups();
+        if (typeof UIManager !== 'undefined') {
+          UIManager.updateTodosList();
+          UIManager.positionTodoCards();
+          UIManager.renderEnemies();
+        }
+        getGameState().save();
+      }
     };
 
-    const board = document.getElementById('todosList') || document.getElementById('tycoon-container') || document.body;
-    if (board) board.appendChild(popup);
-    renderStep();
+    popup.querySelector('#submitAddTodo').addEventListener('click', createAction);
+    nameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') createAction();
+    });
+
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
   }
+
+  static showAddTodoWizard(xPercent, yPercent, xPx, yPx) {
+    this.showAddTodoPopup(xPercent, yPercent, xPx, yPx);
+  }
+
 
   static showEditDaily(dailyId) {
     const state = getGameState();
