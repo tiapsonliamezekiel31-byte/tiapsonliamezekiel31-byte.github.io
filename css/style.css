@@ -4233,16 +4233,16 @@ body::before {
 }
 
 .popup {
-  background: linear-gradient(180deg, rgba(10, 8, 5, 0.98), rgba(8, 6, 4, 0.98));
-  border: 2px solid var(--accent-copper);
+  background: rgba(12, 12, 16, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   padding: 16px;
   max-width: 600px;
   max-height: min(85vh, 85dvh);
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  box-shadow: none;
-  border-radius: 3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 8px;
   box-sizing: border-box;
 }
 
@@ -5345,6 +5345,9 @@ body::before {
 .pause-popup {
   text-align: center;
   min-width: 300px;
+  background: rgba(12, 12, 16, 0.94) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
 }
 
 .pause-menu {
@@ -6546,8 +6549,8 @@ button:hover,
 .edit-todo-popup {
   width: min(500px, 94vw);
   background: rgba(12, 12, 16, 0.94) !important;
-  border: 2px solid var(--accent-purple, #a855f7) !important;
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
   font-family: 'Orbitron', monospace;
   color: #f5f5f7;
   padding: 12px !important;
@@ -6797,8 +6800,8 @@ button:hover,
 .add-dailies-popup {
   width: min(500px, 94vw);
   background: rgba(12, 12, 16, 0.94) !important;
-  border: 2px solid var(--accent-purple, #a855f7) !important;
-  box-shadow: 0 0 25px rgba(168, 85, 247, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
   font-family: 'Orbitron', monospace;
   color: #f5f5f7;
   padding: 12px !important;
@@ -7016,8 +7019,8 @@ button:hover,
 .popup.lootbox-popup {
   background: rgba(12, 12, 16, 0.94) !important;
   backdrop-filter: blur(12px) !important;
-  border: 3px solid #ffb33f !important;
-  box-shadow: 0 0 30px rgba(255, 179, 63, 0.35), inset 0 0 15px rgba(255, 179, 63, 0.15) !important;
+  border: 2px solid var(--accent-gold) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
   text-align: center;
   padding: 24px 30px;
   max-width: 440px;
@@ -9805,10 +9808,10 @@ button:hover,
   resize: both;
   overflow: hidden !important;
   padding: 5px;
-  background: linear-gradient(180deg, rgba(26, 18, 48, 0.45), rgba(15, 10, 26, 0.52)) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(161, 92, 255, 0.4) !important;
+  background: rgba(12, 12, 16, 0.94) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
   z-index: 34;

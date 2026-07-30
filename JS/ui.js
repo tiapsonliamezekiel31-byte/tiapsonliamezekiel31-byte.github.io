@@ -1634,25 +1634,41 @@ class UIManager {
       if (heatmapMinimized) heatmapMinimized.style.display = 'none';
     }
 
-    // Load positions
+    // Load positions and size
     const savedHeatmapPos = localStorage.getItem('nemesis_heatmap_pos');
     if (savedHeatmapPos && heatmapPanel) {
       try {
-        const { left, top } = JSON.parse(savedHeatmapPos);
-        heatmapPanel.style.left = left + 'px';
-        heatmapPanel.style.top = top + 'px';
+        const { left, top, width, height } = JSON.parse(savedHeatmapPos);
+        if (left !== undefined) heatmapPanel.style.left = left + 'px';
+        if (top !== undefined) heatmapPanel.style.top = top + 'px';
+        if (width) heatmapPanel.style.width = width + 'px';
+        if (height) heatmapPanel.style.height = height + 'px';
         if (heatmapMinimized) {
-          heatmapMinimized.style.left = left + 'px';
-          heatmapMinimized.style.top = top + 'px';
+          heatmapMinimized.style.left = (left !== undefined ? left : 0) + 'px';
+          heatmapMinimized.style.top = (top !== undefined ? top : 0) + 'px';
         }
       } catch (e) { }
     }
 
-    // Setup ResizeObserver to redraw cells on resize
+    // Setup ResizeObserver to redraw cells and save size on resize
     if (window.ResizeObserver && heatmapPanel) {
+      let hmResizeDebounce = null;
       const hmObserver = new ResizeObserver(() => {
         if (heatmapPanel.style.display !== 'none') {
           UIManager.updateWeeklyHeatmap();
+          if (hmResizeDebounce) clearTimeout(hmResizeDebounce);
+          hmResizeDebounce = setTimeout(() => {
+            if (heatmapPanel.offsetWidth && heatmapPanel.offsetHeight) {
+              const currentPos = localStorage.getItem('nemesis_heatmap_pos');
+              let posObj = {};
+              try { if (currentPos) posObj = JSON.parse(currentPos); } catch (e) {}
+              posObj.left = parseInt(heatmapPanel.style.left, 10) || posObj.left || 0;
+              posObj.top = parseInt(heatmapPanel.style.top, 10) || posObj.top || 0;
+              posObj.width = heatmapPanel.offsetWidth;
+              posObj.height = heatmapPanel.offsetHeight;
+              localStorage.setItem('nemesis_heatmap_pos', JSON.stringify(posObj));
+            }
+          }, 300);
         }
       });
       hmObserver.observe(heatmapPanel);
@@ -1705,10 +1721,14 @@ class UIManager {
       document.removeEventListener('pointerup', onHmUp);
       document.removeEventListener('pointercancel', onHmUp);
       try { heatmapPanel.releasePointerCapture(e.pointerId); } catch (err) { }
-      localStorage.setItem('nemesis_heatmap_pos', JSON.stringify({
-        left: parseInt(heatmapPanel.style.left, 10) || 0,
-        top: parseInt(heatmapPanel.style.top, 10) || 0
-      }));
+      const currentPos = localStorage.getItem('nemesis_heatmap_pos');
+      let posObj = {};
+      try { if (currentPos) posObj = JSON.parse(currentPos); } catch (e) {}
+      posObj.left = parseInt(heatmapPanel.style.left, 10) || 0;
+      posObj.top = parseInt(heatmapPanel.style.top, 10) || 0;
+      if (heatmapPanel.offsetWidth) posObj.width = heatmapPanel.offsetWidth;
+      if (heatmapPanel.offsetHeight) posObj.height = heatmapPanel.offsetHeight;
+      localStorage.setItem('nemesis_heatmap_pos', JSON.stringify(posObj));
     };
 
     const onHmDown = (e) => {
