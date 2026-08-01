@@ -1119,27 +1119,23 @@ class UIManager {
     hud.className = 'draggable-quickadd-hud inline-bar-mode';
 
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    const defaultAttrs = ['STR', 'AGI', 'INT', 'VIT', 'LUK', 'RESP', 'CAP', 'CREA', 'DISC'];
+    const defaultAttrs = ['STR', 'DISC', 'RESP', 'SOC', 'CAP', 'CREA', 'INT'];
     const configAttrs = state?.config?.attributes || [];
     const combinedAttrs = Array.from(new Set([...configAttrs, ...defaultAttrs]));
 
     const attrColors = {
       STR: '#f94144',
-      AGI: '#f3722c',
-      INT: '#577590',
-      VIT: '#90be6d',
-      LUK: '#ffd700',
+      DISC: '#f3722c',
       RESP: '#f8961e',
-      CAP: '#43aa8b',
-      CREA: '#cc66ff',
-      DISC: '#4d94ff',
       SOC: '#f9c74f',
+      CAP: '#90be6d',
+      CREA: '#43aa8b',
+      INT: '#577590',
       ...(state?.config?.attributeColors || {})
     };
 
     const attrOptions = combinedAttrs.map(attr => {
-      const col = attrColors[attr] || '#4d94ff';
-      return `<option value="${attr}" style="color: ${col}; background-color: #181824;">⚡ ${attr}</option>`;
+      return `<option value="${attr}" style="color: #ffffff; background-color: #181824;">⚡ ${attr}</option>`;
     }).join('');
 
     hud.innerHTML = `
@@ -1265,7 +1261,7 @@ class UIManager {
       const selected = attrSelect.value;
       const col = attrColors[selected] || '#4d94ff';
       attrSelect.style.borderColor = col;
-      attrSelect.style.color = col;
+      attrSelect.style.color = '#ffffff';
       attrSelect.style.backgroundColor = `${col}22`;
       attrSelect.style.boxShadow = `0 0 6px ${col}44`;
     };
