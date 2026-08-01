@@ -141,7 +141,7 @@ class PopupsManager {
             <div class="attr-bar-player" style="width: ${playerPercent}%; background: ${barColor}; box-shadow: 0 0 10px ${barColor}80;"></div>
             <div class="attr-embedded-overlay">
               <span class="embedded-val player-val">${pPts} ${playerLeads ? '⬆️' : ''}</span>
-              <span class="embedded-center"><strong style="color: ${barColor}; text-shadow: 0 0 6px ${barColor}80;">${attr}</strong> <span class="embedded-lvl">Lv.${data.level}</span></span>
+              <span class="embedded-center"><strong style="color: #ffffff; text-shadow: 0 1px 4px #000000, 0 0 8px #000000; font-weight: 900;">${attr}</strong> <span class="embedded-lvl">Lv.${data.level}</span></span>
               <span class="embedded-val nem-val">${nemesisLeads ? '⚠️ ' : ''}${nPts}</span>
             </div>
           </div>
