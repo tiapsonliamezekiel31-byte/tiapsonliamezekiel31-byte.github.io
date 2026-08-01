@@ -2025,6 +2025,7 @@ class PopupsManager {
     popup.querySelector('#resetLayoutBtn').addEventListener('click', () => {
       this.showConfirm('Reset Layout', 'Reset positions of game circle, satchel, stats, weapons, and HUD to default?', () => {
         localStorage.removeItem('nemesis_hud_pos');
+        localStorage.removeItem('nemesis_quickadd_hud_pos');
         localStorage.removeItem('nemesis_satchel_pos');
         localStorage.removeItem('nemesis_weapon_pos');
         localStorage.removeItem('nemesis_center_pos');

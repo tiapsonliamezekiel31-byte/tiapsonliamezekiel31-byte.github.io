@@ -11,6 +11,12 @@ class HUDMinimizer {
       icon: '❤️',
       storageKey: 'nemesis_hud_minimized_draggableHud'
     },
+    quickAddHud: {
+      id: 'quickAddHud',
+      name: 'QUICK ADD',
+      icon: '⚡',
+      storageKey: 'nemesis_hud_minimized_quickAddHud'
+    },
     statsHudWidget: {
       id: 'statsHudWidget',
       name: 'RUN STATS',
@@ -567,6 +573,7 @@ class UIManager {
     this.createStatsHudWidget();
     this.createNemesisTauntHud();
     this.createChallengeHud();
+    this.createQuickAddHud();
     this.createNavigationMenu();
     this.createGameArea();
     if (typeof HUDMinimizer !== 'undefined') {
@@ -1102,6 +1109,371 @@ class UIManager {
     if (typeof HUDMinimizer !== 'undefined') {
       HUDMinimizer.renderDock();
     }
+  }
+
+  static createQuickAddHud() {
+    if (document.getElementById('quickAddHud')) return;
+
+    const hud = document.createElement('div');
+    hud.id = 'quickAddHud';
+    hud.className = 'draggable-quickadd-hud inline-bar-mode';
+
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    const defaultAttrs = ['STR', 'AGI', 'INT', 'VIT', 'LUK', 'RESP', 'CAP', 'CREA', 'DISC'];
+    const configAttrs = state?.config?.attributes || [];
+    const combinedAttrs = Array.from(new Set([...configAttrs, ...defaultAttrs]));
+
+    const attrColors = {
+      STR: '#f94144',
+      AGI: '#f3722c',
+      INT: '#577590',
+      VIT: '#90be6d',
+      LUK: '#ffd700',
+      RESP: '#f8961e',
+      CAP: '#43aa8b',
+      CREA: '#cc66ff',
+      DISC: '#4d94ff',
+      SOC: '#f9c74f',
+      ...(state?.config?.attributeColors || {})
+    };
+
+    const attrOptions = combinedAttrs.map(attr => {
+      const col = attrColors[attr] || '#4d94ff';
+      return `<option value="${attr}" style="color: ${col}; background-color: #181824;">⚡ ${attr}</option>`;
+    }).join('');
+
+    hud.innerHTML = `
+      <div class="qa-hud-top-row">
+        <button class="hud-minimize-btn" title="Minimize Quick Add HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('quickAddHud')">－</button>
+        <select id="qaTypeSelect" class="qa-hud-select" title="Task Type">
+          <option value="todo">📋 Todo</option>
+          <option value="daily">📅 Daily</option>
+          <option value="todo_complete">⚡ Done</option>
+        </select>
+        <select id="qaDiffSelect" class="qa-hud-select qa-diff-select" title="Difficulty">
+          <option value="Easy" style="color: #00e676; background-color: #181824;">🟢 Easy</option>
+          <option value="Medium" selected style="color: #ffd600; background-color: #181824;">🟡 Med</option>
+          <option value="Hard" style="color: #ff1744; background-color: #181824;">🔴 Hard</option>
+          <option value="Ultra" style="color: #d500f9; background-color: #181824;">☠️ Ultra</option>
+        </select>
+        <select id="qaAttrSelect" class="qa-hud-select qa-attr-select" title="Attribute">
+          ${attrOptions}
+        </select>
+        <select id="qaDueSelect" class="qa-hud-select" title="Deadline">
+          <option value="1" selected>📅 Tmrw</option>
+          <option value="0">📅 Today</option>
+          <option value="3">📅 +3d</option>
+          <option value="7">📅 +7d</option>
+          <option value="calendar">📅 Custom...</option>
+        </select>
+      </div>
+      <div class="qa-hud-input-row">
+        <input type="text" id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task..." autocomplete="off" />
+        <button type="button" id="quickAddHudSubmitBtn" class="qa-hud-submit-btn" title="Add Task">＋</button>
+      </div>
+    `;
+
+    document.body.appendChild(hud);
+
+    const savedPos = localStorage.getItem('nemesis_quickadd_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.right = 'auto';
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+        hud.style.transform = 'none';
+      } catch (e) { }
+    }
+
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      latestX = e.clientX;
+      latestY = e.clientY;
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      hud.classList.remove('is-dragging');
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_quickadd_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      hud.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.right = 'auto';
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      hud.style.transform = 'none';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    };
+
+    hud.addEventListener('pointerdown', onPointerDown);
+
+    const attrSelect = hud.querySelector('#qaAttrSelect');
+    const diffSelect = hud.querySelector('#qaDiffSelect');
+
+    const updateAttrColor = () => {
+      const selected = attrSelect.value;
+      const col = attrColors[selected] || '#4d94ff';
+      attrSelect.style.borderColor = col;
+      attrSelect.style.color = col;
+      attrSelect.style.backgroundColor = `${col}22`;
+      attrSelect.style.boxShadow = `0 0 6px ${col}44`;
+    };
+    attrSelect.addEventListener('change', updateAttrColor);
+    updateAttrColor();
+
+    const diffConfigs = {
+      Easy: { color: '#00e676', bg: 'rgba(0, 230, 118, 0.18)', border: 'rgba(0, 230, 118, 0.5)' },
+      Medium: { color: '#ffd600', bg: 'rgba(255, 214, 0, 0.18)', border: 'rgba(255, 214, 0, 0.5)' },
+      Hard: { color: '#ff1744', bg: 'rgba(255, 23, 68, 0.18)', border: 'rgba(255, 23, 68, 0.5)' },
+      Ultra: { color: '#d500f9', bg: 'rgba(213, 0, 249, 0.18)', border: 'rgba(213, 0, 249, 0.5)' }
+    };
+
+    const updateDiffColor = () => {
+      const selected = diffSelect.value;
+      const cfg = diffConfigs[selected] || diffConfigs.Medium;
+      diffSelect.style.borderColor = cfg.border;
+      diffSelect.style.color = cfg.color;
+      diffSelect.style.backgroundColor = cfg.bg;
+      diffSelect.style.boxShadow = `0 0 6px ${cfg.color}44`;
+    };
+    diffSelect.addEventListener('change', updateDiffColor);
+    updateDiffColor();
+
+    const dueSelect = hud.querySelector('#qaDueSelect');
+    let previousDueValue = dueSelect.value;
+    dueSelect.addEventListener('change', () => {
+      if (dueSelect.value === 'calendar') {
+        UIManager.showQuickAddCalendarPicker((confirmed) => {
+          if (!confirmed && !dueSelect.dataset.customTimestamp) {
+            dueSelect.value = previousDueValue;
+          }
+        });
+      } else {
+        previousDueValue = dueSelect.value;
+        delete dueSelect.dataset.customTimestamp;
+        const calOption = dueSelect.querySelector('option[value="calendar"]');
+        if (calOption) calOption.textContent = '📅 Custom...';
+      }
+    });
+
+    const inputEl = hud.querySelector('#quickAddHudInput');
+    const submitBtn = hud.querySelector('#quickAddHudSubmitBtn');
+
+    const handleSubmission = () => {
+      const textVal = (inputEl.value || '').trim();
+      if (!textVal) return;
+
+      const type = hud.querySelector('#qaTypeSelect').value;
+      const diff = hud.querySelector('#qaDiffSelect').value;
+      const attr = attrSelect.value;
+      const dueVal = dueSelect.value;
+
+      let deadline = null;
+      const now = new Date();
+
+      if (dueVal === '0') {
+        deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      } else if (dueVal === '1') {
+        const tmrw = new Date(now.getTime() + 86400000);
+        deadline = new Date(tmrw.getFullYear(), tmrw.getMonth(), tmrw.getDate(), 23, 59, 59, 999);
+      } else if (dueVal === '3') {
+        const d3 = new Date(now.getTime() + 3 * 86400000);
+        deadline = new Date(d3.getFullYear(), d3.getMonth(), d3.getDate(), 23, 59, 59, 999);
+      } else if (dueVal === '7') {
+        const d7 = new Date(now.getTime() + 7 * 86400000);
+        deadline = new Date(d7.getFullYear(), d7.getMonth(), d7.getDate(), 23, 59, 59, 999);
+      } else if (dueVal === 'calendar') {
+        const customTs = Number(dueSelect.dataset.customTimestamp);
+        if (customTs && !isNaN(customTs)) {
+          deadline = new Date(customTs);
+        } else {
+          const tmrw = new Date(now.getTime() + 86400000);
+          deadline = new Date(tmrw.getFullYear(), tmrw.getMonth(), tmrw.getDate(), 23, 59, 59, 999);
+        }
+      }
+
+      if (type === 'daily') {
+        const lines = (inputEl.value || '').split('\n');
+        lines.forEach(line => {
+          const lTrimmed = line.trim();
+          if (!lTrimmed) return;
+          const parsed = TaskManager.parseNaturalLanguage(lTrimmed, attr, diff, deadline);
+          TaskManager.addDaily(parsed.name, parsed.difficulty || diff, parsed.attribute || attr, 1, parsed.deadline || deadline);
+        });
+      } else if (type === 'todo') {
+        const parsedTasks = TaskManager.parseBulkAddText(inputEl.value || '', attr, diff, deadline);
+        parsedTasks.forEach(t => {
+          const created = TaskManager.addTodo(t.name, t.difficulty || diff, t.attribute || attr, t.deadline || deadline, t.subtasks || []);
+          if (created && t.clusterAttributes) {
+            created.clusterAttributes = t.clusterAttributes;
+          }
+        });
+      } else if (type === 'todo_complete') {
+        const parsedTasks = TaskManager.parseBulkAddText(inputEl.value || '', attr, diff, deadline);
+        parsedTasks.forEach(t => {
+          const created = TaskManager.addTodo(t.name, t.difficulty || diff, t.attribute || attr, t.deadline || deadline, t.subtasks || []);
+          if (created) {
+            if (t.clusterAttributes) {
+              created.clusterAttributes = t.clusterAttributes;
+            }
+            TaskManager.completeTodo(created.id);
+          }
+        });
+      }
+
+      inputEl.value = '';
+
+      if (typeof getGameState === 'function' && getGameState()) {
+        getGameState().save();
+      }
+
+      if (typeof UIManager !== 'undefined') {
+        if (typeof UIManager.renderDailyNotes === 'function') UIManager.renderDailyNotes();
+        if (typeof UIManager.updateTodosList === 'function') UIManager.updateTodosList();
+        if (typeof UIManager.positionTodoCards === 'function') UIManager.positionTodoCards();
+        if (typeof UIManager.renderEnemies === 'function') UIManager.renderEnemies();
+        if (typeof UIManager.refreshGameUI === 'function') UIManager.refreshGameUI();
+      }
+    };
+
+    submitBtn.addEventListener('click', handleSubmission);
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmission();
+      }
+    });
+
+    if (typeof HUDMinimizer !== 'undefined') {
+      HUDMinimizer.renderDock();
+    }
+  }
+
+  static showQuickAddCalendarPicker(callback) {
+    let overlay = document.getElementById('quickAddCalendarOverlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'quickAddCalendarOverlay';
+      overlay.className = 'quick-add-calendar-overlay';
+      overlay.innerHTML = `
+        <div class="quick-add-calendar-modal">
+          <div class="quick-add-calendar-header">
+            <h3>📅 Select Custom Deadline</h3>
+            <button type="button" class="qa-cal-close-btn" id="qaCalCloseBtn">&times;</button>
+          </div>
+          <div class="quick-add-calendar-body">
+            <label for="quickAddCustomDatetimeInput" style="font-size: 11px; color: var(--text-muted, #aaa);">Date & Time:</label>
+            <input type="datetime-local" id="quickAddCustomDatetimeInput" class="qa-datetime-input" />
+          </div>
+          <div class="quick-add-calendar-footer">
+            <button type="button" class="qa-cal-cancel-btn" id="qaCalCancelBtn">Cancel</button>
+            <button type="button" class="qa-cal-confirm-btn" id="qaCalConfirmBtn">Confirm</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    const dtInput = overlay.querySelector('#quickAddCustomDatetimeInput');
+    const now = new Date();
+    const tmrw = new Date(now.getTime() + 86400000);
+    const defaultIso = tmrw.toISOString().slice(0, 16);
+    dtInput.value = defaultIso;
+
+    overlay.style.display = 'flex';
+
+    const closeOverlay = (confirmed = false) => {
+      overlay.style.display = 'none';
+      if (typeof callback === 'function') callback(confirmed);
+    };
+
+    const confirmBtn = overlay.querySelector('#qaCalConfirmBtn');
+    const cancelBtn = overlay.querySelector('#qaCalCancelBtn');
+    const closeBtn = overlay.querySelector('#qaCalCloseBtn');
+
+    const onConfirm = () => {
+      const dueSelect = document.getElementById('qaDueSelect');
+      if (dtInput.value && dueSelect) {
+        const selectedDate = new Date(dtInput.value);
+        if (!isNaN(selectedDate.getTime())) {
+          dueSelect.dataset.customTimestamp = selectedDate.getTime();
+          const calOption = dueSelect.querySelector('option[value="calendar"]');
+          if (calOption) {
+            const formattedStr = selectedDate.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' });
+            calOption.textContent = `📅 ${formattedStr}`;
+          }
+          dueSelect.value = 'calendar';
+        }
+      }
+      cleanup();
+      closeOverlay(true);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      closeOverlay(false);
+    };
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+      closeBtn.removeEventListener('click', onCancel);
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn.addEventListener('click', onCancel);
+    closeBtn.addEventListener('click', onCancel);
   }
 
   static createStatsHudWidget() {
