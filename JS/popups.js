@@ -4942,7 +4942,7 @@ class PopupsManager {
       html += `<div style="text-align: center; color: var(--text-muted); padding: 20px 0; font-family: monospace; font-size: 0.8rem;">No dailies found. Close this and add some using the ＋ button!</div>`;
     } else {
       dailies.forEach(daily => {
-        const attributeOptions = state.config.attributes.map(a => 
+        const attributeOptions = (state.config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK']).map(a => 
           `<option value="${a}" ${a === daily.attribute ? 'selected' : ''}>${a}</option>`
         ).join('');
 
