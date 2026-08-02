@@ -5992,7 +5992,7 @@ class UIManager {
         let totalMinutes = 0;
         scheduledDailies.forEach(daily => {
           const text = (daily.name || '') + ' ' + (daily.text || '') + ' ' + (daily.description || '');
-          const matches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*([hms])/gi)];
+          const matches = [...text.matchAll(/\b(\d+(?:\.\d+)?)\s*([hms])\b/gi)];
           matches.forEach(m => {
             const val = parseFloat(m[1]);
             const unit = m[2].toLowerCase();
