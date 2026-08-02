@@ -5987,11 +5987,10 @@ class UIManager {
       if (summaryEl) {
         const today = TaskManager.getCurrentGameDateKey();
         const scheduledDailies = TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, today));
-        const completedDailies = scheduledDailies.filter(daily => daily.completed);
-        const completedCount = completedDailies.length;
+        const completedCount = scheduledDailies.filter(daily => daily.completed).length;
         
         let totalMinutes = 0;
-        completedDailies.forEach(daily => {
+        scheduledDailies.forEach(daily => {
           const text = (daily.name || '') + ' ' + (daily.text || '') + ' ' + (daily.description || '');
           const matches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*([hms])/gi)];
           matches.forEach(m => {
