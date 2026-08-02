@@ -5987,8 +5987,24 @@ class UIManager {
       if (summaryEl) {
         const today = TaskManager.getCurrentGameDateKey();
         const scheduledDailies = TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, today));
-        const completedCount = scheduledDailies.filter(daily => daily.completed).length;
-        summaryEl.textContent = `${completedCount}/${scheduledDailies.length} complete${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
+        const completedDailies = scheduledDailies.filter(daily => daily.completed);
+        const completedCount = completedDailies.length;
+        
+        let totalMinutes = 0;
+        completedDailies.forEach(daily => {
+          const text = (daily.name || '') + ' ' + (daily.text || '') + ' ' + (daily.description || '');
+          const matches = [...text.matchAll(/(\d+(?:\.\d+)?)\s*([hms])/gi)];
+          matches.forEach(m => {
+            const val = parseFloat(m[1]);
+            const unit = m[2].toLowerCase();
+            if (unit === 'h') totalMinutes += val * 60;
+            else if (unit === 'm') totalMinutes += val;
+            else if (unit === 's') totalMinutes += val / 60;
+          });
+        });
+
+        const minutesDisplay = totalMinutes > 0 ? ` <span style="font-size: 0.85em; opacity: 0.7; font-weight: normal;">(${Math.round(totalMinutes * 10) / 10}m)</span>` : '';
+        summaryEl.innerHTML = `${completedCount}/${scheduledDailies.length} complete${minutesDisplay}${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
       }
     } catch (e) {
       console.warn('updatePendingDamageDisplay error', e);
