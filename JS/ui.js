@@ -6002,7 +6002,17 @@ class UIManager {
           });
         });
 
-        const minutesDisplay = totalMinutes > 0 ? ` <span style="font-size: 0.85em; opacity: 0.7; font-weight: normal;">(${Math.round(totalMinutes * 10) / 10}m)</span>` : '';
+        let timeStr = '';
+        if (totalMinutes > 0) {
+          const totalSec = Math.round(totalMinutes * 60);
+          const h = Math.floor(totalSec / 3600);
+          const m = Math.floor((totalSec % 3600) / 60);
+          if (h > 0 && m > 0) timeStr = `${h}h ${m}m`;
+          else if (h > 0) timeStr = `${h}h`;
+          else timeStr = `${m}m`;
+        }
+
+        const minutesDisplay = timeStr ? ` <span style="font-size: 0.85em; opacity: 0.7; font-weight: normal;">(${timeStr})</span>` : '';
         summaryEl.innerHTML = `${completedCount}/${scheduledDailies.length} complete${minutesDisplay}${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
       }
     } catch (e) {
