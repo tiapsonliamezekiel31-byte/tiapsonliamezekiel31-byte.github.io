@@ -83,15 +83,23 @@ class PlayerManager {
         const interval = Math.max(1, daily.intervalDays || 1);
         weight = 1 / interval;
       }
-      totalAp += baseAp * weight;
+      if (isNaN(weight)) weight = 1;
+      
+      let added = baseAp * weight;
+      if (isNaN(added)) added = 0;
+      totalAp += added;
     });
 
     // Add Todo AP contribution
     const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
       ? TaskManager.getTodoContributions()
       : { ap: 0, gold: 0, diamonds: 0 };
-    totalAp += todoCont.ap;
+    
+    let tAp = Number(todoCont.ap);
+    if (isNaN(tAp)) tAp = 0;
+    totalAp += tAp;
 
+    if (isNaN(totalAp)) totalAp = 0;
     let maxAp = Math.round(totalAp);
 
     const completeDayBonus = Number(state.systemState?.completeDayApBonus) || 0;

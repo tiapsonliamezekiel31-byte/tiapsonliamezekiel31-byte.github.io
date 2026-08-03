@@ -806,10 +806,13 @@ class TaskManager {
       // Calculate days remaining
       let daysRemaining = 7;
       if (todo.deadline) {
-        const diffMs = Number(todo.deadline) - now;
+        let diffMs = Number(todo.deadline) - now;
+        if (isNaN(diffMs)) {
+          diffMs = 0; // Fallback if deadline is a time string like "15:30"
+        }
         daysRemaining = diffMs / (24 * 60 * 60 * 1000);
       }
-      const divisor = Math.max(1, daysRemaining);
+      const divisor = Math.max(1, isNaN(daysRemaining) ? 1 : daysRemaining);
 
       todoAp += apReward / divisor;
       todoGold += goldReward / divisor;
