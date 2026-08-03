@@ -1451,7 +1451,6 @@ class RetroDodgeAnimation {
     const resetCard = () => {
       cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
       if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
-        cardElement.style.transform = cardElement.dataset.originalTransform;
         cardElement.style.transition = '';
         cardElement.style.opacity = '';
         cardElement.style.willChange = '';
@@ -1464,7 +1463,6 @@ class RetroDodgeAnimation {
 
     // 1-second safety fallback: force reset after 1s of inactivity
     cardElement.animResetTimeout = setTimeout(() => {
-      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
       cardElement.style.transition = '';
       cardElement.style.opacity = '';
       cardElement.style.willChange = '';
@@ -2578,7 +2576,6 @@ class RetroComboFinisherAnimation {
     const resetCard = () => {
       cardElement.dataset.activeAnimsCount = Math.max(0, Number(cardElement.dataset.activeAnimsCount || 0) - 1);
       if (Number(cardElement.dataset.activeAnimsCount || 0) === 0) {
-        cardElement.style.transform = cardElement.dataset.originalTransform;
         cardElement.style.transition = '';
         cardElement.style.opacity = '';
         cardElement.style.willChange = '';
@@ -2589,7 +2586,6 @@ class RetroComboFinisherAnimation {
 
     // 1-second safety fallback: force reset after 1s of inactivity
     cardElement.animResetTimeout = setTimeout(() => {
-      cardElement.style.transform = cardElement.dataset.originalTransform || origTransform;
       cardElement.style.transition = '';
       cardElement.style.opacity = '';
       cardElement.style.willChange = '';

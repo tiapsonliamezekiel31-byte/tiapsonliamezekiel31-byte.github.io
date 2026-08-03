@@ -1036,8 +1036,8 @@ body::before {
   overflow: visible;
 }
 
-.enemy-card.enraged {
-  animation: enragedShake 0.25s infinite linear;
+.enemy-card.enraged .enemy-emoji {
+  animation: enragedSmoothGlow 2.5s ease-in-out infinite alternate;
 }
 
 /* Compressed energy task completion charging effect */
@@ -1068,13 +1068,13 @@ body::before {
   transition: transform 0.08s ease-out, filter 0.08s ease-out !important;
 }
 
-@keyframes enragedShake {
-  0% { transform: translate(-50%, -50%) translate(0, 0); }
-  20% { transform: translate(-50%, -50%) translate(-0.4px, 0.4px); }
-  40% { transform: translate(-50%, -50%) translate(-0.4px, -0.4px); }
-  60% { transform: translate(-50%, -50%) translate(0.4px, 0.4px); }
-  80% { transform: translate(-50%, -50%) translate(0.4px, -0.4px); }
-  100% { transform: translate(-50%, -50%) translate(0, 0); }
+@keyframes enragedSmoothGlow {
+  0% {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
+  }
+  100% {
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 12px rgba(239, 68, 68, 0.9));
+  }
 }
 
 /* Left/right accent borders are handled via border-left-color and border-right-color variables */
@@ -1133,24 +1133,19 @@ body::before {
 }
 
 @keyframes dodgeFlash {
-  0% {
+  0%, 100% {
     box-shadow: 0 0 6px rgba(68, 255, 68, 0.0);
-    transform: translate(-50%, -50%) scale(1.02);
+    filter: brightness(1);
   }
 
   30% {
     box-shadow: 0 0 20px rgba(68, 255, 68, 0.95);
-    transform: translate(-50%, -50%) scale(1.12);
+    filter: brightness(1.3);
   }
 
   70% {
     box-shadow: 0 0 10px rgba(68, 255, 68, 0.6);
-    transform: translate(-50%, -50%) scale(1.04);
-  }
-
-  100% {
-    box-shadow: 0 0 6px rgba(68, 255, 68, 0.0);
-    transform: translate(-50%, -50%) scale(1.0);
+    filter: brightness(1.15);
   }
 }
 
@@ -1267,125 +1262,23 @@ body::before {
 }
 
 /* Rallyist snap animation */
-.enemy-card.mutator-rallyist {
-  animation: rallyistSnap 1.6s ease-in-out infinite;
+.enemy-card.mutator-rallyist .enemy-emoji {
+  animation: rallyistEmojiSnap 1.6s ease-in-out infinite;
 }
 
-@keyframes rallyistSnap {
-  0%, 100% {
-    transform: translate(-50%, -50%);
+@keyframes rallyistEmojiSnap {
+  0%, 100%, 70% {
+    transform: translateX(-50%) translateY(0);
   }
   40% {
-    transform: translate(-50%, calc(-50% - 10px));
+    transform: translateX(-50%) translateY(-10px);
   }
   50% {
-    transform: translate(-50%, calc(-50% + 4px));
+    transform: translateX(-50%) translateY(4px);
   }
   60% {
-    transform: translate(-50%, calc(-50% - 2px));
+    transform: translateX(-50%) translateY(-2px);
   }
-  70% {
-    transform: translate(-50%, -50%);
-  }
-}
-
-/* For elite rallyist we override transform */
-.enemy-card.elite.mutator-rallyist {
-  animation: rallyistEliteSnap 1.6s ease-in-out infinite;
-}
-
-@keyframes rallyistEliteSnap {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1.4);
-  }
-  40% {
-    transform: translate(-50%, calc(-50% - 10px)) scale(1.4);
-  }
-  50% {
-    transform: translate(-50%, calc(-50% + 4px)) scale(1.4);
-  }
-  60% {
-    transform: translate(-50%, calc(-50% - 2px)) scale(1.4);
-  }
-  70% {
-    transform: translate(-50%, -50%) scale(1.4);
-  }
-}
-
-/* Swift circle pulse - Bolder dashes and gold glow */
-.swift-circle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 86px;
-  height: 86px;
-  border: 3px dashed #fbbf24; /* Thicker dashes, brighter amber color */
-  border-radius: 50%;
-  pointer-events: none;
-  box-sizing: border-box;
-  animation: swiftCircleAnim 2s ease-in-out infinite;
-  box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
-  z-index: -1;
-}
-
-@keyframes swiftCircleAnim {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(0.85);
-    opacity: 0.4;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.15);
-    opacity: 0.95;
-  }
-}
-
-/* Necromancer particles styling - Tripled to 12 spans and floats 90px farther */
-.necromancer-particles {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  overflow: visible;
-  z-index: 1005;
-}
-
-.necromancer-particles span {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  font-size: 14px;
-  opacity: 0;
-  animation: necromancerParticleAnim 4s infinite ease-out;
-}
-@keyframes necromancerParticleAnim {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  75% {
-    opacity: 0.8;
-  }
-  100% {
-    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.3);
-    opacity: 0;
-  }
-}
-
-.enemy-card.boss {
-  width: 105px;
-  min-height: 115px;
-  font-size: 10.5px;
-  padding: 24px 8px 20px 8px;
-}
-
-.enemy-card.boss .enemy-emoji {
-  font-size: 72px;
-  top: -12px;
 }
 
 .enemy-card.boss-phase-2 {
@@ -1395,19 +1288,14 @@ body::before {
 }
 
 @keyframes bossPhase2Pulse {
-  0% {
+  0%, 100% {
     box-shadow: 0 0 18px var(--boss-color, #ff2222), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transform: translate(-50%, -50%) scale(1.0);
+    filter: brightness(1);
   }
 
   50% {
     box-shadow: 0 0 35px var(--boss-color, #ff2222), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    transform: translate(-50%, -50%) scale(1.05);
-  }
-
-  100% {
-    box-shadow: 0 0 18px var(--boss-color, #ff2222), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    transform: translate(-50%, -50%) scale(1.0);
+    filter: brightness(1.2);
   }
 }
 
@@ -6853,54 +6741,73 @@ button:hover,
 
 /* Check-in attack flash and shake animation */
 .enemy-card.checkin-hit {
-  animation: enemyAttackRetaliate 600ms cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+  animation: enemyAttackRetaliate 600ms cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 10005;
   /* Lift above other cards while attacking */
 }
 
+.enemy-card.checkin-hit .enemy-emoji {
+  animation: enemyEmojiRetaliate 600ms cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
 @keyframes enemyAttackRetaliate {
   0% {
-    transform: translate(-50%, -50%) scale(1);
     box-shadow: 0 0 14px var(--enemy-border-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     border-color: var(--enemy-border-default);
   }
 
   15% {
-    /* Lunge downwards and scale up slightly */
-    transform: translate(-50%, -50%) translateY(12px) scale(1.08);
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     border-color: #ef4444;
   }
 
   30% {
-    /* Shake left */
-    transform: translate(-50%, -50%) translateY(8px) translateX(-5px) scale(1.08);
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     border-color: #ef4444;
   }
 
   45% {
-    /* Shake right */
-    transform: translate(-50%, -50%) translateY(8px) translateX(5px) scale(1.08);
     box-shadow: 0 0 30px rgba(239, 68, 68, 0.95);
     border-color: #ef4444;
   }
 
   60% {
-    /* Shake left again */
-    transform: translate(-50%, -50%) translateY(6px) translateX(-3px) scale(1.04);
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
   }
 
   80% {
-    /* Returning to position */
-    transform: translate(-50%, -50%) translateY(2px) scale(1.02);
     box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
   }
 
   100% {
-    transform: translate(-50%, -50%) scale(1);
     box-shadow: 0 0 14px var(--enemy-border-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    border-color: var(--enemy-border-default);
+  }
+}
+
+@keyframes enemyEmojiRetaliate {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+  }
+
+  15% {
+    transform: translateX(-50%) translateY(12px) scale(1.15);
+  }
+
+  30% {
+    transform: translateX(calc(-50% - 5px)) translateY(8px) scale(1.15);
+  }
+
+  45% {
+    transform: translateX(calc(-50% + 5px)) translateY(8px) scale(1.15);
+  }
+
+  60% {
+    transform: translateX(calc(-50% - 3px)) translateY(6px) scale(1.08);
+  }
+
+  80% {
+    transform: translateX(-50%) translateY(2px) scale(1.02);
   }
 }
 
@@ -7024,32 +6931,30 @@ button:hover,
 }
 
 /* Card shake on critical hit */
-@keyframes critCardShake {
-
-  0%,
-  100% {
-    transform: translate(-50%, -50%) rotate(0deg);
+@keyframes critEmojiShake {
+  0%, 100% {
+    transform: translateX(-50%) rotate(0deg);
   }
 
   20% {
-    transform: translate(-50%, -50%) translateX(-8px) rotate(-2deg);
+    transform: translateX(calc(-50% - 8px)) rotate(-2deg);
   }
 
   40% {
-    transform: translate(-50%, -50%) translateX(6px) rotate(1.5deg);
+    transform: translateX(calc(-50% + 6px)) rotate(1.5deg);
   }
 
   60% {
-    transform: translate(-50%, -50%) translateX(-5px) rotate(-1deg);
+    transform: translateX(calc(-50% - 5px)) rotate(-1deg);
   }
 
   80% {
-    transform: translate(-50%, -50%) translateX(3px) rotate(0.5deg);
+    transform: translateX(calc(-50% + 3px)) rotate(0.5deg);
   }
 }
 
-.enemy-card.crit-shaking {
-  animation: critCardShake 250ms ease-out;
+.enemy-card.crit-shaking .enemy-emoji {
+  animation: critEmojiShake 250ms ease-out;
 }
 
 /* Lootbox Popup Styling */

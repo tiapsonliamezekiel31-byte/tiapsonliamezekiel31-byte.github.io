@@ -11408,6 +11408,8 @@ class UIManager {
       card.style.top = cY + 'px';
       card.style.willChange = 'transform';
       card.style.transform = `translate3d(${dx.toFixed(2)}px, ${dy.toFixed(2)}px, 0px) translate(-50%, -50%)${scaleStr}`;
+      card.dataset.x = x;
+      card.dataset.y = y;
       card._state.x = x;
       card._state.y = y;
     }
