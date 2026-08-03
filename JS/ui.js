@@ -1140,6 +1140,7 @@ class UIManager {
 
     hud.innerHTML = `
       <div class="qa-hud-top-row">
+        <div class="qa-drag-handle" style="cursor: grab; font-size: 16px; padding: 4px 10px; user-select: none; opacity: 0.8; color: var(--accent-gold, #f59e0b); font-weight: bold;" title="Drag Quick Add HUD">⠿</div>
         <button class="hud-minimize-btn" title="Minimize Quick Add HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('quickAddHud')">－</button>
         <select id="qaTypeSelect" class="qa-hud-select" title="Task Type">
           <option value="todo">📋 Todo</option>
@@ -5751,33 +5752,43 @@ class UIManager {
 
         const interactiveInsideCard = event.target.closest('.todo-subtask-rect, .todo-subtasks-container, .subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
-        
-        if (event.target.closest('.btn-lock-daily')) {
-          if (!TaskManager.isFeatureUnlocked('lockIn')) {
-            try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
-            return;
-          }
-          if (taskType === 'daily') {
-            const daily = state.dailiesState.dailies.find(d => d.id === taskId);
-            if (daily) {
-              if (!daily.locked) {
-                if (confirm("Are you sure you want to lock this daily? It will be marked as a miss and cannot be completed today.")) {
-                  TaskManager.lockDaily(taskId);
-                  this.scheduleUpdateDailiesList();
-                }
-              } else {
-                TaskManager.unlockDaily(taskId);
-                this.scheduleUpdateDailiesList();
-              }
-              state.save();
-            }
-          }
-          return;
-        }
+        const todoJoystickMode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
 
         if (taskType === 'daily' && editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
           PopupsManager.showEditDaily(taskId);
           return;
+        }
+
+        if (taskType === 'todo' && !interactiveInsideCard) {
+          if (todoJoystickMode === 'edit') {
+            if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
+              PopupsManager.showEditTodo(taskId);
+            }
+            return;
+          } else if (todoJoystickMode === 'del') {
+            const todoObj = TaskManager.getTaskById(taskId);
+            const todoName = todoObj?.name || 'this to-do';
+            if (confirm(`Delete "${todoName}"?`)) {
+              TaskManager.removeTodo(taskId);
+              try { state.save(); } catch (e) {}
+              this.updateTodosList();
+              this.renderEnemies();
+            }
+            return;
+          } else if (todoJoystickMode === 'oath') {
+            TaskManager.toggleBloodOathTodo(taskId);
+            try { state.save(); } catch (e) {}
+            this.updateTodosList();
+            return;
+          }
+        }
+
+        if (taskType === 'daily' && !editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
+          const subtasksContainer = card.querySelector('.daily-subtasks-container') || card.parentNode.querySelector(`.daily-subtasks-container[data-daily-id="${taskId}"]`);
+          if (subtasksContainer) {
+            const isHidden = subtasksContainer.style.display === 'none';
+            subtasksContainer.style.display = isHidden ? 'block' : 'none';
+          }
         }
 
         // To-Do card single clicks should not trigger complete. Only Dailies or explicit complete buttons.
@@ -9690,6 +9701,19 @@ class UIManager {
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', endDrag);
     document.addEventListener('pointercancel', endDrag);
+
+    board.addEventListener('dblclick', (event) => {
+      const card = event.target.closest('.task-card-daily');
+      if (!card) return;
+      const dailyId = card.dataset.id;
+      if (!dailyId) return;
+      const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+      if (editModeDailies) {
+        if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditDaily) {
+          PopupsManager.showEditDaily(dailyId);
+        }
+      }
+    });
 
     board.addEventListener('click', (event) => {
       const lockBadge = event.target.closest('.task-daily-lock-badge');
