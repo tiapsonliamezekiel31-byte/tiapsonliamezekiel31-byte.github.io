@@ -383,6 +383,43 @@ class UIManager {
     }, duration);
   }
 
+  static applyTaskChargingEffect(card, durationMs, onComplete) {
+    if (!card) {
+      if (onComplete) onComplete();
+      return;
+    }
+    const isEnemyCard = card.classList.contains('enemy-card');
+    const animTime = Math.max(100, durationMs);
+    if (!isEnemyCard) {
+      card.style.transformOrigin = 'center center';
+      card.style.transition = `transform ${animTime}ms cubic-bezier(0.25, 1, 0.5, 1), filter ${animTime}ms ease, box-shadow ${animTime}ms ease`;
+    }
+    requestAnimationFrame(() => {
+      card.classList.add('card-charging-compress');
+    });
+
+    const vibrateLeadTime = Math.min(200, Math.max(100, animTime * 0.3));
+    const vibrateDelay = Math.max(0, animTime - vibrateLeadTime);
+
+    const vibrateTimer = setTimeout(() => {
+      card.classList.add('card-charging-vibrate');
+    }, vibrateDelay);
+
+    setTimeout(() => {
+      clearTimeout(vibrateTimer);
+      if (!isEnemyCard) {
+        card.style.transition = '';
+        card.style.transformOrigin = '';
+      }
+      card.classList.remove('card-charging-compress', 'card-charging-vibrate');
+      card.classList.add('card-charging-snap');
+      setTimeout(() => {
+        card.classList.remove('card-charging-snap');
+      }, 120);
+      if (onComplete) onComplete();
+    }, animTime);
+  }
+
   static showDailyApReward(card, amount, options = {}) {
     const rect = card?.getBoundingClientRect?.();
     if (!rect) return;
@@ -5870,13 +5907,22 @@ class UIManager {
                 }
               }
 
-              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                RetroTaskCompleteAnimation.play(card);
+              const released = res.releasedHeld || res.releasedHeldRewards;
+              let countUpDelay = 0;
+              if (released && released.ap > 0) {
+                countUpDelay = Math.min(1200, Math.max(650, Math.ceil(released.ap) * 25));
+              } else if (res.rewards && res.rewards.ap) {
+                countUpDelay = Math.min(1200, Math.max(650, Math.ceil(res.rewards.ap) * 25));
               }
 
-              setTimeout(() => {
-                this.scheduleUpdateDailiesList();
-              }, 320);
+              UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
+                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                  RetroTaskCompleteAnimation.play(card);
+                }
+                setTimeout(() => {
+                  this.scheduleUpdateDailiesList();
+                }, 320);
+              });
             } catch (e) {
               this.scheduleUpdateDailiesList();
             }
@@ -9636,12 +9682,22 @@ class UIManager {
                     }
                   }
                 }
-                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                  RetroTaskCompleteAnimation.play(card);
+                const released = res.releasedHeld || res.releasedHeldRewards;
+                let countUpDelay = 0;
+                if (released && released.ap > 0) {
+                  countUpDelay = Math.min(1200, Math.max(650, Math.ceil(released.ap) * 25));
+                } else if (res.rewards && res.rewards.ap) {
+                  countUpDelay = Math.min(1200, Math.max(650, Math.ceil(res.rewards.ap) * 25));
                 }
-                setTimeout(() => {
-                  this.scheduleUpdateDailiesList();
-                }, 320);
+
+                UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
+                  if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                    RetroTaskCompleteAnimation.play(card);
+                  }
+                  setTimeout(() => {
+                    this.scheduleUpdateDailiesList();
+                  }, 320);
+                });
               } catch (error) {
                 this.scheduleUpdateDailiesList();
               }
@@ -10126,12 +10182,20 @@ class UIManager {
             if (res.rewards && res.rewards.diamonds) {
               UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
             }
-            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-              RetroTaskCompleteAnimation.play(card);
+            let countUpDelay = 0;
+            if (res.rewards && res.rewards.ap) {
+              const apVal = Math.ceil(res.rewards.ap);
+              countUpDelay = Math.min(1200, Math.max(650, apVal * 25));
             }
-            setTimeout(() => {
-              UIManager.updateTodosList();
-            }, 200);
+
+            UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
+              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                RetroTaskCompleteAnimation.play(card);
+              }
+              setTimeout(() => {
+                UIManager.updateTodosList();
+              }, 200);
+            });
             try { getGameState().save(); } catch (e) {}
             UIManager.renderEnemies();
           }
@@ -11043,24 +11107,32 @@ class UIManager {
     });
   }
 
+  static getCircleRect() {
+    const circle = document.querySelector('.enemy-circle-container');
+    if (circle) {
+      const rect = circle.getBoundingClientRect();
+      if (rect.width >= 100 && rect.height >= 100) {
+        this.circleRectCache = {
+          left: Math.round(rect.left),
+          top: Math.round(rect.top),
+          width: Math.round(rect.width),
+          height: Math.round(rect.height)
+        };
+        return this.circleRectCache;
+      }
+    }
+    return this.circleRectCache || { left: 0, top: 0, width: 400, height: 400 };
+  }
+
   static _doRenderEnemies() {
     const layer = document.getElementById('enemyLayer');
     if (!layer) return;
 
     const state = getGameState();
     const enemies = state.stageState.enemies || [];
-    const circle = document.querySelector('.enemy-circle-container');
-    const rawRect = circle ? circle.getBoundingClientRect() : null;
-    const rectWidth = (rawRect && rawRect.width >= 100) ? rawRect.width : 620;
-    const rectHeight = (rawRect && rawRect.height >= 100) ? rawRect.height : 620;
-
-    // Invalidate and update the circle rect cache
-    this.circleRectCache = {
-      left: rawRect ? Math.round(rawRect.left) : 0,
-      top: rawRect ? Math.round(rawRect.top) : 0,
-      width: Math.round(rectWidth),
-      height: Math.round(rectHeight)
-    };
+    const cache = this.getCircleRect();
+    const rectWidth = cache.width;
+    const rectHeight = cache.height;
 
     const centerX = rectWidth / 2;
     const centerY = rectHeight / 2;
@@ -11216,7 +11288,7 @@ class UIManager {
           return;
         }
         
-        const cache = UIManager.circleRectCache || { width: 620, height: 620 };
+        const cache = UIManager.getCircleRect();
         const cX = cache.width / 2;
         const cY = cache.height / 2;
         const rBase = Math.min(cache.width, cache.height) / 2;
@@ -11228,7 +11300,7 @@ class UIManager {
 
           const eId = String(eItem.id);
           const cardEl = layerEl.querySelector(`.enemy-card[data-enemy-id="${eId}"]`);
-          const rBase = Math.max(150, (rect ? rect.width : 620) / 2);
+          if (!cardEl) return;
           const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(idx, curEnemies.length);
           const rawCRadius = ringLevel === 0 ? (rBase + 15) : (rBase - 35 - (ringLevel - 1) * 45);
           const cRadius = Math.max(rBase * 0.35, rawCRadius);
@@ -11319,7 +11391,7 @@ class UIManager {
       if (card._state.x !== x) { card.style.left = x + 'px'; card.dataset.x = x; card._state.x = x; }
       if (card._state.y !== y) { card.style.top = y + 'px'; card.dataset.y = y; card._state.y = y; }
     } else {
-      const cache = this.circleRectCache || { width: 620, height: 620 };
+      const cache = UIManager.getCircleRect();
       const cX = cache.width / 2;
       const cY = cache.height / 2;
       const dx = x - cX;

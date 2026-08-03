@@ -1195,6 +1195,10 @@ class GameState {
 
     let totalDamage = 0;
 
+    const nextDaysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
+    const isAggressive = (nextDaysOnLevel >= 3);
+    const checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
+
     if (bossEnemy && !bossEnemy.isDead) {
       const today = TaskManager.getCurrentGameDateKey();
       const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
@@ -1266,6 +1270,7 @@ class GameState {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
           totalDamage += damage;
         } else if (attackType === 'crit') {
           let damage = 15 * lockInDamageMult;
@@ -1275,6 +1280,7 @@ class GameState {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
           totalDamage += damage;
         } else if (attackType === 'heavy') {
           let damage = 12 * lockInDamageMult;
@@ -1298,6 +1304,7 @@ class GameState {
               damage = Math.max(0, damage * (Number(reactiveWeapon.damageMultiplier) || 1));
             }
           }
+          damage = Math.round(damage * checkinDamageMultiplier);
           totalDamage += damage;
         }
       });
@@ -1308,10 +1315,6 @@ class GameState {
       const skillFx = state.combatState?.skillEffects || {};
       let tempShieldCharges = skillFx.shieldCharges || 0;
       let tempFortressCharges = skillFx.fortressCharges || 0;
-
-      const nextDaysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
-      const isAggressive = (nextDaysOnLevel >= 3);
-      const checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
 
       aliveNormalEnemies.forEach(enemy => {
         if (enemy.statusEffects?.stunned) return;
