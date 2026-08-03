@@ -21,6 +21,54 @@ const AnimationRuntime = (() => {
 })();
 
 let animationStylesInjected = false;
+class WebAudioTickSynth {
+  static init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  static playTick(progress = 0) {
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      const p = Math.min(1, Math.max(0, Number(progress) || 0));
+      const freq = 350 * Math.pow(2000 / 350, p);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.28, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch (e) {}
+  }
+}
+if (typeof window !== 'undefined') {
+  window.WebAudioTickSynth = WebAudioTickSynth;
+  const unlockAudio = () => {
+    WebAudioTickSynth.init();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+    window.removeEventListener('click', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+  window.addEventListener('click', unlockAudio);
+}
+
 function ensureAnimationStyles() {
   if (animationStylesInjected) return;
   animationStylesInjected = true;
@@ -373,7 +421,29 @@ class FloatingDamageNumber {
       will-change: transform, opacity;
       font-size: ${fontSize * scale * sizeMultiplier}px;
     `;
-    div.textContent = displayValue;
+    // Check if item contains numeric value for count-up
+    let isCountUp = false;
+    let countPrefix = '';
+    let targetVal = 0;
+    let countSuffix = '';
+    if (options.countUp === true && !isMiss) {
+      const strVal = String(displayValue);
+      const match = strVal.match(/^([^\d]*)(-?\d+)(.*)$/);
+      if (match) {
+        countPrefix = match[1];
+        targetVal = parseInt(match[2], 10);
+        countSuffix = match[3];
+        if (!isNaN(targetVal) && Math.abs(targetVal) > 0) {
+          isCountUp = true;
+        }
+      }
+    }
+
+    if (isCountUp) {
+      div.textContent = `${countPrefix}0${countSuffix}`;
+    } else {
+      div.textContent = displayValue;
+    }
     container.appendChild(div);
 
     // Manage stacking by rounded coordinates unless a stackKey is provided
@@ -385,6 +455,10 @@ class FloatingDamageNumber {
     // Register in centralized non-anchored list for a single RAF loop
     if (!FloatingDamageNumber._list) FloatingDamageNumber._list = [];
     const createdAt = performance.now();
+    const countUpDuration = isCountUp ? Math.min(1200, Math.max(650, Math.abs(targetVal) * 25)) : 0;
+    const finalDuration = isCountUp ? Math.max(effectiveDuration, countUpDuration + 800) : effectiveDuration;
+    const finalFadeDelay = isCountUp ? Math.max(effectiveFadeDelay, countUpDuration + 400) : effectiveFadeDelay;
+
     const item = {
       div,
       coordKey: key,
@@ -395,14 +469,20 @@ class FloatingDamageNumber {
       travelX,
       travelY,
       createdAt,
-      duration: effectiveDuration,
-      fadeDelay: effectiveFadeDelay,
+      duration: finalDuration,
+      fadeDelay: finalFadeDelay,
       isCrit,
       baseRotation,
       color,
       scale: scale || 1,
-      cycleText: !!options.cycleText,
-      finalText: String(options.finalText !== undefined ? options.finalText : value)
+      cycleText: !isCountUp && !!options.cycleText,
+      finalText: String(options.finalText !== undefined ? options.finalText : value),
+      isCountUp,
+      countPrefix,
+      targetVal,
+      countSuffix,
+      countUpDuration,
+      lastTickVal: -1
     };
 
     FloatingDamageNumber._list.push(item);
@@ -654,7 +734,7 @@ FloatingDamageNumber._anchoredTick = function () {
       f.div.style.opacity = opacity;
 
       if (f.cycleText) {
-        if (progress < 0.7) {
+        if (progress < 0.18) {
           const text = String(f.finalText || '');
           if (text.includes('AP')) {
             f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;
@@ -754,8 +834,19 @@ FloatingDamageNumber._tickNonAnchored = function () {
       }
       f.div.style.opacity = opacity;
 
-      if (f.cycleText) {
-        if (progress < 0.7) {
+      if (f.isCountUp) {
+        const countElapsed = now - f.createdAt;
+        const countProgress = Math.min(1, countElapsed / f.countUpDuration);
+        const currentVal = Math.round(f.targetVal * countProgress);
+        f.div.textContent = `${f.countPrefix}${currentVal}${f.countSuffix}`;
+        if (currentVal !== f.lastTickVal) {
+          f.lastTickVal = currentVal;
+          if (typeof WebAudioTickSynth !== 'undefined') {
+            WebAudioTickSynth.playTick(countProgress);
+          }
+        }
+      } else if (f.cycleText) {
+        if (progress < 0.18) {
           const text = String(f.finalText || '');
           if (text.includes('AP')) {
             f.div.textContent = `+${Math.floor(Math.random() * 31)} AP`;

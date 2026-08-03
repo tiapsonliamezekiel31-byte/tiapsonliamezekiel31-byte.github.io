@@ -373,7 +373,17 @@ class UIManager {
     }, delay);
   }
 
-  static showDailyApReward(card, amount) {
+  static accelerateBackground(multiplier = 2.0, duration = 2000) {
+    const gameArea = document.getElementById('gameArea') || document.body;
+    gameArea.classList.add('bg-accelerate-2x');
+    if (UIManager._bgAccelTimer) clearTimeout(UIManager._bgAccelTimer);
+    UIManager._bgAccelTimer = setTimeout(() => {
+      gameArea.classList.remove('bg-accelerate-2x');
+      UIManager._bgAccelTimer = null;
+    }, duration);
+  }
+
+  static showDailyApReward(card, amount, options = {}) {
     const rect = card?.getBoundingClientRect?.();
     if (!rect) return;
 
@@ -381,11 +391,11 @@ class UIManager {
       rect.left + rect.width / 2,
       Math.max(12, rect.top - 18),
       `+${Math.ceil(amount)} AP`,
-      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true }
+      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true, ...options }
     );
   }
 
-  static showDailyKeysReward(card, amount) {
+  static showDailyKeysReward(card, amount, options = {}) {
     const rect = card?.getBoundingClientRect?.();
     if (!rect) return;
 
@@ -393,17 +403,19 @@ class UIManager {
       rect.left + rect.width / 2,
       Math.max(12, rect.top - 18),
       `+${amount} Keys 🔑`,
-      { color: '#ffd700', cycleText: false }
+      { color: '#ffd700', cycleText: false, countUp: true, ...options }
     );
   }
 
-  static spawnDiamondFloatingPopup(x, y, amount) {
+  static spawnDiamondFloatingPopup(x, y, amount, options = {}) {
     if (!amount || amount <= 0) return;
     try {
       FloatingDamageNumber.show(x, y, `+${amount} 💎`, {
         color: '#00e5ff',
         scale: 1.2,
-        cycleText: true
+        cycleText: false,
+        countUp: true,
+        ...options
       });
       if (typeof ParticleSystem !== 'undefined') {
         const p = new ParticleSystem();
@@ -3052,10 +3064,6 @@ class UIManager {
       }
 
       if (mode === 'lock') {
-        if (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function' && !TaskManager.isFeatureUnlocked('lockIn')) {
-          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🔒 Unlocks at Streak 7', { color: '#ff6666' }); } catch (err) {}
-          return;
-        }
         state.systemState.taskListFilters.lockModeDailies = true;
         state.systemState.taskListFilters.editModeDailies = false;
         state.systemState.taskListFilters.oathModeDailies = false;
@@ -3594,14 +3602,14 @@ class UIManager {
           if (res.rewards && res.rewards.ap) {
             FloatingDamageNumber.show(centerX, centerY - 20, `+${Math.ceil(res.rewards.ap)} AP`, {
               color: UIManager.themeColor('--ap-gold', '#FFB33F'),
-              cycleText: true
+              cycleText: false
             });
           }
 
           if (res.rewards && res.rewards.keys) {
             FloatingDamageNumber.show(centerX, centerY - 20, `+${res.rewards.keys} Keys 🔑`, {
               color: '#ffd700',
-              cycleText: false
+              cycleText: true
             });
           }
 
@@ -5801,13 +5809,18 @@ class UIManager {
             // Immediate visual feedback on the card
             try {
               card.classList.add('just-completed');
-              card.style.transition = 'transform 220ms ease, filter 150ms ease, opacity 400ms ease';
+              card.style.transition = 'transform 100ms ease, filter 100ms ease, opacity 400ms ease';
               card.style.transform = 'scale(1.04)';
-
-              // Flash white right before disappearing (around 180ms)
+              card.style.filter = 'brightness(10) contrast(1.5)';
               setTimeout(() => {
-                card.style.filter = 'brightness(10) contrast(1.5)';
-              }, 160);
+                card.style.filter = '';
+                card.style.transform = '';
+              }, 100);
+
+              UIManager.accelerateBackground(2.0, 2000);
+              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                try { navigator.vibrate([15, 30, 45]); } catch (e) {}
+              }
 
               // Show reward popup numbers
               if (res.isHeld || res.isMiss) {
@@ -5844,15 +5857,15 @@ class UIManager {
                   const centerX = rect.left + rect.width / 2;
                   let offset = 48;
                   if (released.ap > 0) {
-                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
                     offset += 24;
                   }
                   if (released.diamonds > 0) {
-                    FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500 });
+                    FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500, countUp: true });
                     offset += 24;
                   }
                   if (released.keys > 0) {
-                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
                   }
                 }
               }
@@ -6790,20 +6803,11 @@ class UIManager {
 
     const dailiesLockBtn = document.getElementById('dailiesLockModeBtn');
     if (dailiesLockBtn) {
-      const isLockUnlocked = (typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function')
-        ? TaskManager.isFeatureUnlocked('lockIn')
-        : true;
-      if (!isLockUnlocked) {
-        dailiesLockBtn.textContent = '🔒 Unlocks at Streak 7';
-        dailiesLockBtn.style.opacity = '0.6';
-        dailiesLockBtn.title = 'Unlocks at Streak 7';
-      } else {
-        dailiesLockBtn.style.opacity = '1';
-        const lockMode = !!state.systemState?.taskListFilters?.lockModeDailies;
-        dailiesLockBtn.textContent = lockMode ? 'Lock: ON' : 'Lock: off';
-        dailiesLockBtn.setAttribute('aria-pressed', String(lockMode));
-        dailiesLockBtn.classList.toggle('active', lockMode);
-      }
+      dailiesLockBtn.style.opacity = '1';
+      const lockMode = !!state.systemState?.taskListFilters?.lockModeDailies;
+      dailiesLockBtn.textContent = lockMode ? 'Lock: ON' : 'Lock: off';
+      dailiesLockBtn.setAttribute('aria-pressed', String(lockMode));
+      dailiesLockBtn.classList.toggle('active', lockMode);
     }
 
     if (connectionsBtn) {
@@ -9582,9 +9586,19 @@ class UIManager {
             if (res && res.success) {
               try {
                 card.classList.add('just-completed');
-                card.style.transition = 'transform 220ms ease, opacity 400ms ease';
+                card.style.transition = 'transform 100ms ease, filter 100ms ease, opacity 400ms ease';
+                card.style.filter = 'brightness(10) contrast(1.5)';
                 const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
                 card.style.transform = `scale(${sizeScale * 1.04})`;
+                setTimeout(() => {
+                  card.style.filter = '';
+                  card.style.transform = `scale(${sizeScale})`;
+                }, 100);
+
+                UIManager.accelerateBackground(2.0, 2000);
+                if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                  try { navigator.vibrate([15, 30, 45]); } catch (e) {}
+                }
                 const rect = card.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
@@ -9610,15 +9624,15 @@ class UIManager {
                   if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
                     let offset = 48;
                     if (released.ap > 0) {
-                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
                       offset += 24;
                     }
                     if (released.diamonds > 0) {
-                      FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500 });
+                      FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500, countUp: true });
                       offset += 24;
                     }
                     if (released.keys > 0) {
-                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500 });
+                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
                     }
                   }
                 }
@@ -9828,7 +9842,7 @@ class UIManager {
             FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
           }
           if (res.rewards && res.rewards.ap) {
-            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
+            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false });
           }
           if (res.rewards && res.rewards.diamonds) {
             UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
@@ -10090,8 +10104,16 @@ class UIManager {
           
           const res = TaskManager.completeTodo(todoId);
           if (res && res.success) {
-            card.style.transition = 'filter 150ms ease, opacity 400ms ease';
+            card.style.transition = 'filter 100ms ease, opacity 400ms ease';
             card.style.filter = 'brightness(10) contrast(1.5)';
+            setTimeout(() => {
+              card.style.filter = '';
+            }, 100);
+
+            UIManager.accelerateBackground(2.0, 2000);
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              try { navigator.vibrate([15, 30, 45]); } catch (e) {}
+            }
             const rect = card.getBoundingClientRect();
 
             if (res.isJackpot) {
@@ -10099,7 +10121,7 @@ class UIManager {
               FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
             }
             if (res.rewards && res.rewards.ap) {
-              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: true });
+              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true });
             }
             if (res.rewards && res.rewards.diamonds) {
               UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
@@ -11028,20 +11050,22 @@ class UIManager {
     const state = getGameState();
     const enemies = state.stageState.enemies || [];
     const circle = document.querySelector('.enemy-circle-container');
-    const rect = circle ? circle.getBoundingClientRect() : { width: 620, height: 620 };
-    
+    const rawRect = circle ? circle.getBoundingClientRect() : null;
+    const rectWidth = (rawRect && rawRect.width >= 100) ? rawRect.width : 620;
+    const rectHeight = (rawRect && rawRect.height >= 100) ? rawRect.height : 620;
+
     // Invalidate and update the circle rect cache
     this.circleRectCache = {
-      left: Math.round(rect.left),
-      top: Math.round(rect.top),
-      width: Math.round(rect.width),
-      height: Math.round(rect.height)
+      left: rawRect ? Math.round(rawRect.left) : 0,
+      top: rawRect ? Math.round(rawRect.top) : 0,
+      width: Math.round(rectWidth),
+      height: Math.round(rectHeight)
     };
 
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    const centerX = rectWidth / 2;
+    const centerY = rectHeight / 2;
     // Position enemies relative to circle border
-    const radius = Math.min(rect.width, rect.height) / 2;
+    const radius = Math.min(rectWidth, rectHeight) / 2;
 
     if (!enemies.length) {
       this.enemyPositionsCache = [];
@@ -11075,7 +11099,8 @@ class UIManager {
       activeEnemyIds.add(enemyId);
 
       const { ringLevel, ringIndex, totalInRing } = this.getRingInfo(index, enemies.length);
-      const currentRadius = ringLevel === 0 ? (radius + 15) : (radius - 35 - (ringLevel - 1) * 60);
+      const rawRadius = ringLevel === 0 ? (radius + 15) : (radius - 35 - (ringLevel - 1) * 45);
+      const currentRadius = Math.max(radius * 0.35, rawRadius);
 
       const isBoss = !!enemy.isBoss;
       const now = performance.now();
@@ -11203,9 +11228,10 @@ class UIManager {
 
           const eId = String(eItem.id);
           const cardEl = layerEl.querySelector(`.enemy-card[data-enemy-id="${eId}"]`);
-          if (!cardEl) return;
+          const rBase = Math.max(150, (rect ? rect.width : 620) / 2);
           const { ringLevel, ringIndex, totalInRing } = UIManager.getRingInfo(idx, curEnemies.length);
-          const cRadius = ringLevel === 0 ? (rBase + 15) : (rBase - 35 - (ringLevel - 1) * 60);
+          const rawCRadius = ringLevel === 0 ? (rBase + 15) : (rBase - 35 - (ringLevel - 1) * 45);
+          const cRadius = Math.max(rBase * 0.35, rawCRadius);
           const direction = (ringLevel % 2 === 0) ? 1 : -1;
           const a = (Math.PI * 2 * ringIndex) / totalInRing - Math.PI / 2 + (direction * nowMs * rotSpeed);
           const px = cX + Math.cos(a) * cRadius;

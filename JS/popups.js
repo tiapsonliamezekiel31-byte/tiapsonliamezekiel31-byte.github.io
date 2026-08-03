@@ -3440,12 +3440,10 @@ class PopupsManager {
 
     // Open spinning wheel screen for selected tier
     const openSpinScreen = (tier) => {
-      // Define the wheel rewards config
       const CHEST_TIERS = {
         common: {
           name: 'Common Box',
           slices: [
-            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 12 },
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
             { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
@@ -3468,7 +3466,6 @@ class PopupsManager {
         rare: {
           name: 'Rare Box',
           slices: [
-            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 12 },
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
             { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
@@ -3491,7 +3488,6 @@ class PopupsManager {
         epic: {
           name: 'Epic Box',
           slices: [
-            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 10 },
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
             { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
@@ -3514,7 +3510,6 @@ class PopupsManager {
         legendary: {
           name: 'Legendary Box',
           slices: [
-            { type: 'miss', label: 'MISS', icon: '❌', color: '#4b5563', weight: 10 },
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
             { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
@@ -3571,21 +3566,8 @@ class PopupsManager {
         rand -= slices[i].weight;
       }
 
-      // Check near-miss logic: 30% chance if won a common/low-tier segment to land right next to index 17 (Grand Jackpot)
-      let stopAngleOffset = 0;
-      const isCommonOutcome = slices[winnerIdx].type === 'gold' || slices[winnerIdx].type === 'ap' || slices[winnerIdx].type === 'diamonds' || slices[winnerIdx].type === 'miss';
-      if (isCommonOutcome && Math.random() < 0.30) {
-        if (winnerIdx === 0) {
-          stopAngleOffset = -(regularSweep / 2 - 1.5);
-        } else if (winnerIdx === 16) {
-          stopAngleOffset = (regularSweep / 2 - 1.5);
-        }
-      }
-
       const winner = slices[winnerIdx];
-
-      // Play start sound
-      try { if (window.SoundManager) SoundManager.play('lootbox_open'); } catch (e) {}
+      const stopAngleDeg = (270 - segments[winnerIdx].centerDeg) % 360;
 
       // Transition screen
       popup.innerHTML = `
@@ -3595,16 +3577,8 @@ class PopupsManager {
             <div class="wheel-pointer">▽</div>
             <canvas id="lootboxWheel" width="600" height="600"></canvas>
           </div>
-          <div class="turbo-spin-row" style="margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <input type="checkbox" id="turboSpinToggle" />
-            <label for="turboSpinToggle" style="font-size: 14px; color: #aaa; user-select: none;">Turbo Spin (Fast Animation)</label>
-          </div>
-          <div class="wheel-status-text" style="margin-top: 12px; font-weight: bold;">Click SPIN to reveal your fate!</div>
-          <div class="lootbox-result-area" style="opacity: 0; min-height: 80px; transition: opacity 0.5s ease; margin-top: 16px;"></div>
-          <div class="spin-buttons-row" style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; width: 100%;">
-            <button class="btn-large btn-spin-wheel" style="margin-top: 0; flex: 1;">SPIN WHEEL</button>
-            <button class="btn-large btn-stop-wheel" style="display: none; margin-top: 0; flex: 1; background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">STOP WHEEL</button>
-          </div>
+          <div class="wheel-status-text" style="margin-top: 12px; font-weight: bold;"></div>
+          <div class="lootbox-result-area" style="opacity: 1; min-height: 80px; margin-top: 16px;"></div>
         </div>
       `;
 
@@ -3697,102 +3671,8 @@ class PopupsManager {
         ctx.restore();
       };
 
-      // Initial draw
-      drawWheel(0);
-
-      const spinBtn = popup.querySelector('.btn-spin-wheel');
-      const stopBtn = popup.querySelector('.btn-stop-wheel');
-      
-      spinBtn.addEventListener('click', () => {
-        spinBtn.style.display = 'none';
-        popup.querySelector('.turbo-spin-row').style.display = 'none';
-        stopBtn.style.display = 'block';
-
-        const turbo = popup.querySelector('#turboSpinToggle').checked;
-        
-        let startTime = null;
-        let isDecelerating = false;
-        let decelerateStartTime = null;
-        let decelerateStartAngle = 0;
-        let decelerateTargetAngle = 0;
-        const decelerateDuration = turbo ? 1000 : 3000;
-        
-        let lastFrameAngle = 0;
-        let lastTickIndex = -1;
-        let lastTickTime = 0;
-        const statusText = popup.querySelector('.wheel-status-text');
-
-        // Dynamic tick index checker based on angle boundaries
-        const checkTicks = (angle) => {
-          let normalized = angle % 360;
-          if (normalized < 0) normalized += 360;
-          const idx = segments.findIndex(seg => normalized >= seg.startDeg && normalized < seg.endDeg);
-          if (idx !== -1 && idx !== lastTickIndex) {
-            lastTickIndex = idx;
-            const now = performance.now();
-            if (now - lastTickTime > 60) {
-              lastTickTime = now;
-              try { if (window.SoundManager) SoundManager.play('tick'); } catch (e) {}
-            }
-          }
-        };
-
-        const triggerStop = (timestamp, currentAngle) => {
-          if (isDecelerating) return;
-          isDecelerating = true;
-          decelerateStartTime = timestamp;
-          decelerateStartAngle = currentAngle;
-          
-          const stopAngleDeg = (270 - segments[winnerIdx].centerDeg + stopAngleOffset) % 360;
-          const minTarget = decelerateStartAngle + (turbo ? 1.5 : 2.5) * 360;
-          decelerateTargetAngle = minTarget + ((stopAngleDeg - (minTarget % 360) + 360) % 360);
-          
-          stopBtn.style.display = 'none';
-        };
-
-        stopBtn.addEventListener('click', () => {
-          triggerStop(performance.now(), lastFrameAngle);
-        });
-
-        const animateSpin = (timestamp) => {
-          if (!startTime) startTime = timestamp;
-          
-          if (!isDecelerating) {
-            const elapsed = timestamp - startTime;
-            const speed = turbo ? 1.8 : 0.8; // degrees per ms
-            const currentAngle = elapsed * speed;
-            lastFrameAngle = currentAngle;
-            
-            drawWheel(currentAngle);
-            checkTicks(currentAngle);
-            
-            if (elapsed > 8000) {
-              triggerStop(timestamp, currentAngle);
-            }
-            requestAnimationFrame(animateSpin);
-          } else {
-            if (!decelerateStartTime) decelerateStartTime = timestamp;
-            const elapsed = timestamp - decelerateStartTime;
-            const progress = Math.min(1, elapsed / decelerateDuration);
-            
-            // Ease-out quintic formula for heavier deceleration
-            const ease = 1 - Math.pow(1 - progress, 5);
-            const currentAngle = decelerateStartAngle + ease * (decelerateTargetAngle - decelerateStartAngle);
-            
-            drawWheel(currentAngle);
-            checkTicks(currentAngle);
-            
-            if (progress < 1) {
-              requestAnimationFrame(animateSpin);
-            } else {
-              handleWinnerReveal();
-            }
-          }
-        };
-
-        statusText.textContent = 'Deciding your fate... 🎲';
-        requestAnimationFrame(animateSpin);
-      });
+      // Draw wheel instantly pointing at winning slice
+      drawWheel(stopAngleDeg);
 
       // Handle winning payouts and display
       const handleWinnerReveal = () => {
@@ -4065,6 +3945,9 @@ class PopupsManager {
           wireClaimHandlers(resultArea);
         }
       };
+
+      // Call immediately for instant rewards
+      handleWinnerReveal();
     };
 
     overlay.appendChild(popup);

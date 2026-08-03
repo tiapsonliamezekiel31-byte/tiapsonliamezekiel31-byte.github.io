@@ -482,17 +482,8 @@ class TaskManager {
     const activeIncompleteDailies = (state.dailiesState.dailies || []).filter(d => !d.completed && !d.locked);
     const isLastUnlockedDaily = activeIncompleteDailies.length === 0;
 
-    // Check if hold chance triggers (doubled chance)
     let isLootboxMode = !!state.playerState.lootboxDailyMode;
     let isHeld = false;
-    if (!isLootboxMode && !isLastUnlockedDaily) {
-      const diff = daily.difficulty;
-      const rand = Math.random();
-      if (diff === 'Ultra' && rand < 2 / 9) isHeld = true;
-      else if (diff === 'Hard' && rand < 2 / 8) isHeld = true;
-      else if (diff === 'Medium' && rand < 2 / 7) isHeld = true;
-      else if (diff === 'Easy' && rand < 2 / 5) isHeld = true;
-    }
 
     // Calculate rewards
     const reward = state.config.taskRewards[daily.difficulty] || { ap: 10, gold: 10, diamonds: 1, attributePoints: 1 };
