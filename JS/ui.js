@@ -1724,7 +1724,6 @@ class UIManager {
             <line id="aimingLine" x1="0" y1="0" x2="0" y2="0" stroke-width="4" stroke-linecap="round" />
           </svg>
         </div>
-          <button id="focusTimerBtn" class="btn-focus-timer" title="Focus Timer">⏱️ FOCUS</button>
           <button id="consistencyChallengeBtn" class="btn-consistency-challenge" title="Lock In Commitment">🔒 LOCK IN</button>
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
@@ -4525,7 +4524,40 @@ class UIManager {
     state.eventBus.on(EVENTS.GAME_SAVE, () => { this.updateConsumableStrip && this.updateConsumableStrip(); });
     state.eventBus.on(EVENTS.BUFF_GAINED, (detail) => { try { this.renderBuffPanel && this.renderBuffPanel(); this.onBuffGained && this.onBuffGained(detail); } catch (e) { } });
     state.eventBus.on(EVENTS.COMBO_CHANGED, (detail) => this.updateComboDisplay(detail));
-    state.eventBus.on(EVENTS.ATTACK, (detail) => this.handleAttackEvent(detail));
+    state.eventBus.on(EVENTS.ATTACK, (detail) => {
+      this.handleAttackEvent(detail);
+      let ox = null, oy = null;
+      const circleEl = document.querySelector('.enemy-circle-container');
+      if (circleEl) {
+        const circleRect = circleEl.getBoundingClientRect();
+        const targetId = detail?.targetId || detail?.enemyId;
+        let targetEl = null;
+        if (targetId) {
+          targetEl = circleEl.querySelector(`[data-enemy-id="${targetId}"]`) || document.getElementById(`enemyCard-${targetId}`);
+        }
+        if (!targetEl && detail?.targetCard) targetEl = detail.targetCard;
+        if (!targetEl) {
+          const spinnerEnemy = this.getSpinnerTargetEnemy ? this.getSpinnerTargetEnemy() : null;
+          if (spinnerEnemy) {
+            targetEl = circleEl.querySelector(`[data-enemy-id="${spinnerEnemy.id}"]`) || document.getElementById(`enemyCard-${spinnerEnemy.id}`);
+          }
+        }
+
+        if (targetEl) {
+          const tr = targetEl.getBoundingClientRect();
+          ox = (tr.left + tr.width / 2) - circleRect.left;
+          oy = (tr.top + tr.height / 2) - circleRect.top;
+        } else if (detail) {
+          const cx = detail.clientX ?? detail.x ?? detail.pageX;
+          const cy = detail.clientY ?? detail.y ?? detail.pageY;
+          if (typeof cx === 'number' && typeof cy === 'number') {
+            ox = cx - circleRect.left;
+            oy = cy - circleRect.top;
+          }
+        }
+      }
+      this.triggerDonutRipple(ox, oy);
+    });
     // Pet attack visual: show pet icon above targeted enemy and persist today's target
     state.eventBus.on(EVENTS.ATTACK, (detail) => {
       try {
@@ -6995,12 +7027,61 @@ class UIManager {
 
   static updateComboDisplay(detail) {
     const comboEl = document.getElementById('comboIndicator');
+    const circle = document.querySelector('.enemy-circle-container');
+    if (circle) {
+      if (detail && detail.combo > 0) {
+        circle.setAttribute('data-combo', Math.min(detail.combo, 4));
+      } else {
+        circle.removeAttribute('data-combo');
+      }
+    }
 
     if (detail.combo === 0) {
       comboEl.style.display = 'none';
     } else {
       comboEl.style.display = 'block';
       ComboAnimation.show(comboEl, detail.combo);
+    }
+  }
+
+  static triggerDonutRipple(originX = null, originY = null) {
+    const circle = document.querySelector('.enemy-circle-container');
+    if (!circle) return;
+    let overlay = circle.querySelector('.donut-ripple-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'donut-ripple-overlay';
+      circle.insertBefore(overlay, circle.firstChild);
+    }
+
+    const rect = circle.getBoundingClientRect();
+    const x = (originX !== null && originX !== undefined) ? originX : rect.width / 2;
+    const y = (originY !== null && originY !== undefined) ? originY : rect.height * 0.85;
+
+    const ripple = document.createElement('div');
+    ripple.className = 'donut-solid-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    overlay.appendChild(ripple);
+
+    ripple.addEventListener('animationend', () => ripple.remove());
+  }
+
+  static triggerDonutRippleForEnemy(enemyOrId) {
+    if (!enemyOrId) return;
+    const circleEl = document.querySelector('.enemy-circle-container');
+    if (!circleEl) return;
+    const circleRect = circleEl.getBoundingClientRect();
+    const id = (typeof enemyOrId === 'object') ? enemyOrId.id : enemyOrId;
+
+    let targetEl = circleEl.querySelector(`[data-enemy-id="${id}"]`) || document.getElementById(`enemyCard-${id}`);
+    if (targetEl) {
+      const tr = targetEl.getBoundingClientRect();
+      const ox = (tr.left + tr.width / 2) - circleRect.left;
+      const oy = (tr.top + tr.height / 2) - circleRect.top;
+      this.triggerDonutRipple(ox, oy);
+    } else {
+      this.triggerDonutRipple(null, null);
     }
   }
 

@@ -541,6 +541,7 @@ class CombatManager {
       const survivesFinalStand = bypassFinalStand ? false : EnemyManager.applyFinalStand(tgt, enforcedDamage, attackPlan.weaponElement);
       if (!survivesFinalStand) {
         tgt.takeDamage(enforcedDamage);
+        try { if (typeof UIManager !== 'undefined' && UIManager.triggerDonutRippleForEnemy) UIManager.triggerDonutRippleForEnemy(tgt.id); } catch (e) {}
 
         hitDetails.push({
           enemyId: tgt.id,

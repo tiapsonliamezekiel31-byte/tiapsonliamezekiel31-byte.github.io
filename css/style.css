@@ -1018,15 +1018,72 @@ body::before {
   width: 400px;
   height: 400px;
   flex-shrink: 0;
-  border: 3px solid rgba(255, 215, 106, 0.65);
+  border: 3px solid #ffd76a;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, rgba(161, 92, 255, 0.2) 0%, rgba(20, 16, 42, 0.55) 38%, rgba(6, 7, 15, 0.9) 78%),
-    radial-gradient(circle at center, transparent 54%, rgba(255, 255, 255, 0.04) 55%, transparent 56%);
-  box-shadow:
-    inset 0 0 30px rgba(255, 215, 106, 0.14),
-    0 0 0 2px rgba(161, 92, 255, 0.2),
-    0 0 32px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle, transparent 48%, #14102a 49%);
+  box-shadow: none;
+  transition: border-color 0.3s ease;
+}
+
+.donut-ripple-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  overflow: hidden;
+  mask-image: radial-gradient(circle, transparent 48%, #ffffff 49%);
+  -webkit-mask-image: radial-gradient(circle, transparent 48%, #ffffff 49%);
+  z-index: 1;
+}
+
+.donut-solid-ripple {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 5px solid #ffffff;
+  background: transparent !important;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: solidDonutCircleGrowCrisp 1.8s cubic-bezier(0.1, 0.5, 0.2, 1) forwards;
+  opacity: 1;
+  box-shadow: none !important;
+  filter: none !important;
+  will-change: width, height, opacity;
+}
+
+@keyframes solidDonutCircleGrowCrisp {
+  0% {
+    width: 20px;
+    height: 20px;
+    opacity: 1;
+    border-width: 6px;
+  }
+  85% {
+    width: 700px;
+    height: 700px;
+    opacity: 1;
+    border-width: 5px;
+  }
+  100% {
+    width: 800px;
+    height: 800px;
+    opacity: 0;
+    border-width: 3px;
+  }
+}
+
+.enemy-circle-container[data-combo="1"] {
+  border-color: #38bdf8;
+}
+.enemy-circle-container[data-combo="2"] {
+  border-color: #a855f7;
+}
+.enemy-circle-container[data-combo="3"] {
+  border-color: #f97316;
+}
+.enemy-circle-container[data-combo="4"] {
+  border-color: #ef4444;
 }
 
 /* Centered level indicator inside the enemy circle */
@@ -1052,6 +1109,7 @@ body::before {
 .enemy-layer {
   position: absolute;
   inset: 0;
+  z-index: 10;
 }
 
 .enemy-empty {
@@ -1069,14 +1127,12 @@ body::before {
   width: 80px;
   min-height: 90px;
   contain: layout style;
-  border: 2px solid var(--enemy-border-default);
-  border-left-color: var(--enemy-weak-color);
-  border-right-color: var(--enemy-resist-color);
+  border: none !important;
   border-radius: 0 !important;
-  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
+  background-image: linear-gradient(to right, var(--enemy-weak-color) 0%, var(--enemy-weak-color) 33.33%, transparent 33.33%, transparent 66.67%, var(--enemy-resist-color) 66.67%, var(--enemy-resist-color) 100%), url('../assets/textures/mainbuttons.jpg') !important;
+  background-size: 100% 100%, cover !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat !important;
   background-color: transparent !important;
   background-blend-mode: normal !important;
   padding: 18px 6px 16px 6px;
@@ -1438,10 +1494,8 @@ body::before {
 }
 
 .enemy-circle-container.checkin-alert {
-  box-shadow:
-    inset 0 0 30px rgba(255, 82, 82, 0.22),
-    0 0 34px rgba(255, 82, 82, 0.15),
-    0 0 0 2px rgba(255, 215, 106, 0.18);
+  border-color: #ff5252;
+  box-shadow: none;
 }
 
 /* Pet icon shown above enemy when pet attacks */
@@ -3725,10 +3779,7 @@ body::before {
   .enemy-circle-container {
     width: 250px;
     height: 250px;
-    box-shadow:
-      inset 0 0 18px rgba(255, 215, 106, 0.1),
-      0 0 0 1px rgba(161, 92, 255, 0.16),
-      0 0 16px rgba(0, 0, 0, 0.25);
+    box-shadow: none;
   }
 
   /* Scale down primary attack button on small screens */
@@ -8886,7 +8937,7 @@ button:hover,
 .btn-consistency-challenge {
   position: fixed;
   top: 16px;
-  right: 120px;
+  right: 16px;
   z-index: 10000;
   background: rgba(20, 20, 28, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.14);
