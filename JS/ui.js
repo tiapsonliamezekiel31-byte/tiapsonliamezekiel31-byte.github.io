@@ -2403,28 +2403,37 @@ class UIManager {
     leftTab.id = 'dailiesPanel';
     leftTab.className = 'pull-tab left-tab';
     leftTab.innerHTML = `
-      <div class="tab-header">
-        <h3>DAILIES</h3>
-        <div>
-          <button id="dailyToTodoPullBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="color:#a5b4fc; border-color:rgba(165,180,252,0.4); font-weight:bold; margin-right:6px;">TO-DOS ➔</button>
-          <button id="completeDayBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost">Complete Day</button>
-          <button id="addDailyNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
-          <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
-          <button id="dailiesShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
-          <button id="dailiesEditModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Edit: off</button>
-          <button id="dailiesLockModeBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Lock: off</button>
-          <button id="dailiesConnectionsBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Connections: off</button>
-          <button id="dailiesFocusBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false" style="display: none;">Focus: off</button>
-          <select id="dailiesFilterSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; padding-right: 24px; line-height: 1.5;" title="Daily Filter & Heatmap">
-            <option value="regular">Filter: Regular</option>
-            <option value="streak">Filter: Streak</option>
-            <option value="completion">Filter: Completion Rate</option>
-            <option value="rewards">Filter: Rewards</option>
-            <option value="safety">Filter: Safety</option>
-          </select>
-          <button id="dailiesTableViewBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">📋 Table</button>
-          <button id="dailiesAddBtn" class="btn-add">＋</button>
-          <button class="tab-close">✕</button>
+      <div class="tab-header dailies-top-bar">
+        <div class="tab-header-left">
+          <h3 class="tab-header-title">DAILIES</h3>
+        </div>
+        <div class="tab-header-controls">
+          <div class="header-btn-group">
+            <button id="completeDayBtn" class="btn-header-action primary">Complete Day</button>
+            <button id="dailiesAddBtn" class="btn-header-icon" title="Add Daily">＋ Daily</button>
+            <button id="addDailyNoteBtn" class="btn-header-action">＋ Note</button>
+            <button id="addDailyRectBtn" class="btn-header-action">＋ Rect</button>
+          </div>
+          <div class="header-divider"></div>
+          <div class="header-btn-group">
+            <button id="dailiesShowCompletedBtn" class="btn-header-toggle" aria-pressed="false">Completed: Off</button>
+            <button id="dailiesEditModeBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Edit: Off</button>
+            <button id="dailiesLockModeBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Lock: Off</button>
+            <button id="dailiesConnectionsBtn" class="btn-header-toggle" aria-pressed="false">Connections: Off</button>
+            <button id="dailiesFocusBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Focus: Off</button>
+          </div>
+          <div class="header-divider"></div>
+          <div class="header-btn-group">
+            <select id="dailiesFilterSelect" class="header-select" title="Daily Filter & Heatmap">
+              <option value="regular">Filter: Regular</option>
+              <option value="streak">Filter: Streak</option>
+              <option value="completion">Filter: Completion Rate</option>
+              <option value="rewards">Filter: Rewards</option>
+              <option value="safety">Filter: Safety</option>
+            </select>
+            <button id="dailiesTableViewBtn" class="btn-header-action">📋 Table</button>
+          </div>
+          <button class="tab-close header-close-btn" title="Close Panel">✕</button>
         </div>
       </div>
       <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
@@ -2432,41 +2441,62 @@ class UIManager {
     `;
     document.body.appendChild(leftTab);
 
+    let lastScrollTop = 0;
+    leftTab.addEventListener('scroll', () => {
+      const currentScrollTop = leftTab.scrollTop;
+      const header = leftTab.querySelector('.tab-header');
+      if (!header) return;
+      if (currentScrollTop > 40 && currentScrollTop > lastScrollTop) {
+        header.classList.add('header-hidden');
+      } else {
+        header.classList.remove('header-hidden');
+      }
+      lastScrollTop = Math.max(0, currentScrollTop);
+    }, { passive: true });
+
     // Achievements & Run Stats Unified Panel
     const achievementsTab = document.createElement('div');
     achievementsTab.id = 'achievementsPanel';
     achievementsTab.className = 'pull-tab left-tab';
     achievementsTab.innerHTML = `
-      <div class="tab-header">
-        <h3>📊 RUN STATS & ACHIEVEMENTS</h3>
-        <button class="tab-close">✕</button>
+      <div class="tab-header run-stats-top-bar">
+        <div class="tab-header-left">
+          <h3 class="tab-header-title">📊 RUN STATS & ACHIEVEMENTS</h3>
+        </div>
+        <button class="tab-close header-close-btn" title="Close Panel">✕</button>
       </div>
       <div class="run-stats-achievements-container">
         <div class="run-stats-left-side" id="runStatsDashboard">
           <div class="run-stats-clean-header">
             <div class="stats-radar-card">
-              <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
-              <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+              <div class="stats-card-header">
+                <span class="stats-card-title">PERFORMANCE RADAR</span>
+              </div>
+              <div class="stats-radar-wrapper">
+                <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
+                <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+              </div>
             </div>
             <div class="stats-highlights-card">
-              <div class="highlight-stat-box" id="flapDiamondBox" title="Max Diamonds">
+              <div class="highlight-stat-box highlight-diamonds" id="flapDiamondBox" title="Max Diamonds">
                 <span class="highlight-stat-label">💎 MAX DIAMONDS</span>
                 <span class="highlight-stat-val" id="statsDiamondVelocity">0</span>
               </div>
-              <div class="highlight-stat-box" id="flapApBox" title="Max AP">
+              <div class="highlight-stat-box highlight-ap" id="flapApBox" title="Max AP">
                 <span class="highlight-stat-label">⚡ MAX AP</span>
                 <span class="highlight-stat-val" id="statsApVelocity">0</span>
               </div>
-              <div class="highlight-stat-box" id="flapStreakBox" title="Streak Multiplier">
+              <div class="highlight-stat-box highlight-streak" id="flapStreakBox" title="Streak Multiplier">
                 <span class="highlight-stat-label">🔥 STREAK</span>
                 <span class="highlight-stat-val" id="statsStreakVal">0 (x1.0)</span>
               </div>
-              <div class="highlight-stat-box" title="Avg Damage Dealt / Taken">
+              <div class="highlight-stat-box highlight-ratio" title="Avg Damage Dealt / Taken">
                 <span class="highlight-stat-label">⚔️ AVG DEALT / TAKEN</span>
                 <span class="highlight-stat-val"><span id="statsDmgDealtAvg">0.0</span> / <span id="statsDmgTakenAvg">0.0</span></span>
               </div>
             </div>
           </div>
+          <div class="stats-section-title">DETAILED METRICS</div>
           <div class="expanded-stats-grid">
             <div class="stat-card"><span class="stat-card-label">Total Damage Dealt</span><span class="stat-card-val" id="statTotalDmgDealt">0</span></div>
             <div class="stat-card"><span class="stat-card-label">Total Damage Taken</span><span class="stat-card-val" id="statTotalDmgTaken">0</span></div>
@@ -2483,17 +2513,17 @@ class UIManager {
           </div>
         </div>
         <div class="achievements-right-side">
-          <div class="achievements-compact-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
-            <h4 style="margin:0; font-size:12px;">ACHIEVEMENTS</h4>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <select id="achievementsSortSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; font-size:10px; padding: 3px 8px;">
+          <div class="achievements-compact-header">
+            <h4 class="achievements-title">🏆 ACHIEVEMENTS</h4>
+            <div class="header-btn-group">
+              <select id="achievementsSortSelect" class="header-select" title="Sort Achievements">
                 <option value="rate">Sort: Rate</option>
                 <option value="streak">Sort: Streak</option>
               </select>
-              <button id="achievementsRecalculateBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-size:10px; padding: 3px 10px; min-width:60px;">Recalc</button>
+              <button id="achievementsRecalculateBtn" class="btn-header-action" title="Recalculate Stats">Recalc</button>
             </div>
           </div>
-          <div class="tab-content achievement-board" id="achievementsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
+          <div class="tab-content achievement-board" id="achievementsList"></div>
         </div>
       </div>
     `;
@@ -2534,7 +2564,6 @@ class UIManager {
       <div class="tab-header">
         <h3>TO-DOS</h3>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <button id="todoToDailyPullBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="color:#a5b4fc; border-color:rgba(165,180,252,0.4); font-weight:bold; margin-right:4px;">◀ DAILIES</button>
           <select id="todosDifficultyFilter" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
             <option value="All">All Diff</option>
             <option value="Easy">Easy</option>
@@ -2582,62 +2611,72 @@ class UIManager {
     petTab.id = 'petPanel';
     petTab.className = 'pull-tab right-tab';
     petTab.innerHTML = `
-      <div class="tab-header">
-        <h3>🐾 PET EVOLUTION</h3>
-        <button class="tab-close">✕</button>
+      <div class="tab-header pet-top-bar">
+        <div class="tab-header-left">
+          <h3 class="tab-header-title">🐾 PET EVOLUTION</h3>
+        </div>
+        <button class="tab-close header-close-btn" title="Close Panel">✕</button>
       </div>
-      <div class="tab-content pet-board" style="flex: 1 1 auto; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 12px;">
-        <div class="pet-info-card" style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; border: 2px solid var(--accent-purple); border-radius: 12px; background: rgba(26, 18, 48, 0.45);">
-          <div id="petImageContainer" style="width: 140px; height: 140px; border: 3px dashed var(--accent-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); position: relative; cursor: pointer;">
-            <input type="file" id="petImageFileInput" accept="image/*" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 5;">
-            <div id="petImageDisplay" style="font-size: 72px; pointer-events: none; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+      <div class="tab-content pet-board">
+        <!-- Main Pet Hero Status Card -->
+        <div class="pet-hero-card">
+          <div id="petImageContainer" class="pet-avatar-frame">
+            <input type="file" id="petImageFileInput" accept="image/*" class="pet-file-input">
+            <div id="petImageDisplay" class="pet-avatar-display"></div>
           </div>
           
-          <div style="display: flex; gap: 8px;">
-            <button id="petUploadBtn" class="btn-action" style="font-size: 8px; padding: 6px 12px; min-width: 0;">Upload Pic</button>
-            <button id="petClearImageBtn" class="btn-action" style="font-size: 8px; padding: 6px 12px; min-width: 0; display: none;">Reset Pic</button>
+          <div class="pet-avatar-actions">
+            <button id="petUploadBtn" class="btn-header-action">Upload Pic</button>
+            <button id="petClearImageBtn" class="btn-header-action ghost" style="display: none;">Reset Pic</button>
           </div>
 
-          <div style="text-align: center;">
-            <h4 style="color: var(--accent-gold); margin: 0; font-size: 11px;">Pet Level: <span id="petLevelVal">1</span></h4>
-            <div style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">Dmg: +<span id="petDmgBonusVal">0</span></div>
-          </div>
-
-          <div style="font-size: 9px; color: var(--accent-gold); font-weight: bold; background: rgba(0,0,0,0.2); padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(232, 184, 74, 0.25);">
-            Pet Points: <span id="petPointsVal">0</span> 🐾
-          </div>
-
-          <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
-            <div style="display: flex; justify-content: space-between; font-size: 8px; color: var(--text-muted);">
-              <span>HUNGER</span>
-              <span id="petHungerTextVal">100/100</span>
+          <div class="pet-stats-summary">
+            <div class="pet-level-badge">
+              <span class="pet-level-label">LEVEL</span>
+              <span class="pet-level-val" id="petLevelVal">1</span>
             </div>
-            <div class="hud-bar" style="height: 12px; border-radius: 6px;">
-              <div id="petHungerFill" class="fill" style="width: 100%;"></div>
+            <div class="pet-points-badge">
+              <span class="pet-points-val" id="petPointsVal">0</span> 🐾 POINTS
+            </div>
+            <div class="pet-stat-chip">
+              Bonus Dmg: +<span id="petDmgBonusVal">0</span>
+            </div>
+          </div>
+
+          <div class="pet-hunger-container">
+            <div class="pet-hunger-header">
+              <span class="pet-hunger-label">🍖 HUNGER STATUS</span>
+              <span id="petHungerTextVal" class="pet-hunger-val">100/100</span>
+            </div>
+            <div class="pet-progress-track">
+              <div id="petHungerFill" class="pet-progress-fill"></div>
             </div>
           </div>
           
-          <div style="width: 100%; margin-top: 8px;">
-            <button id="petUpgradeBtn" class="btn-action" style="width: 100%; text-align: center; justify-content: center; font-size: 8px; padding: 10px;">
-              Upgrade Pet (+<span id="petUpgradeCostVal">5</span> Pts)
-            </button>
+          <button id="petUpgradeBtn" class="btn-pause-action primary-action pet-upgrade-btn">
+            Upgrade Pet (+<span id="petUpgradeCostVal">5</span> Pts)
+          </button>
+        </div>
+
+        <!-- Section: Select Avatar Emoji -->
+        <div class="pet-section">
+          <span class="pet-section-title">SELECT EMOJI AVATAR</span>
+          <div id="petEmojiGrid" class="pet-emoji-grid"></div>
+        </div>
+
+        <!-- Section: Feed Pet -->
+        <div class="pet-section">
+          <span class="pet-section-title">FEED PET</span>
+          <div id="petFoodGrid" class="pet-food-grid"></div>
+        </div>
+
+        <!-- Section: Pet Animations -->
+        <div class="pet-section">
+          <div class="pet-section-header">
+            <span class="pet-section-title">PET ANIMATIONS</span>
+            <span class="pet-section-sub">Cost: 50% maxpp (<span id="petAnimCostVal">?</span> Pts)</span>
           </div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">SELECT EMOJI</h4>
-          <div id="petEmojiGrid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;"></div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">FEED PET</h4>
-          <div id="petFoodGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
-          <h4 style="color: var(--accent-gold); font-size: 9px; margin: 0;">PET ANIMATIONS</h4>
-          <div style="font-size: 7px; color: var(--text-muted); margin-bottom: 2px;">Cost: 50% maxpp (<span id="petAnimCostVal">?</span> Pts)</div>
-          <div id="petAnimGrid" style="display: flex; flex-direction: column; gap: 6px;"></div>
+          <div id="petAnimGrid" class="pet-anim-grid"></div>
         </div>
       </div>
     `;

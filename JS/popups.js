@@ -1840,26 +1840,53 @@ class PopupsManager {
     popup.style.pointerEvents = 'auto';
     
     const html = `
-      <h2>⚙️ GAME MENU</h2>
-      <p>All timers and regen are frozen when paused.</p>
-      <div class="pause-menu">
-        <button class="btn-pause-action ${isPaused ? 'active' : ''}" id="togglePauseBtn" style="${isPaused ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
-          ${isPaused ? '▶️ RESUME GAMEPLAY' : '⏸️ PAUSE GAMEPLAY'}
-        </button>
-        <button class="btn-pause-action ${dialogueEnabled ? 'active' : ''}" id="toggleDialogueBtn" style="${dialogueEnabled ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
-          💬 Dialogue Popups: ${dialogueEnabled ? 'ON' : 'OFF'}
-        </button>
-        <button class="btn-pause-action ${lootboxDailyMode ? 'active' : ''}" id="toggleLootboxDailyModeBtn" style="${lootboxDailyMode ? 'border-color: var(--accent-gold); color: var(--accent-gold);' : ''}">
-          🎁 Lootbox Daily Gains: ${lootboxDailyMode ? 'ON' : 'OFF'}
-        </button>
-        <button class="btn-pause-action" id="closeMenuBtn">✕ CLOSE MENU</button>
-        <button class="btn-pause-action" id="forceRefreshBtn">🔄 FORCE REFRESH</button>
-        <button class="btn-pause-action" id="backupBtn">💾 BACKUP / RESTORE</button>
-        <button class="btn-pause-action" id="manageRewardsBtn">🎁 DIAMOND REWARDS CONFIG</button>
-        <button class="btn-pause-action" id="buildCompendiumBtn">📖 BUILD COMPENDIUM</button>
-        <button class="btn-pause-action" id="resetLayoutBtn">📐 RESET LAYOUT</button>
-        <button class="btn-pause-action" id="resetDataBtn">🗑️ RESET SAVE DATA</button>
-        <button class="btn-pause-action" id="quitBtn">🚪 QUIT TO MENU</button>
+      <div class="pause-header">
+        <h2>⚙️ GAME MENU</h2>
+        <p class="pause-subtitle">All timers and regen are frozen when paused.</p>
+      </div>
+      
+      <div class="pause-menu-container">
+        <!-- Section: Core Gameplay -->
+        <div class="pause-section">
+          <span class="pause-section-label">GAMEPLAY CONTROLS</span>
+          <div class="pause-btn-grid cols-1">
+            <button class="btn-pause-action primary-action ${isPaused ? 'active' : ''}" id="togglePauseBtn">
+              ${isPaused ? '▶️ RESUME GAMEPLAY' : '⏸️ PAUSE GAMEPLAY'}
+            </button>
+          </div>
+          <div class="pause-btn-grid cols-2">
+            <button class="btn-pause-action toggle-btn ${dialogueEnabled ? 'active' : ''}" id="toggleDialogueBtn">
+              💬 Dialogues: ${dialogueEnabled ? 'ON' : 'OFF'}
+            </button>
+            <button class="btn-pause-action toggle-btn ${lootboxDailyMode ? 'active' : ''}" id="toggleLootboxDailyModeBtn">
+              🎁 Lootbox Daily: ${lootboxDailyMode ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Section: System & Data -->
+        <div class="pause-section">
+          <span class="pause-section-label">SYSTEM & TOOLS</span>
+          <div class="pause-btn-grid cols-3">
+            <button class="btn-pause-action secondary" id="buildCompendiumBtn">📖 Compendium</button>
+            <button class="btn-pause-action secondary" id="manageRewardsBtn">🎁 Rewards</button>
+            <button class="btn-pause-action secondary" id="backupBtn">💾 Backup/Restore</button>
+          </div>
+          <div class="pause-btn-grid cols-2">
+            <button class="btn-pause-action secondary" id="resetLayoutBtn">📐 Reset Layout</button>
+            <button class="btn-pause-action secondary" id="forceRefreshBtn">🔄 Refresh App</button>
+          </div>
+        </div>
+
+        <!-- Section: Session & Danger -->
+        <div class="pause-section danger-zone">
+          <span class="pause-section-label danger">SESSION MANAGEMENT</span>
+          <div class="pause-btn-grid cols-3">
+            <button class="btn-pause-action ghost" id="closeMenuBtn">✕ Close Menu</button>
+            <button class="btn-pause-action danger" id="quitBtn">🚪 Quit Game</button>
+            <button class="btn-pause-action danger-heavy" id="resetDataBtn">🗑️ Reset Data</button>
+          </div>
+        </div>
       </div>
       <div class="pause-cheat-box">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
