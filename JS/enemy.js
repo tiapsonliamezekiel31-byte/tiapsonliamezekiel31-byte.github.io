@@ -249,7 +249,8 @@ class EnemyManager {
     const totalEnemies = totalAliveEnemies > 0 ? totalAliveEnemies : 1;
     
     const baseDamage = (missedPct * 200 * stage) / totalEnemies;
-    let final = Math.max(0, baseDamage * (enemy.dmgMult || 1.0));
+    const mult = (typeof enemy?.dmgMult === 'number') ? enemy.dmgMult : 1.0;
+    let final = Math.max(0, baseDamage * mult);
 
     // Enraged Buff: scale damage by +35% per day spent on the uncleared level (additive)
     if (enemy.daysAlive > 0) {

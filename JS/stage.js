@@ -419,7 +419,7 @@ class StageManager {
           hp: hpVal,
           maxHp: maxHpVal,
           isDead: !!enemy.isDead,
-          dmgMult: enemy.dmgMult || 1.0,
+          dmgMult: (typeof enemy.dmgMult === 'number' ? enemy.dmgMult : 1.0),
           consecutiveAttackDays: enemy.consecutiveAttackDays || 0,
           statusEffects: enemy.statusEffects || {},
           resist: enemy.resist || bossCfg.resist || '-',

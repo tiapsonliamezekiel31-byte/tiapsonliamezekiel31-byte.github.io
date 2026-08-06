@@ -619,10 +619,10 @@ class UIManager {
     }
 
     this.createHudWidget();
-    this.createStatsHudWidget();
     this.createNemesisTauntHud();
     this.createChallengeHud();
     this.createQuickAddHud();
+    this.createFocusCircleWidget();
     this.createNavigationMenu();
     this.createGameArea();
     if (typeof HUDMinimizer !== 'undefined') {
@@ -1522,134 +1522,108 @@ class UIManager {
     closeBtn.addEventListener('click', onCancel);
   }
 
-  static createStatsHudWidget() {
-    const statsHud = document.createElement('div');
-    statsHud.id = 'statsHudWidget';
-    statsHud.className = 'draggable-stats-hud';
-    statsHud.innerHTML = `
-      <div class="stats-hud-header">
-        <div class="stats-hud-header-title">📊 <span>RUN STATS</span></div>
-        <div class="stats-hud-controls">
-          <button class="stats-hud-btn stats-toggle-btn" title="Minimize/Maximize">－</button>
+  static createFocusCircleWidget() {
+    // 1) Peeking 3/4 circle node on screen edge
+    let circle = document.getElementById('peekingFocusCircle');
+    if (!circle) {
+      circle = document.createElement('div');
+      circle.id = 'peekingFocusCircle';
+      circle.className = 'peeking-focus-circle';
+      circle.innerHTML = '⏱️';
+      circle.title = 'Focus Timer — Click to configure';
+      document.body.appendChild(circle);
+    }
+
+    // 2) Side rectangle control panel
+    let sidePanel = document.getElementById('focusSidePanel');
+    if (!sidePanel) {
+      sidePanel = document.createElement('div');
+      sidePanel.id = 'focusSidePanel';
+      sidePanel.className = 'focus-side-control-panel';
+      sidePanel.innerHTML = `
+        <div class="focus-side-header">
+          <span>⏱️ FOCUS TIMER</span>
+          <button id="focusSideCloseBtn" class="focus-side-close">✕</button>
         </div>
-      </div>
-      <div class="stats-hud-content">
-        <div class="unfolded-box-container">
-          <!-- TOP FLAP: Run Completion Meter -->
-          <div class="unfolded-flap top-flap">
-            <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
+        <div class="focus-side-body">
+          <div class="focus-side-time-label" id="focusSideTimeDisplay">25:00</div>
+          <div class="focus-side-dur-list">
+            <button class="btn-side-dur" data-mins="15">15m</button>
+            <button class="btn-side-dur active" data-mins="25">25m</button>
+            <button class="btn-side-dur" data-mins="45">45m</button>
+            <button class="btn-side-dur" data-mins="60">60m</button>
           </div>
-
-          <div class="unfolded-box-middle">
-            <!-- LEFT FLAP: Max Diamonds and AP (with MAX emoji) -->
-            <div class="unfolded-flap left-flap">
-              <div class="flap-box" id="flapDiamondBox" title="Max Diamonds">
-                <span class="flap-label">💎 MAX</span>
-                <span class="flap-value" id="statsDiamondVelocity">0</span>
-              </div>
-              <div class="flap-box" id="flapApBox" title="Max AP">
-                <span class="flap-label">⚡ MAX</span>
-                <span class="flap-value" id="statsApVelocity">0</span>
-              </div>
-              <div class="flap-box" id="flapStreakBox" title="Weighted Average Daily Streak & Combat Multiplier">
-                <span class="flap-label">🔥 STRK</span>
-                <span class="flap-value" id="statsStreakVal">0 (x1.0)</span>
-              </div>
-            </div>
-
-            <!-- CENTRAL SQUARE: Attribute Radial Chart -->
-            <div class="unfolded-central-square">
-              <div class="central-title">ATTRIBUTES</div>
-              <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
-            </div>
-
-            <!-- RIGHT FLAP: Avg Dealt and Taken Hit -->
-            <div class="unfolded-flap right-flap">
-              <div class="flap-box" title="Avg Dealt Damage">
-                <span class="flap-label">⚔️ DEALT</span>
-                <span class="flap-value" id="statsDmgDealtAvg">0.0</span>
-              </div>
-              <div class="flap-box" title="Avg Taken Damage">
-                <span class="flap-label">🛡️ TAKEN</span>
-                <span class="flap-value" id="statsDmgTakenAvg">0.0</span>
-              </div>
-            </div>
-          </div>
+          <button id="focusSideToggleBtn" class="btn-side-start">START FOCUS</button>
         </div>
-      </div>
-    `;
-    document.body.appendChild(statsHud);
+      `;
+      document.body.appendChild(sidePanel);
+    }
 
-    const goldVel = statsHud.querySelector('#statsGoldVelocity')?.closest('.stats-box');
-    if (goldVel) {
-      goldVel.style.cursor = 'pointer';
-      goldVel.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBreakdownAlert === 'function') {
-          const state = getGameState();
+    // Toggle side panel on circle click
+    circle.addEventListener('click', () => {
+      sidePanel.classList.toggle('open');
+    });
+
+    const closeBtn = sidePanel.querySelector('#focusSideCloseBtn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        sidePanel.classList.remove('open');
+      });
+    }
+
+    const state = getGameState();
+    let selectedMins = 25;
+
+    // Duration buttons
+    sidePanel.querySelectorAll('.btn-side-dur').forEach(btn => {
+      btn.addEventListener('click', () => {
+        sidePanel.querySelectorAll('.btn-side-dur').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedMins = Number(btn.dataset.mins) || 25;
+        const timeDisplay = sidePanel.querySelector('#focusSideTimeDisplay');
+        if (timeDisplay) timeDisplay.textContent = `${selectedMins}:00`;
+      });
+    });
+
+    const toggleBtn = sidePanel.querySelector('#focusSideToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const isActive = state.systemState?.focusTimerActive;
+        if (!isActive) {
+          state.systemState.focusTimerActive = true;
+          state.systemState.focusDurationMins = selectedMins;
+          state.systemState.focusStartTime = Date.now();
+          state.save();
+          toggleBtn.textContent = 'STOP FOCUS';
+          toggleBtn.style.background = '#ef4444';
           
-          let dailyGold = 0;
-          (state.dailiesState.dailies || []).forEach(d => {
-            const reward = state.config && state.config.taskRewards && state.config.taskRewards[d.difficulty];
-            if (reward && reward.gold) dailyGold += reward.gold;
-          });
-
-          const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
-            ? TaskManager.getTodoContributions()
-            : { ap: 0, gold: 0, diamonds: 0 };
-          const totalGold = dailyGold + todoCont.gold;
-
-          const message = `
-            <div style="margin-bottom: 8px;">• <strong>From Dailies:</strong> ${Math.ceil(dailyGold)} Gold</div>
-            <div style="margin-bottom: 8px;">• <strong>From Active Todos:</strong> ${Math.ceil(todoCont.gold)} Gold/day</div>
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
-            <div style="font-size: 12px; color: #ffd700;">💰 <strong>Total Max Gold:</strong> ${Math.ceil(totalGold)} Gold</div>
-            <p style="margin-top: 12px; font-size: 9px; color: var(--text-muted); line-height: 1.3;">
-              * Max Gold represents your potential daily gold capacity. This value scales shop weapons and consumable prices.
-            </p>
-          `;
-          PopupsManager.showBreakdownAlert('💰 MAX GOLD BREAKDOWN', message);
+          const borderTimer = document.getElementById('screenBorderCountdown');
+          if (borderTimer) borderTimer.style.display = 'flex';
+          const timerText = document.getElementById('borderTimerText');
+          if (timerText) timerText.textContent = `Focusing: ${selectedMins}:00`;
+        } else {
+          state.systemState.focusTimerActive = false;
+          state.save();
+          toggleBtn.textContent = 'START FOCUS';
+          toggleBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
+          const borderTimer = document.getElementById('screenBorderCountdown');
+          if (borderTimer) borderTimer.style.display = 'none';
         }
       });
     }
 
-    const diaVel = statsHud.querySelector('#statsDiamondVelocity')?.closest('.stats-box');
-    if (diaVel) {
-      diaVel.style.cursor = 'pointer';
-      diaVel.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBreakdownAlert === 'function') {
-          const state = getGameState();
-          
-          let dailyDiamonds = 0;
-          (state.dailiesState.dailies || []).forEach(d => {
-            const reward = state.config.taskRewards?.[d.difficulty];
-            if (reward && reward.diamonds) dailyDiamonds += reward.diamonds;
-          });
-
-          const todoCont = (typeof TaskManager !== 'undefined' && typeof TaskManager.getTodoContributions === 'function')
-            ? TaskManager.getTodoContributions()
-            : { ap: 0, gold: 0, diamonds: 0 };
-          const totalDiamonds = dailyDiamonds + todoCont.diamonds;
-
-          const message = `
-            <div style="margin-bottom: 8px;">• <strong>From Dailies:</strong> ${Math.ceil(dailyDiamonds)} Diamonds</div>
-            <div style="margin-bottom: 8px;">• <strong>From Active Todos:</strong> ${Math.ceil(todoCont.diamonds)} Diamonds/day</div>
-            <hr style="border-color: rgba(255,255,255,0.1); margin: 8px 0;">
-            <div style="font-size: 12px; color: #00e5ff;">💎 <strong>Total Max Diamonds:</strong> ${Math.ceil(totalDiamonds)} Diamonds</div>
-            <p style="margin-top: 12px; font-size: 9px; color: var(--text-muted); line-height: 1.3;">
-              * Max Diamonds determines premium shop pricing and daily penalty ratios.
-            </p>
-          `;
-          PopupsManager.showBreakdownAlert('💎 MAX DIAMONDS BREAKDOWN', message);
+    const cancelBtn = document.getElementById('borderTimerCancelBtn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        state.systemState.focusTimerActive = false;
+        state.save();
+        if (toggleBtn) {
+          toggleBtn.textContent = 'START FOCUS';
+          toggleBtn.style.background = 'linear-gradient(135deg, #6366f1, #4f46e5)';
         }
+        const borderTimer = document.getElementById('screenBorderCountdown');
+        if (borderTimer) borderTimer.style.display = 'none';
       });
-    }
-
-    try {
-      StatsHUD.init();
-    } catch (e) {
-      console.error('StatsHUD init error', e);
     }
   }
 
@@ -2432,6 +2406,7 @@ class UIManager {
       <div class="tab-header">
         <h3>DAILIES</h3>
         <div>
+          <button id="dailyToTodoPullBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="color:#a5b4fc; border-color:rgba(165,180,252,0.4); font-weight:bold; margin-right:6px;">TO-DOS ➔</button>
           <button id="completeDayBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost">Complete Day</button>
           <button id="addDailyNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Note</button>
           <button id="addDailyRectBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact">＋ Rect</button>
@@ -2457,23 +2432,70 @@ class UIManager {
     `;
     document.body.appendChild(leftTab);
 
-    // Achievements Panel
+    // Achievements & Run Stats Unified Panel
     const achievementsTab = document.createElement('div');
     achievementsTab.id = 'achievementsPanel';
     achievementsTab.className = 'pull-tab left-tab';
     achievementsTab.innerHTML = `
       <div class="tab-header">
-        <h3>🏆 ACHIEVEMENTS</h3>
-        <div>
-          <select id="achievementsSortSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; padding-right: 28px; line-height: 1.5;">
-            <option value="rate">Sort: Rate</option>
-            <option value="streak">Sort: Streak</option>
-          </select>
-          <button id="achievementsRecalculateBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="width: auto; padding: 4px 10px; line-height: 1.5;">Recalculate</button>
-          <button class="tab-close">✕</button>
+        <h3>📊 RUN STATS & ACHIEVEMENTS</h3>
+        <button class="tab-close">✕</button>
+      </div>
+      <div class="run-stats-achievements-container">
+        <div class="run-stats-left-side" id="runStatsDashboard">
+          <div class="run-stats-clean-header">
+            <div class="stats-radar-card">
+              <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
+              <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+            </div>
+            <div class="stats-highlights-card">
+              <div class="highlight-stat-box" id="flapDiamondBox" title="Max Diamonds">
+                <span class="highlight-stat-label">💎 MAX DIAMONDS</span>
+                <span class="highlight-stat-val" id="statsDiamondVelocity">0</span>
+              </div>
+              <div class="highlight-stat-box" id="flapApBox" title="Max AP">
+                <span class="highlight-stat-label">⚡ MAX AP</span>
+                <span class="highlight-stat-val" id="statsApVelocity">0</span>
+              </div>
+              <div class="highlight-stat-box" id="flapStreakBox" title="Streak Multiplier">
+                <span class="highlight-stat-label">🔥 STREAK</span>
+                <span class="highlight-stat-val" id="statsStreakVal">0 (x1.0)</span>
+              </div>
+              <div class="highlight-stat-box" title="Avg Damage Dealt / Taken">
+                <span class="highlight-stat-label">⚔️ AVG DEALT / TAKEN</span>
+                <span class="highlight-stat-val"><span id="statsDmgDealtAvg">0.0</span> / <span id="statsDmgTakenAvg">0.0</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="expanded-stats-grid">
+            <div class="stat-card"><span class="stat-card-label">Total Damage Dealt</span><span class="stat-card-val" id="statTotalDmgDealt">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Total Damage Taken</span><span class="stat-card-val" id="statTotalDmgTaken">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Critical Hits</span><span class="stat-card-val" id="statTotalCrits">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Total AP Spent</span><span class="stat-card-val" id="statTotalApSpent">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Total Mana Restored</span><span class="stat-card-val" id="statTotalManaRestored">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Stage Win Rate</span><span class="stat-card-val" id="statStageWinRate">100%</span></div>
+            <div class="stat-card"><span class="stat-card-label">Task Completion Rate</span><span class="stat-card-val" id="statTaskCompletionRate">0%</span></div>
+            <div class="stat-card"><span class="stat-card-label">Focus Minutes</span><span class="stat-card-val" id="statTotalFocusMins">0 min</span></div>
+            <div class="stat-card"><span class="stat-card-label">Bosses Defeated</span><span class="stat-card-val" id="statBossesDefeated">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Overkill Damage Total</span><span class="stat-card-val" id="statOverkillDamage">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Dodges Succeeded</span><span class="stat-card-val" id="statDodgesSucceeded">0</span></div>
+            <div class="stat-card"><span class="stat-card-label">Enemies Slain</span><span class="stat-card-val" id="statEnemiesSlain">0</span></div>
+          </div>
+        </div>
+        <div class="achievements-right-side">
+          <div class="achievements-compact-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:12px;">ACHIEVEMENTS</h4>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <select id="achievementsSortSelect" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="width: auto; font-size:10px; padding: 3px 8px;">
+                <option value="rate">Sort: Rate</option>
+                <option value="streak">Sort: Streak</option>
+              </select>
+              <button id="achievementsRecalculateBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-size:10px; padding: 3px 10px; min-width:60px;">Recalc</button>
+            </div>
+          </div>
+          <div class="tab-content achievement-board" id="achievementsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
         </div>
       </div>
-      <div class="tab-content achievement-board" id="achievementsList" style="flex: 1 1 auto; overflow-y: auto;"></div>
     `;
     document.body.appendChild(achievementsTab);
 
@@ -2512,6 +2534,7 @@ class UIManager {
       <div class="tab-header">
         <h3>TO-DOS</h3>
         <div style="display: flex; align-items: center; gap: 6px;">
+          <button id="todoToDailyPullBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-ghost" style="color:#a5b4fc; border-color:rgba(165,180,252,0.4); font-weight:bold; margin-right:4px;">◀ DAILIES</button>
           <select id="todosDifficultyFilter" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
             <option value="All">All Diff</option>
             <option value="Easy">Easy</option>
@@ -2539,6 +2562,20 @@ class UIManager {
       <div class="tab-content todo-board" id="todosList"></div>
     `;
     document.body.appendChild(rightTab);
+
+    // Screen Border Countdown Bar
+    const borderTimerBar = document.createElement('div');
+    borderTimerBar.id = 'screenBorderCountdown';
+    borderTimerBar.className = 'screen-border-countdown-bar';
+    borderTimerBar.style.display = 'none';
+    borderTimerBar.innerHTML = `
+      <div class="border-timer-inner">
+        <span class="border-timer-icon">⏱️</span>
+        <span class="border-timer-text" id="borderTimerText">Focusing: 25:00</span>
+        <button class="border-timer-cancel" id="borderTimerCancelBtn" title="Stop Focus">✕</button>
+      </div>
+    `;
+    document.body.appendChild(borderTimerBar);
 
     // Pet Evolution Panel
     const petTab = document.createElement('div');
@@ -4807,8 +4844,46 @@ class UIManager {
 
     document.getElementById('dailiesTabHandle').addEventListener('click', () => this.toggleTaskPanel('dailies'));
     document.getElementById('todosTabHandle').addEventListener('click', () => this.toggleTaskPanel('todos'));
+    document.getElementById('dailyToTodoPullBtn')?.addEventListener('click', () => {
+      this.toggleTaskPanel('todos');
+    });
+    document.getElementById('todoToDailyPullBtn')?.addEventListener('click', () => {
+      this.toggleTaskPanel('dailies');
+    });
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
+
+    // Border Touch/Pointer Swipe to open/switch Dailies & Todos
+    let swipeStartX = 0, swipeStartY = 0;
+    document.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      swipeStartX = e.touches[0].clientX;
+      swipeStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!e.changedTouches || e.changedTouches.length !== 1) return;
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - swipeStartX;
+      const dy = endY - swipeStartY;
+
+      // Ensure horizontal swipe
+      if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+        const winWidth = window.innerWidth;
+        const dailiesOpen = document.getElementById('dailiesPanel')?.classList.contains('open');
+        const todosOpen = document.getElementById('todosPanel')?.classList.contains('open');
+
+        // Swipe right from left edge (or on Dailies) -> Open/Switch Dailies
+        if (dx > 60 && (swipeStartX < 40 || todosOpen)) {
+          this.toggleTaskPanel('dailies');
+        }
+        // Swipe left from right edge (or on Dailies) -> Open/Switch Todos
+        else if (dx < -60 && (swipeStartX > winWidth - 40 || dailiesOpen)) {
+          this.toggleTaskPanel('todos');
+        }
+      }
+    }, { passive: true });
     document.getElementById('addDailyNoteBtn')?.addEventListener('click', () => this.addDailyNote());
     document.getElementById('dailiesFilterSelect')?.addEventListener('change', (e) => {
       const state = getGameState();
@@ -5117,6 +5192,13 @@ class UIManager {
     this.closeTaskPanel(which);
     if (!open) {
       panel.classList.add('open');
+      if (which === 'dailies' || which === 'todos') {
+        const fw = document.getElementById('focusCircleWidget');
+        if (fw) fw.style.display = 'block';
+      } else {
+        const fw = document.getElementById('focusCircleWidget');
+        if (fw) fw.style.display = 'none';
+      }
       // After the open transition, ensure the board is rendered and positioned
       setTimeout(() => {
         try {
@@ -11857,9 +11939,33 @@ class UIManager {
         return `<div class="weapon-chip-wrap"><button class="weapon-chip empty" disabled>—</button></div>`;
       }
       const weaponIcon = UIManager.getWeaponIconHtml(weaponName);
-      const weaponLabel = weaponElement ? `${weaponIcon} ${weaponName} <span class="weapon-elem-tag">${weaponElement}</span>` : `${weaponIcon} ${weaponName}`;
+      
+      let bgColor = '';
+      if (weaponElement) {
+        switch (weaponElement.toLowerCase()) {
+          case 'fire': bgColor = '#7f1d1d'; break;
+          case 'water': bgColor = '#0c4a6e'; break;
+          case 'earth': bgColor = '#14532d'; break;
+          case 'air': bgColor = '#164e63'; break;
+          case 'aether': bgColor = '#4c1d95'; break;
+        }
+      }
+      
+      const bgStyle = bgColor ? `style="background-color: ${bgColor} !important;"` : '';
+      
+      let titleText = `${weaponName}`;
+      if (weaponElement) titleText += ` [${weaponElement}]`;
+      const config = state.config.weapons?.[weaponName];
+      if (config) {
+        titleText += `\nAP Cost: ${config.apCost || 0}`;
+        titleText += `\nDamage Mult: ${config.dmgMult || 1.0}`;
+        if (config.critRate) titleText += `\nCrit: ${(config.critRate * 100).toFixed(0)}%`;
+      }
+      titleText += `\n(Double-click to open Smith)`;
 
-      return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}">${weaponLabel}</button><button class="weapon-upgrade-btn" data-weapon="${weaponName}" data-slot="${index}" title="Upgrade">⚒️</button></div>`;
+      const weaponLabel = `<span style="font-size: 1.5em; display:flex; align-items:center; justify-content:center; width:100%; height:100%;">${weaponIcon}</span>`;
+
+      return `<div class="weapon-chip-wrap"><button class="weapon-chip ${activeClass}" data-slot="${index}" data-weapon="${weaponName}" title="${titleText}" ${bgStyle}>${weaponLabel}</button></div>`;
     }).join('');
 
     // Render Talismans in the same strip
@@ -11942,7 +12048,7 @@ class UIManager {
       strip.addEventListener('pointercancel', onPointerUp);
     }
 
-    // Click to switch weapon
+    // Click to switch weapon, double click to upgrade
     strip.querySelectorAll('.weapon-chip[data-slot]').forEach(btn => {
       btn.addEventListener('click', () => {
         const slot = Number(btn.dataset.slot);
@@ -11951,12 +12057,9 @@ class UIManager {
         this.updateActionCosts();
         getGameState().save();
       });
-    });
-
-    // Upgrade button -> open weapon upgrade popup
-    strip.querySelectorAll('.weapon-upgrade-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('dblclick', (e) => {
         const weapon = e.currentTarget.dataset.weapon;
+        if (!weapon) return;
         try {
           if (typeof PopupsManager !== 'undefined' && PopupsManager && typeof PopupsManager.showWeaponUpgrade === 'function') {
             PopupsManager.showWeaponUpgrade(weapon);
@@ -13808,147 +13911,13 @@ window.debugAddMutator = function (enemyId, mutator) {
 
 class StatsHUD {
   static init() {
-    const hud = document.getElementById('statsHudWidget');
-    if (!hud) return;
-
-    const savedPos = localStorage.getItem('nemesis_stats_hud_pos');
-    if (savedPos) {
-      try {
-        const { left, top } = JSON.parse(savedPos);
-        hud.style.right = 'auto';
-        hud.style.left = left + 'px';
-        hud.style.top = top + 'px';
-      } catch (e) {}
-    } else {
-      hud.style.left = '20px';
-      hud.style.bottom = '80px';
-    }
-
-    const savedSize = localStorage.getItem('nemesis_stats_hud_size');
-    if (savedSize) {
-      try {
-        const { width, height } = JSON.parse(savedSize);
-        hud.style.width = Math.max(140, width) + 'px';
-        hud.style.height = Math.max(252, height) + 'px';
-      } catch (e) {}
-    }
-
-    const isCollapsed = localStorage.getItem('nemesis_stats_hud_collapsed') === 'true';
-    if (isCollapsed) {
-      hud.classList.add('collapsed');
-      const toggleBtn = hud.querySelector('.stats-toggle-btn');
-      if (toggleBtn) toggleBtn.textContent = '＋';
-    }
-
-    let isDragging = false;
-    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
-    let latestX = 0, latestY = 0;
-    let rafId = null;
-    const header = hud.querySelector('.stats-hud-header');
-    const content = hud.querySelector('.stats-hud-content');
-    
-    const onPointerMove = (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      latestX = e.clientX;
-      latestY = e.clientY;
-
-      if (!rafId) {
-        rafId = requestAnimationFrame(() => {
-          const dx = latestX - startX;
-          const dy = latestY - startY;
-          let newLeft = initialLeft + dx;
-          let newTop = initialTop + dy;
-
-          const rect = hud.getBoundingClientRect();
-          const maxX = window.innerWidth - rect.width;
-          const maxY = window.innerHeight - rect.height;
-          newLeft = Math.max(0, Math.min(newLeft, maxX));
-          newTop = Math.max(0, Math.min(newTop, maxY));
-
-          hud.style.left = newLeft + 'px';
-          hud.style.top = newTop + 'px';
-          rafId = null;
-        });
-      }
-    };
-
-    const onPointerUp = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      hud.classList.remove('is-dragging');
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-      document.removeEventListener('pointermove', onPointerMove);
-      document.removeEventListener('pointerup', onPointerUp);
-      document.removeEventListener('pointercancel', onPointerUp);
-      try { hud.releasePointerCapture(e.pointerId); } catch (err) {}
-      localStorage.setItem('nemesis_stats_hud_pos', JSON.stringify({
-        left: parseInt(hud.style.left, 10) || 0,
-        top: parseInt(hud.style.top, 10) || 0
-      }));
-    };
-
-    header.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button')) return;
-      isDragging = true;
-      hud.classList.add('is-dragging');
-      startX = e.clientX;
-      startY = e.clientY;
-      const rect = hud.getBoundingClientRect();
-      initialLeft = rect.left;
-      initialTop = rect.top;
-      hud.style.bottom = 'auto';
-      hud.style.right = 'auto';
-      hud.style.left = initialLeft + 'px';
-      hud.style.top = initialTop + 'px';
-      try { hud.setPointerCapture(e.pointerId); } catch (err) {}
-      
-      document.addEventListener('pointermove', onPointerMove);
-      document.addEventListener('pointerup', onPointerUp);
-      document.addEventListener('pointercancel', onPointerUp);
-    });
-
-    const toggleBtn = hud.querySelector('.stats-toggle-btn');
-    if (toggleBtn) {
-      toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (typeof HUDMinimizer !== 'undefined') {
-          HUDMinimizer.toggle('statsHudWidget');
-        } else {
-          const collapsed = hud.classList.toggle('collapsed');
-          toggleBtn.textContent = collapsed ? '＋' : '－';
-        }
-      });
-    }
-
-    if (window.ResizeObserver) {
-      const observer = new ResizeObserver((entries) => {
-        if (hud.classList.contains('collapsed')) return;
-        for (let entry of entries) {
-          const w = hud.offsetWidth;
-          const h = hud.offsetHeight;
-          localStorage.setItem('nemesis_stats_hud_size', JSON.stringify({
-            width: Math.round(w),
-            height: Math.round(h)
-          }));
-          if (content) {
-            content.style.transform = 'none';
-            content.style.marginLeft = '0px';
-          }
-        }
-      });
-      observer.observe(hud);
-    }
-
+    // Draggable logic removed; StatsHUD now drives the #runStatsDashboard within Achievements panel.
     StatsHUD.update();
   }
 
   static update() {
-    const hud = document.getElementById('statsHudWidget');
-    if (!hud || hud.classList.contains('collapsed')) return;
+    const hud = document.getElementById('runStatsDashboard');
+    if (!hud) return;
 
     const state = getGameState();
     if (!state) return;
@@ -13999,13 +13968,38 @@ class StatsHUD {
     const elDmgTaken = document.getElementById('statsDmgTakenAvg');
     if (elDmgDealt) elDmgDealt.textContent = avgDmgDealt;
     if (elDmgTaken) elDmgTaken.textContent = avgDmgTaken;
+    
+    // Expanded Stats Grid Updates
+    const formatNumber = (num) => Math.floor(num || 0).toLocaleString();
+    if (document.getElementById('statTotalDmgDealt')) document.getElementById('statTotalDmgDealt').textContent = formatNumber(runStats.totalDamageDealt);
+    if (document.getElementById('statTotalDmgTaken')) document.getElementById('statTotalDmgTaken').textContent = formatNumber(runStats.totalDamageTaken);
+    if (document.getElementById('statTotalCrits')) document.getElementById('statTotalCrits').textContent = formatNumber(runStats.criticalHitsCount);
+    if (document.getElementById('statTotalApSpent')) document.getElementById('statTotalApSpent').textContent = formatNumber(runStats.totalApSpent);
+    if (document.getElementById('statTotalManaRestored')) document.getElementById('statTotalManaRestored').textContent = formatNumber(runStats.totalManaRestored);
+    
+    if (document.getElementById('statStageWinRate')) {
+      const clears = runStats.stageClears || 0;
+      const enters = runStats.stageEnters || 0;
+      const wr = enters > 0 ? (clears / enters * 100).toFixed(1) : 100;
+      document.getElementById('statStageWinRate').textContent = `${wr}%`;
+    }
+    
+    if (document.getElementById('statTaskCompletionRate')) {
+      document.getElementById('statTaskCompletionRate').textContent = `${(avgRate * 100).toFixed(1)}%`;
+    }
+    
+    if (document.getElementById('statTotalFocusMins')) document.getElementById('statTotalFocusMins').textContent = `${formatNumber(runStats.focusMinutesCount || 0)} min`;
+    if (document.getElementById('statBossesDefeated')) document.getElementById('statBossesDefeated').textContent = formatNumber(runStats.bossesDefeated);
+    if (document.getElementById('statOverkillDamage')) document.getElementById('statOverkillDamage').textContent = formatNumber(runStats.totalOverkillDamage);
+    if (document.getElementById('statDodgesSucceeded')) document.getElementById('statDodgesSucceeded').textContent = formatNumber(runStats.dodgesCount);
+    if (document.getElementById('statEnemiesSlain')) document.getElementById('statEnemiesSlain').textContent = formatNumber(runStats.enemiesSlain);
 
     StatsHUD.drawCharts(avgRate);
   }
 
   static drawCharts(avgRate = null) {
-    const hud = document.getElementById('statsHudWidget');
-    if (!hud || hud.classList.contains('collapsed')) return;
+    const hud = document.getElementById('runStatsDashboard');
+    if (!hud) return;
 
     const state = getGameState();
     if (!state) return;

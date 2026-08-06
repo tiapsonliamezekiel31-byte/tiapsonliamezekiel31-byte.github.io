@@ -330,12 +330,18 @@ class PlayerManager {
     }
   }
   
-  static getKillTagUpgradeCost() {
+  static getKillTagUpgradeCost(weaponName) {
     const state = getGameState();
+    let baseCost = 5;
     if (state.playerState?.className === 'Ranger') {
-      return state.config?.killTagThresholdRanger || 3;
+      baseCost = state.config?.killTagThresholdRanger || 3;
+    } else {
+      baseCost = state.config?.killTagsPerUpgrade || 5;
     }
-    return state.config?.killTagsPerUpgrade || 5;
+    const targetWeapon = weaponName || state.playerState?.equippedWeapon || 'Rusty Sword';
+    const appliedUpgrades = (typeof this.getWeaponUpgrades === 'function') ? this.getWeaponUpgrades(targetWeapon) : [];
+    const masteryLevel = Array.isArray(appliedUpgrades) ? appliedUpgrades.length : 0;
+    return baseCost + masteryLevel;
   }
 
   static getKillTags(weaponName) {

@@ -966,7 +966,7 @@ class PopupsManager {
     popup.className = 'popup weapon-upgrade-popup';
 
     const tags = PlayerManager.getKillTags(weaponName) || 0;
-    const cost = (PlayerManager && typeof PlayerManager.getKillTagUpgradeCost === 'function') ? PlayerManager.getKillTagUpgradeCost() : (state.config.killTagsPerUpgrade || 5);
+    const cost = (PlayerManager && typeof PlayerManager.getKillTagUpgradeCost === 'function') ? PlayerManager.getKillTagUpgradeCost(weaponName) : (state.config.killTagsPerUpgrade || 5);
 
     // Define available upgrades (modified types per user request)
     const upgrades = [
