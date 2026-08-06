@@ -1129,10 +1129,10 @@ body::before {
   contain: layout style;
   border: none !important;
   border-radius: 0 !important;
-  background-image: linear-gradient(to right, var(--enemy-weak-color) 0%, var(--enemy-weak-color) 33.33%, transparent 33.33%, transparent 66.67%, var(--enemy-resist-color) 66.67%, var(--enemy-resist-color) 100%), url('../assets/textures/mainbuttons.jpg') !important;
-  background-size: 100% 100%, cover !important;
-  background-position: center, center !important;
-  background-repeat: no-repeat, no-repeat !important;
+  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   background-color: transparent !important;
   background-blend-mode: normal !important;
   padding: 18px 6px 16px 6px;
@@ -1143,7 +1143,38 @@ body::before {
   transform: translate(-50%, -50%);
   cursor: pointer;
   transition: box-shadow 0.18s ease, opacity 0.18s ease;
-  overflow: visible;
+  overflow: hidden;
+}
+
+.enemy-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 33.33%;
+  height: 100%;
+  background-color: var(--enemy-weak-color);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.enemy-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 33.33%;
+  height: 100%;
+  background-color: var(--enemy-resist-color);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.enemy-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .enemy-card.enraged .enemy-emoji {
