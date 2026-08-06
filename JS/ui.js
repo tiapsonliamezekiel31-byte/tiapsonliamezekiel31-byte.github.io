@@ -4853,33 +4853,34 @@ class UIManager {
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
 
-    // Border Touch/Pointer Swipe to open/switch Dailies & Todos
-    let swipeStartX = 0, swipeStartY = 0;
+    // Border Touch Swipe to open Dailies & Todos (Extreme edges only: <=15px or >=winWidth-15px)
+    let swipeStartX = 0, swipeStartY = 0, isSingleTouch = false;
     document.addEventListener('touchstart', (e) => {
-      if (e.touches.length !== 1) return;
-      swipeStartX = e.touches[0].clientX;
-      swipeStartY = e.touches[0].clientY;
+      if (e.touches.length === 1) {
+        isSingleTouch = true;
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+      } else {
+        isSingleTouch = false;
+      }
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
-      if (!e.changedTouches || e.changedTouches.length !== 1) return;
+      if (!isSingleTouch || !e.changedTouches || e.changedTouches.length !== 1) return;
       const endX = e.changedTouches[0].clientX;
       const endY = e.changedTouches[0].clientY;
       const dx = endX - swipeStartX;
       const dy = endY - swipeStartY;
 
-      // Ensure horizontal swipe
-      if (Math.abs(dx) > 60 && Math.abs(dy) < 50) {
+      // Require a strong, straight horizontal swipe (dx >= 80, dy <= 30) starting at extreme edges (15px)
+      if (Math.abs(dx) >= 80 && Math.abs(dy) <= 30) {
         const winWidth = window.innerWidth;
-        const dailiesOpen = document.getElementById('dailiesPanel')?.classList.contains('open');
-        const todosOpen = document.getElementById('todosPanel')?.classList.contains('open');
-
-        // Swipe right from left edge (or on Dailies) -> Open/Switch Dailies
-        if (dx > 60 && (swipeStartX < 40 || todosOpen)) {
+        // Extreme left edge swipe right -> Open Dailies
+        if (dx >= 80 && swipeStartX <= 15) {
           this.toggleTaskPanel('dailies');
         }
-        // Swipe left from right edge (or on Dailies) -> Open/Switch Todos
-        else if (dx < -60 && (swipeStartX > winWidth - 40 || dailiesOpen)) {
+        // Extreme right edge swipe left -> Open Todos
+        else if (dx <= -80 && swipeStartX >= winWidth - 15) {
           this.toggleTaskPanel('todos');
         }
       }
