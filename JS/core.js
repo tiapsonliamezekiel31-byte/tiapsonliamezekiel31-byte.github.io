@@ -2408,6 +2408,7 @@ function performCheckIn() {
   }
 
   // 5) Distribute daily attribute points from completed Dailies & Nemesis Daily Gain
+  let incantations = [];
   try {
     const attrs = state.config.attributes || [];
     const diffWeights = { Easy: 1, Medium: 3, Hard: 5, Ultra: 10 };
@@ -2432,7 +2433,7 @@ function performCheckIn() {
 
     const aliveNormal = (state.stageState.enemies || []).filter(e => e && !e.isDead && !e.isBoss);
     const deadNormal = (state.stageState.enemies || []).filter(e => e && e.isDead && !e.isBoss);
-    const incantations = [];
+    incantations = [];
 
     const leadingAttrs = attrs.filter(attr => {
       const nem = state.nemesisState?.attributes?.[attr]?.points || 0;
