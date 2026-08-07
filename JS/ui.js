@@ -8604,11 +8604,7 @@ class UIManager {
     
     let visibleDailies = dailies;
     if (!editModeActive) {
-      if (!isCheckedInToday) {
-        visibleDailies = [];
-      } else {
-        visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
-      }
+      visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
     }
     if (!showCompleted) {
       visibleDailies = visibleDailies.filter(daily => !daily.completed);
