@@ -634,9 +634,6 @@ class TaskManager {
     state.addAp(totalAp);
     state.addGold(totalGold);
     state.addDiamonds(totalDiamonds);
-    if (daily.attribute && totalAttr > 0) {
-      state.addAttributePoints(daily.attribute, totalAttr);
-    }
 
     state.systemState.runStats.tasksCompleted++;
 
@@ -729,9 +726,9 @@ class TaskManager {
     return [...state.dailiesState.dailies];
   }
 
-  static getCompletedDailies() {
+  static getCompletedDailies(dateKey) {
     const state = getGameState();
-    const today = this.getCurrentGameDateKey();
+    const today = dateKey || this.getCurrentGameDateKey();
     return state.dailiesState.dailies.filter(d => d.completed && this.isDailyScheduled(d, today));
   }
 
@@ -832,9 +829,9 @@ class TaskManager {
     return maxDiamonds;
   }
 
-  static getMissedDailies() {
+  static getMissedDailies(dateKey) {
     const state = getGameState();
-    const today = this.getCurrentGameDateKey();
+    const today = dateKey || this.getCurrentGameDateKey();
     return state.dailiesState.dailies.filter(d => !d.completed && this.isDailyScheduled(d, today));
   }
 
@@ -1003,10 +1000,12 @@ class TaskManager {
       attrReward *= mult;
     }
 
+    const todoAttrPointsMap = { Easy: 1, Medium: 3, Hard: 5, Ultra: 10 };
+    attrReward = todoAttrPointsMap[todo.difficulty] || 1;
+
     apReward = this.roundValue(apReward, 1);
     goldReward = this.roundValue(goldReward, 1);
     diamondReward = this.roundValue(diamondReward, 1);
-    attrReward = this.roundValue(attrReward, 2);
 
     state.addAp(apReward);
     state.addGold(goldReward);

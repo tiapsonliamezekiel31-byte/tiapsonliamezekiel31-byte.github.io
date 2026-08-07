@@ -141,7 +141,7 @@ class PopupsManager {
             <div class="attr-bar-player" style="width: ${playerPercent}%; background: ${barColor}; box-shadow: 0 0 10px ${barColor}80;"></div>
             <div class="attr-embedded-overlay">
               <span class="embedded-val player-val">${pPts} ${playerLeads ? '⬆️' : ''}</span>
-              <span class="embedded-center"><strong style="color: #ffffff; text-shadow: 0 1px 4px #000000, 0 0 8px #000000; font-weight: 900;">${attr}</strong> <span class="embedded-lvl">Lv.${data.level}</span></span>
+              <span class="embedded-center"><strong style="color: #ffffff; text-shadow: 0 1px 4px #000000, 0 0 8px #000000; font-weight: 900;">${attr}</strong></span>
               <span class="embedded-val nem-val">${nemesisLeads ? '⚠️ ' : ''}${nPts}</span>
             </div>
           </div>
@@ -182,17 +182,12 @@ class PopupsManager {
 
         // Reduce nemesis attribute points
         if (!state.nemesisState.attributes[attr]) {
-          state.nemesisState.attributes[attr] = { points: 0, level: 1 };
+          state.nemesisState.attributes[attr] = { points: 0 };
         }
         const nemAttr = state.nemesisState.attributes[attr];
         const oldPoints = nemAttr.points;
         nemAttr.points = Math.max(0, nemAttr.points - reduction);
         const actualReduced = oldPoints - nemAttr.points;
-
-        // Recalculate level
-        while (nemAttr.level > 1 && nemAttr.points < thresholds[nemAttr.level - 1]) {
-          nemAttr.level--;
-        }
 
         // Save state
         try { state.save(); } catch (err) {}
@@ -1951,8 +1946,11 @@ class PopupsManager {
             <div class="cheat-guide-item" data-cmd="tycoon" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
               <code style="color:#ffd700; font-weight:bold;">tycoon</code>: Enter Tycoon Mode
             </div>
-            <div class="cheat-guide-item" data-cmd="reset tycoon" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
-              <code style="color:#ffd700; font-weight:bold;">reset tycoon</code>: Reset Tycoon progress
+            <div class="cheat-guide-item" data-cmd="score 25" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">score [N]</code>: Set consistency score amount
+            </div>
+            <div class="cheat-guide-item" data-cmd="reset attr" style="background: rgba(255,255,255,0.06); padding: 5px 8px; border-radius: 4px; cursor: pointer;">
+              <code style="color:#ffd700; font-weight:bold;">reset attr</code>: Reset player & Nemesis attributes to 0
             </div>
           </div>
         </div>
@@ -2379,7 +2377,7 @@ class PopupsManager {
       ensureRuntime();
 
       if (lower === 'help' || lower === '?') {
-        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, diamonds N, keys N, hp N, mana N, ap N, pp N, heal full, enemy hp half, kill tags NAME N, class NAME, event TYPE (shrine/statue/sacred tree/none), reset nemesis attributes to yours' };
+        return { ok: true, message: 'Commands: stage N [A/B] [level], level N [A/B], boss N [A/B], weapon NAME, element TYPE, all weapons, gold N, diamonds N, keys N, hp N, mana N, ap N, pp N, heal full, enemy hp half, reset attr, kill tags NAME N, class NAME, event TYPE' };
       }
 
       if (lower.startsWith('stage ') || lower.startsWith('boss ') || lower.startsWith('level ')) {
@@ -2420,6 +2418,15 @@ class PopupsManager {
         this.closeAllPopups();
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'All weapons equipped' };
+      }
+
+      if (lower.startsWith('score ') || lower.startsWith('consistency score ')) {
+        const val = parseInt(command.replace(/^[a-zA-Z\s]+/, ''), 10);
+        if (!isNaN(val)) {
+          state.systemState.consistencyScore = val;
+          try { UIManager.refreshGameUI?.(); } catch (e) {}
+          return { ok: true, message: `Consistency score set to ${val}` };
+        }
       }
 
       if (lower === 'reset tycoon') {
@@ -2658,15 +2665,34 @@ class PopupsManager {
         lower === 'nemesis attributes to yours'
       ) {
         state.config.attributes.forEach(attr => {
-          const data = state.playerState.attributes[attr] || { points: 0, level: 1 };
+          const data = state.playerState.attributes[attr] || { points: 0 };
           state.nemesisState.attributes[attr] = {
-            points: data.points,
-            level: data.level
+            points: data.points
           };
         });
         state.save();
         try { UIManager.refreshGameUI?.(); } catch (e) {}
         return { ok: true, message: 'Nemesis attributes reset to yours' };
+      }
+
+      if (
+        lower === '/resetattrs' ||
+        lower === 'resetattrs' ||
+        lower === '/reset attributes' ||
+        lower === 'reset attributes' ||
+        lower === 'reset attrs' ||
+        lower === 'reset attr' ||
+        lower === '/reset attr'
+      ) {
+        state.config.attributes.forEach(attr => {
+          if (!state.playerState.attributes) state.playerState.attributes = {};
+          if (!state.nemesisState.attributes) state.nemesisState.attributes = {};
+          state.playerState.attributes[attr] = { points: 0 };
+          state.nemesisState.attributes[attr] = { points: 0 };
+        });
+        state.save();
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: 'Player and Nemesis attributes reset to 0' };
       }
 
       if (lower === 'uncomplete' || lower === 'uncomplete all' || lower === 'uncomplete dailies') {

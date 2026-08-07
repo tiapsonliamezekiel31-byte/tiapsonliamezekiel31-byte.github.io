@@ -70,6 +70,12 @@ class HUDMinimizer {
       name: 'BUFFS',
       icon: '✨',
       storageKey: 'nemesis_hud_minimized_buffPanel'
+    },
+    scoreHud: {
+      id: 'scoreHud',
+      name: 'SCORE',
+      icon: '🔺',
+      storageKey: 'nemesis_hud_minimized_scoreHud'
     }
   };
 
@@ -621,6 +627,7 @@ class UIManager {
     this.createHudWidget();
     this.createNemesisTauntHud();
     this.createChallengeHud();
+    this.createScoreHud();
     this.createQuickAddHud();
     this.createFocusCircleWidget();
     this.createNavigationMenu();
@@ -1048,6 +1055,178 @@ class UIManager {
 
     hud.addEventListener('pointerdown', onPointerDown);
     return hud;
+  }
+
+  static createScoreHud() {
+    let hud = document.getElementById('scoreHud');
+    if (hud) return hud;
+
+    hud = document.createElement('div');
+    hud.id = 'scoreHud';
+    hud.className = 'draggable-score-hud';
+    document.body.appendChild(hud);
+
+    let isDragging = false;
+    let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    let latestX = 0, latestY = 0;
+    let rafId = null;
+
+    const savedPos = localStorage.getItem('nemesis_score_hud_pos');
+    if (savedPos) {
+      try {
+        const { left, top } = JSON.parse(savedPos);
+        hud.style.left = left + 'px';
+        hud.style.top = top + 'px';
+      } catch (e) { }
+    } else {
+      hud.style.left = '20px';
+      hud.style.top = '220px';
+    }
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      latestX = e.clientX;
+      latestY = e.clientY;
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          const dx = latestX - startX;
+          const dy = latestY - startY;
+          let newLeft = initialLeft + dx;
+          let newTop = initialTop + dy;
+          const rect = hud.getBoundingClientRect();
+          const maxX = window.innerWidth - rect.width;
+          const maxY = window.innerHeight - rect.height;
+          newLeft = Math.max(0, Math.min(newLeft, maxX));
+          newTop = Math.max(0, Math.min(newTop, maxY));
+
+          hud.style.left = newLeft + 'px';
+          hud.style.top = newTop + 'px';
+          rafId = null;
+        });
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      hud.classList.remove('is-dragging');
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+      document.removeEventListener('pointercancel', onPointerUp);
+      try { hud.releasePointerCapture(e.pointerId); } catch (err) { }
+      localStorage.setItem('nemesis_score_hud_pos', JSON.stringify({
+        left: parseInt(hud.style.left, 10) || 0,
+        top: parseInt(hud.style.top, 10) || 0
+      }));
+    };
+
+    const onPointerDown = (e) => {
+      if (e.target.closest('button, input, textarea, select, a')) return;
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      isDragging = true;
+      hud.classList.add('is-dragging');
+      startX = e.clientX;
+      startY = e.clientY;
+      const rect = hud.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      hud.style.left = initialLeft + 'px';
+      hud.style.top = initialTop + 'px';
+      try { hud.setPointerCapture(e.pointerId); } catch (err) { }
+
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+      document.addEventListener('pointercancel', onPointerUp);
+    };
+
+    hud.addEventListener('pointerdown', onPointerDown);
+    return hud;
+  }
+
+  static getScoreRank(score) {
+    if (score <= -10) return { rank: 1, name: 'Desolate', color: '#ff2233', glow: '#ff0022' };
+    if (score < 5) return { rank: 2, name: 'Novice', color: '#cd7f32', glow: '#b86d28' };
+    if (score < 15) return { rank: 3, name: 'Adept', color: '#c0c0c0', glow: '#a8a8a8' };
+    if (score < 30) return { rank: 4, name: 'Veteran', color: '#ffd700', glow: '#ffb700' };
+    if (score < 50) return { rank: 5, name: 'Master', color: '#e5e4e2', glow: '#38bdf8' };
+    if (score < 80) return { rank: 6, name: 'Grandmaster', color: '#10b981', glow: '#34d399' };
+    return { rank: 7, name: 'Celestial', color: '#a855f7', glow: '#ec4899' };
+  }
+
+  static updateScoreHud() {
+    const state = getGameState();
+    let hud = document.getElementById('scoreHud');
+    if (!hud) hud = this.createScoreHud();
+
+    const rawScore = (typeof state.systemState?.consistencyScore === 'number') ? state.systemState.consistencyScore : 0;
+    const score = Math.max(-20, rawScore);
+    const rankInfo = this.getScoreRank(score);
+
+    hud.className = `draggable-score-hud rank-tier-${rankInfo.rank}`;
+    hud.style.display = 'flex';
+    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name}`;
+
+    hud.innerHTML = `
+      <button class="hud-minimize-btn" title="Minimize Score HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('scoreHud')">－</button>
+      <div class="score-hud-rank-title" style="color: ${rankInfo.color};">${rankInfo.name.toUpperCase()}</div>
+      <svg class="score-triangle-svg" viewBox="0 0 100 86.6" preserveAspectRatio="none">
+        <!-- Rank 7: Double expanding shockwave pulse -->
+        ${rankInfo.rank >= 7 ? `
+          <circle cx="50" cy="50" r="48" class="score-shockwave-ring s1" stroke="${rankInfo.color}" stroke-width="2" fill="none" />
+          <circle cx="50" cy="50" r="48" class="score-shockwave-ring s2" stroke="${rankInfo.color}" stroke-width="1.5" fill="none" />
+          <line x1="50" y1="50" x2="50" y2="2" stroke="${rankInfo.color}" stroke-width="1.5" stroke-dasharray="4,4" class="score-radar-line" />
+        ` : ''}
+
+        <!-- Rank 5+: Outer spinning 8-notch gear ring -->
+        ${rankInfo.rank >= 5 ? `
+          <circle cx="50" cy="50" r="43" class="score-outer-ring" stroke="${rankInfo.color}" stroke-width="2.5" fill="none" stroke-dasharray="10,4,3,4,10,4,3,4" stroke-opacity="0.9" />
+          <polygon points="50,1 94,26 94,74 50,99 6,74 6,26" fill="none" stroke="${rankInfo.color}" stroke-width="1" class="score-octa-shield" stroke-opacity="0.4" />
+        ` : ''}
+
+        <!-- Rank 6+: Counter-rotating dual compass & laser cross lines -->
+        ${rankInfo.rank >= 6 ? `
+          <circle cx="50" cy="50" r="34" class="score-inner-ring" stroke="${rankInfo.color}" stroke-width="2" fill="none" stroke-dasharray="2,6,8,6" stroke-opacity="0.9" />
+          <line x1="2" y1="84.6" x2="98" y2="84.6" stroke="${rankInfo.color}" stroke-width="1" stroke-dasharray="3,3" class="score-base-laser" />
+          <line x1="50" y1="2" x2="50" y2="84.6" stroke="${rankInfo.color}" stroke-width="1" stroke-dasharray="3,3" class="score-axis-laser" />
+        ` : ''}
+
+        <!-- Rank 2+: Outer geometric stroke shadow -->
+        ${rankInfo.rank >= 2 ? `<polygon points="50,0 100,86.6 0,86.6" fill="none" stroke="${rankInfo.color}" stroke-width="1.5" stroke-opacity="0.3" class="score-poly-shadow" />` : ''}
+
+        <!-- Rank 1+: Main Solid Triangle -->
+        <polygon points="50,2 98,84.6 2,84.6" fill="rgba(12, 8, 20, 0.94)" stroke="${rankInfo.color}" stroke-width="${rankInfo.rank >= 4 ? 4.5 : 3.5}" stroke-linejoin="round" class="${rankInfo.rank >= 2 ? 'score-poly-pulse' : 'score-poly-base'}" />
+
+        <!-- Rank 3+: Counter-rotating inner accent triangle & inverted inner tri -->
+        ${rankInfo.rank >= 3 ? `
+          <polygon points="50,16 84,74 16,74" fill="none" stroke="${rankInfo.color}" stroke-width="1.8" stroke-opacity="0.75" stroke-dasharray="8,5" class="score-inner-tri" />
+          <polygon points="50,74 24,28 76,28" fill="none" stroke="${rankInfo.color}" stroke-width="1" stroke-opacity="0.35" stroke-dasharray="4,4" class="score-inverted-tri" />
+        ` : ''}
+
+        <!-- Rank 4+: Orbiting vertex satellite nodes & corner beams -->
+        ${rankInfo.rank >= 4 ? `
+          <g class="score-vertex-group">
+            <circle cx="50" cy="5" r="4" fill="${rankInfo.color}" class="score-corner-node n1" />
+            <circle cx="95" cy="83" r="4" fill="${rankInfo.color}" class="score-corner-node n2" />
+            <circle cx="5" cy="83" r="4" fill="${rankInfo.color}" class="score-corner-node n3" />
+            <polygon points="50,5 95,83 5,83" fill="none" stroke="${rankInfo.color}" stroke-width="1" stroke-dasharray="2,8" />
+          </g>
+        ` : ''}
+
+        <!-- Rank 7: Hyper-cube core crystal diamond -->
+        ${rankInfo.rank >= 7 ? `
+          <g class="score-core-crystal-group">
+            <polygon points="50,34 60,50 50,66 40,50" fill="${rankInfo.color}" fill-opacity="0.5" stroke="${rankInfo.color}" stroke-width="2" class="score-center-diamond d1" />
+            <polygon points="50,38 56,50 50,62 44,50" fill="none" stroke="${rankInfo.color}" stroke-width="1.5" class="score-center-diamond d2" />
+          </g>
+        ` : ''}
+      </svg>
+      <span class="score-hud-number" style="color: ${rankInfo.color};">${score}</span>
+    `;
   }
 
   static updateChallengeHud() {
@@ -1728,25 +1907,6 @@ class UIManager {
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
-      <div id="runCompletionPanel" class="run-completion-panel" aria-label="Run completion graph">
-        <div class="run-completion-head">
-          <span>RUN COMPLETION</span>
-          <button id="runCompletionToggle" title="Compare vs Nemesis">⚔️</button>
-          <button id="runCompletionRewardsToggle" title="Buy Diamond Rewards">🎁</button>
-          <span id="runCompletionRate">0%</span>
-        </div>
-        <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
-        <div id="runCompletionAttrsContainer" style="display:none;"></div>
-        <div id="runCompletionRewardsContainer" style="display:none; max-height:48px; overflow-y:auto; padding:2px 0;"></div>
-      </div>
-      <div id="weeklyHeatmapPanel" class="weekly-heatmap-panel" aria-label="Consistency Heatmap">
-        <div class="weekly-heatmap-head">
-          <span>CONSISTENCY HEATMAP</span>
-          <button id="weeklyHeatmapCollapseBtn" class="stage-notes-collapse-btn">－</button>
-        </div>
-        <div class="weekly-heatmap-body" id="weeklyHeatmapBody"></div>
-      </div>
-      <button id="weeklyHeatmapMinimized" class="weekly-heatmap-minimized" style="display: none;" title="Open Consistency Heatmap">📊</button>
       <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
         <div class="event-banner-content">
           <span id="eventBannerEmoji" class="event-banner-emoji" title="Click to claim reward">⛩️</span>
@@ -1879,7 +2039,7 @@ class UIManager {
       handle.addEventListener('pointerdown', onDown);
     }
 
-    const rcPanel = gameArea.querySelector('#runCompletionPanel');
+    const rcPanel = document.getElementById('runCompletionPanel');
     if (rcPanel) {
       rcPanel.addEventListener('click', (e) => {
         const toggleBtn = e.target.closest('#runCompletionToggle');
@@ -1888,7 +2048,7 @@ class UIManager {
           if (!state.systemState) state.systemState = {};
           state.systemState.showRewardsInCompletionPanel = false;
           state.systemState.showAttrsInCompletionPanel = !state.systemState.showAttrsInCompletionPanel;
-          UIManager.updateRunCompletionGraph();
+          this.updateRunCompletionGraph();
         }
         const rewardsToggleBtn = e.target.closest('#runCompletionRewardsToggle');
         if (rewardsToggleBtn) {
@@ -1896,255 +2056,18 @@ class UIManager {
           if (!state.systemState) state.systemState = {};
           state.systemState.showAttrsInCompletionPanel = false;
           state.systemState.showRewardsInCompletionPanel = !state.systemState.showRewardsInCompletionPanel;
-          UIManager.updateRunCompletionGraph();
+          this.updateRunCompletionGraph();
         }
       });
-    }
-    let isRcDragging = false;
-    let rcStartX = 0, rcStartY = 0, rcInitialLeft = 0, rcInitialTop = 0;
-    let rcLatestX = 0, rcLatestY = 0;
-    let rcRafId = null;
-
-    const savedRcPos = localStorage.getItem('nemesis_run_graph_pos');
-    if (savedRcPos) {
-      try {
-        const { left, top } = JSON.parse(savedRcPos);
-        rcPanel.style.right = 'auto';
-        rcPanel.style.bottom = 'auto';
-        rcPanel.style.left = left + 'px';
-        rcPanel.style.top = top + 'px';
-      } catch (e) { }
-    }
-
-    const onRcMove = (e) => {
-      if (!isRcDragging) return;
-      e.preventDefault();
-      rcLatestX = e.clientX;
-      rcLatestY = e.clientY;
-
-      if (!rcRafId) {
-        rcRafId = requestAnimationFrame(() => {
-          const dx = rcLatestX - rcStartX;
-          const dy = rcLatestY - rcStartY;
-          let newLeft = rcInitialLeft + dx;
-          let newTop = rcInitialTop + dy;
-
-          const maxX = window.innerWidth - rcPanel.offsetWidth;
-          const maxY = window.innerHeight - rcPanel.offsetHeight;
-          newLeft = Math.max(0, Math.min(newLeft, maxX));
-          newTop = Math.max(0, Math.min(newTop, maxY));
-
-          rcPanel.style.left = newLeft + 'px';
-          rcPanel.style.top = newTop + 'px';
-          rcRafId = null;
-        });
-      }
-    };
-
-    const onRcUp = (e) => {
-      if (!isRcDragging) return;
-      isRcDragging = false;
-      rcPanel.classList.remove('is-dragging');
-      if (rcRafId) {
-        cancelAnimationFrame(rcRafId);
-        rcRafId = null;
-      }
-      document.removeEventListener('pointermove', onRcMove);
-      document.removeEventListener('pointerup', onRcUp);
-      document.removeEventListener('pointercancel', onRcUp);
-      try { rcPanel.releasePointerCapture(e.pointerId); } catch (err) { }
-      localStorage.setItem('nemesis_run_graph_pos', JSON.stringify({
-        left: parseInt(rcPanel.style.left, 10) || 0,
-        top: parseInt(rcPanel.style.top, 10) || 0
-      }));
-    };
-
-    const onRcDown = (e) => {
-      if (e.target.closest('button, input, textarea, select, a')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      isRcDragging = true;
-      rcPanel.classList.add('is-dragging');
-      rcStartX = e.clientX;
-      rcStartY = e.clientY;
-      const rect = rcPanel.getBoundingClientRect();
-      rcInitialLeft = rect.left;
-      rcInitialTop = rect.top;
-      rcPanel.style.right = 'auto';
-      rcPanel.style.bottom = 'auto';
-      rcPanel.style.left = rcInitialLeft + 'px';
-      rcPanel.style.top = rcInitialTop + 'px';
-      try { rcPanel.setPointerCapture(e.pointerId); } catch (err) { }
-
-      document.addEventListener('pointermove', onRcMove);
-      document.addEventListener('pointerup', onRcUp);
-      document.addEventListener('pointercancel', onRcUp);
-    };
-
-    if (rcPanel) {
-      rcPanel.addEventListener('pointerdown', onRcDown);
     }
 
     // Consistency Heatmap Widget setup
-    const heatmapPanel = gameArea.querySelector('#weeklyHeatmapPanel');
-    const heatmapMinimized = gameArea.querySelector('#weeklyHeatmapMinimized');
-    const heatmapCollapseBtn = gameArea.querySelector('#weeklyHeatmapCollapseBtn');
-
-    if (heatmapCollapseBtn && heatmapPanel && heatmapMinimized) {
-      heatmapCollapseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        heatmapPanel.style.display = 'none';
-        heatmapMinimized.style.display = 'flex';
-        localStorage.setItem('nemesis_heatmap_collapsed', 'true');
-      });
-    }
-
-    if (heatmapMinimized && heatmapPanel) {
-      heatmapMinimized.addEventListener('click', () => {
-        heatmapPanel.style.display = 'block';
-        heatmapMinimized.style.display = 'none';
-        localStorage.setItem('nemesis_heatmap_collapsed', 'false');
-        
-        const savedPos = localStorage.getItem('nemesis_heatmap_pos');
-        if (savedPos) {
-          try {
-            const { left, top } = JSON.parse(savedPos);
-            heatmapPanel.style.left = left + 'px';
-            heatmapPanel.style.top = top + 'px';
-          } catch (e) { }
-        }
-      });
-    }
-
-    // Load collapsed state
-    const isHeatmapCollapsed = localStorage.getItem('nemesis_heatmap_collapsed') === 'true';
-    if (isHeatmapCollapsed) {
-      if (heatmapPanel) heatmapPanel.style.display = 'none';
-      if (heatmapMinimized) heatmapMinimized.style.display = 'flex';
-    } else {
-      if (heatmapPanel) heatmapPanel.style.display = 'block';
-      if (heatmapMinimized) heatmapMinimized.style.display = 'none';
-    }
-
-    // Load positions and size
-    const savedHeatmapPos = localStorage.getItem('nemesis_heatmap_pos');
-    if (savedHeatmapPos && heatmapPanel) {
-      try {
-        const { left, top, width, height } = JSON.parse(savedHeatmapPos);
-        if (left !== undefined) heatmapPanel.style.left = left + 'px';
-        if (top !== undefined) heatmapPanel.style.top = top + 'px';
-        if (width) heatmapPanel.style.width = width + 'px';
-        if (height) heatmapPanel.style.height = height + 'px';
-        if (heatmapMinimized) {
-          heatmapMinimized.style.left = (left !== undefined ? left : 0) + 'px';
-          heatmapMinimized.style.top = (top !== undefined ? top : 0) + 'px';
-        }
-      } catch (e) { }
-    }
-
-    // Setup ResizeObserver to redraw cells and save size on resize
+    const heatmapPanel = document.getElementById('weeklyHeatmapPanel');
     if (window.ResizeObserver && heatmapPanel) {
-      let hmResizeDebounce = null;
       const hmObserver = new ResizeObserver(() => {
-        if (heatmapPanel.style.display !== 'none') {
-          UIManager.updateWeeklyHeatmap();
-          if (hmResizeDebounce) clearTimeout(hmResizeDebounce);
-          hmResizeDebounce = setTimeout(() => {
-            if (heatmapPanel.offsetWidth && heatmapPanel.offsetHeight) {
-              const currentPos = localStorage.getItem('nemesis_heatmap_pos');
-              let posObj = {};
-              try { if (currentPos) posObj = JSON.parse(currentPos); } catch (e) {}
-              posObj.left = parseInt(heatmapPanel.style.left, 10) || posObj.left || 0;
-              posObj.top = parseInt(heatmapPanel.style.top, 10) || posObj.top || 0;
-              posObj.width = heatmapPanel.offsetWidth;
-              posObj.height = heatmapPanel.offsetHeight;
-              localStorage.setItem('nemesis_heatmap_pos', JSON.stringify(posObj));
-            }
-          }, 300);
-        }
+        this.updateWeeklyHeatmap();
       });
       hmObserver.observe(heatmapPanel);
-    }
-
-    // Draggable logic for heatmapPanel
-    let isHmDragging = false;
-    let hmStartX = 0, hmStartY = 0, hmInitialLeft = 0, hmInitialTop = 0;
-    let hmLatestX = 0, hmLatestY = 0;
-    let hmRafId = null;
-
-    const onHmMove = (e) => {
-      if (!isHmDragging) return;
-      e.preventDefault();
-      hmLatestX = e.clientX;
-      hmLatestY = e.clientY;
-
-      if (!hmRafId) {
-        hmRafId = requestAnimationFrame(() => {
-          const dx = hmLatestX - hmStartX;
-          const dy = hmLatestY - hmStartY;
-          let newLeft = hmInitialLeft + dx;
-          let newTop = hmInitialTop + dy;
-
-          const maxX = window.innerWidth - heatmapPanel.offsetWidth;
-          const maxY = window.innerHeight - heatmapPanel.offsetHeight;
-          newLeft = Math.max(0, Math.min(newLeft, maxX));
-          newTop = Math.max(0, Math.min(newTop, maxY));
-
-          heatmapPanel.style.left = newLeft + 'px';
-          heatmapPanel.style.top = newTop + 'px';
-          if (heatmapMinimized) {
-            heatmapMinimized.style.left = newLeft + 'px';
-            heatmapMinimized.style.top = newTop + 'px';
-          }
-          hmRafId = null;
-        });
-      }
-    };
-
-    const onHmUp = (e) => {
-      if (!isHmDragging) return;
-      isHmDragging = false;
-      heatmapPanel.classList.remove('is-dragging');
-      if (hmRafId) {
-        cancelAnimationFrame(hmRafId);
-        hmRafId = null;
-      }
-      document.removeEventListener('pointermove', onHmMove);
-      document.removeEventListener('pointerup', onHmUp);
-      document.removeEventListener('pointercancel', onHmUp);
-      try { heatmapPanel.releasePointerCapture(e.pointerId); } catch (err) { }
-      const currentPos = localStorage.getItem('nemesis_heatmap_pos');
-      let posObj = {};
-      try { if (currentPos) posObj = JSON.parse(currentPos); } catch (e) {}
-      posObj.left = parseInt(heatmapPanel.style.left, 10) || 0;
-      posObj.top = parseInt(heatmapPanel.style.top, 10) || 0;
-      if (heatmapPanel.offsetWidth) posObj.width = heatmapPanel.offsetWidth;
-      if (heatmapPanel.offsetHeight) posObj.height = heatmapPanel.offsetHeight;
-      localStorage.setItem('nemesis_heatmap_pos', JSON.stringify(posObj));
-    };
-
-    const onHmDown = (e) => {
-      if (e.target.closest('button, input, textarea, select, a')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-      isHmDragging = true;
-      heatmapPanel.classList.add('is-dragging');
-      hmStartX = e.clientX;
-      hmStartY = e.clientY;
-      const rect = heatmapPanel.getBoundingClientRect();
-      hmInitialLeft = rect.left;
-      hmInitialTop = rect.top;
-      heatmapPanel.style.right = 'auto';
-      heatmapPanel.style.bottom = 'auto';
-      heatmapPanel.style.left = hmInitialLeft + 'px';
-      heatmapPanel.style.top = hmInitialTop + 'px';
-      try { heatmapPanel.setPointerCapture(e.pointerId); } catch (err) { }
-
-      document.addEventListener('pointermove', onHmMove);
-      document.addEventListener('pointerup', onHmUp);
-      document.addEventListener('pointercancel', onHmUp);
-    };
-
-    if (heatmapPanel) {
-      heatmapPanel.addEventListener('pointerdown', onHmDown);
     }
 
     const ebPanel = gameArea.querySelector('#eventBannerPanel');
@@ -2466,49 +2389,67 @@ class UIManager {
       </div>
       <div class="run-stats-achievements-container">
         <div class="run-stats-left-side" id="runStatsDashboard">
-          <div class="run-stats-clean-header">
-            <div class="stats-radar-card">
-              <div class="stats-card-header">
-                <span class="stats-card-title">PERFORMANCE RADAR</span>
+          <div class="run-stats-two-column-layout">
+            <div class="run-stats-col-left">
+              <div class="stats-radar-card">
+                <div class="stats-card-header">
+                  <span class="stats-card-title">PERFORMANCE RADAR</span>
+                </div>
+                <div class="stats-radar-wrapper">
+                  <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
+                  <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+                </div>
               </div>
-              <div class="stats-radar-wrapper">
-                <div class="stats-gas-meter-container" id="statsGasMeterSvgContainer"></div>
-                <div class="stats-radar-container" id="statsRadarSvgContainer"></div>
+              <div id="runCompletionPanel" class="run-completion-panel embedded-stats-widget" aria-label="Run completion graph">
+                <div class="run-completion-head">
+                  <span>RUN COMPLETION</span>
+                  <span id="runCompletionRate">0%</span>
+                </div>
+                <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
               </div>
-            </div>
-            <div class="stats-highlights-card">
-              <div class="highlight-stat-box highlight-diamonds" id="flapDiamondBox" title="Max Diamonds">
-                <span class="highlight-stat-label">💎 MAX DIAMONDS</span>
-                <span class="highlight-stat-val" id="statsDiamondVelocity">0</span>
-              </div>
-              <div class="highlight-stat-box highlight-ap" id="flapApBox" title="Max AP">
-                <span class="highlight-stat-label">⚡ MAX AP</span>
-                <span class="highlight-stat-val" id="statsApVelocity">0</span>
-              </div>
-              <div class="highlight-stat-box highlight-streak" id="flapStreakBox" title="Streak Multiplier">
-                <span class="highlight-stat-label">🔥 STREAK</span>
-                <span class="highlight-stat-val" id="statsStreakVal">0 (x1.0)</span>
-              </div>
-              <div class="highlight-stat-box highlight-ratio" title="Avg Damage Dealt / Taken">
-                <span class="highlight-stat-label">⚔️ AVG DEALT / TAKEN</span>
-                <span class="highlight-stat-val"><span id="statsDmgDealtAvg">0.0</span> / <span id="statsDmgTakenAvg">0.0</span></span>
+              <div id="weeklyHeatmapPanel" class="weekly-heatmap-panel embedded-stats-widget" aria-label="Consistency Heatmap">
+                <div class="weekly-heatmap-head">
+                  <span>CONSISTENCY HEATMAP</span>
+                  <button id="weeklyHeatmapCollapseBtn" class="stage-notes-collapse-btn" style="display:none;">－</button>
+                </div>
+                <div class="weekly-heatmap-body" id="weeklyHeatmapBody"></div>
               </div>
             </div>
-          </div>
-          <div class="stats-section-title">DETAILED METRICS</div>
-          <div class="expanded-stats-grid">
-            <div class="stat-card"><span class="stat-card-label">Total Damage Dealt</span><span class="stat-card-val" id="statTotalDmgDealt">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Total Damage Taken</span><span class="stat-card-val" id="statTotalDmgTaken">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Critical Hits</span><span class="stat-card-val" id="statTotalCrits">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Total AP Spent</span><span class="stat-card-val" id="statTotalApSpent">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Total Mana Restored</span><span class="stat-card-val" id="statTotalManaRestored">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Stage Win Rate</span><span class="stat-card-val" id="statStageWinRate">100%</span></div>
-            <div class="stat-card"><span class="stat-card-label">Task Completion Rate</span><span class="stat-card-val" id="statTaskCompletionRate">0%</span></div>
-            <div class="stat-card"><span class="stat-card-label">Focus Minutes</span><span class="stat-card-val" id="statTotalFocusMins">0 min</span></div>
-            <div class="stat-card"><span class="stat-card-label">Bosses Defeated</span><span class="stat-card-val" id="statBossesDefeated">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Overkill Damage Total</span><span class="stat-card-val" id="statOverkillDamage">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Dodges Succeeded</span><span class="stat-card-val" id="statDodgesSucceeded">0</span></div>
-            <div class="stat-card"><span class="stat-card-label">Enemies Slain</span><span class="stat-card-val" id="statEnemiesSlain">0</span></div>
+            <div class="run-stats-col-right">
+              <div class="stats-highlights-card">
+                <div class="highlight-stat-box highlight-diamonds" id="flapDiamondBox" title="Max Diamonds">
+                  <span class="highlight-stat-label">💎 MAX DIAMONDS</span>
+                  <span class="highlight-stat-val" id="statsDiamondVelocity">0</span>
+                </div>
+                <div class="highlight-stat-box highlight-ap" id="flapApBox" title="Max AP">
+                  <span class="highlight-stat-label">⚡ MAX AP</span>
+                  <span class="highlight-stat-val" id="statsApVelocity">0</span>
+                </div>
+                <div class="highlight-stat-box highlight-streak" id="flapStreakBox" title="Streak Multiplier">
+                  <span class="highlight-stat-label">🔥 STREAK</span>
+                  <span class="highlight-stat-val" id="statsStreakVal">0 (x1.0)</span>
+                </div>
+                <div class="highlight-stat-box highlight-ratio" title="Avg Damage Dealt / Taken">
+                  <span class="highlight-stat-label">⚔️ AVG DEALT / TAKEN</span>
+                  <span class="highlight-stat-val"><span id="statsDmgDealtAvg">0.0</span> / <span id="statsDmgTakenAvg">0.0</span></span>
+                </div>
+              </div>
+              <div class="stats-section-title">DETAILED METRICS</div>
+              <div class="expanded-stats-grid compact-split-grid">
+                <div class="stat-card"><span class="stat-card-label">Total Damage Dealt</span><span class="stat-card-val" id="statTotalDmgDealt">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Total Damage Taken</span><span class="stat-card-val" id="statTotalDmgTaken">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Critical Hits</span><span class="stat-card-val" id="statTotalCrits">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Total AP Spent</span><span class="stat-card-val" id="statTotalApSpent">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Total Mana Restored</span><span class="stat-card-val" id="statTotalManaRestored">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Stage Win Rate</span><span class="stat-card-val" id="statStageWinRate">100%</span></div>
+                <div class="stat-card"><span class="stat-card-label">Task Completion Rate</span><span class="stat-card-val" id="statTaskCompletionRate">0%</span></div>
+                <div class="stat-card"><span class="stat-card-label">Focus Minutes</span><span class="stat-card-val" id="statTotalFocusMins">0 min</span></div>
+                <div class="stat-card"><span class="stat-card-label">Bosses Defeated</span><span class="stat-card-val" id="statBossesDefeated">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Overkill Damage Total</span><span class="stat-card-val" id="statOverkillDamage">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Dodges Succeeded</span><span class="stat-card-val" id="statDodgesSucceeded">0</span></div>
+                <div class="stat-card"><span class="stat-card-label">Enemies Slain</span><span class="stat-card-val" id="statEnemiesSlain">0</span></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="achievements-right-side">
@@ -8403,10 +8344,15 @@ class UIManager {
     }
 
     const today = TaskManager.getCurrentGameDateKey();
+    const isCheckedInToday = gs.systemState?.lastCheckInDateKey === today;
     
     let visibleDailies = dailies;
     if (!editModeActive) {
-      visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
+      if (!isCheckedInToday) {
+        visibleDailies = [];
+      } else {
+        visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
+      }
     }
     if (!showCompleted) {
       visibleDailies = visibleDailies.filter(daily => !daily.completed);
@@ -12384,6 +12330,7 @@ class UIManager {
     try { if (window.StatsHUD && typeof StatsHUD.update === 'function') StatsHUD.update(); } catch (e) { console.warn('StatsHUD update failed', e); }
     try { this.updateNemesisTauntHud(); } catch (e) { console.warn('Nemesis taunt update failed', e); }
     try { this.updateChallengeHud(); } catch (e) { console.warn('Challenge HUD update failed', e); }
+    try { this.updateScoreHud(); } catch (e) { console.warn('Score HUD update failed', e); }
     // Consumables and buffs are part of the HUD and must update here
     try { this.updateConsumableStrip && this.updateConsumableStrip(); } catch (e) { }
     try { this.renderBuffPanel && this.renderBuffPanel(); } catch (e) { }

@@ -291,6 +291,7 @@ class GameState {
         showCompletedTodos: false
       },
       lastCheckInTime: null, // timestamp of last check-in
+      lastCheckInDateKey: null,
       gameStartTime: null,
       runCompletionHistory: [],
       dailyNotesByDate: {},
@@ -309,6 +310,7 @@ class GameState {
         tasksCompleted: 0,
         daysSurvived: 0
       },
+      consistencyScore: 0,
       customRewards: [
         { id: '1', name: 'Coffee', price: 10 },
         { id: '2', name: '1h Video Games', price: 20 },
@@ -625,20 +627,11 @@ class GameState {
     const attr = this.playerState.attributes[attrName];
     if (!attr) return;
     
-    attr.points += amount;
-    
-    // Check if level up
-    const thresholds = typeof this.config.attributeLevelThresholds === 'function'
-      ? this.config.attributeLevelThresholds()
-      : (Array.isArray(this.config.attributeLevelThresholds) ? this.config.attributeLevelThresholds : []);
-    while (attr.level < thresholds.length && attr.points >= thresholds[attr.level]) {
-      attr.level++;
-    }
+    attr.points = (attr.points || 0) + amount;
     
     this.eventBus.emit(EVENTS.ATTRIBUTE_CHANGED, {
       attribute: attrName,
-      points: attr.points,
-      level: attr.level
+      points: attr.points
     });
   }
 
@@ -646,18 +639,15 @@ class GameState {
     if (!this.nemesisState) this.nemesisState = { attributes: {} };
     if (!this.nemesisState.attributes) this.nemesisState.attributes = {};
     if (!this.nemesisState.attributes[attrName]) {
-      this.nemesisState.attributes[attrName] = { points: 0, level: 1 };
+      this.nemesisState.attributes[attrName] = { points: 0 };
     }
     const attr = this.nemesisState.attributes[attrName];
-    attr.points += amount;
+    attr.points = (attr.points || 0) + amount;
 
-    const thresholds = typeof this.config.attributeLevelThresholds === 'function'
-      ? this.config.attributeLevelThresholds()
-      : (Array.isArray(this.config.attributeLevelThresholds) ? this.config.attributeLevelThresholds : []);
-
-    while (attr.level < thresholds.length && attr.points >= thresholds[attr.level]) {
-      attr.level++;
-    }
+    this.eventBus.emit(EVENTS.NEMESIS_ATTRIBUTE_CHANGED, {
+      attribute: attrName,
+      points: attr.points
+    });
   }
   
   // Buffs
@@ -1624,8 +1614,9 @@ function performCheckIn() {
 
   state.eventBus.emit(EVENTS.CHECK_IN, { time: nowMs });
 
-  const completedDailies = TaskManager.getCompletedDailies();
-  const rawMissedDailies = TaskManager.getMissedDailies();
+  const checkInDateKey = getLocalDateKey();
+  const completedDailies = TaskManager.getCompletedDailies(checkInDateKey);
+  const rawMissedDailies = TaskManager.getMissedDailies(checkInDateKey);
 
   // Resolve Nemesis Challenge
   let challengePenaltyMessage = '';
@@ -1669,7 +1660,29 @@ function performCheckIn() {
 
   const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, completedDailies.concat(rawMissedDailies));
   
-  
+  // Calculate run completion rate before pushing today's check-in
+  let runCompletionRate = 0;
+  if (typeof UIManager !== 'undefined' && typeof UIManager.getRunCompletionEntries === 'function') {
+    const entries = UIManager.getRunCompletionEntries();
+    // Exclude live entry from entries to get past run completion rate, or calculate average of run history
+    const runHistoryEntries = entries.filter(e => !e.live);
+    if (runHistoryEntries.length > 0) {
+      const sum = runHistoryEntries.reduce((acc, e) => acc + (e.pct || 0), 0);
+      runCompletionRate = sum / runHistoryEntries.length;
+    } else {
+      runCompletionRate = 0;
+    }
+  }
+
+  if (typeof state.systemState.consistencyScore !== 'number') {
+    state.systemState.consistencyScore = 0;
+  }
+  if (completionRate >= runCompletionRate) {
+    state.systemState.consistencyScore += 1;
+  } else {
+    state.systemState.consistencyScore = Math.max(-20, state.systemState.consistencyScore - 2);
+  }
+
   const history = state.dailiesState.history || [];
 
   const savedDailies = [];
@@ -2394,16 +2407,36 @@ function performCheckIn() {
     console.warn('Late todo damage calculation failed', e);
   }
 
-  // 5) Nemesis incantations (only affects normal enemies)
-  const incantations = [];
+  // 5) Distribute daily attribute points from completed Dailies & Nemesis Daily Gain
   try {
     const attrs = state.config.attributes || [];
+    const diffWeights = { Easy: 1, Medium: 3, Hard: 5, Ultra: 10 };
+    
+    // For each attribute, completed dailies share 10 points based on difficulty weight
+    attrs.forEach(attr => {
+      // Nemesis gains 8 attribute points every day to each attribute
+      state.addNemesisAttributePoints(attr, 8);
+
+      const completedDailiesForAttr = completedDailies.filter(d => d.attribute === attr);
+      if (completedDailiesForAttr.length > 0) {
+        const totalWeight = completedDailiesForAttr.reduce((sum, d) => sum + (diffWeights[d.difficulty] || 1), 0);
+        if (totalWeight > 0) {
+          completedDailiesForAttr.forEach(d => {
+            const weight = diffWeights[d.difficulty] || 1;
+            const pts = Math.round((10 * (weight / totalWeight)) * 100) / 100;
+            state.addAttributePoints(attr, pts);
+          });
+        }
+      }
+    });
+
     const aliveNormal = (state.stageState.enemies || []).filter(e => e && !e.isDead && !e.isBoss);
     const deadNormal = (state.stageState.enemies || []).filter(e => e && e.isDead && !e.isBoss);
+    const incantations = [];
 
     const leadingAttrs = attrs.filter(attr => {
-      const nem = state.nemesisState?.attributes?.[attr]?.level || 1;
-      const ply = state.playerState?.attributes?.[attr]?.level || 1;
+      const nem = state.nemesisState?.attributes?.[attr]?.points || 0;
+      const ply = state.playerState?.attributes?.[attr]?.points || 0;
       return nem > ply;
     });
 
@@ -2641,6 +2674,7 @@ function performCheckIn() {
     state.playerState.elementalGreaseStacks = 0;
     state.playerState.furyFirstAttackUsed = false;
     state.systemState.lastCheckInTime = nowMs;
+    state.systemState.lastCheckInDateKey = getLocalDateKey();
     state.systemState.runStats.daysSurvived = (state.systemState.runStats.daysSurvived || 0) + 1;
     state.stageState.stageClearedToday = false;
 
