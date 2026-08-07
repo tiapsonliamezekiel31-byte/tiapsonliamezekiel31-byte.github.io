@@ -1167,9 +1167,16 @@ class UIManager {
     const score = Math.max(-20, rawScore);
     const rankInfo = this.getScoreRank(score);
 
+    const entries = (typeof this.getRunCompletionEntries === 'function') ? this.getRunCompletionEntries() : [];
+    const liveEntry = entries.find(e => e.live);
+    const todayCompletionPct = liveEntry ? Math.round((liveEntry.pct || 0) * 100) : 0;
+    const runCompletionPct = entries.length > 0
+      ? Math.round((entries.reduce((sum, e) => sum + (e.pct || 0), 0) / entries.length) * 100)
+      : 0;
+
     hud.className = `draggable-score-hud rank-tier-${rankInfo.rank}`;
     hud.style.display = 'flex';
-    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name}`;
+    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name} | Run Completion: ${runCompletionPct}% | Today: ${todayCompletionPct}%`;
 
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Score HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('scoreHud')">－</button>
@@ -1226,6 +1233,8 @@ class UIManager {
         ` : ''}
       </svg>
       <span class="score-hud-number" style="color: ${rankInfo.color};">${score}</span>
+      <div class="score-base-label base-left" style="color: ${rankInfo.color};" title="Run Completion: ${runCompletionPct}%">RUN ${runCompletionPct}%</div>
+      <div class="score-base-label base-right" style="color: ${rankInfo.color};" title="Today Completion: ${todayCompletionPct}%">TDY ${todayCompletionPct}%</div>
     `;
   }
 

@@ -11150,6 +11150,29 @@ button:hover,
   text-shadow: 1px 1px 0px #000, -1px -1px 0px #000;
 }
 
+.draggable-score-hud .score-base-label {
+  position: absolute;
+  bottom: -4px;
+  font-family: 'Orbitron', monospace;
+  font-weight: 800;
+  font-size: 7.5px;
+  line-height: 1;
+  letter-spacing: 0.2px;
+  z-index: 4;
+  pointer-events: none;
+  text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+.draggable-score-hud .score-base-label.base-left {
+  left: -4px;
+}
+
+.draggable-score-hud .score-base-label.base-right {
+  right: -4px;
+}
+
 /* High-Intensity Cumulative Keyframe Animations */
 @keyframes scoreHudFloat {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
