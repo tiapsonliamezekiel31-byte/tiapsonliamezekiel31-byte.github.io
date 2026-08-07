@@ -8781,18 +8781,18 @@ class UIManager {
       const progressText = daily.locked ? 'LOCKED' : `${completionsToday}/${maxCompletions}`;
       const completedVisibleClass = daily.completed && showCompleted ? 'is-completed-visible' : '';
       const eventTargetClass = eventTargets.includes(daily.id) ? 'task-event-target' : '';
-      // Streak saturation curve: -7 is 0 (fully desaturated), ramps up momentum around 5-7, max (1.0) at 21
+      // Linear streak saturation: lowest -3 (0 saturation), highest 21 (1.0 saturation)
       const sVal = Number(streak) || 0;
       let streakSat = 0;
       if (activeColorFilter !== 'regular') {
         streakSat = 1;
-      } else if (sVal <= -7) {
+      } else if (sVal <= -3) {
         streakSat = 0;
       } else if (sVal >= 21) {
         streakSat = 1;
       } else {
-        const norm = (sVal + 7) / 28; // 0 at -7, 1 at 21
-        streakSat = +Math.pow(norm, 2.2).toFixed(3);
+        const norm = (sVal + 3) / 24; // linear from -3 to 21
+        streakSat = +norm.toFixed(3);
       }
       const particleCount = (streak > 0 && !focusModeActive) ? Math.min(streak, 10) : 0;
 
