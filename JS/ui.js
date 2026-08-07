@@ -3071,6 +3071,210 @@ class UIManager {
     }
   }
 
+  static openFullscreenTimer(task, taskType) {
+    if (!task) return;
+    let container = document.getElementById('nemesisFullscreenTimerOverlay');
+    if (container) container.remove();
+
+    container = document.createElement('div');
+    container.id = 'nemesisFullscreenTimerOverlay';
+    container.className = 'nemesis-fullscreen-timer-overlay';
+
+    // Time detection: extract duration in seconds from name using TaskManager.parseMetadata
+    let durationSeconds = 300; // 5 mins fallback default
+    const nameStr = task.name || '';
+
+    // Check for HH:MM:SS or MM:SS pattern (e.g. 15:00 or 01:30:00)
+    const timeColonMatch = nameStr.match(/\b(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\b/);
+    if (timeColonMatch) {
+      if (timeColonMatch[1] !== undefined) {
+        durationSeconds = parseInt(timeColonMatch[1], 10) * 3600 + parseInt(timeColonMatch[2], 10) * 60 + parseInt(timeColonMatch[3], 10);
+      } else {
+        durationSeconds = parseInt(timeColonMatch[2], 10) * 60 + parseInt(timeColonMatch[3], 10);
+      }
+    } else {
+      // Check explicit numbers with time unit suffix (e.g., 25mins, 10 min, 1h, 45m, 30s)
+      const secsMatch = nameStr.match(/\b(\d+)\s*(secs?|seconds?|s)\b/i);
+      const minsMatch = nameStr.match(/\b(\d+)\s*(mins?|minutes?|m)\b/i);
+      const hrsMatch = nameStr.match(/\b(\d+)\s*(hrs?|hours?|h)\b/i);
+      if (secsMatch) {
+        durationSeconds = parseInt(secsMatch[1], 10);
+      } else if (minsMatch) {
+        durationSeconds = parseInt(minsMatch[1], 10) * 60;
+      } else if (hrsMatch) {
+        durationSeconds = parseInt(hrsMatch[1], 10) * 3600;
+      }
+    }
+
+    let currentSeconds = durationSeconds;
+    let isRunning = true;
+    let timerInterval = null;
+
+    const formatTime = (totalSecs) => {
+      const hrs = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      if (hrs > 0) {
+        return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    };
+
+    const cleanTaskName = task.name ? task.name.replace(/\b(\d+)\s*(mins?|minutes?|hrs?|hours?|secs?|seconds?|[mh])\b/gi, '').trim() : 'Task Timer';
+
+    const subtasks = task.subtasks || [];
+    const subtasksHTML = subtasks.length > 0 ? `
+      <div class="nft-subtasks-list">
+        ${subtasks.map(st => `
+          <label class="nft-subtask-item ${st.completed ? 'completed' : ''}">
+            <input type="checkbox" class="nft-subtask-checkbox" data-subtask-id="${st.id}" ${st.completed ? 'checked' : ''} />
+            <span>${st.name}</span>
+          </label>
+        `).join('')}
+      </div>
+    ` : '';
+
+    container.innerHTML = `
+      <button class="nft-btn-close" id="nftCloseBtn">&times;</button>
+      <div class="nft-task-name">${cleanTaskName || task.name}</div>
+      ${subtasksHTML}
+      <div class="nft-clock" id="nftClockDisplay" title="Click to edit timer duration" style="cursor: pointer;">${formatTime(currentSeconds)}</div>
+      <div class="nft-controls">
+        <button class="nft-btn" id="nftRestBtn">+5 Mins Rest</button>
+        <button class="nft-btn nft-btn-primary" id="nftCompleteBtn">Complete</button>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+
+    const clockDisplay = container.querySelector('#nftClockDisplay');
+    const closeBtn = container.querySelector('#nftCloseBtn');
+    const restBtn = container.querySelector('#nftRestBtn');
+    const completeBtn = container.querySelector('#nftCompleteBtn');
+
+    // Click clock display to edit duration
+    clockDisplay.addEventListener('click', () => {
+      const currentMins = Math.ceil(currentSeconds / 60) || 5;
+      const input = prompt('Enter timer duration in minutes (or MM:SS):', `${currentMins}`);
+      if (input !== null && input.trim() !== '') {
+        const val = input.trim();
+        if (val.includes(':')) {
+          const parts = val.split(':').map(p => parseInt(p, 10));
+          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            currentSeconds = parts[0] * 60 + parts[1];
+          } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            currentSeconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+          }
+        } else {
+          const num = parseInt(val, 10);
+          if (!isNaN(num) && num > 0) {
+            currentSeconds = num * 60;
+          }
+        }
+        clockDisplay.textContent = formatTime(currentSeconds);
+      }
+    });
+
+    const triggerCompletion = () => {
+      if (timerInterval) clearInterval(timerInterval);
+      container.remove();
+      const state = getGameState();
+      if (taskType === 'daily') {
+        const res = TaskManager.completeDaily(task.id);
+        if (res && res.success) {
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! Daily Finished ⚡', { color: '#a855f7', scale: 1.5 }); } catch (e) {}
+        }
+        UIManager.scheduleUpdateDailiesList();
+      } else {
+        const res = TaskManager.completeTodo(task.id);
+        if (res && res.success) {
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! To-Do Finished ⚡', { color: '#a855f7', scale: 1.5 }); } catch (e) {}
+        }
+        UIManager.updateTodosList();
+      }
+      try { state.save(); } catch (e) {}
+      UIManager.renderEnemies();
+    };
+
+    const updateClock = () => {
+      if (!isRunning) return;
+      currentSeconds--;
+      if (currentSeconds <= 0) {
+        currentSeconds = 0;
+        clockDisplay.textContent = formatTime(0);
+        triggerCompletion();
+        return;
+      }
+      clockDisplay.textContent = formatTime(currentSeconds);
+    };
+
+    timerInterval = setInterval(updateClock, 1000);
+
+    // Rest button pauses main timer & starts 5 min rest timer
+    let isResting = false;
+    let restSeconds = 300;
+    restBtn.addEventListener('click', () => {
+      if (!isResting) {
+        isResting = true;
+        isRunning = false; // Pause main countdown
+        restSeconds = 300; // 5 mins
+        restBtn.textContent = 'Resume Task';
+        restBtn.style.background = '#a855f7';
+        restBtn.style.color = '#ffffff';
+        clockDisplay.textContent = `REST ${formatTime(restSeconds)}`;
+      } else {
+        isResting = false;
+        isRunning = true; // Resume main countdown
+        restBtn.textContent = '+5 Mins Rest';
+        restBtn.style.background = '';
+        restBtn.style.color = '';
+        clockDisplay.textContent = formatTime(currentSeconds);
+      }
+    });
+
+    const updateRestClock = () => {
+      if (isResting) {
+        restSeconds--;
+        if (restSeconds <= 0) {
+          restSeconds = 0;
+          isResting = false;
+          isRunning = true;
+          restBtn.textContent = '+5 Mins Rest';
+          restBtn.style.background = '';
+          restBtn.style.color = '';
+          clockDisplay.textContent = formatTime(currentSeconds);
+        } else {
+          clockDisplay.textContent = `REST ${formatTime(restSeconds)}`;
+        }
+      }
+    };
+    setInterval(updateRestClock, 1000);
+
+    // Subtask checkbox clicks inside timer overlay
+    container.querySelectorAll('.nft-subtask-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const subtaskId = e.target.dataset.subtaskId;
+        const item = e.target.closest('.nft-subtask-item');
+        if (taskType === 'todo') {
+          TaskManager.toggleSubtask(task.id, subtaskId);
+          UIManager.updateTodosList();
+        }
+        if (e.target.checked) item?.classList.add('completed');
+        else item?.classList.remove('completed');
+        try { getGameState().save(); } catch (err) {}
+      });
+    });
+
+    completeBtn.addEventListener('click', () => {
+      triggerCompletion();
+    });
+
+    closeBtn.addEventListener('click', () => {
+      if (timerInterval) clearInterval(timerInterval);
+      container.remove();
+    });
+  }
+
   static exitFocusMode() {
     document.body.classList.remove('focus-mode-active');
 
@@ -3091,12 +3295,13 @@ class UIManager {
     if (!container) {
       container = document.createElement('div');
       container.id = 'nemesisJoystick';
-      container.className = 'nemesis-joystick-container';
+      container.className = 'nemesis-joystick-container nemesis-5-joystick';
       container.innerHTML = `
         <div class="nemesis-joystick-track">
           <div class="nemesis-joystick-label" id="jsLabelLock" style="cursor: pointer;">LOCK</div>
           <div class="nemesis-joystick-label" id="jsLabelDefault" style="cursor: pointer;">DEF</div>
           <div class="nemesis-joystick-label" id="jsLabelEdit" style="cursor: pointer;">EDIT</div>
+          <div class="nemesis-joystick-label" id="jsLabelTime" style="cursor: pointer;">TIME</div>
           <div class="nemesis-joystick-label" id="jsLabelOath" style="cursor: pointer;">OATH</div>
           <div class="nemesis-joystick-handle" id="jsHandle"></div>
         </div>
@@ -3108,6 +3313,7 @@ class UIManager {
     const labelLock = container.querySelector('#jsLabelLock');
     const labelDefault = container.querySelector('#jsLabelDefault');
     const labelEdit = container.querySelector('#jsLabelEdit');
+    const labelTime = container.querySelector('#jsLabelTime');
     const labelOath = container.querySelector('#jsLabelOath');
 
     const setJoystickMode = (mode) => {
@@ -3119,19 +3325,28 @@ class UIManager {
       if (mode === 'lock') {
         state.systemState.taskListFilters.lockModeDailies = true;
         state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.timeModeDailies = false;
         state.systemState.taskListFilters.oathModeDailies = false;
       } else if (mode === 'edit') {
         state.systemState.taskListFilters.lockModeDailies = false;
         state.systemState.taskListFilters.editModeDailies = true;
+        state.systemState.taskListFilters.timeModeDailies = false;
+        state.systemState.taskListFilters.oathModeDailies = false;
+      } else if (mode === 'time') {
+        state.systemState.taskListFilters.lockModeDailies = false;
+        state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.timeModeDailies = true;
         state.systemState.taskListFilters.oathModeDailies = false;
       } else if (mode === 'oath') {
         state.systemState.taskListFilters.lockModeDailies = false;
         state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.timeModeDailies = false;
         state.systemState.taskListFilters.oathModeDailies = true;
       } else {
         // default
         state.systemState.taskListFilters.lockModeDailies = false;
         state.systemState.taskListFilters.editModeDailies = false;
+        state.systemState.taskListFilters.timeModeDailies = false;
         state.systemState.taskListFilters.oathModeDailies = false;
       }
 
@@ -3143,6 +3358,7 @@ class UIManager {
     labelLock.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('lock'); });
     labelDefault.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('default'); });
     labelEdit.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('edit'); });
+    labelTime.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('time'); });
     labelOath.addEventListener('click', (e) => { e.stopPropagation(); setJoystickMode('oath'); });
 
     // Pointer events for dragging
@@ -3156,10 +3372,11 @@ class UIManager {
 
       const state = getGameState();
       const filters = state.systemState?.taskListFilters || {};
-      let initialTx = -22.5;
-      if (filters.lockModeDailies) initialTx = -67.5;
-      else if (filters.editModeDailies) initialTx = 22.5;
-      else if (filters.oathModeDailies) initialTx = 67.5;
+      let initialTx = -42;
+      if (filters.lockModeDailies) initialTx = -84;
+      else if (filters.editModeDailies) initialTx = 0;
+      else if (filters.timeModeDailies) initialTx = 42;
+      else if (filters.oathModeDailies) initialTx = 84;
 
       handle.style.transition = 'none';
 
@@ -3167,7 +3384,7 @@ class UIManager {
         if (!isDragging) return;
         let dx = moveEv.clientX - startX;
         let tx = initialTx + dx;
-        tx = Math.max(-67.5, Math.min(67.5, tx));
+        tx = Math.max(-84, Math.min(84, tx));
         handle.style.transform = `translateX(${tx}px)`;
       };
 
@@ -3180,18 +3397,20 @@ class UIManager {
         document.removeEventListener('pointerup', onPointerUp);
         document.removeEventListener('pointercancel', onPointerUp);
 
-        const transformStr = handle.style.transform || 'translateX(-22.5px)';
+        const transformStr = handle.style.transform || 'translateX(-42px)';
         const match = transformStr.match(/translateX\(([-\d.]+)px\)/);
-        const currentTx = match ? parseFloat(match[1]) : -22.5;
+        const currentTx = match ? parseFloat(match[1]) : -42;
 
         handle.style.transition = 'transform 0.25s cubic-bezier(0.25, 1.1, 0.5, 1.15), background 0.25s, box-shadow 0.25s';
 
-        if (currentTx < -45) {
+        if (currentTx < -63) {
           setJoystickMode('lock');
-        } else if (currentTx < 0) {
+        } else if (currentTx < -21) {
           setJoystickMode('default');
-        } else if (currentTx < 45) {
+        } else if (currentTx < 21) {
           setJoystickMode('edit');
+        } else if (currentTx < 63) {
+          setJoystickMode('time');
         } else {
           setJoystickMode('oath');
         }
@@ -3213,10 +3432,11 @@ class UIManager {
     const labelLock = document.getElementById('jsLabelLock');
     const labelDefault = document.getElementById('jsLabelDefault');
     const labelEdit = document.getElementById('jsLabelEdit');
+    const labelTime = document.getElementById('jsLabelTime');
     const labelOath = document.getElementById('jsLabelOath');
     const container = document.getElementById('nemesisJoystick');
 
-    if (!container || !handle || !labelLock || !labelDefault || !labelEdit || !labelOath) return;
+    if (!container || !handle || !labelLock || !labelDefault || !labelEdit || !labelTime || !labelOath) return;
 
     const dailiesPanel = document.getElementById('dailiesPanel');
     if (dailiesPanel && dailiesPanel.classList.contains('open')) {
@@ -3233,29 +3453,41 @@ class UIManager {
       labelLock.className = 'nemesis-joystick-label active-lock';
       labelDefault.className = 'nemesis-joystick-label';
       labelEdit.className = 'nemesis-joystick-label';
+      labelTime.className = 'nemesis-joystick-label';
       labelOath.className = 'nemesis-joystick-label';
-      handle.style.transform = 'translateX(-67.5px)';
+      handle.style.transform = 'translateX(-84px)';
     } else if (filters.editModeDailies) {
       handle.className = 'nemesis-joystick-handle state-edit';
       labelLock.className = 'nemesis-joystick-label';
       labelDefault.className = 'nemesis-joystick-label';
       labelEdit.className = 'nemesis-joystick-label active-edit';
+      labelTime.className = 'nemesis-joystick-label';
       labelOath.className = 'nemesis-joystick-label';
-      handle.style.transform = 'translateX(22.5px)';
+      handle.style.transform = 'translateX(0px)';
+    } else if (filters.timeModeDailies) {
+      handle.className = 'nemesis-joystick-handle state-time';
+      labelLock.className = 'nemesis-joystick-label';
+      labelDefault.className = 'nemesis-joystick-label';
+      labelEdit.className = 'nemesis-joystick-label';
+      labelTime.className = 'nemesis-joystick-label active-time';
+      labelOath.className = 'nemesis-joystick-label';
+      handle.style.transform = 'translateX(42px)';
     } else if (filters.oathModeDailies) {
       handle.className = 'nemesis-joystick-handle state-oath';
       labelLock.className = 'nemesis-joystick-label';
       labelDefault.className = 'nemesis-joystick-label';
       labelEdit.className = 'nemesis-joystick-label';
+      labelTime.className = 'nemesis-joystick-label';
       labelOath.className = 'nemesis-joystick-label active-oath';
-      handle.style.transform = 'translateX(67.5px)';
+      handle.style.transform = 'translateX(84px)';
     } else {
       handle.className = 'nemesis-joystick-handle state-default';
       labelLock.className = 'nemesis-joystick-label';
       labelDefault.className = 'nemesis-joystick-label active-default';
       labelEdit.className = 'nemesis-joystick-label';
+      labelTime.className = 'nemesis-joystick-label';
       labelOath.className = 'nemesis-joystick-label';
-      handle.style.transform = 'translateX(-22.5px)';
+      handle.style.transform = 'translateX(-42px)';
     }
   }
 
@@ -5795,7 +6027,6 @@ class UIManager {
       container.addEventListener('click', (event) => {
         const card = event.target.closest('.task-card, .task-card-daily');
         if (!card) return;
-        if (taskType === 'daily' && card.classList.contains('task-card-daily')) return;
 
         const taskId = card.dataset.id;
         if (!taskId) return;
@@ -5892,6 +6123,7 @@ class UIManager {
 
         const interactiveInsideCard = event.target.closest('.todo-subtask-rect, .todo-subtasks-container, .subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
+        const timeModeDailies = !!state.systemState?.taskListFilters?.timeModeDailies;
         const todoJoystickMode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
 
         if (taskType === 'daily' && editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
@@ -5900,6 +6132,13 @@ class UIManager {
         }
 
         if (taskType === 'todo' && !interactiveInsideCard) {
+          // Unrelated requirement: Single click anywhere on a To-Do card reveals/toggles its subtasks
+          const subtasksContainer = card.querySelector('.todo-orbit-subtasks-stuck-bottom, .todo-subtasks-container, .subtasks-container');
+          if (subtasksContainer) {
+            const isHidden = window.getComputedStyle(subtasksContainer).display === 'none';
+            subtasksContainer.style.display = isHidden ? 'flex' : 'none';
+          }
+
           if (todoJoystickMode === 'edit') {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
               PopupsManager.showEditTodo(taskId);
@@ -5931,8 +6170,8 @@ class UIManager {
           }
         }
 
-        // To-Do card single clicks should not trigger complete. Only Dailies or explicit complete buttons.
-        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') && !interactiveInsideCard)) {
+        // To-Do card single clicks should not trigger complete. Only Dailies (when not in TIME mode) or explicit complete buttons.
+        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') && !interactiveInsideCard && !timeModeDailies)) {
           if (card.classList.contains('completed')) return;
           if (taskType === 'daily') {
             const res = TaskManager.completeDaily(taskId);
@@ -6094,6 +6333,22 @@ class UIManager {
           this.renderEnemies();
         }
       });
+
+      container.addEventListener('dblclick', (event) => {
+        const card = event.target.closest('.task-card, .task-card-daily');
+        if (!card) return;
+        const taskId = card.dataset.id;
+        if (!taskId) return;
+
+        const timeModeDailies = !!state.systemState?.taskListFilters?.timeModeDailies;
+        if (taskType === 'daily' && !timeModeDailies) return;
+
+        const task = TaskManager.getTaskById(taskId);
+        if (task) {
+          UIManager.openFullscreenTimer(task, taskType);
+        }
+      });
+
       // Allow adding a subtask by pressing Enter in the inline input
       container.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
@@ -8334,8 +8589,9 @@ class UIManager {
 
     if (!container) return;
 
-    const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedDailies;
-    const editModeActive = !!getGameState().systemState?.taskListFilters?.editModeDailies;
+    const state = getGameState();
+    const showCompleted = !!state.systemState?.taskListFilters?.showCompletedDailies;
+    const editModeActive = !!state.systemState?.taskListFilters?.editModeDailies;
     
     if (editModeActive) {
       container.classList.add('edit-mode-active');
@@ -8344,7 +8600,7 @@ class UIManager {
     }
 
     const today = TaskManager.getCurrentGameDateKey();
-    const isCheckedInToday = gs.systemState?.lastCheckInDateKey === today;
+    const isCheckedInToday = state.systemState?.lastCheckInDateKey === today;
     
     let visibleDailies = dailies;
     if (!editModeActive) {
@@ -9744,8 +10000,14 @@ class UIManager {
         const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
         const lockModeDailies = !!getGameState().systemState?.taskListFilters?.lockModeDailies;
         const oathModeDailies = !!getGameState().systemState?.taskListFilters?.oathModeDailies;
+        const timeModeDailies = !!getGameState().systemState?.taskListFilters?.timeModeDailies;
 
-        if (editModeDailies) {
+        if (timeModeDailies) {
+          const task = TaskManager.getTaskById(dailyId);
+          if (task) {
+            UIManager.openFullscreenTimer(task, 'daily');
+          }
+        } else if (editModeDailies) {
           try { PopupsManager.showEditDaily(dailyId); } catch (error) { console.warn('Failed to open daily edit popup', error); }
         } else if (lockModeDailies) {
           const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
@@ -9927,7 +10189,13 @@ class UIManager {
       const dailyId = card.dataset.id;
       if (!dailyId) return;
       const editModeDailies = !!getGameState().systemState?.taskListFilters?.editModeDailies;
-      if (editModeDailies) {
+      const timeModeDailies = !!getGameState().systemState?.taskListFilters?.timeModeDailies;
+      if (timeModeDailies) {
+        const task = TaskManager.getTaskById(dailyId);
+        if (task) {
+          UIManager.openFullscreenTimer(task, 'daily');
+        }
+      } else if (editModeDailies) {
         if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditDaily) {
           PopupsManager.showEditDaily(dailyId);
         }
