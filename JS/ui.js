@@ -397,7 +397,6 @@ class UIManager {
     const isEnemyCard = card.classList.contains('enemy-card');
     const animTime = Math.max(100, durationMs);
     if (!isEnemyCard) {
-      card.style.transformOrigin = 'center center';
       card.style.transition = `transform ${animTime}ms cubic-bezier(0.25, 1, 0.5, 1), filter ${animTime}ms ease, box-shadow ${animTime}ms ease`;
     }
     requestAnimationFrame(() => {
@@ -415,13 +414,8 @@ class UIManager {
       clearTimeout(vibrateTimer);
       if (!isEnemyCard) {
         card.style.transition = '';
-        card.style.transformOrigin = '';
       }
       card.classList.remove('card-charging-compress', 'card-charging-vibrate');
-      card.classList.add('card-charging-snap');
-      setTimeout(() => {
-        card.classList.remove('card-charging-snap');
-      }, 120);
       if (onComplete) onComplete();
     }, animTime);
   }
@@ -6281,14 +6275,18 @@ class UIManager {
                 countUpDelay = Math.min(1200, Math.max(650, Math.ceil(res.rewards.ap) * 25));
               }
 
-              UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
-                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                  RetroTaskCompleteAnimation.play(card);
-                }
-                setTimeout(() => {
-                  this.scheduleUpdateDailiesList();
-                }, 320);
-              });
+                UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
+                  if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                    RetroTaskCompleteAnimation.play(card);
+                  }
+                  const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
+                  card.style.transition = 'opacity 300ms ease, transform 300ms ease, filter 300ms ease';
+                  card.style.opacity = '0';
+                  card.style.transform = `scale(${sizeScale * 0.85})`;
+                  setTimeout(() => {
+                    this.scheduleUpdateDailiesList();
+                  }, 300);
+                });
             } catch (e) {
               this.scheduleUpdateDailiesList();
             }
@@ -10144,9 +10142,13 @@ class UIManager {
                   if (typeof RetroTaskCompleteAnimation !== 'undefined') {
                     RetroTaskCompleteAnimation.play(card);
                   }
+                  const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
+                  card.style.transition = 'opacity 300ms ease, transform 300ms ease, filter 300ms ease';
+                  card.style.opacity = '0';
+                  card.style.transform = `scale(${sizeScale * 0.85})`;
                   setTimeout(() => {
                     this.scheduleUpdateDailiesList();
-                  }, 320);
+                  }, 300);
                 });
               } catch (error) {
                 this.scheduleUpdateDailiesList();

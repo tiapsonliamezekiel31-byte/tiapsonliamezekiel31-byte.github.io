@@ -2994,6 +2994,7 @@ body::before {
   gap: 6px;
   border-left: 4px solid var(--accent-copper);
   border-radius: 0 !important;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.2s ease;
 }
 
 .task-card-daily {
@@ -3012,6 +3013,11 @@ body::before {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, filter 0.2s ease;
+}
+
+.task-card-daily.dragging {
+  transition: none !important;
 }
 
 .task-card-daily.shape-task {
