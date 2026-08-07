@@ -240,14 +240,50 @@ class TaskManager {
         const effDiff = (currentHeader && currentHeader.hasExplicitDifficulty) ? currentHeader.difficulty : fallbackDiff;
         const effDeadline = (currentHeader && currentHeader.hasExplicitDeadline) ? currentHeader.deadline : fallbackDeadline;
 
-        const parsed = this.parseNaturalLanguage(trimmedLine, effAttr, effDiff, effDeadline);
+        let mainTaskText = trimmedLine;
+        let inlineSubtasks = [];
+
+        // 1. Bracket format: "Task Name [sub1, sub2]" or "Task Name (sub1, sub2)"
+        const bracketMatch = mainTaskText.match(/^(.*?)[\[\(](.*?)[\]\)]$/);
+        if (bracketMatch && bracketMatch[2].trim()) {
+          mainTaskText = bracketMatch[1].trim();
+          inlineSubtasks = bracketMatch[2].split(/[,;]/).map(s => s.trim()).filter(Boolean);
+        }
+        // 2. Semicolon format: "Task Name ; sub1 ; sub2"
+        else if (mainTaskText.includes(';')) {
+          const parts = mainTaskText.split(';').map(s => s.trim()).filter(Boolean);
+          mainTaskText = parts[0];
+          inlineSubtasks = parts.slice(1);
+        }
+        // 3. Arrow format: "Task Name > sub1 > sub2"
+        else if (mainTaskText.includes(' > ')) {
+          const parts = mainTaskText.split(' > ').map(s => s.trim()).filter(Boolean);
+          mainTaskText = parts[0];
+          inlineSubtasks = parts.slice(1);
+        }
+        // 4. Dash format: "Task Name - sub1 - sub2"
+        else if (/\s+-\s+/.test(mainTaskText)) {
+          const parts = mainTaskText.split(/\s+-\s+/).map(s => s.trim()).filter(Boolean);
+          mainTaskText = parts[0];
+          inlineSubtasks = parts.slice(1);
+        }
+        // 5. Colon format: "Task Name: sub1, sub2" (excluding timestamps like 10:30)
+        else if (/^([^:]+):\s*(.+)$/.test(mainTaskText) && !/\b\d{1,2}:\d{2}\b/.test(mainTaskText)) {
+          const colonMatch = mainTaskText.match(/^([^:]+):\s*(.+)$/);
+          if (colonMatch && (colonMatch[2].includes(',') || colonMatch[2].includes(';'))) {
+            mainTaskText = colonMatch[1].trim();
+            inlineSubtasks = colonMatch[2].split(/[,;]/).map(s => s.trim()).filter(Boolean);
+          }
+        }
+
+        const parsed = this.parseNaturalLanguage(mainTaskText, effAttr, effDiff, effDeadline);
         tasks.push({
           name: parsed.name,
           difficulty: parsed.difficulty,
           attribute: parsed.attribute,
           clusterAttributes: parsed.clusterAttributes,
           deadline: parsed.deadline,
-          subtasks: []
+          subtasks: inlineSubtasks
         });
       }
     }

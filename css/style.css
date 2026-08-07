@@ -1829,7 +1829,8 @@ body::before {
 
 #dailiesPanel {
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: #04060c;
 }
 
@@ -2546,8 +2547,9 @@ body::before {
 .daily-board {
   position: relative;
   flex: 1 1 auto;
-  min-height: 0;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 10px;
 }
 

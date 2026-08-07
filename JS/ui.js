@@ -1393,7 +1393,7 @@ class UIManager {
         </select>
       </div>
       <div class="qa-hud-input-row">
-        <input type="text" id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task..." autocomplete="off" />
+        <input type="text" id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task... (e.g. Task ; subtask 1 ; subtask 2 or Task - sub1 - sub2)" autocomplete="off" />
         <button type="button" id="quickAddHudSubmitBtn" class="qa-hud-submit-btn" title="Add Task">＋</button>
       </div>
     `;
@@ -6123,12 +6123,35 @@ class UIManager {
 
         const interactiveInsideCard = event.target.closest('.todo-subtask-rect, .todo-subtasks-container, .subtask-checkbox, .subtask-remove, .subtask-add-btn, .subtask-input, .subtask-label, .subtask-name, .edit-subtask-checkbox, .edit-subtask-remove, .edit-subtask-form, .edit-subtasks-panel, .edit-subtask-label, .btn-lock-daily');
         const editModeDailies = !!state.systemState?.taskListFilters?.editModeDailies;
+        const lockModeDailies = !!state.systemState?.taskListFilters?.lockModeDailies;
+        const oathModeDailies = !!state.systemState?.taskListFilters?.oathModeDailies;
         const timeModeDailies = !!state.systemState?.taskListFilters?.timeModeDailies;
         const todoJoystickMode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
 
-        if (taskType === 'daily' && editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
-          PopupsManager.showEditDaily(taskId);
-          return;
+        if (taskType === 'daily' && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
+          if (editModeDailies) {
+            PopupsManager.showEditDaily(taskId);
+            return;
+          }
+          if (lockModeDailies) {
+            const daily = getGameState().dailiesState.dailies.find(d => d.id === taskId);
+            if (daily) {
+              if (daily.locked) {
+                TaskManager.unlockDaily(taskId);
+              } else {
+                TaskManager.lockDaily(taskId);
+              }
+              this.scheduleUpdateDailiesList();
+              getGameState().save();
+            }
+            return;
+          }
+          if (oathModeDailies) {
+            TaskManager.toggleBloodOath(taskId);
+            this.scheduleUpdateDailiesList();
+            getGameState().save();
+            return;
+          }
         }
 
         if (taskType === 'todo' && !interactiveInsideCard) {
@@ -6162,7 +6185,7 @@ class UIManager {
           }
         }
 
-        if (taskType === 'daily' && !editModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
+        if (taskType === 'daily' && !editModeDailies && !lockModeDailies && !oathModeDailies && card.classList.contains('task-card-daily') && !interactiveInsideCard) {
           const subtasksContainer = card.querySelector('.daily-subtasks-container') || card.parentNode.querySelector(`.daily-subtasks-container[data-daily-id="${taskId}"]`);
           if (subtasksContainer) {
             const isHidden = subtasksContainer.style.display === 'none';
@@ -6170,8 +6193,8 @@ class UIManager {
           }
         }
 
-        // To-Do card single clicks should not trigger complete. Only Dailies (when not in TIME mode) or explicit complete buttons.
-        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') && !interactiveInsideCard && !timeModeDailies)) {
+        // To-Do card single clicks should not trigger complete. Only Dailies (when not in TIME, LOCK, OATH, or EDIT mode) or explicit complete buttons.
+        if (event.target.closest('.btn-complete') || (card.classList.contains('task-card-daily') && !interactiveInsideCard && !timeModeDailies && !lockModeDailies && !oathModeDailies && !editModeDailies)) {
           if (card.classList.contains('completed')) return;
           if (taskType === 'daily') {
             const res = TaskManager.completeDaily(taskId);
@@ -9026,7 +9049,7 @@ class UIManager {
     const col = index % cols;
     const row = Math.floor(index / cols);
     const xPx = Math.min(Math.max(0, metrics.width - tileSize.width - padding), padding + (col * (tileSize.width + gap)));
-    const yPx = Math.min(Math.max(0, metrics.height - tileSize.height - padding), padding + (row * (tileSize.height + gap)));
+    const yPx = padding + (row * (tileSize.height + gap));
     return {
       x: (xPx / metrics.width) * 100,
       y: (yPx / metrics.height) * 100
@@ -9039,6 +9062,7 @@ class UIManager {
 
     const dailies = TaskManager.getAllDailies();
     const tileSize = this.getDailyCardSize();
+    let maxBottomPx = 0;
 
     dailies.forEach((daily, index) => {
       const card = metrics.board.querySelector(`.task-card-daily[data-id="${daily.id}"]`);
@@ -9048,6 +9072,10 @@ class UIManager {
       const layout = daily.layout
         ? this.clampDailyLayout(daily.layout, metrics, tileSize)
         : this.getDefaultDailyLayout(index, metrics, tileSize);
+
+      const topPx = (layout.y / 100) * metrics.height;
+      const bottomPx = topPx + tileSize.height;
+      if (bottomPx > maxBottomPx) maxBottomPx = bottomPx;
 
       card.style.width = `${tileSize.width}px`;
       const _gs = getGameState();
@@ -9076,6 +9104,10 @@ class UIManager {
         lockBadge.style.top = `${cardRect.top - boardRect.top - offset - 2}px`;
       }
     });
+
+    if (maxBottomPx > 0) {
+      metrics.board.style.minHeight = `${Math.max(metrics.height, maxBottomPx + 40)}px`;
+    }
 
     this.drawDailyConnections();
   }
@@ -9967,7 +9999,9 @@ class UIManager {
       const dailyId = card.dataset.id;
       if (!dailyId) return;
 
-      event.preventDefault();
+      if (event.pointerType !== 'touch') {
+        event.preventDefault();
+      }
 
       try { card.setPointerCapture(event.pointerId); } catch (error) { }
 
