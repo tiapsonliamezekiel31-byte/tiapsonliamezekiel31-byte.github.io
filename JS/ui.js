@@ -8603,9 +8603,9 @@ class UIManager {
     const isCheckedInToday = state.systemState?.lastCheckInDateKey === today;
     
     let visibleDailies = dailies;
-    if (!editModeActive) {
-      visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
-    }
+    // if (!editModeActive) {
+    //   visibleDailies = visibleDailies.filter(daily => TaskManager.isDailyScheduled(daily, today));
+    // }
     if (!showCompleted) {
       visibleDailies = visibleDailies.filter(daily => !daily.completed);
     }
