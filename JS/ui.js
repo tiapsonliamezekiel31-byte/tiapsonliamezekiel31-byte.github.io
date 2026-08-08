@@ -2192,7 +2192,7 @@ class UIManager {
     ring.innerHTML = `
       <button id="attackBtn" class="btn-action-circle"><span id="attackIcon">⚔️</span><div class="cost-text" id="attackCostText"></div></button>
       <button id="skillBtn" class="btn-action-circle">✨</button>
-      <button id="dodgeBtn" class="btn-action-circle dodge-button parry-button"><span id="parryCountText" class="parry-count-display">3</span></button>
+      <button id="dodgeBtn" class="btn-action-circle dodge-button parry-button" style="font-family: 'Orbitron', monospace, sans-serif; font-weight: 700;"><span id="parryCountText" class="parry-count-display" style="font-family: 'Orbitron', monospace, sans-serif; font-weight: 700;">3</span></button>
     `;
   }
 
@@ -7777,6 +7777,8 @@ class UIManager {
     if (dodgeBtn) {
       const parryCount = state.playerState?.parryCount || 0;
       dodgeBtn.textContent = String(parryCount);
+      dodgeBtn.style.fontFamily = "'Orbitron', monospace, sans-serif";
+      dodgeBtn.style.fontWeight = '700';
       dodgeBtn.title = `Parries Remaining: ${parryCount}`;
     }
   }
@@ -14209,7 +14211,7 @@ class StatsHUD {
           ${axesHtml}
           ${nemesisPolygon}
           ${playerPolygon}
-          <text x="${C_X}" y="${C_Y}" font-size="8" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.95" style="text-shadow: 0 0 5px rgba(0,0,0,0.9);">${avgStreakVal}</text>
+          <text x="${C_X}" y="${C_Y}" font-size="5.5" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.9" style="text-shadow: 0 0 4px rgba(0,0,0,0.9);">${avgStreakVal}</text>
           ${labelsHtml}
           <g transform="translate(5, 90)" font-size="4.2" font-weight="bold">
             <circle cx="2" cy="-1.5" r="1" fill="#8b5cf6"/>
