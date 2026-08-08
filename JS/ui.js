@@ -1168,9 +1168,14 @@ class UIManager {
       ? Math.round((entries.reduce((sum, e) => sum + (e.pct || 0), 0) / entries.length) * 100)
       : 0;
 
+    const avgStreak = (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function')
+      ? TaskManager.getWeightedAverageStreak()
+      : 0;
+    const avgStreakText = avgStreak.toFixed(1);
+
     hud.className = `draggable-score-hud rank-tier-${rankInfo.rank}`;
     hud.style.display = 'flex';
-    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name} | Run Completion: ${runCompletionPct}% | Today: ${todayCompletionPct}%`;
+    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name} | Average Streak: ${avgStreakText} | Run Completion: ${runCompletionPct}% | Today: ${todayCompletionPct}%`;
 
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Score HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('scoreHud')">－</button>
@@ -1201,6 +1206,9 @@ class UIManager {
 
         <!-- Rank 1+: Main Solid Triangle -->
         <polygon points="50,2 98,84.6 2,84.6" fill="rgba(12, 8, 20, 0.94)" stroke="${rankInfo.color}" stroke-width="${rankInfo.rank >= 4 ? 4.5 : 3.5}" stroke-linejoin="round" class="${rankInfo.rank >= 2 ? 'score-poly-pulse' : 'score-poly-base'}" />
+
+        <!-- Average Streak text inside Score Triangle -->
+        <text x="50" y="66" font-size="10" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.95" style="text-shadow: 0 0 4px #000;">🔥 ${avgStreakText}</text>
 
         <!-- Rank 3+: Counter-rotating inner accent triangle & inverted inner tri -->
         ${rankInfo.rank >= 3 ? `
