@@ -198,6 +198,7 @@ class GameState {
       borrowedSkills: [],
       sacredTreeHpBonus: 0,
       sacredTreeManaBonus: 0,
+      parryCount: 3,
       dodgeCostMultiplier: 1.0,
       corrosiveStacks: 0,
       petPoints: 0,
@@ -1323,12 +1324,14 @@ class GameState {
           damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
         }
 
-        // Swift mutator can bypass player dodge (matches actual resolveOneAttack logic)
-        const swiftBypassDodge = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassDodge ?? false);
-        if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
-          const idx = dodgeTargets.indexOf(enemy.id);
+        // Parry check with average streak formula
+        if (dodgeTargets.map(id => String(id)).includes(String(enemy.id))) {
+          const idx = dodgeTargets.findIndex(id => String(id) === String(enemy.id));
           if (idx > -1) dodgeTargets.splice(idx, 1);
-          return;
+          const parryResult = evaluateParrySuccess(enemy);
+          if (parryResult.success) {
+            return;
+          }
         }
 
         if (passive && typeof passive.damageTaken === 'number') {
@@ -1501,6 +1504,37 @@ function createBombEnemy(playerMaxAp) {
   };
 }
 
+function evaluateParrySuccess(enemy) {
+  const state = getGameState();
+  const avgStreak = (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function')
+    ? Math.round(TaskManager.getWeightedAverageStreak())
+    : 0;
+
+  let numerator = avgStreak;
+
+  const currentWeapon = PlayerManager.getCurrentWeapon();
+  if (currentWeapon && currentWeapon.name === 'Thunder Hammer') {
+    numerator += 2;
+  }
+
+  const megaInstinctStacks = (state.playerState?.megaInstinctStacks || 0) + (state.hasBuff && state.hasBuff('Mega Instinct') ? 1 : 0);
+  if (megaInstinctStacks > 0) {
+    numerator += megaInstinctStacks;
+  }
+
+  const isSwift = Array.isArray(enemy?.mutators) && enemy.mutators.includes('swift');
+  if (isSwift) {
+    numerator -= 3;
+  }
+
+  if (numerator >= 10) return { success: true, rate: 1.0 };
+  if (numerator <= 0) return { success: false, rate: 0.0 };
+
+  const rate = numerator / 10;
+  const roll = Math.random();
+  return { success: roll < rate, rate };
+}
+
 function generateDailyChallenge() {
   const state = getGameState();
   if (!state.systemState) return;
@@ -1517,37 +1551,61 @@ function generateDailyChallenge() {
     return true;
   });
 
-  if (scheduledDailies.length === 0) {
+  const dailiesToUse = scheduledDailies.length > 0 ? scheduledDailies : allDailies;
+
+  if (dailiesToUse.length === 0) {
     state.systemState.dailyChallenge = { active: false };
     return;
   }
 
-  // Sort scheduled dailies by completionRate ascending
-  const sortedDailies = [...scheduledDailies].sort((a, b) => {
-    const rateA = a.completionRate !== undefined ? a.completionRate : 0;
-    const rateB = b.completionRate !== undefined ? b.completionRate : 0;
+  // Sort scheduled dailies by completionRate ascending (3 lowest completion rate)
+  const sortedDailies = [...dailiesToUse].sort((a, b) => {
+    const rateA = typeof a.completionRate === 'number' ? a.completionRate : (typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyCompletionRate === 'function' ? TaskManager.computeDailyCompletionRate(a.id) : 0);
+    const rateB = typeof b.completionRate === 'number' ? b.completionRate : (typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyCompletionRate === 'function' ? TaskManager.computeDailyCompletionRate(b.id) : 0);
     return rateA - rateB;
   });
 
-  const numToPick = Math.min(1 + Math.floor(Math.random() * 3), sortedDailies.length);
+  const numToPick = Math.min(3, sortedDailies.length);
   const pickedDailies = sortedDailies.slice(0, numToPick);
-
-  // Penalties:
-  // 10-40% max gold
-  // 30-50% max diamonds
-  // 1-70% max ap
-  const goldPenaltyPct = 10 + Math.floor(Math.random() * 31);
-  const diamondPenaltyPct = 30 + Math.floor(Math.random() * 21);
-  const apPenaltyPct = 1 + Math.floor(Math.random() * 70);
 
   state.systemState.dailyChallenge = {
     active: true,
     dailies: pickedDailies.map(d => d.id),
-    goldPenaltyPct,
-    diamondPenaltyPct,
-    apPenaltyPct,
-    failed: null
+    rewardParries: 3,
+    awarded: false,
+    completed: false
   };
+}
+
+function checkParryChallengeCompletion() {
+  const state = getGameState();
+  if (!state || !state.systemState) return;
+  if (!state.systemState.dailyChallenge || !state.systemState.dailyChallenge.active) {
+    generateDailyChallenge();
+  }
+  const chal = state.systemState.dailyChallenge;
+  if (!chal || !chal.active || !Array.isArray(chal.dailies) || chal.dailies.length === 0) return;
+
+  let allCompleted = true;
+  chal.dailies.forEach(id => {
+    const daily = (state.dailiesState?.dailies || []).find(d => String(d.id) === String(id));
+    if (!daily || !daily.completed) {
+      allCompleted = false;
+    }
+  });
+
+  if (allCompleted && !chal.awarded) {
+    chal.awarded = true;
+    chal.completed = true;
+    state.playerState.parryCount = (state.playerState.parryCount || 0) + 3;
+    if (typeof FloatingDamageNumber !== 'undefined') {
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+3 PARRIES! 🛡️', { color: '#00e5ff', scale: 1.2, duration: 2500 });
+    }
+    if (typeof UIManager !== 'undefined') {
+      if (typeof UIManager.updateActionButtons === 'function') UIManager.updateActionButtons();
+      if (typeof UIManager.updateChallengeHud === 'function') UIManager.updateChallengeHud();
+    }
+  }
 }
 
 function performCheckIn() {
@@ -1618,14 +1676,14 @@ function performCheckIn() {
   const completedDailies = TaskManager.getCompletedDailies(checkInDateKey);
   const rawMissedDailies = TaskManager.getMissedDailies(checkInDateKey);
 
-  // Resolve Nemesis Challenge
+  // Resolve Parry Challenge (3 lowest completion rate dailies)
   let challengePenaltyMessage = '';
   if (state.systemState && state.systemState.dailyChallenge && state.systemState.dailyChallenge.active) {
     const chal = state.systemState.dailyChallenge;
     let challengeDailiesCompleted = true;
     if (Array.isArray(chal.dailies) && chal.dailies.length > 0) {
       chal.dailies.forEach(id => {
-        const daily = (state.dailiesState.dailies || []).find(d => d.id === id);
+        const daily = (state.dailiesState.dailies || []).find(d => String(d.id) === String(id));
         if (!daily || !daily.completed) {
           challengeDailiesCompleted = false;
         }
@@ -1634,26 +1692,13 @@ function performCheckIn() {
       challengeDailiesCompleted = false;
     }
 
-    if (!challengeDailiesCompleted) {
-      const maxGold = typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function' 
-        ? ShopManager.calculateMaxGold() 
-        : 100;
-      const maxDiamonds = typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function'
-        ? TaskManager.getMaxPotentialDiamonds()
-        : 10;
-      const maxAp = state.playerState.maxAp || 100;
-
-      const goldDeduction = Math.round(maxGold * (chal.goldPenaltyPct / 100));
-      const diamondDeduction = Math.round(maxDiamonds * (chal.diamondPenaltyPct / 100));
-      const apDeduction = Math.round(maxAp * (chal.apPenaltyPct / 100));
-
-      state.setGold(Math.max(0, state.playerState.gold - goldDeduction));
-      state.setDiamonds(Math.max(0, state.playerState.diamonds - diamondDeduction));
-      state.setAp(Math.max(0, state.playerState.ap - apDeduction));
-
-      challengePenaltyMessage = `Nemesis challenge failed! Stole:\n💰 ${goldDeduction} Gold (${chal.goldPenaltyPct}%)\n💎 ${diamondDeduction} Diamonds (${chal.diamondPenaltyPct}%)\n⚡ ${apDeduction} AP (${chal.apPenaltyPct}%)`;
-    } else {
-      challengePenaltyMessage = `Nemesis challenge complete! Your resources are safe. ✨`;
+    if (challengeDailiesCompleted && !chal.awarded) {
+      chal.awarded = true;
+      chal.completed = true;
+      state.playerState.parryCount = (state.playerState.parryCount || 0) + 3;
+      challengePenaltyMessage = `Completed 3 lowest completion rate dailies! Awarded +3 Parries! 🛡️`;
+    } else if (!challengeDailiesCompleted) {
+      challengePenaltyMessage = `Parry challenge incomplete. Complete 3 lowest completion rate dailies for +3 Parries.`;
     }
     state.systemState.lastChallengeMessage = challengePenaltyMessage;
   }
@@ -2247,22 +2292,51 @@ function performCheckIn() {
           isFrozen = true;
         }
 
-        // Check for dodge target
+        // Check for dodge/parry target
         const dodgeTarget = state.combatState?.dodgeTarget;
         const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
-        // Swift mutator can bypass player dodge
-        const swiftBypassDodge = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift') && (state.config.mutators?.swift?.bypassDodge ?? false);
-        if (dodgeTargets.includes(enemy.id) && !swiftBypassDodge) {
-          state.combatState.dodgeTarget = dodgeTargets.filter(id => id !== enemy.id);
+        if (dodgeTargets.map(id => String(id)).includes(String(enemy.id))) {
+          state.combatState.dodgeTarget = dodgeTargets.filter(id => String(id) !== String(enemy.id));
           consumeReactiveWeaponEffect();
-          retaliationSteps.push({
-            enemyId: enemy.id,
-            name: enemy.name,
-            isBoss,
-            damage: 0,
-            isDodge: true
-          });
-          return;
+
+          const parryResult = evaluateParrySuccess(enemy);
+          if (parryResult.success) {
+            retaliationSteps.push({
+              enemyId: enemy.id,
+              name: enemy.name,
+              isBoss,
+              damage: 0,
+              isDodge: true,
+              isParry: true
+            });
+            try {
+              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+              if (card) {
+                const rect = card.getBoundingClientRect();
+                if (typeof FloatingDamageNumber !== 'undefined') {
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRIED', { color: '#00e5ff', scale: 0.9, duration: 1200 });
+                }
+              }
+            } catch (e) {}
+            return;
+          } else {
+            retaliationSteps.push({
+              enemyId: enemy.id,
+              name: enemy.name,
+              isBoss,
+              damage: 0,
+              isParryFail: true
+            });
+            try {
+              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+              if (card) {
+                const rect = card.getBoundingClientRect();
+                if (typeof FloatingDamageNumber !== 'undefined') {
+                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRY FAILED', { color: '#ff4444', scale: 0.9, duration: 1200 });
+                }
+              }
+            } catch (e) {}
+          }
         }
 
         // Apply class-based multiplicative damageTaken modifiers

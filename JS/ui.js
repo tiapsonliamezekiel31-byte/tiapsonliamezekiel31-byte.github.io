@@ -1235,7 +1235,13 @@ class UIManager {
   static updateChallengeHud() {
     const state = getGameState();
     let hud = document.getElementById('nemesisChallengeHud');
-    
+
+    if (!state.systemState?.dailyChallenge || !state.systemState.dailyChallenge.active) {
+      if (typeof generateDailyChallenge === 'function') {
+        generateDailyChallenge();
+      }
+    }
+
     const challenge = state.systemState?.dailyChallenge;
     if (!challenge || !challenge.active) {
       if (hud) hud.style.display = 'none';
@@ -1246,93 +1252,50 @@ class UIManager {
       hud = this.createChallengeHud();
     }
 
-    // Hide if popups or overlays are active
-    if (document.querySelector('.popup') || document.querySelector('.popup-overlay')) {
-      hud.style.display = 'none';
-      return;
-    }
-
     hud.style.display = '';
-
-    const maxGold = (typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function') 
-      ? ShopManager.calculateMaxGold() 
-      : 100;
-    const maxDiamonds = (typeof TaskManager !== 'undefined' && typeof TaskManager.getMaxPotentialDiamonds === 'function')
-      ? TaskManager.getMaxPotentialDiamonds()
-      : 10;
-    const maxAp = state.playerState?.maxAp || 100;
-
-    const goldDeduction = Math.round(maxGold * (challenge.goldPenaltyPct / 100));
-    const diamondDeduction = Math.round(maxDiamonds * (challenge.diamondPenaltyPct / 100));
-    const apDeduction = Math.round(maxAp * (challenge.apPenaltyPct / 100));
 
     let dailiesHtml = '';
     let allCompleted = true;
 
-    if (challenge.dailies && challenge.dailies.length > 0) {
+    if (Array.isArray(challenge.dailies) && challenge.dailies.length > 0) {
       const attrColors = state.config?.attributeColors || {
         STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
       };
       challenge.dailies.forEach(dailyId => {
-        const daily = state.dailiesState?.dailies?.find(d => d.id === dailyId);
+        const daily = state.dailiesState?.dailies?.find(d => String(d.id) === String(dailyId));
         if (daily) {
           const isCompleted = !!daily.completed;
           if (!isCompleted) allCompleted = false;
           const attrKey = (daily.attribute || 'STR').toUpperCase();
           const dailyColor = attrColors[attrKey] || '#e8b84a';
           dailiesHtml += `
-            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}" data-color="true" style="--daily-color: ${dailyColor}; border-left: 3px solid ${dailyColor};">
-              <span class="challenge-status-icon">${isCompleted ? '✅' : '❌'}</span>
-              <span class="challenge-daily-name" title="${daily.name}">${daily.name}</span>
+            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}" style="display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-left: 3px solid ${dailyColor}; border-radius: 4px; background: rgba(0,0,0,0.2); margin-bottom: 2px;">
+              <span class="challenge-status-icon" style="font-size: 11px;">${isCompleted ? '✅' : '❌'}</span>
+              <span class="challenge-daily-name" title="${daily.name}" style="font-size: 11px; font-weight: 500; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; ${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${daily.name}</span>
             </div>
           `;
         } else {
           dailiesHtml += `
-            <div class="challenge-daily-item completed">
-              <span class="challenge-status-icon">✅</span>
-              <span class="challenge-daily-name" style="text-decoration: line-through; opacity: 0.5;">[Deleted]</span>
+            <div class="challenge-daily-item completed" style="display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 4px; background: rgba(0,0,0,0.2); margin-bottom: 2px; opacity: 0.5;">
+              <span class="challenge-status-icon" style="font-size: 11px;">✅</span>
+              <span class="challenge-daily-name" style="font-size: 11px; text-decoration: line-through;">[Deleted]</span>
             </div>
           `;
         }
       });
     } else {
-      dailiesHtml = '<div style="opacity: 0.6; font-size: 8px; text-align: center; padding: 4px;">No tasks</div>';
+      dailiesHtml = '<div style="opacity: 0.6; font-size: 10px; text-align: center; padding: 4px;">No tasks</div>';
     }
 
-    if (allCompleted && !challenge.completed) {
-      challenge.completed = true;
-      state.save();
-      setTimeout(() => {
-        if (typeof PopupsManager !== 'undefined' && PopupsManager.showAlert) {
-          PopupsManager.showAlert('NEMESIS CHALLENGE RESULT', 'Nemesis challenge complete! Your resources are safe. ✨');
-        }
-      }, 500);
-    }
-
-    const titleColor = allCompleted ? '#22c55e' : '#f87171';
-    const statusText = allCompleted ? 'SAFE ✨' : 'NEMESIS 👾';
+    const headerColor = allCompleted ? '#22c55e' : '#00e5ff';
+    const headerTitle = allCompleted ? '3 DAILIES (CLAIMED +3 🛡️)' : '3 DAILIES FOR +3 🛡️';
 
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')">－</button>
-      <div class="challenge-hud-content">
-        <div class="challenge-stolen-row">
-          <div class="challenge-stolen-card">
-            <div class="stolen-amount">-${goldDeduction}</div>
-            <div class="stolen-icon">💰</div>
-            <div class="stolen-pct">${challenge.goldPenaltyPct}%</div>
-          </div>
-          <div class="challenge-stolen-card">
-            <div class="stolen-amount">-${diamondDeduction}</div>
-            <div class="stolen-icon">💎</div>
-            <div class="stolen-pct">${challenge.diamondPenaltyPct}%</div>
-          </div>
-          <div class="challenge-stolen-card">
-            <div class="stolen-amount">-${apDeduction}</div>
-            <div class="stolen-icon">⚡</div>
-            <div class="stolen-pct">${challenge.apPenaltyPct}%</div>
-          </div>
+      <div class="challenge-hud-content" style="padding: 6px 8px; min-width: 140px;">
+        <div style="font-size: 10px; font-weight: bold; color: ${headerColor}; margin-bottom: 4px; text-align: center; letter-spacing: 0.5px;">
+          ${headerTitle}
         </div>
-        
         <div class="challenge-dailies-list">${dailiesHtml}</div>
       </div>
     `;
@@ -2235,7 +2198,7 @@ class UIManager {
     ring.innerHTML = `
       <button id="attackBtn" class="btn-action-circle"><span id="attackIcon">⚔️</span><div class="cost-text" id="attackCostText"></div></button>
       <button id="skillBtn" class="btn-action-circle">✨</button>
-      <button id="dodgeBtn" class="btn-action-circle dodge-button">🛡️<div class="cost-text" id="dodgeCostText"></div></button>
+      <button id="dodgeBtn" class="btn-action-circle dodge-button parry-button"><span id="parryCountText" class="parry-count-display">3</span></button>
     `;
   }
 
@@ -4816,7 +4779,7 @@ class UIManager {
           // Add temporary visual and floating text
           card.classList.add('dodged');
           const rect = card.getBoundingClientRect();
-          FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'Dodged!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 1200 });
+          FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRIED!', { color: UIManager.themeColor('--success-green', '#44ff44'), duration: 1200 });
           setTimeout(() => { try { card.classList.remove('dodged'); } catch (e) { } }, 1200);
         }
       } catch (e) { }
@@ -6839,8 +6802,8 @@ class UIManager {
         this.playBossAttackAnimation(bossName, bossData.phase === 2, step.attackType);
       }
 
-      if (step.isDodge) {
-        FloatingDamageNumber.show(x, y - 10, 'DODGED!', { color: '#00e5ff', duration: 1200, scale: 1.2 });
+      if (step.isDodge || step.isParry) {
+        FloatingDamageNumber.show(x, y - 10, 'PARRIED!', { color: '#00e5ff', duration: 1200, scale: 1.2 });
         if (card && typeof RetroDodgeAnimation !== 'undefined') {
           RetroDodgeAnimation.play(card, '#00e5ff');
         }
@@ -7814,13 +7777,25 @@ class UIManager {
     }
   }
 
+  static updateActionButtons() {
+    const state = getGameState();
+    const dodgeBtn = document.getElementById('dodgeBtn');
+    if (dodgeBtn) {
+      const parryCount = state.playerState?.parryCount || 0;
+      dodgeBtn.textContent = String(parryCount);
+      dodgeBtn.title = `Parries Remaining: ${parryCount}`;
+    }
+  }
+
   static handleDodgeClick() {
-    // This is now a placeholder; dodge is handled via hold/release
-    const result = CombatManager.attemptDodge();
+    const state = getGameState();
+    const result = CombatManager.attemptParry();
     if (result.success) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight - 100, `-${Math.ceil(result.dodgeCost)} AP`, { color: '#ffd700', scale: 0.7, rotationRange: 40 });
-      console.log('Dodge active');
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight - 100, 'Parry Active! 🛡️', { color: '#00e5ff', scale: 0.8 });
+      this.updateActionButtons();
       this.renderEnemies();
+    } else {
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight - 100, result.reason || 'Cannot Parry', { color: '#ff4444', scale: 0.8 });
     }
   }
 
@@ -7972,9 +7947,14 @@ class UIManager {
           return;
         }
       } else if (type === 'dodge') {
-        const dodgeCost = CombatManager.getDodgeCost();
-        if (state.playerState.ap < dodgeCost) {
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough power', { color: '#ffcc66' });
+        const parryCount = state.playerState?.parryCount || 0;
+        const skillFx = state.combatState?.skillEffects || {};
+        if (skillFx.cannotDodge) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Wrath forbids parrying', { color: '#ff6666' });
+          return;
+        }
+        if (parryCount <= 0) {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Parries left', { color: '#ffcc66' });
           try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
           if (targetElement) {
             targetElement.classList.add('shake');
@@ -8107,94 +8087,44 @@ class UIManager {
             } else if (dragType === 'skill' && isTargetingSkill) {
               UIManager.handleSkillClick(enemy.id);
             } else if (dragType === 'dodge') {
-              const isSwift = Array.isArray(enemy.mutators) && enemy.mutators.includes('swift');
-              if (isSwift) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444', scale: 0.75 });
+              const parryCount = state.playerState?.parryCount || 0;
+              const skillFx = state.combatState?.skillEffects || {};
+              if (skillFx.cannotDodge) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Wrath forbids parrying!', { color: '#ff4444' });
+                try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+              } else if (parryCount <= 0) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Parries left!', { color: '#ff4444' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
               } else {
-                const dodgeCost = CombatManager.getDodgeCost(enemy);
-                if (state.playerState.ap < dodgeCost) {
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough AP', { color: '#ff4444' });
+                const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                  ? state.combatState.dodgeTarget
+                  : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+                if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already parrying target', { color: '#ffcc66', scale: 0.75 });
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                } else if (enemy.isBoss) {
-                  const today = TaskManager.getCurrentGameDateKey();
-                  const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
-                  const missedDailies = allScheduled.filter(d => !d.completed);
-                  const bossData = state.stageState.bossData || {};
-                  const isPhase2 = (bossData.phase === 2) || (enemy.maxHp > 0 && enemy.hp / enemy.maxHp <= 0.4);
-                  let maxW = 0, missedW = 0;
-                  allScheduled.forEach(d => { maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
-                  missedDailies.forEach(d => { missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
-                  const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
-                  const rolledAttacks = GameState.getBossRolledAttacks(N, enemy.name);
-
-                  const firstNonNullIndex = rolledAttacks.findIndex(a => a !== 'null');
-                  if (firstNonNullIndex === -1) {
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66', scale: 0.75 });
-                    try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                  } else {
-                    state.spendAp(dodgeCost);
-                    CombatManager.recordDodge();
-                    rolledAttacks[firstNonNullIndex] = 'null';
-                    if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
-                      state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
-                    }
-                    const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                      ? state.combatState.dodgeTarget
-                      : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-                    state.combatState.dodgeTarget = [...currentDodges, enemy.id];
-
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack Erased! 🛡️', { color: '#44ff44' });
-
-                    try {
-                      const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-                      if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                        const rect = circleRect || UIManager.getCircleRect();
-                        const sx = rect.left + buttonCenterX;
-                        const sy = rect.top + buttonCenterY;
-                        DodgeTetherAnimation.play(sx, sy, card);
-                      }
-                    } catch (e) {
-                      console.warn('Failed to play DodgeTetherAnimation', e);
-                    }
-
-                    UIManager.renderEnemies();
-                    UIManager.updateActionCosts();
-                    UIManager.updatePendingDamageDisplay();
-                  }
                 } else {
-                  const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                    ? state.combatState.dodgeTarget
-                    : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+                  state.playerState.parryCount = parryCount - 1;
+                  CombatManager.recordDodge();
 
-                  if (currentDodges.map(id => String(id)).includes(String(enemy.id))) {
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66', scale: 0.75 });
-                    try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                  } else {
-                    state.spendAp(dodgeCost);
-                    CombatManager.recordDodge();
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700', scale: 0.8 });
+                  state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
+                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Parry Ready! 🛡️', { color: '#44ff44', scale: 0.75 });
 
-                    state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
-                    FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44', scale: 0.75 });
-
-                    try {
-                      const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-                      if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                        const rect = circleRect || UIManager.getCircleRect();
-                        const sx = rect.left + buttonCenterX;
-                        const sy = rect.top + buttonCenterY;
-                        DodgeTetherAnimation.play(sx, sy, card);
-                      }
-                    } catch (e) {
-                      console.warn('Failed to play DodgeTetherAnimation', e);
+                  try {
+                    const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                      const rect = circleRect || UIManager.getCircleRect();
+                      const sx = rect.left + buttonCenterX;
+                      const sy = rect.top + buttonCenterY;
+                      DodgeTetherAnimation.play(sx, sy, card);
                     }
-
-                    UIManager.renderEnemies();
-                    UIManager.updateActionCosts();
-                    UIManager.updatePendingDamageDisplay();
+                  } catch (e) {
+                    console.warn('Failed to play DodgeTetherAnimation', e);
                   }
+
+                  UIManager.updateActionButtons();
+                  UIManager.renderEnemies();
+                  UIManager.updatePendingDamageDisplay();
                 }
               }
             }
@@ -8222,102 +8152,32 @@ class UIManager {
             }
           } else if (dragType === 'dodge') {
             let target = aliveEnemies[0];
-            let highestDmg = target.dmgMult;
-            aliveEnemies.forEach(e => {
-              if (e.dmgMult > highestDmg) {
-                highestDmg = e.dmgMult;
-                target = e;
-              }
-            });
-
-            const isSwift = Array.isArray(target.mutators) && target.mutators.includes('swift');
-            if (isSwift) {
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge failed!', { color: '#ff4444' });
+            const parryCount = state.playerState?.parryCount || 0;
+            const skillFx = state.combatState?.skillEffects || {};
+            if (skillFx.cannotDodge) {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Wrath forbids parrying!', { color: '#ff4444' });
+              try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+            } else if (parryCount <= 0) {
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Parries left!', { color: '#ff4444' });
               try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
             } else {
-              const dodgeCost = CombatManager.getDodgeCost(target);
-              if (state.playerState.ap < dodgeCost) {
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough AP', { color: '#ff4444' });
+              const currentDodges = Array.isArray(state.combatState.dodgeTarget)
+                ? state.combatState.dodgeTarget
+                : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+
+              if (currentDodges.map(id => String(id)).includes(String(target.id))) {
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already parrying', { color: '#ffcc66' });
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-              } else if (target.isBoss) {
-                const today = TaskManager.getCurrentGameDateKey();
-                const allScheduled = state.dailiesState.dailies.filter(d => TaskManager.isDailyScheduled(d, today));
-                const missedDailies = allScheduled.filter(d => !d.completed);
-                const bossData = state.stageState.bossData || {};
-                const isPhase2 = (bossData.phase === 2) || (target.maxHp > 0 && target.hp / target.maxHp <= 0.4);
-                let maxW = 0, missedW = 0;
-                allScheduled.forEach(d => { maxW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
-                missedDailies.forEach(d => { missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0); });
-                const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
-                const rolledAttacks = GameState.getBossRolledAttacks(N, target.name);
-
-                const firstNonNullIndex = rolledAttacks.findIndex(a => a !== 'null');
-                if (firstNonNullIndex === -1) {
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No attacks to dodge!', { color: '#ffcc66' });
-                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                } else {
-                  state.spendAp(dodgeCost);
-                  CombatManager.recordDodge();
-                  rolledAttacks[firstNonNullIndex] = 'null';
-                  if (state.stageState.bossRolledAttacksPool && state.stageState.bossRolledAttacksPool[firstNonNullIndex] !== undefined) {
-                    state.stageState.bossRolledAttacksPool[firstNonNullIndex] = 'null';
-                  }
-                  const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                    ? state.combatState.dodgeTarget
-                    : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
-                  state.combatState.dodgeTarget = [...currentDodges, target.id];
-
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Attack Erased! 🛡️', { color: '#44ff44' });
-
-                  try {
-                    const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
-                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                      const rect = circleRect || UIManager.getCircleRect();
-                      const sx = rect.left + buttonCenterX;
-                      const sy = rect.top + buttonCenterY;
-                      DodgeTetherAnimation.play(sx, sy, card);
-                    }
-                  } catch (e) {
-                    console.warn('Failed to play DodgeTetherAnimation', e);
-                  }
-
-                  UIManager.renderEnemies();
-                  UIManager.updateActionCosts();
-                  UIManager.updatePendingDamageDisplay();
-                }
               } else {
-                const currentDodges = Array.isArray(state.combatState.dodgeTarget)
-                  ? state.combatState.dodgeTarget
-                  : (state.combatState.dodgeTarget ? [state.combatState.dodgeTarget] : []);
+                state.playerState.parryCount = parryCount - 1;
+                CombatManager.recordDodge();
 
-                if (currentDodges.map(id => String(id)).includes(String(target.id))) {
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Already dodging', { color: '#ffcc66' });
-                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
-                } else {
-                  state.spendAp(dodgeCost);
-                  CombatManager.recordDodge();
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 + 30, `-${dodgeCost} AP`, { color: '#ffd700' });
+                state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
+                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Parry Ready! 🛡️', { color: '#44ff44' });
 
-                  state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Dodge Ready!', { color: '#44ff44' });
-
-                  try {
-                    const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
-                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                      const rect = circleRect || UIManager.getCircleRect();
-                      const sx = rect.left + buttonCenterX;
-                      const sy = rect.top + buttonCenterY;
-                      DodgeTetherAnimation.play(sx, sy, card);
-                    }
-                  } catch (e) {
-                    console.warn('Failed to play DodgeTetherAnimation', e);
-                  }
-
-                  UIManager.renderEnemies();
-                  UIManager.updateActionCosts();
-                  UIManager.updatePendingDamageDisplay();
-                }
+                UIManager.updateActionButtons();
+                UIManager.renderEnemies();
+                UIManager.updatePendingDamageDisplay();
               }
             }
           }
@@ -12330,11 +12190,9 @@ class UIManager {
     const state = getGameState();
     const weapon = PlayerManager.getCurrentWeapon();
     const attackCost = weapon ? new WeaponAttack(weapon.name).getScaledApCost() : 0;
-    const dodgeCost = CombatManager.getDodgeCost();
-    const attackText = document.getElementById('attackCostText');
     const dodgeText = document.getElementById('dodgeCostText');
-    if (attackText) attackText.textContent = attackCost ? `(${attackCost} AP)` : '';
-    if (dodgeText) dodgeText.textContent = `(${dodgeCost} AP)`;
+    if (dodgeText) dodgeText.textContent = '';
+    this.updateActionButtons();
 
     const attackBtn = document.getElementById('attackBtn');
     if (attackBtn) {

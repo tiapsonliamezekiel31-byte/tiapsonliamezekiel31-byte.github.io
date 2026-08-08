@@ -983,61 +983,44 @@ class CombatManager {
   }
 
   static getDodgeCost(targetEnemy = null) {
-    const state = getGameState();
-    const multiplier = state.playerState.dodgeCostMultiplier || 1.0;
-    const aliveEnemies = (state.stageState?.enemies || []).filter(e => e && !e.isDead);
-    const enemyCount = aliveEnemies.length || 1;
+    return 0; // Parry uses Parry charges, AP cost is zero
+  }
 
-    const isBoss = targetEnemy ? !!targetEnemy.isBoss : aliveEnemies.some(e => e.isBoss);
-    let baseCost;
-    if (isBoss) {
-      baseCost = (state.playerState.maxAp / 3) * multiplier;
-    } else {
-      baseCost = ((state.playerState.maxAp * 1.5) / enemyCount) * multiplier;
+  static attemptParry() {
+    const state = getGameState();
+
+    // Brute: Wrath Unleashed prevents parrying
+    const skillFx = state.combatState?.skillEffects || {};
+    if (skillFx.cannotDodge) {
+      return { success: false, reason: 'Wrath forbids parrying' };
     }
 
-    const dodgeCount = state.stageState?.dodgeCount || 0;
-    const compoundingMultiplier = Math.pow(1.1, dodgeCount);
-    return Math.ceil(baseCost * compoundingMultiplier);
+    const currentParries = state.playerState.parryCount || 0;
+    if (currentParries <= 0) {
+      return { success: false, reason: 'No parry charges remaining' };
+    }
+
+    state.playerState.parryCount = currentParries - 1;
+    CombatManager.recordDodge();
+    state.combatState.isDodging = true;
+
+    state.eventBus.emit(EVENTS.ATTACK, {
+      type: 'parry',
+      parryCount: state.playerState.parryCount
+    });
+
+    return { success: true, remainingParries: state.playerState.parryCount };
   }
 
   static attemptDodge() {
-    const state = getGameState();
-
-    // Brute: Wrath Unleashed prevents dodging
-    const skillFx = state.combatState?.skillEffects || {};
-    if (skillFx.cannotDodge) {
-      return { success: false, reason: 'Wrath forbids dodging' };
-    }
-    
-    const dodgeCost = CombatManager.getDodgeCost();
-    
-    if (state.playerState.ap < dodgeCost) {
-      return { success: false, reason: 'Not enough AP to dodge' };
-    }
-    
-    state.spendAp(dodgeCost);
-    CombatManager.recordDodge();
-    state.combatState.isDodging = true;
-    
-    // Spinner speed doubles
-    state.eventBus.emit(EVENTS.ATTACK, {
-      type: 'dodge',
-      apCost: dodgeCost
-    });
-    
-    return { success: true, dodgeCost };
+    return this.attemptParry();
   }
-  
+
   static completeDodge(selectedEnemyId) {
     const state = getGameState();
-    
     const enemy = StageManager.getEnemyById(selectedEnemyId);
     if (!enemy) return false;
-    
-    // Next attack against player from this enemy deals 0.7× damage (handled in damage resolution)
     state.combatState.isDodging = false;
-    
     return true;
   }
   

@@ -673,6 +673,11 @@ class TaskManager {
 
     state.systemState.runStats.tasksCompleted++;
 
+    // Check Parry Challenge (3 lowest completion rate dailies reward)
+    if (typeof checkParryChallengeCompletion === 'function') {
+      try { checkParryChallengeCompletion(); } catch (e) {}
+    }
+
     // Update Special Event Progress
     const event = state.systemState.specialEvent;
     if (event && !event.claimed) {
