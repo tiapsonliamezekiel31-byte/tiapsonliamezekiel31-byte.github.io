@@ -1207,9 +1207,6 @@ class UIManager {
         <!-- Rank 1+: Main Solid Triangle -->
         <polygon points="50,2 98,84.6 2,84.6" fill="rgba(12, 8, 20, 0.94)" stroke="${rankInfo.color}" stroke-width="${rankInfo.rank >= 4 ? 4.5 : 3.5}" stroke-linejoin="round" class="${rankInfo.rank >= 2 ? 'score-poly-pulse' : 'score-poly-base'}" />
 
-        <!-- Average Streak text inside Score Triangle -->
-        <text x="50" y="66" font-size="10" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.95" style="text-shadow: 0 0 4px #000;">🔥 ${avgStreakText}</text>
-
         <!-- Rank 3+: Counter-rotating inner accent triangle & inverted inner tri -->
         ${rankInfo.rank >= 3 ? `
           <polygon points="50,16 84,74 16,74" fill="none" stroke="${rankInfo.color}" stroke-width="1.8" stroke-opacity="0.75" stroke-dasharray="8,5" class="score-inner-tri" />
@@ -1236,6 +1233,7 @@ class UIManager {
       </svg>
       <span class="score-hud-number" style="color: ${rankInfo.color};">${score}</span>
       <div class="score-base-label base-left" style="color: ${rankInfo.color};" title="Run Completion: ${runCompletionPct}%">RUN ${runCompletionPct}%</div>
+      <div class="score-base-label base-center" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: bold; color: #ffd700; text-shadow: 0 0 3px #000; pointer-events: none; white-space: nowrap;" title="Average Daily Streak: ${avgStreakText}">🔥 ${avgStreakText}</div>
       <div class="score-base-label base-right" style="color: ${rankInfo.color};" title="Today Completion: ${todayCompletionPct}%">TDY ${todayCompletionPct}%</div>
     `;
   }
