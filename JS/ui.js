@@ -1233,7 +1233,7 @@ class UIManager {
       </svg>
       <span class="score-hud-number" style="color: ${rankInfo.color};">${score}</span>
       <div class="score-base-label base-left" style="color: ${rankInfo.color};" title="Run Completion: ${runCompletionPct}%">RUN ${runCompletionPct}%</div>
-      <div class="score-base-label base-center" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: bold; color: #ffd700; text-shadow: 0 0 3px #000; pointer-events: none; white-space: nowrap;" title="Average Daily Streak: ${avgStreakText}">🔥 ${avgStreakText}</div>
+      <div class="score-base-label base-center" style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); font-size: 8px; font-weight: bold; color: ${rankInfo.color}; pointer-events: none; white-space: nowrap;" title="Average Daily Streak: ${avgStreakText}">🔥 ${avgStreakText}</div>
       <div class="score-base-label base-right" style="color: ${rankInfo.color};" title="Today Completion: ${todayCompletionPct}%">TDY ${todayCompletionPct}%</div>
     `;
   }
