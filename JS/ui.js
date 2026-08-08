@@ -1258,45 +1258,40 @@ class UIManager {
     let allCompleted = true;
 
     if (Array.isArray(challenge.dailies) && challenge.dailies.length > 0) {
-      const attrColors = state.config?.attributeColors || {
-        STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
-      };
       challenge.dailies.forEach(dailyId => {
         const daily = state.dailiesState?.dailies?.find(d => String(d.id) === String(dailyId));
         if (daily) {
           const isCompleted = !!daily.completed;
           if (!isCompleted) allCompleted = false;
-          const attrKey = (daily.attribute || 'STR').toUpperCase();
-          const dailyColor = attrColors[attrKey] || '#e8b84a';
           dailiesHtml += `
-            <div class="challenge-daily-item ${isCompleted ? 'completed' : ''}" style="display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-left: 3px solid ${dailyColor}; border-radius: 4px; background: rgba(0,0,0,0.2); margin-bottom: 2px;">
-              <span class="challenge-status-icon" style="font-size: 11px;">${isCompleted ? '✅' : '❌'}</span>
-              <span class="challenge-daily-name" title="${daily.name}" style="font-size: 11px; font-weight: 500; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; ${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${daily.name}</span>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 5px; background: ${isCompleted ? 'rgba(34, 197, 94, 0.12)' : 'rgba(255, 255, 255, 0.05)'}; border: 1px solid ${isCompleted ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 255, 255, 0.08)'};">
+              <span style="font-size: 11px; line-height: 1;">${isCompleted ? '✅' : '❌'}</span>
+              <span style="font-size: 11px; font-weight: 500; color: ${isCompleted ? '#a7f3d0' : '#e2e8f0'}; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; ${isCompleted ? 'text-decoration: line-through; opacity: 0.75;' : ''}">${daily.name}</span>
             </div>
           `;
         } else {
           dailiesHtml += `
-            <div class="challenge-daily-item completed" style="display: flex; align-items: center; gap: 6px; padding: 3px 6px; border-radius: 4px; background: rgba(0,0,0,0.2); margin-bottom: 2px; opacity: 0.5;">
-              <span class="challenge-status-icon" style="font-size: 11px;">✅</span>
-              <span class="challenge-daily-name" style="font-size: 11px; text-decoration: line-through;">[Deleted]</span>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 5px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); opacity: 0.5;">
+              <span style="font-size: 11px;">✅</span>
+              <span style="font-size: 11px; color: #94a3b8; text-decoration: line-through;">[Deleted]</span>
             </div>
           `;
         }
       });
     } else {
-      dailiesHtml = '<div style="opacity: 0.6; font-size: 10px; text-align: center; padding: 4px;">No tasks</div>';
+      dailiesHtml = '<div style="opacity: 0.6; font-size: 10px; text-align: center; padding: 4px; color: #94a3b8;">No tasks</div>';
     }
 
     const headerColor = allCompleted ? '#22c55e' : '#00e5ff';
-    const headerTitle = allCompleted ? '3 DAILIES (+3 🛡️ CLAIMED)' : '3 DAILIES FOR +3 🛡️';
+    const headerTitle = allCompleted ? '3 DAILIES (+3 🛡️ CLAIMED)' : '3 DAILIES (+3 🛡️ REWARD)';
 
     hud.innerHTML = `
-      <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')">－</button>
-      <div class="challenge-hud-content" style="padding: 6px 8px; min-width: 150px;">
-        <div style="font-size: 11px; font-weight: bold; color: ${headerColor}; margin-bottom: 6px; text-align: center; white-space: nowrap; letter-spacing: 0.5px;">
+      <div class="challenge-hud-content" style="position: relative; padding: 8px 10px; background: rgba(15, 18, 28, 0.88); backdrop-filter: blur(8px); border: 1px solid ${allCompleted ? 'rgba(34, 197, 94, 0.4)' : 'rgba(0, 229, 255, 0.3)'}; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); font-family: system-ui, -apple-system, sans-serif; min-width: 150px;">
+        <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')" style="position: absolute; top: 6px; right: 6px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #aaa; width: 16px; height: 16px; line-height: 14px; border-radius: 4px; cursor: pointer; font-size: 11px; display: flex; align-items: center; justify-content: center; padding: 0;">－</button>
+        <div style="font-size: 10px; font-weight: 700; color: ${headerColor}; margin-bottom: 6px; padding-right: 18px; white-space: nowrap; letter-spacing: 0.5px; text-transform: uppercase;">
           ${headerTitle}
         </div>
-        <div class="challenge-dailies-list">${dailiesHtml}</div>
+        <div class="challenge-dailies-list" style="display: flex; flex-direction: column; gap: 4px;">${dailiesHtml}</div>
       </div>
     `;
 
