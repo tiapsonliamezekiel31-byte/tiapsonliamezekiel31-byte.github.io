@@ -1288,12 +1288,12 @@ class UIManager {
     }
 
     const headerColor = allCompleted ? '#22c55e' : '#00e5ff';
-    const headerTitle = allCompleted ? '3 DAILIES (CLAIMED +3 🛡️)' : '3 DAILIES FOR +3 🛡️';
+    const headerTitle = allCompleted ? '3 DAILIES (+3 🛡️ CLAIMED)' : '3 DAILIES FOR +3 🛡️';
 
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')">－</button>
-      <div class="challenge-hud-content" style="padding: 6px 8px; min-width: 140px;">
-        <div style="font-size: 10px; font-weight: bold; color: ${headerColor}; margin-bottom: 4px; text-align: center; letter-spacing: 0.5px;">
+      <div class="challenge-hud-content" style="padding: 6px 8px; min-width: 150px;">
+        <div style="font-size: 11px; font-weight: bold; color: ${headerColor}; margin-bottom: 6px; text-align: center; white-space: nowrap; letter-spacing: 0.5px;">
           ${headerTitle}
         </div>
         <div class="challenge-dailies-list">${dailiesHtml}</div>
