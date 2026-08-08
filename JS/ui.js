@@ -1287,15 +1287,9 @@ class UIManager {
       dailiesHtml = '<div style="opacity: 0.6; font-size: 8px; text-align: center; padding: 4px;">No tasks</div>';
     }
 
-    const headerColor = allCompleted ? '#22c55e' : '#00e5ff';
-    const headerTitle = allCompleted ? '3 DAILIES FOR +3 🛡️ (CLAIMED)' : '3 DAILIES FOR +3 🛡️';
-
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Challenge HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('nemesisChallengeHud')">－</button>
-      <div class="challenge-hud-content" style="min-width: 170px; padding: 6px 8px;">
-        <div style="font-size: 11px; font-weight: bold; color: ${headerColor}; margin-bottom: 6px; text-align: center; white-space: nowrap; padding-right: 14px;">
-          ${headerTitle}
-        </div>
+      <div class="challenge-hud-content" style="padding: 6px 8px;">
         <div class="challenge-dailies-list">${dailiesHtml}</div>
       </div>
     `;
@@ -14204,12 +14198,18 @@ class StatsHUD {
         labelsHtml += `<text x="${x}" y="${y}" font-size="4.5" fill="${color}" font-weight="bold" text-anchor="${textAnchor}" dy="${dy}">${attr} ${pVal}</text>`;
       }
 
+      const avgStreak = (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function')
+        ? TaskManager.getWeightedAverageStreak()
+        : 0;
+      const avgStreakVal = avgStreak.toFixed(1);
+
       radarContainer.innerHTML = `
         <svg viewBox="0 0 100 95" style="width:100%; height:100%; overflow:visible;">
           ${gridsHtml}
           ${axesHtml}
           ${nemesisPolygon}
           ${playerPolygon}
+          <text x="${C_X}" y="${C_Y}" font-size="8" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.95" style="text-shadow: 0 0 5px rgba(0,0,0,0.9);">${avgStreakVal}</text>
           ${labelsHtml}
           <g transform="translate(5, 90)" font-size="4.2" font-weight="bold">
             <circle cx="2" cy="-1.5" r="1" fill="#8b5cf6"/>
