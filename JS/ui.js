@@ -8103,19 +8103,29 @@ class UIManager {
                   state.playerState.parryCount = parryCount - 1;
                   CombatManager.recordDodge();
 
-                  state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
-                  FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Parry Ready! 🛡️', { color: '#44ff44', scale: 0.75 });
+                  const parryResult = (typeof evaluateParrySuccess === 'function') ? evaluateParrySuccess(enemy) : { success: true };
+                  const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+                  const cardRect = card ? card.getBoundingClientRect() : null;
+                  const popupX = cardRect ? (cardRect.left + cardRect.width / 2) : (window.innerWidth / 2);
+                  const popupY = cardRect ? (cardRect.top - 18) : (window.innerHeight / 2);
 
-                  try {
-                    const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-                    if (card && typeof DodgeTetherAnimation !== 'undefined') {
-                      const rect = circleRect || UIManager.getCircleRect();
-                      const sx = rect.left + buttonCenterX;
-                      const sy = rect.top + buttonCenterY;
-                      DodgeTetherAnimation.play(sx, sy, card);
+                  if (parryResult.success) {
+                    state.combatState.dodgeTarget = [...new Set([...currentDodges, enemy.id])];
+                    FloatingDamageNumber.show(popupX, popupY, 'PARRIED', { color: '#00e5ff', scale: 0.9, duration: 1400 });
+
+                    try {
+                      if (card && typeof DodgeTetherAnimation !== 'undefined') {
+                        const rect = circleRect || UIManager.getCircleRect();
+                        const sx = rect.left + buttonCenterX;
+                        const sy = rect.top + buttonCenterY;
+                        DodgeTetherAnimation.play(sx, sy, card);
+                      }
+                    } catch (e) {
+                      console.warn('Failed to play DodgeTetherAnimation', e);
                     }
-                  } catch (e) {
-                    console.warn('Failed to play DodgeTetherAnimation', e);
+                  } else {
+                    FloatingDamageNumber.show(popupX, popupY, 'PARRY FAILED', { color: '#ff4444', scale: 0.9, duration: 1400 });
+                    try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
                   }
 
                   UIManager.updateActionButtons();
@@ -8168,8 +8178,19 @@ class UIManager {
                 state.playerState.parryCount = parryCount - 1;
                 CombatManager.recordDodge();
 
-                state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
-                FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Parry Ready! 🛡️', { color: '#44ff44' });
+                const parryResult = (typeof evaluateParrySuccess === 'function') ? evaluateParrySuccess(target) : { success: true };
+                const card = document.querySelector(`.enemy-card[data-enemy-id="${target.id}"]`);
+                const cardRect = card ? card.getBoundingClientRect() : null;
+                const popupX = cardRect ? (cardRect.left + cardRect.width / 2) : (window.innerWidth / 2);
+                const popupY = cardRect ? (cardRect.top - 18) : (window.innerHeight / 2);
+
+                if (parryResult.success) {
+                  state.combatState.dodgeTarget = [...new Set([...currentDodges, target.id])];
+                  FloatingDamageNumber.show(popupX, popupY, 'PARRIED', { color: '#00e5ff', scale: 0.9, duration: 1400 });
+                } else {
+                  FloatingDamageNumber.show(popupX, popupY, 'PARRY FAILED', { color: '#ff4444', scale: 0.9, duration: 1400 });
+                  try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) { }
+                }
 
                 UIManager.updateActionButtons();
                 UIManager.renderEnemies();

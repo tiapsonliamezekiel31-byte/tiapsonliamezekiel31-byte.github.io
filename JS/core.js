@@ -1324,14 +1324,11 @@ class GameState {
           damage *= (enemy.statusEffects.freeze.damageMultiplier !== undefined ? enemy.statusEffects.freeze.damageMultiplier : 0.55);
         }
 
-        // Parry check with average streak formula
+        // Parry check with average streak formula (evaluated when player queued parry)
         if (dodgeTargets.map(id => String(id)).includes(String(enemy.id))) {
           const idx = dodgeTargets.findIndex(id => String(id) === String(enemy.id));
           if (idx > -1) dodgeTargets.splice(idx, 1);
-          const parryResult = evaluateParrySuccess(enemy);
-          if (parryResult.success) {
-            return;
-          }
+          return;
         }
 
         if (passive && typeof passive.damageTaken === 'number') {
@@ -2292,51 +2289,31 @@ function performCheckIn() {
           isFrozen = true;
         }
 
-        // Check for dodge/parry target
+        // Check for dodge/parry target (evaluated when player queued parry)
         const dodgeTarget = state.combatState?.dodgeTarget;
         const dodgeTargets = Array.isArray(dodgeTarget) ? dodgeTarget : (dodgeTarget ? [dodgeTarget] : []);
         if (dodgeTargets.map(id => String(id)).includes(String(enemy.id))) {
           state.combatState.dodgeTarget = dodgeTargets.filter(id => String(id) !== String(enemy.id));
           consumeReactiveWeaponEffect();
 
-          const parryResult = evaluateParrySuccess(enemy);
-          if (parryResult.success) {
-            retaliationSteps.push({
-              enemyId: enemy.id,
-              name: enemy.name,
-              isBoss,
-              damage: 0,
-              isDodge: true,
-              isParry: true
-            });
-            try {
-              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-              if (card) {
-                const rect = card.getBoundingClientRect();
-                if (typeof FloatingDamageNumber !== 'undefined') {
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRIED', { color: '#00e5ff', scale: 0.9, duration: 1200 });
-                }
+          retaliationSteps.push({
+            enemyId: enemy.id,
+            name: enemy.name,
+            isBoss,
+            damage: 0,
+            isDodge: true,
+            isParry: true
+          });
+          try {
+            const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
+            if (card) {
+              const rect = card.getBoundingClientRect();
+              if (typeof FloatingDamageNumber !== 'undefined') {
+                FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRIED', { color: '#00e5ff', scale: 0.9, duration: 1200 });
               }
-            } catch (e) {}
-            return;
-          } else {
-            retaliationSteps.push({
-              enemyId: enemy.id,
-              name: enemy.name,
-              isBoss,
-              damage: 0,
-              isParryFail: true
-            });
-            try {
-              const card = document.querySelector(`.enemy-card[data-enemy-id="${enemy.id}"]`);
-              if (card) {
-                const rect = card.getBoundingClientRect();
-                if (typeof FloatingDamageNumber !== 'undefined') {
-                  FloatingDamageNumber.show(rect.left + rect.width / 2, rect.top - 18, 'PARRY FAILED', { color: '#ff4444', scale: 0.9, duration: 1200 });
-                }
-              }
-            } catch (e) {}
-          }
+            }
+          } catch (e) {}
+          return;
         }
 
         // Apply class-based multiplicative damageTaken modifiers

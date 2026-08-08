@@ -2429,6 +2429,14 @@ class PopupsManager {
         }
       }
 
+      if (lower.startsWith('parry') || lower.startsWith('parries') || lower.startsWith('add parry') || lower.startsWith('add parries')) {
+        const val = parseInt(command.replace(/^[a-zA-Z\s]+/, ''), 10) || 3;
+        state.playerState.parryCount = (state.playerState.parryCount || 0) + val;
+        try { UIManager.updateActionButtons?.(); } catch (e) {}
+        try { UIManager.refreshGameUI?.(); } catch (e) {}
+        return { ok: true, message: `Added +${val} Parries! (Total: ${state.playerState.parryCount})` };
+      }
+
       if (lower === 'reset tycoon') {
         localStorage.removeItem('nemesis_tycoon_data');
         this.closeAllPopups();
