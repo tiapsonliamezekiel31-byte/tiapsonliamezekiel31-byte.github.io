@@ -740,18 +740,26 @@ class TaskManager {
 
     const isActivating = !daily.bloodOathActive;
 
-    if (isActivating) {
-      // Check mana cost
-      if (state.playerState.mana < state.config.bloodOathManaCost) {
-        return false;
+    if (!isActivating) {
+      if (typeof FloatingDamageNumber !== 'undefined') {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🩸 Blood Oath cannot be turned off today!', { color: '#ef4444' });
       }
+      return false;
+    }
 
-      state.drainMana(state.config.bloodOathManaCost);
-      daily.bloodOathActive = true;
-      daily.bloodOath = true;
-    } else {
-      daily.bloodOathActive = false;
-      daily.bloodOath = false;
+    if (state.playerState.mana < state.config.bloodOathManaCost) {
+      if (typeof FloatingDamageNumber !== 'undefined') {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana!', { color: '#ef4444' });
+      }
+      return false;
+    }
+
+    state.drainMana(state.config.bloodOathManaCost);
+    daily.bloodOathActive = true;
+    daily.bloodOath = true;
+
+    if (typeof FloatingDamageNumber !== 'undefined') {
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'OATHED!', { color: '#dc2626' });
     }
 
     return true;
@@ -1235,17 +1243,26 @@ class TaskManager {
 
     const isActivating = !todo.bloodOathActive;
 
-    if (isActivating) {
-      if (state.playerState.mana < state.config.bloodOathManaCost) {
-        return false;
+    if (!isActivating) {
+      if (typeof FloatingDamageNumber !== 'undefined') {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '🩸 Blood Oath cannot be turned off today!', { color: '#ef4444' });
       }
+      return false;
+    }
 
-      state.drainMana(state.config.bloodOathManaCost);
-      todo.bloodOathActive = true;
-      todo.bloodOath = true;
-    } else {
-      todo.bloodOathActive = false;
-      todo.bloodOath = false;
+    if (state.playerState.mana < state.config.bloodOathManaCost) {
+      if (typeof FloatingDamageNumber !== 'undefined') {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Not enough mana!', { color: '#ef4444' });
+      }
+      return false;
+    }
+
+    state.drainMana(state.config.bloodOathManaCost);
+    todo.bloodOathActive = true;
+    todo.bloodOath = true;
+
+    if (typeof FloatingDamageNumber !== 'undefined') {
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'OATHED!', { color: '#dc2626' });
     }
 
     if (typeof PlayerManager !== 'undefined' && typeof PlayerManager.recalculateMaxAp === 'function') {
@@ -1581,6 +1598,11 @@ class TaskManager {
       daily.notified30MinToday = false;
     });
 
+    (state.dailiesState.todos || []).forEach(todo => {
+      todo.bloodOath = false;
+      todo.bloodOathActive = false;
+    });
+
     state.rollSpecialEvent();
 
     // Save current active state (which has just been reset)
@@ -1616,6 +1638,10 @@ class TaskManager {
   static calculateMissedDailyDamage() {
     const state = getGameState();
     const missedDailies = this.getMissedDailies().filter(d => !d.streakSaved);
+
+    if (missedDailies.some(d => d.bloodOathActive)) {
+      return Infinity;
+    }
 
     const missedDailyDamageTable = state.config.missedDailyDamage || {
       Easy: 1,

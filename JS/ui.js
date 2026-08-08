@@ -6113,6 +6113,7 @@ class UIManager {
         }
 
         if (event.target.closest('.btn-blood-oath')) {
+          event.stopPropagation();
           if (taskType === 'daily') {
             TaskManager.toggleBloodOath(taskId);
             this.scheduleUpdateDailiesList();
@@ -6150,9 +6151,6 @@ class UIManager {
             return;
           }
           if (oathModeDailies) {
-            TaskManager.toggleBloodOath(taskId);
-            this.scheduleUpdateDailiesList();
-            getGameState().save();
             return;
           }
         }
@@ -6798,109 +6796,32 @@ class UIManager {
   }
 
   static async playCheckInSequence(detail) {
-    const state = getGameState();
     const steps = Array.isArray(detail?.retaliationSteps) ? detail.retaliationSteps : [];
     const token = ++this.checkInSequenceToken;
     const circle = document.querySelector('.enemy-circle-container');
+    const state = getGameState();
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    if (!steps.length) {
-      if (detail?.lateTodoDamage > 0) {
-        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: UIManager.themeColor('--palette-orange', '#FF4400'), duration: 2200 });
-      }
+    if (!steps.length && !detail?.lateTodoDamage && !detail?.hasMissedBloodOath) {
       state.eventBus.emit(EVENTS.CHECK_IN_ANIMATION_COMPLETE, detail);
       return;
     }
 
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    // Mutator gains that occurred during check-in (show as floating text on the affected enemy)
-    let mutatorGains = Array.isArray(detail?.mutatorGains) ? detail.mutatorGains.slice() : [];
-    // Show any mutator gains for enemies that are not part of retaliationSteps immediately so they occur within the check-in sequence
-    try {
-      const stepEnemyIds = new Set((steps || []).map(s => String(s.enemyId)));
-      const initial = mutatorGains.filter(m => !stepEnemyIds.has(String(m.enemyId)));
-      if (initial.length > 0) {
-        initial.forEach(m => {
-          try {
-            const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
-            this.showFloatingText(m.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 });
-          } catch (e) { }
-        });
-        // remove shown entries
-        mutatorGains = mutatorGains.filter(m => !initial.includes(m));
-      }
-    } catch (e) { }
     const missedCount = Math.max(0, Math.round((detail?.missedDailyDamage || 0) || 0));
     if (missedCount > 0) {
       circle?.classList.add('checkin-alert');
-      ScreenEffects.shake(12 + missedCount * 2, 280);
+      ScreenEffects.shake(12 + missedCount * 2, 200);
     }
 
-    // Nemesis Aggression check-in alert
-    if (detail?.isAggressive) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 120, 'NEMESIS AGGRESSION: DAMAGE +50%! 💀', { color: '#ef4444', duration: 2500, scale: 1.3 });
-      ScreenEffects.shake(15, 350);
-      await wait(1200);
-    }
-
-    // Animate enemy check-in respawns and chain mutations
-    if (Array.isArray(detail?.respawns) && detail.respawns.length > 0) {
-      for (const respawn of detail.respawns) {
-        if (token !== this.checkInSequenceToken) return;
-
-        if (respawn.source === 'chain') {
-          // Chain mutation animation
-          await UIManager.playChainMutationAnimation(respawn.chainFromId, respawn.enemyId);
-          const card = document.querySelector(`.enemy-card[data-enemy-id="${respawn.enemyId}"]`);
-          if (card) {
-            UIManager.showFloatingText(respawn.enemyId, 'CHAIN', { color: '#a15cff', scale: 0.8, duration: 2000 });
-            const enemy = StageManager.getEnemyById(respawn.enemyId);
-            if (enemy) {
-              UIManager.renderMutatorBadges(card, enemy);
-            }
-          }
-        } else {
-          // Respawn revival animation
-          const card = document.querySelector(`.enemy-card[data-enemy-id="${respawn.enemyId}"]`);
-          if (card) {
-            card.classList.remove('dead');
-            card.querySelectorAll('.enemy-name, .enemy-hpbar, .mutator-badges').forEach(el => el.style.setProperty('display', '', 'important'));
-            try { SoundManager.play('revive'); } catch (e) {}
-            if (typeof RetroWarpAnimation !== 'undefined') {
-              RetroWarpAnimation.play(card);
-            }
-            let x = window.innerWidth / 2;
-            let y = window.innerHeight / 2;
-            if (card.dataset.x) {
-              const circleRect = UIManager.getCircleRect();
-              x = circleRect.left + Number(card.dataset.x);
-              y = circleRect.top + Number(card.dataset.y);
-            }
-            FloatingDamageNumber.show(x, y - 20, 'RESPAWNED! 👾', { color: '#a15cff', duration: 2000, scale: 1.2 });
-            
-            await wait(800);
-
-            if (respawn.mutator) {
-              const label = String(respawn.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
-              UIManager.showFloatingText(respawn.enemyId, label, { color: '#a15cff', scale: 0.8, duration: 2000 });
-              const enemy = StageManager.getEnemyById(respawn.enemyId);
-              if (enemy) {
-                UIManager.renderMutatorBadges(card, enemy);
-              }
-              await wait(600);
-            }
-          }
-        }
-      }
-    }
-
+    // 1. POP UP FLOATING DAMAGE NUMBERS ONE BY ONE SEQUENTIALLY
     for (let i = 0; i < steps.length; i++) {
       if (token !== this.checkInSequenceToken) return;
       const step = steps[i];
       const card = this.setEnemyCheckInHighlight(step.enemyId, true);
+      let x = window.innerWidth / 2;
+      let y = window.innerHeight / 2;
       if (card) {
         card.classList.add('checkin-hit');
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
         if (card.dataset.x) {
           const circleRect = UIManager.getCircleRect();
           x = circleRect.left + Number(card.dataset.x);
@@ -6910,142 +6831,54 @@ class UIManager {
           x = rect.left + rect.width / 2;
           y = rect.top + rect.height / 2;
         }
-
-        if (step.isBoss) {
-          const state = getGameState();
-          const bossName = (state.stageState.bossData && state.stageState.bossData.name) || step.name;
-          const bossData = state.stageState.bossData || {};
-          this.playBossAttackAnimation(bossName, bossData.phase === 2, step.attackType);
-
-          let actionDesc = 'ATTACK';
-          if (step.isNull) actionDesc = 'IDLE';
-          else if (step.isCorrosive) actionDesc = 'CORROSIVE SPIT';
-          else if (step.isBombSummon) actionDesc = 'SUMMON BOMB';
-          else if (step.isHeal) actionDesc = 'SELF-HEAL';
-          else if (step.isMinionSummon) actionDesc = `SUMMON ${step.minionName}`;
-          else if (step.isHeavy) actionDesc = 'HEAVY SLAM';
-          else if (step.isCrit) actionDesc = 'CRITICAL STRIKE';
-
-          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 150, actionDesc, {
-            color: '#ffd76a',
-            duration: 2200,
-            fadeDelay: 1000
-          });
-        }
-
-        if (step.isDodge) {
-          FloatingDamageNumber.show(x, y - 10, 'DODGED!', {
-            color: '#00e5ff',
-            duration: 1600,
-            scale: 1.2
-          });
-          if (typeof RetroDodgeAnimation !== 'undefined') {
-            RetroDodgeAnimation.play(card, '#00e5ff');
-          }
-        } else if (step.isImmune) {
-          FloatingDamageNumber.show(x, y - 10, 'IMMUNE!', {
-            color: UIManager.themeColor('--success-green', '#22c55e'),
-            duration: 1600,
-            scale: 1.2
-          });
-        } else if (step.isNull) {
-          FloatingDamageNumber.show(x, y - 10, 'NULL!', {
-            color: '#aaaaaa',
-            duration: 1600,
-            scale: 1.0
-          });
-        } else if (step.isCorrosive) {
-          FloatingDamageNumber.show(x, y - 10, 'CORROSIVE! 🧪', {
-            color: '#32cd32',
-            duration: 1800,
-            scale: 1.2
-          });
-        } else if (step.isBombSummon) {
-          FloatingDamageNumber.show(x, y - 10, 'BOMB DEPLOYED! 💣', {
-            color: '#ff4500',
-            duration: 1800,
-            scale: 1.3
-          });
-        } else if (step.isHeal) {
-          FloatingDamageNumber.show(x, y - 10, `HEALED! 💚 (+${step.healAmount})`, {
-            color: '#00ff66',
-            duration: 1800,
-            scale: 1.2
-          });
-        } else if (step.isMinionSummon) {
-          FloatingDamageNumber.show(x, y - 10, `SUMMON: ${step.minionName}! 👿`, {
-            color: '#8a2be2',
-            duration: 1800,
-            scale: 1.2
-          });
-        } else {
-          FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
-            color: step.isBoss ? (step.isCrit ? '#ff3366' : (step.isHeavy ? '#ffaa00' : UIManager.themeColor('--accent-gold', '#FFB33F'))) : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
-            duration: 1600,
-            scale: step.isBoss ? 1.3 : 1.1,
-            isCrit: step.isCrit || (step.damage > 0 && step.damage >= 25)
-          });
-        }
-        // Also show any mutator gains that apply to this enemy at the same time
-        try {
-          const matches = (mutatorGains || []).filter(m => String(m.enemyId) === String(step.enemyId));
-          if (matches.length) {
-            matches.forEach(m => {
-              try {
-                const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
-                try { this.showFloatingText(step.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 }); } catch (e) { /* ignore */ }
-              } catch (e) { }
-            });
-            // remove shown entries
-            mutatorGains = (mutatorGains || []).filter(m => String(m.enemyId) !== String(step.enemyId));
-          }
-        } catch (e) { }
       }
 
-      // Increase pacing so each retaliation feels heavier
-      await wait(step.isBoss ? 1100 : (step.isDodge ? 500 : 700));
-      if (card) card.classList.remove('checkin-hit');
-      this.setEnemyCheckInHighlight(step.enemyId, false);
-      await wait(step.isDodge ? 100 : 300);
-    }
+      if (step.isBoss) {
+        const bossName = (state.stageState?.bossData && state.stageState.bossData.name) || step.name;
+        const bossData = state.stageState?.bossData || {};
+        this.playBossAttackAnimation(bossName, bossData.phase === 2, step.attackType);
+      }
 
-    // Fallback: show any remaining mutator gains that weren't shown during steps
-    try {
-      if (Array.isArray(mutatorGains) && mutatorGains.length > 0) {
-        mutatorGains.forEach(m => {
-          try {
-            const label = String(m.mutator || '').split(' ')[0].toUpperCase() || 'MUTATED';
-            this.showFloatingText(m.enemyId, label, { color: UIManager.themeColor('--accent-gold', '#FFB33F'), scale: 0.8, duration: 2000 });
-          } catch (e) { }
+      if (step.isDodge) {
+        FloatingDamageNumber.show(x, y - 10, 'DODGED!', { color: '#00e5ff', duration: 1200, scale: 1.2 });
+        if (card && typeof RetroDodgeAnimation !== 'undefined') {
+          RetroDodgeAnimation.play(card, '#00e5ff');
+        }
+      } else if (step.isImmune) {
+        FloatingDamageNumber.show(x, y - 10, 'IMMUNE!', { color: UIManager.themeColor('--success-green', '#22c55e'), duration: 1200, scale: 1.2 });
+      } else if (step.isNull) {
+        FloatingDamageNumber.show(x, y - 10, 'NULL!', { color: '#aaaaaa', duration: 1200, scale: 1.0 });
+      } else if (step.isCorrosive) {
+        FloatingDamageNumber.show(x, y - 10, 'CORROSIVE! 🧪', { color: '#32cd32', duration: 1200, scale: 1.2 });
+      } else if (step.isBombSummon) {
+        FloatingDamageNumber.show(x, y - 10, 'BOMB DEPLOYED! 💣', { color: '#ff4500', duration: 1200, scale: 1.3 });
+      } else if (step.isHeal) {
+        FloatingDamageNumber.show(x, y - 10, `HEALED! 💚 (+${step.healAmount})`, { color: '#00ff66', duration: 1200, scale: 1.2 });
+      } else if (step.isMinionSummon) {
+        FloatingDamageNumber.show(x, y - 10, `SUMMON: ${step.minionName}! 👿`, { color: '#8a2be2', duration: 1200, scale: 1.2 });
+      } else {
+        FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
+          color: step.isBoss ? (step.isCrit ? '#ff3366' : (step.isHeavy ? '#ffaa00' : UIManager.themeColor('--accent-gold', '#FFB33F'))) : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
+          duration: 1200,
+          scale: step.isBoss ? 1.3 : 1.1,
+          isCrit: step.isCrit || (step.damage > 0 && step.damage >= 25)
         });
       }
-    } catch (e) { }
 
-    let finalWaitTime = 0;
+      await wait(180);
+      if (card) card.classList.remove('checkin-hit');
+      this.setEnemyCheckInHighlight(step.enemyId, false);
+    }
+
     if (detail?.lateTodoDamage > 0) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: '#ff9a2e', duration: 2200 });
-      ScreenEffects.shake(8, 180);
-      finalWaitTime = Math.max(finalWaitTime, 2200);
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 70, `Late todo damage: ${Math.ceil(detail.lateTodoDamage)}`, { color: '#ff9a2e', duration: 1200 });
+      ScreenEffects.shake(8, 150);
+      await wait(180);
     }
 
-    if (Array.isArray(detail?.incantations) && detail.incantations.length > 0) {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 180, `Nemesis pressure: ${detail.incantations.length}`, { color: '#a15cff', duration: 1800 });
-      finalWaitTime = Math.max(finalWaitTime, 1800);
-    }
-
-    if (finalWaitTime > 0) {
-      await wait(finalWaitTime + 200);
-    }
-
-    // Play pet animations sequentially after Nemesis pressure
     if (Array.isArray(detail?.petAttacks) && detail.petAttacks.length > 0) {
       for (const pAttack of detail.petAttacks) {
         if (token !== this.checkInSequenceToken) return;
-
-        // Show the bold scaled pet animation on the card
-        this.showPetIcon(pAttack.targetId, { duration: 1800 });
-
-        // Get coordinates of the target enemy card
         const card = document.querySelector(`.enemy-card[data-enemy-id="${pAttack.targetId}"]`);
         let x = window.innerWidth / 2;
         let y = window.innerHeight / 2;
@@ -7060,34 +6893,42 @@ class UIManager {
             y = rect.top + rect.height / 2;
           }
         }
-
-        // Wait 600ms to play impact sound, shake card, and show damage number matching impact visual
-        await new Promise(resolve => {
-          setTimeout(() => {
-            if (token !== this.checkInSequenceToken) {
-              resolve();
-              return;
-            }
-            try { SoundManager.play('pet'); } catch (e) { }
-
-            FloatingDamageNumber.show(x, y - 20, `-${Math.ceil(pAttack.damage)} 🐾`, {
-              color: '#ffaa00',
-              duration: 1800,
-              scale: 1.3,
-              isCrit: true
-            });
-
-            if (card) {
-              card.classList.add('checkin-hit');
-              setTimeout(() => { if (card) card.classList.remove('checkin-hit'); }, 400);
-            }
-            resolve();
-          }, 600);
-        });
-
-        // Wait for pet animation to finish before proceeding (1800ms total duration)
-        await wait(1200);
+        try { SoundManager.play('pet'); } catch (e) { }
+        FloatingDamageNumber.show(x, y - 30, `-${Math.ceil(pAttack.damage)} 🐾`, { color: '#ffaa00', duration: 1200, scale: 1.3, isCrit: true });
+        await wait(180);
       }
+    }
+
+    // 2. WAIT FOR ALL FLOATING NUMBERS TO COMPLETE FLOATING OUT
+    await wait(1000);
+
+    // Clean up hit states
+    document.querySelectorAll('.checkin-hit').forEach(c => c.classList.remove('checkin-hit'));
+    document.querySelectorAll('.enemy-card').forEach(c => this.setEnemyCheckInHighlight(c.dataset.enemyId, false));
+
+    // 3. APPLY THE FINAL END ANIMATION AFTER EVERYONE IS FINISHED
+    if (detail?.hasMissedBloodOath) {
+      if (token !== this.checkInSequenceToken) return;
+      circle?.classList.add('checkin-alert');
+      ScreenEffects.shake(25, 500);
+      try { SoundManager.play('death'); } catch (e) {}
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2 - 50, 'INFINITE UNBLOCKABLE DAMAGE! 🩸', { color: '#dc2626', scale: 1.6, duration: 2500 });
+      await wait(600);
+      state.setHp(0);
+      state.eventBus.emit(EVENTS.DEATH, {
+        type: 'bloodOath:missed',
+        stage: state.stageState.stage,
+        level: state.stageState.level
+      });
+      PopupsManager.showDeathScreen({
+        class: state.playerState.className,
+        stage: state.stageState.stage,
+        level: state.stageState.level,
+        enemiesDefeated: state.systemState.runStats.enemiesDefeated,
+        bossesSailed: state.systemState.runStats.bossesSailed,
+        goldEarned: state.systemState.runStats.totalGoldEarned,
+        deathReason: 'Killed by Blood Oath Penalty 🩸'
+      });
     }
 
     circle?.classList.remove('checkin-alert');
@@ -10058,12 +9899,8 @@ class UIManager {
             getGameState().save();
           }
         } else if (oathModeDailies) {
-          const daily = getGameState().dailiesState.dailies.find(d => d.id === dailyId);
-          if (daily) {
-            daily.bloodOathActive = !daily.bloodOathActive;
-            try {
-              FloatingDamageNumber.show(event.clientX || window.innerWidth / 2, event.clientY || window.innerHeight / 2, daily.bloodOathActive ? '🩸 Blood Oath Active!' : 'Blood Oath Removed', { color: daily.bloodOathActive ? '#dc2626' : '#9ca3af' });
-            } catch (e) {}
+          const success = TaskManager.toggleBloodOath(dailyId);
+          if (success) {
             this.scheduleUpdateDailiesList();
             getGameState().save();
           }
@@ -10383,10 +10220,6 @@ class UIManager {
           UIManager.updateTodosList();
           UIManager.renderEnemies();
         }
-      } else if (mode === 'oath') {
-        TaskManager.toggleBloodOathTodo(todoId);
-        try { getGameState().save(); } catch (e) {}
-        UIManager.updateTodosList();
       }
     });
 

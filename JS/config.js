@@ -48,7 +48,7 @@ const DEFAULT_GAME_CONFIG = {
   // SUBTASKS & BLOOD OATH
   // ============================================================
   subtaskMultiplier: 1.2, // multiplicative per subtask
-  bloodOathRewardMultiplier: 1.3,
+  bloodOathRewardMultiplier: 3.0,
   bloodOathDamageMultiplier: 1.3,
   bloodOathManaCost: 10,
   lateTaskDamage: {

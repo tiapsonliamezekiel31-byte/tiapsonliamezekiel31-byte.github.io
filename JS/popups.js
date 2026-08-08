@@ -2864,8 +2864,8 @@ class PopupsManager {
         <input id="editSize" type="number" min="0.5" max="2" step="0.05" value="${Number(daily.size) || 1}" />
         <label>Blood Oath</label>
         <div class="blood-oath-row">
-          <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked' : ''} />
-          <label for="editBloodOath">Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)</label>
+          <input id="editBloodOath" type="checkbox" ${daily.bloodOathActive ? 'checked disabled' : ''} />
+          <label for="editBloodOath">${daily.bloodOathActive ? '🩸 Blood Oath Active (Cannot be toggled off today)' : `Activate Blood Oath (cost ${state.config.bloodOathManaCost || 0} mana)`}</label>
         </div>
         <label>Lock Status</label>
         <div class="lock-daily-row" style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">

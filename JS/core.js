@@ -1820,6 +1820,12 @@ function performCheckIn() {
     return;
   }
 
+  // Blood Oath check for end of sequence execution
+  const missedBloodOathDaily = rawMissedDailies.some(d => d.bloodOathActive);
+  const overdueTodos = (typeof TaskManager.getAllTodos === 'function' ? TaskManager.getAllTodos() : []).filter(t => !t.completed && t.deadline && t.deadline < nowMs);
+  const missedBloodOathTodo = overdueTodos.some(t => t.bloodOathActive);
+  const hasMissedBloodOath = missedBloodOathDaily || missedBloodOathTodo;
+
   // 2) Pet attacks & Poison status ticks (before enemy retaliation)
   // 2a) Resolve Poison DoT first
   try {
@@ -2870,7 +2876,8 @@ function performCheckIn() {
     mutatorGains: state._lastCheckinMutatorGains || [],
     respawns: state._lastCheckinRespawns || [],
     daysOnLevel: state.stageState.daysOnLevel,
-    isAggressive: isAggressive
+    isAggressive: isAggressive,
+    hasMissedBloodOath: hasMissedBloodOath
   });
 
   return true;
