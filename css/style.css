@@ -1130,50 +1130,67 @@ body::before {
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 18px 6px 16px 6px;
-  /* extra bottom room keeps the HP bar fully visible */
+  padding: 10px 4px 10px 4px;
   font-size: 8.5px;
   text-align: center;
   box-shadow: none !important;
   transform: translate(-50%, -50%);
   cursor: pointer;
   transition: opacity 0.18s ease;
-  overflow: visible;
+  overflow: visible !important;
 }
 
-/* Archetype Visual Shapes (Applied to background shape element) */
-.enemy-shape {
+.enemy-card-shape-bg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg');
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
+  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  z-index: 1;
   pointer-events: none;
 }
 
-.enemy-shape.arch-circle {
-  clip-path: circle(48% at 50% 50%) !important;
+.enemy-card-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  overflow: visible !important;
 }
 
-.enemy-shape.arch-triangle {
+/* Archetype Visual Shapes on Background */
+.enemy-card.arch-circle .enemy-card-shape-bg {
+  clip-path: circle(50% at 50% 50%) !important;
+  border-radius: 50% !important;
+}
+
+.enemy-card.arch-triangle .enemy-card-shape-bg {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%) !important;
+  border-radius: 0 !important;
 }
 
-.enemy-shape.arch-diamond {
+.enemy-card.arch-diamond .enemy-card-shape-bg {
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
 }
 
-.enemy-shape.arch-square {
+.enemy-card.arch-square .enemy-card-shape-bg {
   clip-path: inset(0 0 0 0) !important;
-  border-radius: 4px;
+  border-radius: 4px !important;
 }
 
-.enemy-shape.arch-hexagon {
+.enemy-card.arch-hexagon .enemy-card-shape-bg {
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
 }
 
 .enemy-card::before {

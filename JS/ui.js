@@ -11648,22 +11648,23 @@ class UIManager {
     card.className = 'enemy-card';
     card.dataset.enemyId = String(enemyId);
     card.innerHTML = `
-      <div class="enemy-shape"></div>
-      <div class="enemy-emoji"></div>
-      <div class="dodge-marker" style="display:none; font-size:12px; opacity:0.6; top:-16px;">💨</div>
-      <div class="pet-badge" style="display:none;"></div>
-      <div class="mutator-badges" style="display:inline-block;"></div>
-      <div class="enemy-name"></div>
-      <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
-      <div class="enemy-hpbar">
-        <div class="enemy-hpfill"></div>
-        <div class="enemy-hptext"></div>
+      <div class="enemy-card-shape-bg"></div>
+      <div class="enemy-card-content">
+        <div class="enemy-emoji"></div>
+        <div class="dodge-marker" style="display:none; font-size:12px; opacity:0.6; top:-16px;">💨</div>
+        <div class="pet-badge" style="display:none;"></div>
+        <div class="mutator-badges" style="display:inline-block;"></div>
+        <div class="enemy-name"></div>
+        <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
+        <div class="enemy-hpbar">
+          <div class="enemy-hpfill"></div>
+          <div class="enemy-hptext"></div>
+        </div>
       </div>
     `;
     
     // Cache references to avoid querySelector in hot render loop
     card._els = {
-      shape: card.querySelector('.enemy-shape'),
       emoji: card.querySelector('.enemy-emoji'),
       name: card.querySelector('.enemy-name'),
       hpFill: card.querySelector('.enemy-hpfill'),
@@ -11744,8 +11745,6 @@ class UIManager {
       if (card._state.bossColor !== bossColor) { card.style.setProperty('--boss-color', bossColor); card._state.bossColor = bossColor; }
     }
 
-    const els = card._els || {};
-
     const archLower = (enemy.archetype || '').toLowerCase();
     const shapeClass = archLower === 'fodder' || archLower === 'mana drain' ? 'arch-circle'
       : archLower === 'brute' ? 'arch-triangle'
@@ -11753,11 +11752,13 @@ class UIManager {
       : archLower === 'protector' ? 'arch-square'
       : archLower === 'commander' ? 'arch-hexagon' : '';
 
-    const shapeEl = els.shape || card.querySelector('.enemy-shape');
-    if (shapeEl && card._state.shapeClass !== shapeClass) {
-      shapeEl.className = 'enemy-shape ' + shapeClass;
+    if (card._state.shapeClass !== shapeClass) {
+      card.classList.remove('arch-circle', 'arch-triangle', 'arch-diamond', 'arch-square', 'arch-hexagon');
+      if (shapeClass) card.classList.add(shapeClass);
       card._state.shapeClass = shapeClass;
     }
+
+    const els = card._els || {};
 
     const newEmoji = this.getEnemyEmoji(enemy);
     if (els.emoji && card._state.emoji !== newEmoji) { els.emoji.textContent = newEmoji; card._state.emoji = newEmoji; }
