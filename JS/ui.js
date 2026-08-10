@@ -11298,11 +11298,120 @@ class UIManager {
     return this.circleRectCache || { left: 0, top: 0, width: 400, height: 400 };
   }
 
+  static renderWorldMapNodeView(layer) {
+    if (!layer) return;
+    
+    // Clear canvas connection lines if any
+    const canvas = document.getElementById('enemyConnectionCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // Clean up existing card elements
+    layer.querySelectorAll('.enemy-card').forEach(c => c.remove());
+
+    let mapContainer = layer.querySelector('.world-map-container');
+    if (!mapContainer) {
+      mapContainer = document.createElement('div');
+      mapContainer.className = 'world-map-container';
+      layer.appendChild(mapContainer);
+    }
+
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (typeof StageManager !== 'undefined' && StageManager.ensureStageProgress) {
+      StageManager.ensureStageProgress();
+    }
+    const stageProgress = state?.stageState?.stageProgress || {};
+
+    const nodeMeta = [
+      { key: '1A', stage: 1, variant: 'A', name: 'Forest', icon: '🌲' },
+      { key: '1B', stage: 1, variant: 'B', name: 'Desert', icon: '🏜️' },
+      { key: '2A', stage: 2, variant: 'A', name: 'Crimson Cave', icon: '🕳️' },
+      { key: '2B', stage: 2, variant: 'B', name: 'Infected Swamp', icon: '☣️' },
+      { key: '3A', stage: 3, variant: 'A', name: 'Glacier', icon: '🧊' },
+      { key: '3B', stage: 3, variant: 'B', name: 'Ruins', icon: '🏛️' },
+      { key: '4A', stage: 4, variant: 'A', name: 'Graveyard', icon: '🪦' },
+      { key: '4B', stage: 4, variant: 'B', name: 'Castle', icon: '🏰' },
+      { key: '5A', stage: 5, variant: 'A', name: 'Volcano', icon: '🌋' },
+      { key: '5B', stage: 5, variant: 'B', name: 'Dragon Isle', icon: '🐉' },
+      { key: '6A', stage: 6, variant: 'A', name: 'Golden Mountain', icon: '⛰️' },
+      { key: '6B', stage: 6, variant: 'B', name: 'Abyssal Sea', icon: '🌊' },
+      { key: '7A', stage: 7, variant: 'A', name: 'The Void', icon: '🌌' }
+    ];
+
+    let html = `
+      <div class="world-map-header">
+        <h3 style="margin:0 0 2px 0; color:#ffd700; font-size:1.1rem; text-shadow:0 0 10px rgba(255,215,0,0.5);">🗺️ WORLD MAP</h3>
+        <p style="margin:0; font-size:0.75rem; color:#94a3b8;">Select a stage level to enter combat.</p>
+      </div>
+      <div class="world-map-grid">
+    `;
+
+    nodeMeta.forEach(node => {
+      const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
+      const isCleared = !!prog.isCleared;
+
+      html += `
+        <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}">
+          <div class="stage-node-title">
+            <span>${node.icon} ${node.stage}${node.variant}: ${node.name}</span>
+            ${isCleared ? '<span class="cleared-badge">✓ CLEARED</span>' : ''}
+          </div>
+          <div class="stage-node-levels">
+      `;
+
+      for (let lvl = 1; lvl <= 5; lvl++) {
+        const isBossLvl = (lvl === 5);
+        const lvlBtnLabel = isBossLvl ? `L5 👑` : `L${lvl}`;
+        html += `
+          <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''}" 
+                  data-stage="${node.stage}" 
+                  data-variant="${node.variant}" 
+                  data-level="${lvl}">
+            ${lvlBtnLabel}
+          </button>
+        `;
+      }
+
+      html += `
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+    mapContainer.innerHTML = html;
+
+    mapContainer.querySelectorAll('.node-level-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const stage = Number(btn.dataset.stage);
+        const variant = btn.dataset.variant;
+        const level = Number(btn.dataset.level);
+        if (typeof StageManager !== 'undefined' && StageManager.enterStageLevel) {
+          StageManager.enterStageLevel(stage, variant, level);
+        }
+      });
+    });
+  }
+
   static _doRenderEnemies() {
     const layer = document.getElementById('enemyLayer');
     if (!layer) return;
 
     const state = getGameState();
+    
+    // If player is on World Map (not in active level), render node-map view
+    if (!state.stageState?.inActiveLevel) {
+      this.renderWorldMapNodeView(layer);
+      return;
+    }
+
+    // Remove world map container if present when inside active level
+    const mapContainer = layer.querySelector('.world-map-container');
+    if (mapContainer) mapContainer.remove();
+
     const enemies = state.stageState.enemies || [];
     const cache = this.getCircleRect();
     const rectWidth = cache.width;

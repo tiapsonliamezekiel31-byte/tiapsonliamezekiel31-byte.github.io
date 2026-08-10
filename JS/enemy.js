@@ -199,8 +199,26 @@ class Enemy {
 
 class EnemyManager {
   static createEnemy(name, maxAp, stage) {
-    const isElite = Math.random() < DEFAULT_GAME_CONFIG.eliteEnemyChance;
-    return new Enemy(name, maxAp, stage, isElite);
+    const state = (typeof getGameState === 'function') ? getGameState() : null;
+    const rates = state?.config?.eliteEnemyChanceByStage || DEFAULT_GAME_CONFIG.eliteEnemyChanceByStage;
+    const stageIdx = Math.max(0, Math.min((stage || 1) - 1, (rates?.length || 7) - 1));
+    const eliteChance = rates ? rates[stageIdx] : DEFAULT_GAME_CONFIG.eliteEnemyChance;
+    
+    const isElite = Math.random() < eliteChance;
+    const enemy = new Enemy(name, maxAp, stage, isElite);
+    
+    // Initial pre-applied mutators for higher stages (Stage 3+)
+    if (stage >= 3) {
+      const initialMutatorChance = Math.min(0.8, (stage - 2) * 0.15);
+      if (Math.random() < initialMutatorChance) {
+        const mutator = EnemyManager.pickMutatorForEnemy(enemy);
+        if (mutator) {
+          enemy.mutators.push(mutator);
+        }
+      }
+    }
+    
+    return enemy;
   }
   
   static getWeightedMissedDailyPercentage() {

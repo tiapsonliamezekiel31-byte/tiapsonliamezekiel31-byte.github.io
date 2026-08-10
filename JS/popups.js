@@ -1329,6 +1329,68 @@ class PopupsManager {
   }
   
   // ============================================================
+  // LEVEL CLEARED CHOICE POPUP (Open World)
+  // ============================================================
+
+  static showLevelClearedPopup(data) {
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay';
+    overlay.style.pointerEvents = 'auto';
+
+    const popup = document.createElement('div');
+    popup.className = 'popup level-cleared-popup';
+    popup.style.pointerEvents = 'auto';
+    popup.style.textAlign = 'center';
+
+    const stageNum = data.stage || 1;
+    const variant = data.variant || 'A';
+    const level = data.level || 1;
+    const nextLvl = (level < 5) ? level + 1 : 1;
+
+    const html = `
+      <div style="font-size: 2.2rem; margin-bottom: 8px;">⚔️</div>
+      <h2 style="color:#22c55e; margin:0 0 10px 0;">LEVEL ${level} CLEARED!</h2>
+      <p style="color:#e2e8f0; margin-bottom: 20px;">Stage ${stageNum}${variant} — Victory Achieved!</p>
+      <div class="button-group" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn-primary btn-next-level" style="padding:12px 20px; font-weight:bold; cursor:pointer;">
+          👉 PROCEED TO LEVEL ${nextLvl}
+        </button>
+        <button class="btn-secondary btn-world-map" style="padding:12px 20px; font-weight:bold; cursor:pointer;">
+          🗺️ WORLD MAP
+        </button>
+      </div>
+    `;
+
+    popup.innerHTML = html;
+
+    const btnNext = popup.querySelector('.btn-next-level');
+    if (btnNext) {
+      btnNext.addEventListener('click', () => {
+        overlay.remove();
+        if (typeof StageManager !== 'undefined') {
+          StageManager.enterStageLevel(stageNum, variant, nextLvl);
+        }
+      });
+    }
+
+    const btnMap = popup.querySelector('.btn-world-map');
+    if (btnMap) {
+      btnMap.addEventListener('click', () => {
+        overlay.remove();
+        if (typeof StageManager !== 'undefined') {
+          StageManager.leaveToWorldMap();
+        }
+      });
+    }
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
+
+  // ============================================================
   // VICTORY SCREEN
   // ============================================================
   

@@ -1910,6 +1910,9 @@ function performCheckIn() {
   let lateTodoDamage = 0;
   const retaliationSteps = [];
   try {
+    if (!state.stageState?.inActiveLevel) {
+      checkinDamageMultiplier = 0;
+    }
     const aliveEnemies = StageManager.getAliveEnemies();
     const aliveNormalEnemies = aliveEnemies.filter(e => !e?.isBoss && !e?.isBomb && !initiallyDeadEnemyIds.has(String(e.id)));
     const bossEnemy = aliveEnemies.find(e => e?.isBoss);

@@ -248,6 +248,7 @@ const DEFAULT_GAME_CONFIG = {
   stageHpPercentages: [30, 35, 40, 50, 60, 65, 70],
   enemyHpMultiplier: 3,
   eliteEnemyChance: 0.1,
+  eliteEnemyChanceByStage: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35],
   eliteEnemyHpMultiplier: 2,
   eliteEnemyDamageMultiplier: 2,
   eliteEnemyGoldMultiplier: 3,

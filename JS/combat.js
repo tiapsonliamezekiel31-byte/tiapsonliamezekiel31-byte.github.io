@@ -885,10 +885,9 @@ class CombatManager {
     try {
       if (anyKilled && StageManager.allEnemiesDead()) {
         const state = getGameState();
+        const clearResult = StageManager.onLevelCleared();
 
-        // If this was the special final boss, show victory immediately
-        const isFinalBoss = !!(state.stageState.bossData && state.stageState.bossData.special === 'final');
-        if (isFinalBoss) {
+        if (clearResult.isVictory) {
           const stats = {
             stage: state.stageState.stage,
             level: state.stageState.level,
@@ -899,38 +898,29 @@ class CombatManager {
           try { state.eventBus.emit(EVENTS.VICTORY, stats); } catch (e) {}
           try { PopupsManager.showVictoryScreen(stats); } catch (e) { console.warn('Failed to show victory screen', e); }
         } else {
-          // Level up player and advance level/stage
           try { PlayerManager.levelUp(); } catch (e) { console.warn('levelUp failed', e); }
-          const progressed = StageManager.nextLevel();
-
-          // If progression returned false -> game complete, show victory screen
-          try {
-            if (progressed === false) {
-              const isAtFinalStage = (state.stageState.stage >= (state.config.maxStages || 1));
-              const isAtFinalLevel = (state.stageState.level >= (state.config.maxLevelPerStage || 1));
-              if (isAtFinalStage && isAtFinalLevel) {
-                const stats = {
-                  stage: state.stageState.stage,
-                  level: state.stageState.level,
-                  enemiesDefeated: state.systemState.runStats.enemiesDefeated,
-                  bossesSailed: state.systemState.runStats.bossesSailed,
-                  goldEarned: state.systemState.runStats.totalGoldEarned
-                };
-                PopupsManager.showVictoryScreen(stats);
-              }
-            }
-          } catch (e) { console.warn('Failed to show victory screen after progression', e); }
 
           // Show buff selection when applicable
           try {
             const leveling = PlayerManager.getLevelingProgress();
-            if (leveling.hasBuffSelection) {
+            if (leveling.hasBuffSelection && typeof PopupsManager.showBuffSelection === 'function') {
               PopupsManager.showBuffSelection();
             }
-          } catch (e) { }
+          } catch (e) {}
+
+          // Show Level Cleared Choice Popup (Next Level vs World Map)
+          try {
+            if (typeof PopupsManager.showLevelClearedPopup === 'function') {
+              PopupsManager.showLevelClearedPopup(clearResult);
+            }
+          } catch (e) {
+            console.warn('Failed to show level cleared popup', e);
+          }
         }
       }
-    } catch (e) { console.warn('Post-kill progression check failed', e); }
+    } catch (e) {
+      console.warn('Failed handling allEnemiesDead logic', e);
+    }
     const chronoShiftEcho = (skillFx.chronoShiftCharges && skillFx.chronoShiftCharges > 0) ? {
       targetId: targetEnemyId,
       damage: damage,
