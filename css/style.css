@@ -1322,10 +1322,10 @@ body::before {
 }
 
 .enemy-emoji {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -58%);
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
   font-size: 38px;
   line-height: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
