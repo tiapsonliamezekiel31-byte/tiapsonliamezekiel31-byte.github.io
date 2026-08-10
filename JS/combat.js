@@ -457,6 +457,20 @@ class CombatManager {
       const resistanceMatch = Boolean(attackPlan.weaponElement && tgt.resist && String(tgt.resist).split(',').map(p => p.trim().split(' ')[0]).includes(attackPlan.weaponElement));
 
       let damage = attackPlan.calculateDamage(tgt, isCrit, { comboCount: state.combatState.currentCombo });
+
+      // Apply Protector 70% damage reduction if target is adjacent to a living Protector (Protectors cannot protect each other)
+      if (tgt.archetype !== 'Protector') {
+        const allEnemies = StageManager.getAllEnemies();
+        const tgtIndex = allEnemies.indexOf(tgt);
+        if (tgtIndex > -1 && typeof EnemyManager !== 'undefined' && typeof EnemyManager.getAdjacentEnemies === 'function') {
+          const adjacent = EnemyManager.getAdjacentEnemies(allEnemies, tgtIndex);
+          const hasLivingProtector = adjacent.some(adj => adj && !adj.isDead && adj.archetype === 'Protector');
+          if (hasLivingProtector) {
+            damage *= 0.3; // 70% damage reduction
+          }
+        }
+      }
+
       // apply weapon-specific damage upgrades (combined multiplicative)
       if (dmgUp && dmgUp > 0) {
         damage *= (1 + dmgUp);

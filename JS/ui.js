@@ -13283,15 +13283,21 @@ class UIManager {
 
       PopupsManager.closeAllPopups();
       const overlay = PopupsManager.createPopupOverlay();
+      overlay.style.zIndex = '2147483647';
+      overlay.style.pointerEvents = 'auto';
+
       const popup = document.createElement('div');
       popup.className = 'popup enemy-info-popup';
+      popup.style.pointerEvents = 'auto';
+
+      const enemyEmoji = this.getEnemyEmoji(enemy);
 
       popup.innerHTML = `
-        <div class="enemy-sprite-placeholder">
-          <img src="https://placehold.co/100x100/241a34/FFFFFF?text=Sprite" alt="Enemy Sprite" />
+        <div class="enemy-sprite-placeholder" style="font-size: 3.5rem; text-align: center; padding: 12px 0; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+          ${enemyEmoji}
         </div>
-        <h2>${enemy.name} ${enemy.isElite ? '👑' : ''}</h2>
-        <button class="btn-close">✕</button>
+        <h2 style="margin: 0 0 12px 0; text-align: center; color: #ffd700;">${enemy.name} ${enemy.isElite ? '👑' : ''}</h2>
+        <button class="btn-close" style="position: absolute; top: 12px; right: 12px; background: transparent; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
         <div class="enemy-info-content">
           <div class="enemy-info-stats">
             <div class="stat-row hp-row">
@@ -13309,7 +13315,7 @@ class UIManager {
               <span class="stat-label">Archetype</span>
               <span class="stat-value" style="color:#ffd700">${enemy.archetype}</span>
             </div>
-            ${archetypeMeta.description ? `<div class="archetype-desc">${archetypeMeta.description}</div>` : ''}
+            ${archetypeMeta.description ? `<div class="archetype-desc" style="color:#cbd5e1; font-size:0.8rem; margin:4px 0 8px 0;">${archetypeMeta.description}</div>` : ''}
             <div class="stat-row">
               <span class="stat-label">Resist</span>
               <span class="stat-value" style="color: #ff9a9a">${enemy.resist || '-'}</span>
@@ -13327,7 +13333,12 @@ class UIManager {
         </div>
       `;
 
-      popup.querySelector('.btn-close').addEventListener('click', () => PopupsManager.closeAllPopups());
+      const closeBtn = popup.querySelector('.btn-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          overlay.remove();
+        });
+      }
 
       overlay.appendChild(popup);
       document.body.appendChild(overlay);
