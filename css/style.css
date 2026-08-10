@@ -1129,12 +1129,7 @@ body::before {
   contain: layout style;
   border: none !important;
   border-radius: 0 !important;
-  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: transparent !important;
-  background-blend-mode: normal !important;
+  background: transparent !important;
   padding: 18px 6px 16px 6px;
   /* extra bottom room keeps the HP bar fully visible */
   font-size: 8.5px;

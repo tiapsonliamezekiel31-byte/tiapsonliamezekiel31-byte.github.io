@@ -11663,6 +11663,7 @@ class UIManager {
     
     // Cache references to avoid querySelector in hot render loop
     card._els = {
+      shape: card.querySelector('.enemy-shape'),
       emoji: card.querySelector('.enemy-emoji'),
       name: card.querySelector('.enemy-name'),
       hpFill: card.querySelector('.enemy-hpfill'),
