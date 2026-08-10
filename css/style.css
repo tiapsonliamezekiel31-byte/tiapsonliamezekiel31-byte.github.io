@@ -14637,16 +14637,16 @@ body:has(.popup-overlay[style*="display: block"]) #minimizedHudDock {
    OPEN WORLD PRIMITIVE NODE MAP STYLES
    ============================================================ */
 .world-map-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   overflow-y: auto;
-  padding: 12px;
+  padding: 32px 20px;
   box-sizing: border-box;
-  background: #0f172a;
-  z-index: 10;
+  background: #090d16;
+  z-index: 2147483647;
   display: flex;
   flex-direction: column;
   align-items: center;

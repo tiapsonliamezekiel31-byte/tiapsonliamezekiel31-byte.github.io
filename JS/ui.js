@@ -11298,24 +11298,19 @@ class UIManager {
     return this.circleRectCache || { left: 0, top: 0, width: 400, height: 400 };
   }
 
-  static renderWorldMapNodeView(layer) {
-    if (!layer) return;
-    
+  static renderWorldMapNodeView() {
     // Clear canvas connection lines if any
     const canvas = document.getElementById('enemyConnectionCanvas');
     if (canvas) {
       const ctx = canvas.getContext('2d');
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    
-    // Clean up existing card elements
-    layer.querySelectorAll('.enemy-card').forEach(c => c.remove());
 
-    let mapContainer = layer.querySelector('.world-map-container');
+    let mapContainer = document.querySelector('.world-map-container');
     if (!mapContainer) {
       mapContainer = document.createElement('div');
       mapContainer.className = 'world-map-container';
-      layer.appendChild(mapContainer);
+      document.body.appendChild(mapContainer);
     }
 
     const state = typeof getGameState === 'function' ? getGameState() : null;
@@ -11342,8 +11337,8 @@ class UIManager {
 
     let html = `
       <div class="world-map-header">
-        <h3 style="margin:0 0 2px 0; color:#ffd700; font-size:1.1rem; text-shadow:0 0 10px rgba(255,215,0,0.5);">🗺️ WORLD MAP</h3>
-        <p style="margin:0; font-size:0.75rem; color:#94a3b8;">Select a stage level to enter combat.</p>
+        <h2 style="margin:0 0 4px 0; color:#ffd700; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🗺️ WORLD MAP</h2>
+        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Select a stage level to enter combat.</p>
       </div>
       <div class="world-map-grid">
     `;
@@ -11397,20 +11392,20 @@ class UIManager {
   }
 
   static _doRenderEnemies() {
-    const layer = document.getElementById('enemyLayer');
-    if (!layer) return;
-
     const state = getGameState();
     
-    // If player is on World Map (not in active level), render node-map view
+    // If player is on World Map (not in active level), render full-screen node-map view
     if (!state.stageState?.inActiveLevel) {
-      this.renderWorldMapNodeView(layer);
+      this.renderWorldMapNodeView();
       return;
     }
 
     // Remove world map container if present when inside active level
-    const mapContainer = layer.querySelector('.world-map-container');
+    const mapContainer = document.querySelector('.world-map-container');
     if (mapContainer) mapContainer.remove();
+
+    const layer = document.getElementById('enemyLayer');
+    if (!layer) return;
 
     const enemies = state.stageState.enemies || [];
     const cache = this.getCircleRect();
