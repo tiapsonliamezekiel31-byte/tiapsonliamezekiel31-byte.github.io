@@ -1323,10 +1323,10 @@ body::before {
 
 .enemy-emoji {
   position: absolute !important;
-  top: 50% !important;
+  top: 36% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  font-size: 38px;
+  font-size: 34px !important;
   line-height: 1;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
   filter: none !important;
@@ -1518,15 +1518,16 @@ body::before {
 
 
 .enemy-hpbar {
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 8px;
-  height: 16px;
+  position: absolute !important;
+  left: 2px !important;
+  right: 2px !important;
+  bottom: -4px !important;
+  height: 14px !important;
   background: #241a34;
   border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.6);
+  z-index: 10008;
 }
 
 .enemy-hpfill {
@@ -1547,20 +1548,21 @@ body::before {
   letter-spacing: -0.5px;
   color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
-  z-index: 10006;
+  z-index: 10009;
   white-space: nowrap;
 }
 
 .enemy-name {
   color: #fff;
   font-weight: 800;
-  position: absolute;
+  position: absolute !important;
   left: 4px;
   right: 4px;
-  bottom: 12px;
-  /* sits lower over HP bar area */
+  top: 64% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
   text-align: center;
-  font-size: 9px;
+  font-size: 8.5px;
   z-index: 10007;
   text-shadow: 0 0 6px rgba(0, 0, 0, 1), 0 1px 3px rgba(0, 0, 0, 1), 0 0 2px rgba(0, 0, 0, 1);
   letter-spacing: 0.03em;
