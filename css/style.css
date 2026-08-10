@@ -1146,6 +1146,32 @@ body::before {
   overflow: visible;
 }
 
+/* Archetype Visual Shapes */
+.enemy-card.arch-circle {
+  clip-path: circle(50% at 50% 50%) !important;
+  border-radius: 50% !important;
+}
+
+.enemy-card.arch-triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%) !important;
+  border-radius: 0 !important;
+}
+
+.enemy-card.arch-diamond {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
+}
+
+.enemy-card.arch-square {
+  clip-path: inset(0 0 0 0) !important;
+  border-radius: 4px !important;
+}
+
+.enemy-card.arch-hexagon {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%) !important;
+  border-radius: 0 !important;
+}
+
 .enemy-card::before {
   content: '';
   position: absolute;

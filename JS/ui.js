@@ -11742,6 +11742,19 @@ class UIManager {
       if (card._state.bossColor !== bossColor) { card.style.setProperty('--boss-color', bossColor); card._state.bossColor = bossColor; }
     }
 
+    const archLower = (enemy.archetype || '').toLowerCase();
+    const shapeClass = archLower === 'fodder' || archLower === 'mana drain' ? 'arch-circle'
+      : archLower === 'brute' ? 'arch-triangle'
+      : archLower === 'support' || archLower === 'healer' ? 'arch-diamond'
+      : archLower === 'protector' ? 'arch-square'
+      : archLower === 'commander' ? 'arch-hexagon' : '';
+
+    if (card._state.shapeClass !== shapeClass) {
+      card.classList.remove('arch-circle', 'arch-triangle', 'arch-diamond', 'arch-square', 'arch-hexagon');
+      if (shapeClass) card.classList.add(shapeClass);
+      card._state.shapeClass = shapeClass;
+    }
+
     const els = card._els || {};
 
     const newEmoji = this.getEnemyEmoji(enemy);
