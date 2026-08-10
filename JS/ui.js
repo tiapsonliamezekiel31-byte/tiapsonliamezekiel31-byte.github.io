@@ -11654,7 +11654,6 @@ class UIManager {
       <div class="pet-badge" style="display:none;"></div>
       <div class="mutator-badges" style="display:inline-block;"></div>
       <div class="enemy-name"></div>
-      <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
       <div class="enemy-hpbar">
         <div class="enemy-hpfill"></div>
         <div class="enemy-hptext"></div>
