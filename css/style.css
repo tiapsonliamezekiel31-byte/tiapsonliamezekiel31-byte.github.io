@@ -1261,14 +1261,9 @@ body::before {
   transform: translate(-50%, -50%) scale(1.04);
 }
 
-.enemy-card.targeted {
-  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(24, 80, 20, 0.35) !important;
-  background-blend-mode: normal !important;
-  box-shadow: none !important;
+.enemy-card.targeted .enemy-card-bg {
+  background-color: rgba(24, 80, 20, 0.6) !important;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.8) !important;
 }
 
 /* Dodge-ready visual: indicates which enemy's next attack will be dodged */
@@ -1737,13 +1732,11 @@ body::before {
 }
 
 /* Enemy Card Background Texture */
+/* Ensure .enemy-card container has no direct background image */
 .enemy-card {
-  background-image: url('../assets/textures/mainbuttons.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.85) !important;
-  background-blend-mode: overlay !important;
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
 }
 
 /* Glowing target highlights for drag targeting */
