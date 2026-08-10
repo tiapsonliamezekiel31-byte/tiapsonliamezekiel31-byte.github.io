@@ -11319,58 +11319,68 @@ class UIManager {
     }
     const stageProgress = state?.stageState?.stageProgress || {};
 
-    const nodeMeta = [
-      { key: '1A', stage: 1, variant: 'A', name: 'Forest', icon: '🌲' },
-      { key: '1B', stage: 1, variant: 'B', name: 'Desert', icon: '🏜️' },
-      { key: '2A', stage: 2, variant: 'A', name: 'Crimson Cave', icon: '🕳️' },
-      { key: '2B', stage: 2, variant: 'B', name: 'Infected Swamp', icon: '☣️' },
-      { key: '3A', stage: 3, variant: 'A', name: 'Glacier', icon: '🧊' },
-      { key: '3B', stage: 3, variant: 'B', name: 'Ruins', icon: '🏛️' },
-      { key: '4A', stage: 4, variant: 'A', name: 'Graveyard', icon: '🪦' },
-      { key: '4B', stage: 4, variant: 'B', name: 'Castle', icon: '🏰' },
-      { key: '5A', stage: 5, variant: 'A', name: 'Volcano', icon: '🌋' },
-      { key: '5B', stage: 5, variant: 'B', name: 'Dragon Isle', icon: '🐉' },
-      { key: '6A', stage: 6, variant: 'A', name: 'Golden Mountain', icon: '⛰️' },
-      { key: '6B', stage: 6, variant: 'B', name: 'Abyssal Sea', icon: '🌊' },
-      { key: '7A', stage: 7, variant: 'A', name: 'The Void', icon: '🌌' }
+    const tiers = [
+      { stage: 1, title: 'STAGE 1 — ROOT BIOMES', nodes: [{ key: '1A', variant: 'A', name: 'Forest', icon: '🌲' }, { key: '1B', variant: 'B', name: 'Desert', icon: '🏜️' }] },
+      { stage: 2, title: 'STAGE 2 — DEEP CAVES & SWAMPS', nodes: [{ key: '2A', variant: 'A', name: 'Crimson Cave', icon: '🕳️' }, { key: '2B', variant: 'B', name: 'Infected Swamp', icon: '☣️' }] },
+      { stage: 3, title: 'STAGE 3 — FROZEN RUINS', nodes: [{ key: '3A', variant: 'A', name: 'Glacier', icon: '🧊' }, { key: '3B', variant: 'B', name: 'Ruins', icon: '🏛️' }] },
+      { stage: 4, title: 'STAGE 4 — ANCIENT CASTLES & TOMBS', nodes: [{ key: '4A', variant: 'A', name: 'Graveyard', icon: '🪦' }, { key: '4B', variant: 'B', name: 'Castle', icon: '🏰' }] },
+      { stage: 5, title: 'STAGE 5 — INFERNAL DRAGON REGIONS', nodes: [{ key: '5A', variant: 'A', name: 'Volcano', icon: '🌋' }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉' }] },
+      { stage: 6, title: 'STAGE 6 — MOUNTAINS & ABYSS', nodes: [{ key: '6A', variant: 'A', name: 'Golden Mountain', icon: '⛰️' }, { key: '6B', variant: 'B', name: 'Abyssal Sea', icon: '🌊' }] },
+      { stage: 7, title: 'STAGE 7 — THE APEX VOID', nodes: [{ key: '7A', variant: 'A', name: 'The Void', icon: '🌌' }] }
     ];
 
     let html = `
       <div class="world-map-header">
-        <h2 style="margin:0 0 4px 0; color:#ffd700; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🗺️ WORLD MAP</h2>
-        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Select a stage level to enter combat.</p>
+        <h2 style="margin:0 0 4px 0; color:#ffd700; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD MAP TREE</h2>
+        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Navigate the node tree. Completed levels are greyed out.</p>
       </div>
-      <div class="world-map-grid">
+      <div class="world-tree-container">
     `;
 
-    nodeMeta.forEach(node => {
-      const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
-      const isCleared = !!prog.isCleared;
-
+    tiers.forEach((tier, tIdx) => {
       html += `
-        <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}">
-          <div class="stage-node-title">
-            <span>${node.icon} ${node.stage}${node.variant}: ${node.name}</span>
-            ${isCleared ? '<span class="cleared-badge">✓ CLEARED</span>' : ''}
-          </div>
-          <div class="stage-node-levels">
+        <div class="world-tree-tier">
+          <div class="tier-label">${tier.title}</div>
+          <div class="tier-nodes-row">
       `;
 
-      for (let lvl = 1; lvl <= 5; lvl++) {
-        const isBossLvl = (lvl === 5);
-        const lvlBtnLabel = isBossLvl ? `L5 👑` : `L${lvl}`;
+      tier.nodes.forEach(node => {
+        const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
+        const isCleared = !!prog.isCleared;
+        const maxCleared = prog.maxCleared || 0;
+
         html += `
-          <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''}" 
-                  data-stage="${node.stage}" 
-                  data-variant="${node.variant}" 
-                  data-level="${lvl}">
-            ${lvlBtnLabel}
-          </button>
+          <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}">
+            <div class="stage-node-title">
+              <span>${node.icon} ${tier.stage}${node.variant}: ${node.name}</span>
+              ${isCleared ? '<span class="cleared-badge">✓ CLEARED</span>' : ''}
+            </div>
+            <div class="stage-node-levels">
         `;
-      }
+
+        for (let lvl = 1; lvl <= 5; lvl++) {
+          const isBossLvl = (lvl === 5);
+          const isLevelCleared = (lvl <= maxCleared);
+          const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl ? `L5 👑` : `L${lvl}`);
+          html += `
+            <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
+                    data-stage="${tier.stage}" 
+                    data-variant="${node.variant}" 
+                    data-level="${lvl}">
+              ${lvlBtnLabel}
+            </button>
+          `;
+        }
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
 
       html += `
           </div>
+          ${tIdx < tiers.length - 1 ? '<div class="tree-connector-line"></div>' : ''}
         </div>
       `;
     });
