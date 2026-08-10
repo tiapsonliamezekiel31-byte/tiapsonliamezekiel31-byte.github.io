@@ -11648,18 +11648,16 @@ class UIManager {
     card.className = 'enemy-card';
     card.dataset.enemyId = String(enemyId);
     card.innerHTML = `
-      <div class="enemy-card-shape-bg"></div>
-      <div class="enemy-card-content">
-        <div class="enemy-emoji"></div>
-        <div class="dodge-marker" style="display:none; font-size:12px; opacity:0.6; top:-16px;">💨</div>
-        <div class="pet-badge" style="display:none;"></div>
-        <div class="mutator-badges" style="display:inline-block;"></div>
-        <div class="enemy-name"></div>
-        <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
-        <div class="enemy-hpbar">
-          <div class="enemy-hpfill"></div>
-          <div class="enemy-hptext"></div>
-        </div>
+      <div class="enemy-card-bg"></div>
+      <div class="enemy-emoji"></div>
+      <div class="dodge-marker" style="display:none; font-size:12px; opacity:0.6; top:-16px;">💨</div>
+      <div class="pet-badge" style="display:none;"></div>
+      <div class="mutator-badges" style="display:inline-block;"></div>
+      <div class="enemy-name"></div>
+      <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
+      <div class="enemy-hpbar">
+        <div class="enemy-hpfill"></div>
+        <div class="enemy-hptext"></div>
       </div>
     `;
     
