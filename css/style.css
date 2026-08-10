@@ -1146,30 +1146,39 @@ body::before {
   overflow: visible;
 }
 
-/* Archetype Visual Shapes */
-.enemy-card.arch-circle {
-  clip-path: circle(50% at 50% 50%) !important;
-  border-radius: 50% !important;
+/* Archetype Visual Shapes (Applied to background shape element) */
+.enemy-shape {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../assets/textures/mainbuttons.jpg'), url('../assets/textures/mainbuttons.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  pointer-events: none;
 }
 
-.enemy-card.arch-triangle {
+.enemy-shape.arch-circle {
+  clip-path: circle(48% at 50% 50%) !important;
+}
+
+.enemy-shape.arch-triangle {
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%) !important;
-  border-radius: 0 !important;
 }
 
-.enemy-card.arch-diamond {
+.enemy-shape.arch-diamond {
   clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%) !important;
-  border-radius: 0 !important;
 }
 
-.enemy-card.arch-square {
+.enemy-shape.arch-square {
   clip-path: inset(0 0 0 0) !important;
-  border-radius: 4px !important;
+  border-radius: 4px;
 }
 
-.enemy-card.arch-hexagon {
+.enemy-shape.arch-hexagon {
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%) !important;
-  border-radius: 0 !important;
 }
 
 .enemy-card::before {
