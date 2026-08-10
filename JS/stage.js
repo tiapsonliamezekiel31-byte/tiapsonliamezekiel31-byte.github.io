@@ -245,7 +245,9 @@ class StageManager {
     const stage = state.stageState.stage;
     const variation = state.stageState.stageVariation;
     
-    const formationData = FORMATIONS[stage][variation][level];
+    const stageFormations = FORMATIONS[stage] || FORMATIONS[1];
+    const variationData = stageFormations[variation] || stageFormations['A'] || Object.values(stageFormations)[0];
+    const formationData = variationData ? variationData[level] : null;
     if (!formationData) {
       console.error(`No formation found for Stage ${stage} Var ${variation} Level ${level}`);
       return false;
