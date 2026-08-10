@@ -252,6 +252,7 @@ class EnemyManager {
     let safetyCounter = 0;
 
     while (budgetRemaining >= archetypeCosts.Fodder && safetyCounter < 60) {
+      if (chosenUnits.length >= 15) break;
       safetyCounter++;
       const affordable = archetypeKeys.filter(arch => archetypeCosts[arch] <= budgetRemaining);
       if (!affordable.length) break;
