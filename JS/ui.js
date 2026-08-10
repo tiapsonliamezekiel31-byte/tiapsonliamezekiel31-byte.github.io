@@ -12047,14 +12047,6 @@ class UIManager {
 
       const enemyId = card.dataset.enemyId;
 
-      // If user clicked the info-btn, open info popup without triggering attack targeting
-      if (event.target.closest('.info-btn')) {
-        event.stopPropagation();
-        try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup failed', e); }
-        return;
-      }
-
-      // Normal card click targets the enemy for attack
       const state = getGameState();
       if (state && state.combatState) {
         state.combatState.currentTarget = enemyId;
@@ -12062,6 +12054,9 @@ class UIManager {
 
       document.querySelectorAll('.enemy-card').forEach(c => c.classList.remove('targeted-attack'));
       card.classList.add('targeted-attack');
+
+      // Pop up enemy info on card click
+      try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup failed', e); }
     });
 
     layer.addEventListener('contextmenu', (event) => {
