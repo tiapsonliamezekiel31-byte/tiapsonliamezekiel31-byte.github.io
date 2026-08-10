@@ -11653,6 +11653,7 @@ class UIManager {
       <div class="pet-badge" style="display:none;"></div>
       <div class="mutator-badges" style="display:inline-block;"></div>
       <div class="enemy-name"></div>
+      <div class="info-btn" style="position:absolute; top:2px; right:2px; font-size:12px; cursor:pointer; z-index:10; opacity:0.85;" title="Inspect Info">ℹ️</div>
       <div class="enemy-hpbar">
         <div class="enemy-hpfill"></div>
         <div class="enemy-hptext"></div>
@@ -12045,6 +12046,15 @@ class UIManager {
       if (!card || !layer.contains(card) || card.classList.contains('dead')) return;
 
       const enemyId = card.dataset.enemyId;
+
+      // If user clicked the info-btn, open info popup without triggering attack targeting
+      if (event.target.closest('.info-btn')) {
+        event.stopPropagation();
+        try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup failed', e); }
+        return;
+      }
+
+      // Normal card click targets the enemy for attack
       const state = getGameState();
       if (state && state.combatState) {
         state.combatState.currentTarget = enemyId;
@@ -12052,9 +12062,14 @@ class UIManager {
 
       document.querySelectorAll('.enemy-card').forEach(c => c.classList.remove('targeted-attack'));
       card.classList.add('targeted-attack');
+    });
 
-      // Show enemy info popup on card click
-      try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup on card click failed', e); }
+    layer.addEventListener('contextmenu', (event) => {
+      const card = event.target.closest('.enemy-card');
+      if (!card || !layer.contains(card) || card.classList.contains('dead')) return;
+      event.preventDefault();
+      const enemyId = card.dataset.enemyId;
+      try { UIManager.showMutatorPopup(enemyId); } catch (e) { console.warn('showMutatorPopup failed', e); }
     });
   }
 
