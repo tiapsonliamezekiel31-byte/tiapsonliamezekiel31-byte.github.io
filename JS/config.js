@@ -267,6 +267,7 @@ const DEFAULT_GAME_CONFIG = {
     Aether: '#ffd76a',
     default: '#9d6bff'
   },
+  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether'],
   stageLevelBudgets: [100, 150, 200, 250],
   strongArchetypeDiscountPerLevel: 0.25,
   enemyArchetypes: {

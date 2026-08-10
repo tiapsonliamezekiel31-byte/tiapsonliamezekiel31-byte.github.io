@@ -349,7 +349,7 @@ class EnemyManager {
   
   static applyHealerPassive(enemy) {
     // Healer: heals lowest-HP ally for 20% of that ally's max HP
-    if (enemy.archetype !== 'Healer') return;
+    if (enemy.archetype !== 'Healer' && enemy.archetype !== 'Support') return;
     
     const state = getGameState();
     const aliveEnemies = state.stageState.enemies.filter(e => !e.isDead);
@@ -381,7 +381,7 @@ class EnemyManager {
   
   static applyManaDrainPassive(enemy, stage) {
     // Mana Drain: drains MN mana, where MN = stage + 4
-    if (enemy.archetype !== 'Mana Drain') return;
+    if (enemy.archetype !== 'Mana Drain' && enemy.archetype !== 'Fodder') return;
     
     const state = getGameState();
     const manaDrain = stage + 4;

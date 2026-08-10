@@ -11533,7 +11533,7 @@ class UIManager {
     try {
       this.drawCanvasConnections();
       
-      const hasHealer = enemies.some(enemy => enemy && !enemy.isDead && (enemy.archetype || '').toLowerCase() === 'healer');
+      const hasHealer = enemies.some(enemy => enemy && !enemy.isDead && ['healer','support'].includes((enemy.archetype || '').toLowerCase()));
       
       // Start dynamic canvas updating loop ONLY if not already running and there is a healer alive
       if (hasHealer && !window.enemyCanvasLoopActive) {
@@ -11554,7 +11554,7 @@ class UIManager {
           // Continue animating only if healers are still present
           const curState = getGameState();
           const curEnemies = curState.stageState.enemies || [];
-          const stillHasHealer = curEnemies.some(enemy => enemy && !enemy.isDead && (enemy.archetype || '').toLowerCase() === 'healer');
+          const stillHasHealer = curEnemies.some(enemy => enemy && !enemy.isDead && ['healer','support'].includes((enemy.archetype || '').toLowerCase()));
           
           if (stillHasHealer) {
             requestAnimationFrame(tick);
@@ -11804,7 +11804,7 @@ class UIManager {
         }
 
         // 2. Mana Drain archetype
-        if (archetypeStr === 'mana drain') {
+        if (archetypeStr === 'mana drain' || archetypeStr === 'fodder') {
           if (!card._els.manaDrain) {
             card._els.manaDrain = document.createElement('div');
             card._els.manaDrain.className = 'mana-drain-circle';
@@ -11940,7 +11940,7 @@ class UIManager {
     // 2. Draw Healer zigzag green lines
     alivePositions.forEach(pos => {
       const arch = (pos.enemy.archetype || '').toLowerCase();
-      if (arch === 'healer') {
+      if (arch === 'healer' || arch === 'support') {
         let lowestHpEnemy = null;
         let lowestHp = Infinity;
         alivePositions.forEach(other => {
