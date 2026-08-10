@@ -11404,6 +11404,14 @@ class UIManager {
   static _doRenderEnemies() {
     const state = getGameState();
     
+    // Check if player is in Limbo
+    if (state.playerState?.inLimbo) {
+      if (typeof PopupsManager !== 'undefined' && PopupsManager.showLimboScreen) {
+        PopupsManager.showLimboScreen();
+      }
+      return;
+    }
+
     // If player is on World Map (not in active level), render full-screen node-map view
     if (!state.stageState?.inActiveLevel) {
       this.renderWorldMapNodeView();
@@ -12115,9 +12123,11 @@ class UIManager {
 
     // Fallbacks
     if (enemy?.isBoss) return '👑';
-    if (archetype === 'mana drain') return '👻';
+    if (archetype === 'commander') return '👑';
+    if (archetype === 'brute') return '💥';
+    if (archetype === 'support' || archetype === 'healer') return '💚';
     if (archetype === 'protector') return '🛡️';
-    if (archetype === 'healer') return '💚';
+    if (archetype === 'fodder' || archetype === 'mana drain') return '💀';
     return '☠️';
   }
 

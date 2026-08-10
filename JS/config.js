@@ -267,20 +267,59 @@ const DEFAULT_GAME_CONFIG = {
     Aether: '#ffd76a',
     default: '#9d6bff'
   },
-  weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether'],
+  stageLevelBudgets: [100, 150, 200, 250],
+  strongArchetypeDiscountPerLevel: 0.25,
   enemyArchetypes: {
+    Fodder: {
+      baseCost: 5,
+      hpMult: 0.4,
+      dmgMult: 0.4,
+      icon: '💀',
+      description: 'Low health and damage. Attacks drain MN mana (stage + 4).'
+    },
     Brute: {
-      description: 'Consecutive attack multiplier M = 1 + stage/10. Each consecutive day, damage ×M up to M^5.'
+      baseCost: 12,
+      hpMult: 0.6,
+      dmgMult: 2.0,
+      icon: '💥',
+      description: 'High damage, low health. Devastating offensive threat.'
     },
-    Healer: {
-      description: 'When it attacks, heals the lowest-HP ally for 20% of that ally\'s max HP.'
-    },
-    'Mana Drain': {
-      description: 'Attacks drain MN mana, where MN = stage + 4.'
+    Support: {
+      baseCost: 10,
+      hpMult: 1.0,
+      dmgMult: 0.0,
+      icon: '💚',
+      description: 'No damage, medium health. Heals lowest-HP ally for 20% max HP on attack and doubles daily mutation chance for allies.'
     },
     Protector: {
-      description: 'While alive, adjacent living enemies take only 0.7× damage (30% reduction).'
+      baseCost: 12,
+      hpMult: 1.5,
+      dmgMult: 0.6,
+      icon: '🛡️',
+      description: 'High health. Grants 70% damage reduction (0.3x damage taken) to adjacent living enemies.'
+    },
+    Commander: {
+      baseCost: 20,
+      hpMult: 2.5,
+      dmgMult: 2.5,
+      icon: '👑',
+      description: 'High health and high damage apex unit.'
     }
+  },
+  stageArchetypeSpecies: {
+    '1A': { Fodder: 'Goblin', Brute: 'Wolf', Support: 'Goblin Wizard', Protector: 'Bear', Commander: 'Gorilla Rebel' },
+    '1B': { Fodder: 'Drone', Brute: 'Raptor', Support: 'Marcher', Protector: 'Beetle', Commander: 'Grave Guardian' },
+    '2A': { Fodder: 'Brain Eaters', Brute: 'Tarantulator', Support: 'Dark Sorcerer', Protector: 'Death Bringer', Commander: 'Death Bringer' },
+    '2B': { Fodder: 'Giant Frog', Brute: 'Plagued', Support: 'Leech', Protector: 'Zombie', Commander: 'Croc' },
+    '3A': { Fodder: 'Ice Spirit', Brute: 'Yeti Hunter', Support: 'Yeti Mage', Protector: 'Yeti Smasher', Commander: 'Yeti Smasher' },
+    '3B': { Fodder: 'Termite', Brute: 'Stone Lizard', Support: 'Turret', Protector: 'Golem', Commander: 'Golem' },
+    '4A': { Fodder: 'Skeleton', Brute: 'Ghost', Support: 'Coffin Carrier', Protector: 'Ferryman', Commander: 'Ferryman' },
+    '4B': { Fodder: 'Flying Skull', Brute: 'Knight', Support: 'Fire Mage', Protector: 'Paladin', Commander: 'Baby Dragon' },
+    '5A': { Fodder: 'Ninja', Brute: 'Master', Support: 'Priest', Protector: 'Magma Blob', Commander: 'Master' },
+    '5B': { Fodder: 'Aetherian Hydra', Brute: 'Air Wyvern', Support: 'Water Drake', Protector: 'Earth Wyrm', Commander: 'Aetherian Hydra' },
+    '6A': { Fodder: 'Dwarf', Brute: 'Driller', Support: 'Atom', Protector: 'Driller', Commander: 'Atom' },
+    '6B': { Fodder: 'Megalodon', Brute: 'Kraken', Support: 'World Eating Snake', Protector: 'Constellation Crusher', Commander: 'Constellation Crusher' },
+    '7A': { Fodder: 'Bat', Brute: 'Porcupine', Support: 'Slug', Protector: 'Phoenix', Commander: 'Phoenix' }
   },
 
   // ============================================================

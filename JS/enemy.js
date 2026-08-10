@@ -107,36 +107,37 @@ const ENEMY_DATABASE = {
 };
 
 class Enemy {
-  constructor(name, maxAp, stage, isElite = false) {
-    const baseData = ENEMY_DATABASE[name] || LEGACY_ENEMY_DATABASE[name];
-    if (!baseData) {
-      throw new Error(`Unknown enemy: ${name}`);
-    }
+  constructor(name, maxAp, stage, isElite = false, archetypeOverride = null) {
+    const baseData = ENEMY_DATABASE[name] || LEGACY_ENEMY_DATABASE[name] || {};
     
     this.id = Math.random().toString(36).substr(2, 9);
     this.name = name;
-    this.archetype = baseData.archetype;
-    this.resist = baseData.resist;
-    this.weak = baseData.weak;
+    this.archetype = archetypeOverride || baseData.archetype || 'Fodder';
+    this.resist = baseData.resist || '-';
+    this.weak = baseData.weak || '-';
     this.isElite = isElite;
     this.consecutiveAttackDays = 0;
-    // Secondary mutators (gained per-day). Persisted on the enemy instance.
     this.mutators = [];
     this.statusEffects = {};
     this.daysAlive = 0;
     
-    // HP scaling: MAX_AP × stage_HP% × enemy_HP_multiplier
+    // Archetype-driven stat multipliers
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    const archCfg = state?.config?.enemyArchetypes?.[this.archetype] || DEFAULT_GAME_CONFIG.enemyArchetypes?.[this.archetype] || {};
+    
+    const rawHpMult = typeof archCfg.hpMult === 'number' ? archCfg.hpMult : (baseData.hpMult || 1.0);
+    const rawDmgMult = typeof archCfg.dmgMult === 'number' ? archCfg.dmgMult : (baseData.dmgMult || 1.0);
+
     const stagePctVal = DEFAULT_GAME_CONFIG.stageHpPercentages[stage - 1] ?? 70;
     const stagePercentage = stagePctVal / 100;
-    const hpMultiplier = baseData.hpMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyHpMultiplier : 1);
+    const hpMultiplier = rawHpMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyHpMultiplier : 1);
     
     const effectiveMaxAp = Math.max(1, Number(maxAp) || 1);
     this.baseMaxHp = Math.max(1, Math.round(effectiveMaxAp * stagePercentage * hpMultiplier));
     this.maxHp = this.baseMaxHp;
     this.hp = this.maxHp;
     
-    // Damage multiplier
-    this.dmgMult = baseData.dmgMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyDamageMultiplier : 1);
+    this.dmgMult = rawDmgMult * (isElite ? DEFAULT_GAME_CONFIG.eliteEnemyDamageMultiplier : 1);
     
     this.isDead = false;
     this.finalStandUsed = false;
@@ -146,7 +147,7 @@ class Enemy {
     this.maxHp = this.baseMaxHp;
     this.hp = this.maxHp;
   }
-  
+
   takeDamage(amount) {
     const before = this.hp;
     this.hp -= amount;
@@ -187,7 +188,6 @@ class Enemy {
     const state = getGameState();
     if (!elementGrade || elementGrade === '-') return 1.0;
     
-    // Parse grade (e.g., "Earth B" -> "B")
     const grade = elementGrade.trim().split(' ').pop();
     return state.config.elementGradeMultipliers[grade] || 1.0;
   }
@@ -198,14 +198,14 @@ class Enemy {
 }
 
 class EnemyManager {
-  static createEnemy(name, maxAp, stage) {
+  static createEnemy(name, maxAp, stage, isElite = false, archetypeOverride = null) {
     const state = (typeof getGameState === 'function') ? getGameState() : null;
     const rates = state?.config?.eliteEnemyChanceByStage || DEFAULT_GAME_CONFIG.eliteEnemyChanceByStage;
     const stageIdx = Math.max(0, Math.min((stage || 1) - 1, (rates?.length || 7) - 1));
     const eliteChance = rates ? rates[stageIdx] : DEFAULT_GAME_CONFIG.eliteEnemyChance;
     
-    const isElite = Math.random() < eliteChance;
-    const enemy = new Enemy(name, maxAp, stage, isElite);
+    const finalElite = (isElite !== undefined && isElite !== null) ? isElite : (Math.random() < eliteChance);
+    const enemy = new Enemy(name, maxAp, stage, finalElite, archetypeOverride);
     
     // Initial pre-applied mutators for higher stages (Stage 3+)
     if (stage >= 3) {
@@ -219,6 +219,52 @@ class EnemyManager {
     }
     
     return enemy;
+  }
+
+  static generateBudgetFormation(stage, variant, level) {
+    const state = (typeof getGameState === 'function') ? getGameState() : null;
+    const cfg = state?.config || DEFAULT_GAME_CONFIG;
+    
+    const budgets = cfg.stageLevelBudgets || [100, 150, 200, 250];
+    const lvlIdx = Math.max(0, Math.min((level || 1) - 1, budgets.length - 1));
+    let totalBudget = budgets[lvlIdx];
+
+    const discountFactor = Math.max(0, 1.0 - (level - 1) * (cfg.strongArchetypeDiscountPerLevel || 0.25));
+
+    const archetypeKeys = ['Fodder', 'Brute', 'Support', 'Protector', 'Commander'];
+    const archetypeCosts = {};
+    archetypeKeys.forEach(arch => {
+      const baseCost = cfg.enemyArchetypes?.[arch]?.baseCost || 10;
+      if (arch === 'Fodder') {
+        archetypeCosts[arch] = baseCost;
+      } else {
+        archetypeCosts[arch] = Math.max(3, Math.round(baseCost * discountFactor));
+      }
+    });
+
+    const stageKey = `${stage}${variant || 'A'}`;
+    const speciesMap = cfg.stageArchetypeSpecies?.[stageKey] || {
+      Fodder: 'Goblin', Brute: 'Wolf', Support: 'Goblin Wizard', Protector: 'Bear', Commander: 'Gorilla Rebel'
+    };
+
+    const chosenUnits = [];
+    let budgetRemaining = totalBudget;
+    let safetyCounter = 0;
+
+    while (budgetRemaining >= archetypeCosts.Fodder && safetyCounter < 60) {
+      safetyCounter++;
+      const affordable = archetypeKeys.filter(arch => archetypeCosts[arch] <= budgetRemaining);
+      if (!affordable.length) break;
+
+      const pick = affordable[Math.floor(Math.random() * affordable.length)];
+      const speciesName = speciesMap[pick] || 'Goblin';
+      
+      const unit = this.createEnemy(speciesName, state?.playerState?.maxAp || 100, stage, false, pick);
+      chosenUnits.push(unit);
+      budgetRemaining -= archetypeCosts[pick];
+    }
+
+    return chosenUnits;
   }
   
   static getWeightedMissedDailyPercentage() {

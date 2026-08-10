@@ -1702,6 +1702,21 @@ function performCheckIn() {
 
   const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, completedDailies.concat(rawMissedDailies));
   
+  // Limbo revival check: 100% Perfect Day check-in revives player with 50% HP
+  if (state.playerState?.inLimbo) {
+    if (completionRate >= 0.999) {
+      state.playerState.inLimbo = false;
+      state.playerState.hp = Math.round(state.playerState.maxHp * 0.5);
+      const limboOverlay = document.querySelector('.limbo-overlay');
+      if (limboOverlay) limboOverlay.remove();
+      try {
+        state.eventBus.emit(EVENTS.NOTIFICATION, { message: '✨ PERFECT DAY! You have broken free from Limbo with 50% HP!', type: 'success' });
+      } catch (e) {}
+    } else {
+      PopupsManager.showLimboScreen();
+    }
+  }
+  
   // Calculate run completion rate before pushing today's check-in
   let runCompletionRate = 0;
   if (typeof UIManager !== 'undefined' && typeof UIManager.getRunCompletionEntries === 'function') {
@@ -2552,7 +2567,9 @@ function performCheckIn() {
   try {
     const aliveForMutator = (state.stageState.enemies || []).filter(e => e && !e.isDead && !e.isBoss);
     const mutatorGains = [];
-    const chance = state.config.mutatorChancePerDay ?? 0.3;
+    const hasSupportAlly = aliveForMutator.some(e => e.archetype === 'Support');
+    const baseChance = state.config.mutatorChancePerDay ?? 0.3;
+    const chance = hasSupportAlly ? Math.min(0.9, baseChance * 2) : baseChance;
     const maxPer = state.config.maxMutatorsPerEnemy ?? 3;
     aliveForMutator.forEach(enemy => {
       // Block mutations under Unstable Concoction
@@ -2770,20 +2787,14 @@ function performCheckIn() {
       if (state.playerState.hp <= 0) {
         const survived = PlayerManager.checkDeathDefiance();
         if (!survived) {
-          // Permanent death — show death screen and emit event
+          state.playerState.inLimbo = true;
+          state.stageState.inActiveLevel = false;
           state.eventBus.emit(EVENTS.DEATH, {
             stage: state.stageState.stage,
             level: state.stageState.level
           });
 
-          PopupsManager.showDeathScreen({
-            class: state.playerState.className,
-            stage: state.stageState.stage,
-            level: state.stageState.level,
-            enemiesDefeated: state.systemState.runStats.enemiesDefeated,
-            bossesSailed: state.systemState.runStats.bossesSailed,
-            goldEarned: state.systemState.runStats.totalGoldEarned
-          });
+          PopupsManager.showLimboScreen();
           clearCheckInRunning();
           state.save();
           return;

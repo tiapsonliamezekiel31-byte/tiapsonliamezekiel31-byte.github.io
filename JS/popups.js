@@ -1259,10 +1259,51 @@ class PopupsManager {
   }
   
   // ============================================================
+  // LIMBO DEATH SCREEN
+  // ============================================================
+
+  static showLimboScreen() {
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (state && state.playerState) {
+      state.playerState.inLimbo = true;
+    }
+    if (state && state.stageState) {
+      state.stageState.inActiveLevel = false;
+    }
+
+    let overlay = document.querySelector('.limbo-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'popup-overlay limbo-overlay';
+      overlay.style.pointerEvents = 'auto';
+      overlay.style.zIndex = '2147483647';
+      document.body.appendChild(overlay);
+    }
+
+    const html = `
+      <div class="popup limbo-popup" style="text-align:center; max-width:440px; background:#0b0f19; border:2px solid #6366f1; border-radius:12px; padding:28px 20px;">
+        <div style="font-size: 3rem; margin-bottom: 8px;">👻</div>
+        <h2 style="color:#a855f7; margin:0 0 8px 0; font-size:1.6rem; text-shadow:0 0 12px rgba(168,85,247,0.5);">YOU ARE IN LIMBO</h2>
+        <p style="color:#cbd5e1; font-size:0.9rem; margin-bottom:16px;">
+          You were defeated in combat. The level remains uncleared.
+        </p>
+        <div style="background:#1e1b4b; border:1px solid #4338ca; border-radius:8px; padding:14px; margin-bottom:20px; font-size:0.85rem; color:#e0e7ff; text-align:left;">
+          🌟 <strong>HOW TO RESPAWN:</strong><br>
+          Log a <strong>100% Perfect Day</strong> check-in to break free from Limbo and respawn with 50% HP!
+        </div>
+      </div>
+    `;
+
+    overlay.innerHTML = html;
+  }
+
+  // ============================================================
   // DEATH SCREEN
   // ============================================================
   
   static showDeathScreen(stats) {
+    this.showLimboScreen();
+  }
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
     overlay.style.pointerEvents = 'auto';

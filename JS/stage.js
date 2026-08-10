@@ -270,22 +270,26 @@ class StageManager {
   static generateNormalLevel(enemyFormation) {
     const state = getGameState();
     const stage = state.stageState.stage;
+    const variation = state.stageState.stageVariation;
+    const level = state.stageState.level;
     
-    state.stageState.enemies = [];
-    
-    // Process enemy groups
-    enemyFormation.forEach(group => {
-      const name = group.name;
-      const countRange = group.count.split('-').map(Number);
-      const count = countRange.length === 2
-        ? Math.floor(Math.random() * (countRange[1] - countRange[0] + 1)) + countRange[0]
-        : countRange[0];
-      
-      for (let i = 0; i < count; i++) {
-        const enemy = EnemyManager.createEnemy(name, state.playerState.maxAp, stage);
-        state.stageState.enemies.push(enemy);
-      }
-    });
+    if (typeof EnemyManager !== 'undefined' && EnemyManager.generateBudgetFormation) {
+      state.stageState.enemies = EnemyManager.generateBudgetFormation(stage, variation, level);
+    } else {
+      state.stageState.enemies = [];
+      enemyFormation.forEach(group => {
+        const name = group.name;
+        const countRange = group.count.split('-').map(Number);
+        const count = countRange.length === 2
+          ? Math.floor(Math.random() * (countRange[1] - countRange[0] + 1)) + countRange[0]
+          : countRange[0];
+        
+        for (let i = 0; i < count; i++) {
+          const enemy = EnemyManager.createEnemy(name, state.playerState.maxAp, stage);
+          state.stageState.enemies.push(enemy);
+        }
+      });
+    }
     
     // Adjust HP based on total enemy count
     state.stageState.enemies.forEach(enemy => {
