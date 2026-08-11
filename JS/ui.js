@@ -11297,7 +11297,7 @@ class UIManager {
   static showMapNodePopup(nodeData) {
     const popup = document.createElement('div');
     popup.className = 'custom-popup-overlay active';
-    popup.style.zIndex = '99999';
+    popup.style.zIndex = '2147483647';
     
     // Fetch enemies for this node (simulated or real if StageManager allows)
     let enemiesText = nodeData.isBoss || nodeData.isMiniboss ? `<div style="color:#ff5a5a; font-weight:bold; margin-top:10px;">${nodeData.isMiniboss ? '☠️ Miniboss' : '👑 Boss'}: ${nodeData.bossName || 'Unknown'}</div>` : `<div style="color:#a8b2d1; font-size:0.9rem; margin-top:10px;">Expected enemies: Native to ${nodeData.nodeName}</div>`;
