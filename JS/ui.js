@@ -7158,6 +7158,12 @@ class UIManager {
         target = (StageManager.getAliveEnemies && StageManager.getAliveEnemies()[0]) || (StageManager.getAllEnemies && StageManager.getAllEnemies().find(enemy => enemy && !enemy.isDead)) || null;
       }
       if (!target) {
+        if (StageManager.allEnemiesDead()) {
+          this.finishAttackSpinner();
+          StageManager.onLevelCleared();
+          UIManager.renderWorldMapNodeView();
+          return;
+        }
         FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'No Target', { color: '#ff4444' });
         console.warn('No attack target available');
         this.finishAttackSpinner();
