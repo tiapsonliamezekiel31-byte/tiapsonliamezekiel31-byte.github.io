@@ -261,11 +261,13 @@ class TaskManager {
           mainTaskText = parts[0];
           inlineSubtasks = parts.slice(1);
         }
-        // 4. Dash format: "Task Name - sub1 - sub2"
-        else if (/\s+-\s+/.test(mainTaskText)) {
-          const parts = mainTaskText.split(/\s+-\s+/).map(s => s.trim()).filter(Boolean);
-          mainTaskText = parts[0];
-          inlineSubtasks = parts.slice(1);
+        // 4. Dash format: "Task Name - sub1 - sub2" or "Task Name-sub1-sub2"
+        else if (/\s+-\s+/.test(mainTaskText) || (mainTaskText.includes('-') && !/\b\d{4}-\d{2}-\d{2}\b/.test(mainTaskText) && !/\b[a-z]+-[a-z]+\b/i.test(mainTaskText))) {
+          const parts = mainTaskText.split(/\s*-\s*/).map(s => s.trim()).filter(Boolean);
+          if (parts.length > 1) {
+            mainTaskText = parts[0];
+            inlineSubtasks = parts.slice(1);
+          }
         }
         // 5. Colon format: "Task Name: sub1, sub2" (excluding timestamps like 10:30)
         else if (/^([^:]+):\s*(.+)$/.test(mainTaskText) && !/\b\d{1,2}:\d{2}\b/.test(mainTaskText)) {

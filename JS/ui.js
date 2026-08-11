@@ -11657,6 +11657,11 @@ class UIManager {
 
     if (!enemies.length) {
       this.enemyPositionsCache = [];
+      if (typeof StageManager !== 'undefined' && StageManager.generateLevel) {
+        const lvl = state.stageState?.level || 1;
+        StageManager.generateLevel(lvl);
+        return;
+      }
       layer.innerHTML = '<div class="enemy-empty">No enemies yet</div>';
       return;
     }
