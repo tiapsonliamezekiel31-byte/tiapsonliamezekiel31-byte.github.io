@@ -11298,6 +11298,111 @@ class UIManager {
     return this.circleRectCache || { left: 0, top: 0, width: 400, height: 400 };
   }
 
+  static getOrGenerateBranchingMap(stageProgress) {
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (state?.stageState?.branchingMap) {
+      return state.stageState.branchingMap;
+    }
+
+    const stageColors = {
+      1: '#ef4444', 2: '#f59e0b', 3: '#eab308', 4: '#84cc16',
+      5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7'
+    };
+
+    const minibossNames = [
+      'Grave Sentinel', 'Ashen Warden', 'Rune Overseer', 'Void Preceptor',
+      'Rot Apostle', 'Blight Executioner', 'Blood Harbinger', 'Czar Vanguard'
+    ];
+
+    // Seeded/procedural random path generator
+    const mapNodes = [];
+    const mapLines = [];
+
+    // Main spine path: Stages 1 to 8
+    const mainStages = [
+      { stage: 1, key: '1A', name: 'Volcano', icon: '🌋' },
+      { stage: 2, key: '2A', name: 'Marchers', icon: '🚶‍♂️' },
+      { stage: 3, key: '3A', name: 'Kingdom', icon: '🏰' },
+      { stage: 4, key: '4A', name: 'Church', icon: '⛪' },
+      { stage: 5, key: '5A', name: 'Cult', icon: '👁️' },
+      { stage: 6, key: '6A', name: 'Abyssal Sea', icon: '🌊' },
+      { stage: 7, key: '7A', name: 'Jade Village', icon: '🎋' },
+      { stage: 8, key: '8A', name: 'The Void Apex (Main Boss)', icon: '👑', isApex: true }
+    ];
+
+    let lastSpineNodeId = null;
+    mainStages.forEach((stg, i) => {
+      const nodeId = `main_${stg.key}`;
+      const x = 400 + Math.floor((Math.random() - 0.5) * 120);
+      const y = 100 + i * 140;
+
+      mapNodes.push({
+        id: nodeId,
+        key: stg.key,
+        stage: stg.stage,
+        variant: 'A',
+        name: stg.name,
+        icon: stg.icon,
+        x, y,
+        isMain: true,
+        isBoss: !!stg.isApex,
+        color: stageColors[stg.stage]
+      });
+
+      if (lastSpineNodeId) {
+        mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true });
+      }
+      lastSpineNodeId = nodeId;
+    });
+
+    // Generate 2-4 random side branches originating from main spine
+    const branchCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 branches
+    const eligibleBranchPoints = [1, 2, 3, 4, 5, 6]; // Stages that can branch off
+
+    for (let b = 0; b < branchCount; b++) {
+      if (!eligibleBranchPoints.length) break;
+      const startStageIdx = eligibleBranchPoints.splice(Math.floor(Math.random() * eligibleBranchPoints.length), 1)[0];
+      const parentNode = mapNodes.find(n => n.stage === startStageIdx && n.isMain);
+      if (!parentNode) continue;
+
+      const branchLength = Math.floor(Math.random() * 3) + 1; // 1 to 3 nodes deep
+      const side = (b % 2 === 0) ? -1 : 1;
+      let prevBranchId = parentNode.id;
+
+      for (let step = 1; step <= branchLength; step++) {
+        const isMinibossNode = (step === branchLength);
+        const branchKey = `${parentNode.stage}B_${b}_${step}`;
+        const mbName = minibossNames[Math.floor(Math.random() * minibossNames.length)];
+        const branchName = isMinibossNode ? `Miniboss: ${mbName}` : `Branch ${parentNode.stage}.${step}`;
+        const branchIcon = isMinibossNode ? '☠️' : '🌿';
+        const nodeId = `sub_${branchKey}`;
+
+        const bx = parentNode.x + side * (160 + step * 70 + Math.floor(Math.random() * 40));
+        const by = parentNode.y + step * 100 + Math.floor((Math.random() - 0.5) * 50);
+
+        mapNodes.push({
+          id: nodeId,
+          key: branchKey,
+          stage: parentNode.stage,
+          variant: 'B',
+          name: branchName,
+          icon: branchIcon,
+          x: bx, y: by,
+          isMain: false,
+          isMiniboss: isMinibossNode,
+          color: stageColors[parentNode.stage]
+        });
+
+        mapLines.push({ from: prevBranchId, to: nodeId, isMain: false });
+        prevBranchId = nodeId;
+      }
+    }
+
+    const branchingMap = { nodes: mapNodes, lines: mapLines };
+    if (state?.stageState) state.stageState.branchingMap = branchingMap;
+    return branchingMap;
+  }
+
   static renderWorldMapNodeView() {
     // Clear enemy canvas if any
     const enemyCanvas = document.getElementById('enemyConnectionCanvas');
@@ -11319,80 +11424,57 @@ class UIManager {
     }
     const stageProgress = state?.stageState?.stageProgress || {};
 
-    const stageColors = {
-      1: '#ef4444', // Stage 1: Volcano & Pyramids
-      2: '#f59e0b', // Stage 2: Marchers & Chasm
-      3: '#eab308', // Stage 3: Kingdom & Graveyard
-      4: '#84cc16', // Stage 4: Church & Lab
-      5: '#10b981', // Stage 5: Cult & Dragon Isle
-      6: '#06b6d4', // Stage 6: Abyssal Sea & Golden Peak
-      7: '#6366f1', // Stage 7: Jade Village & Palace
-      8: '#a855f7'  // Stage 8: The Void
-    };
-
-    const tiers = [
-      { stage: 1, title: 'STAGE 1 — ASH & SUN', nodes: [{ key: '1A', variant: 'A', name: 'Volcano', icon: '🌋', offsetX: -120 }, { key: '1B', variant: 'B', name: 'Pyramids', icon: '🏺', offsetX: 120 }] },
-      { stage: 2, title: 'STAGE 2 — MARCH & VOID CHASM', nodes: [{ key: '2A', variant: 'A', name: 'Marchers', icon: '🚶‍♂️', offsetX: -140 }, { key: '2B', variant: 'B', name: 'Chasm', icon: '🕳️', offsetX: 140 }] },
-      { stage: 3, title: 'STAGE 3 — KINGDOM & GRAVES', nodes: [{ key: '3A', variant: 'A', name: 'Kingdom', icon: '🏰', offsetX: -100 }, { key: '3B', variant: 'B', name: 'Graveyard', icon: '🪦', offsetX: 130 }] },
-      { stage: 4, title: 'STAGE 4 — CHURCH & LAB', nodes: [{ key: '4A', variant: 'A', name: 'Church', icon: '⛪', offsetX: -150 }, { key: '4B', variant: 'B', name: 'Lab', icon: '🧪', offsetX: 110 }] },
-      { stage: 5, title: 'STAGE 5 — CORRUPTION & DRAGONS', nodes: [{ key: '5A', variant: 'A', name: 'Cult', icon: '👁️', offsetX: -110 }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉', offsetX: 150 }] },
-      { stage: 6, title: 'STAGE 6 — ABYSS & GOLDEN PEAK', nodes: [{ key: '6A', variant: 'A', name: 'Abyssal Sea', icon: '🌊', offsetX: -130 }, { key: '6B', variant: 'B', name: 'Golden Peak', icon: '⛰️', offsetX: 120 }] },
-      { stage: 7, title: 'STAGE 7 — JADE VILLAGE & PALACE', nodes: [{ key: '7A', variant: 'A', name: 'Jade Village', icon: '🎋', offsetX: -110 }, { key: '7B', variant: 'B', name: 'Palace', icon: '🏛️', offsetX: 140 }] },
-      { stage: 8, title: 'STAGE 8 — THE VOID APEX', nodes: [{ key: '8A', variant: 'A', name: 'The Void', icon: '🌌', offsetX: 0 }] }
-    ];
+    const mapData = this.getOrGenerateBranchingMap(stageProgress);
 
     let html = `
-      <div class="world-map-header">
-        <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD TREE NODE MAP</h2>
-        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Organic Stage Paths & Node Network</p>
+      <div class="world-map-header" style="z-index:10; pointer-events:auto;">
+        <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.6rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD BRANCHING MAP</h2>
+        <p style="margin:0 0 8px 0; font-size:0.85rem; color:#94a3b8;">Pinch/scroll to zoom out/in • Drag to pan • Side paths hold Minibosses</p>
+        <div class="world-map-controls" style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
+          <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 +</button>
+          <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 -</button>
+          <button id="mapReset" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🎯 Reset</button>
+        </div>
       </div>
-      <div class="world-tree-graph-wrapper" style="position:relative; width:100%; max-width:850px; margin:0 auto;">
-        <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
-        <div class="world-tree-nodes-layer" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:40px; padding:20px 0 60px 0;">
+      <div class="world-tree-viewport" style="position:relative; width:100vw; height:calc(100vh - 120px); overflow:hidden; cursor:grab; touch-action:none;">
+        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:1400px; transform-origin:0 0;">
+          <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
+          <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
     `;
 
-    tiers.forEach((tier) => {
-      const color = stageColors[tier.stage] || '#64748b';
+    mapData.nodes.forEach(node => {
+      const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
+      const isCleared = !!prog.isCleared;
+      const maxCleared = prog.maxCleared || 0;
+      const color = node.color || '#38bdf8';
+
       html += `
-        <div class="world-tree-tier" data-stage="${tier.stage}" style="display:flex; flex-direction:column; align-items:center; width:100%;">
-          <div class="tier-label" style="font-size:0.75rem; font-weight:800; letter-spacing:1.5px; color:${color}; margin-bottom:12px; text-transform:uppercase; text-shadow:0 0 8px ${color}40;">${tier.title}</div>
-          <div class="tier-nodes-row" style="display:flex; justify-content:center; width:100%; gap:40px;">
+        <div class="stage-node-card ${isCleared ? 'is-cleared' : ''} ${node.isMiniboss ? 'is-miniboss' : ''}" 
+             data-node-id="${node.id}" 
+             data-node-key="${node.key}" 
+             data-stage="${node.stage}" 
+             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${color}; box-shadow: 0 0 14px ${color}35; background: rgba(15, 23, 42, 0.96); width:200px;">
+          <div class="stage-node-title" style="border-bottom:1px solid ${color}40; padding-bottom:4px; margin-bottom:6px;">
+            <span style="color:${color}; font-family:'Orbitron', sans-serif; font-size:0.75rem;">${node.icon} ${node.name}</span>
+            ${isCleared ? '<span class="cleared-badge">✓</span>' : ''}
+          </div>
+          <div class="stage-node-levels">
       `;
 
-      tier.nodes.forEach(node => {
-        const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
-        const isCleared = !!prog.isCleared;
-        const maxCleared = prog.maxCleared || 0;
-
+      for (let lvl = 1; lvl <= 5; lvl++) {
+        const isBossLvl = (lvl === 5);
+        const isLevelCleared = (lvl <= maxCleared);
+        const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl ? `L5 ${node.isMiniboss ? '☠️' : '👑'}` : `L${lvl}`);
         html += `
-          <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}" data-node-key="${node.key}" data-stage="${tier.stage}" style="border-color:${color}; transform: translateX(${node.offsetX}px); box-shadow: 0 0 12px ${color}25; background: rgba(15, 23, 42, 0.95);">
-            <div class="stage-node-title" style="border-bottom:1px solid ${color}40; padding-bottom:6px; margin-bottom:8px;">
-              <span style="color:${color}; font-family:'Orbitron', sans-serif;">${node.icon} ${tier.stage}${node.variant}: ${node.name}</span>
-              ${isCleared ? '<span class="cleared-badge">✓ CLEARED</span>' : ''}
-            </div>
-            <div class="stage-node-levels">
+          <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
+                  data-stage="${node.stage}" 
+                  data-variant="${node.variant}" 
+                  data-level="${lvl}"
+                  style="${!isLevelCleared ? `border-color:${color}80;` : ''}">
+            ${lvlBtnLabel}
+          </button>
         `;
-
-        for (let lvl = 1; lvl <= 5; lvl++) {
-          const isBossLvl = (lvl === 5);
-          const isLevelCleared = (lvl <= maxCleared);
-          const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl ? `L5 👑` : `L${lvl}`);
-          html += `
-            <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
-                    data-stage="${tier.stage}" 
-                    data-variant="${node.variant}" 
-                    data-level="${lvl}"
-                    style="${!isLevelCleared ? `border-color:${color}80;` : ''}">
-              ${lvlBtnLabel}
-            </button>
-          `;
-        }
-
-        html += `
-            </div>
-          </div>
-        `;
-      });
+      }
 
       html += `
           </div>
@@ -11401,12 +11483,97 @@ class UIManager {
     });
 
     html += `
+          </div>
         </div>
       </div>
     `;
     mapContainer.innerHTML = html;
 
-    // Attach click events to buttons
+    // Pan & Zoom controls
+    const viewport = mapContainer.querySelector('.world-tree-viewport');
+    const content = mapContainer.querySelector('.world-tree-canvas-content');
+    
+    let scale = 0.85;
+    let panX = (window.innerWidth - 1200 * scale) / 2;
+    let panY = 20;
+
+    const updateTransform = () => {
+      content.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    };
+    updateTransform();
+
+    // Zoom Buttons
+    mapContainer.querySelector('#mapZoomIn')?.addEventListener('click', () => { scale = Math.min(2.0, scale + 0.15); updateTransform(); });
+    mapContainer.querySelector('#mapZoomOut')?.addEventListener('click', () => { scale = Math.max(0.35, scale - 0.15); updateTransform(); });
+    mapContainer.querySelector('#mapReset')?.addEventListener('click', () => { scale = 0.85; panX = (window.innerWidth - 1200 * scale) / 2; panY = 20; updateTransform(); });
+
+    // Wheel zoom
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      scale = Math.max(0.35, Math.min(2.0, scale * zoomFactor));
+      updateTransform();
+    }, { passive: false });
+
+    // Touch Pinch & Pan
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let touchStartDist = 0;
+
+    viewport.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+      viewport.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+      if (viewport) viewport.style.cursor = 'grab';
+    });
+
+    // Touch events for mobile
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - panX;
+        startY = e.touches[0].clientY - panY;
+      } else if (e.touches.length === 2) {
+        isDragging = false;
+        touchStartDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (isDragging && e.touches.length === 1) {
+        panX = e.touches[0].clientX - startX;
+        panY = e.touches[0].clientY - startY;
+        updateTransform();
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = dist / (touchStartDist || dist);
+        scale = Math.max(0.35, Math.min(2.0, scale * factor));
+        touchStartDist = dist;
+        updateTransform();
+      }
+    });
+
+    viewport.addEventListener('touchend', () => { isDragging = false; });
+
+    // Attach click events to level buttons
     mapContainer.querySelectorAll('.node-level-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -11419,59 +11586,41 @@ class UIManager {
       });
     });
 
-    // Draw lines between stage nodes after layout
+    // Draw SVG connections
     setTimeout(() => {
-      this.drawWorldTreeLines(mapContainer, stageColors);
+      this.drawWorldTreeLines(mapContainer, mapData);
     }, 50);
   }
 
-  static drawWorldTreeLines(container, stageColors) {
+  static drawWorldTreeLines(container, mapData) {
     const svg = container.querySelector('.world-tree-svg');
-    const wrapper = container.querySelector('.world-tree-graph-wrapper');
-    if (!svg || !wrapper) return;
+    if (!svg || !mapData) return;
 
-    const wrapperRect = wrapper.getBoundingClientRect();
-    svg.setAttribute('width', wrapperRect.width);
-    svg.setAttribute('height', wrapperRect.height);
+    svg.setAttribute('width', 1200);
+    svg.setAttribute('height', 1400);
     svg.innerHTML = '';
 
-    const nodeCards = Array.from(container.querySelectorAll('.stage-node-card'));
-    const nodesByKey = {};
-    nodeCards.forEach(card => {
-      const key = card.dataset.nodeKey;
-      const rect = card.getBoundingClientRect();
-      nodesByKey[key] = {
-        key,
-        stage: Number(card.dataset.stage),
-        top: rect.top - wrapperRect.top + rect.height / 2,
-        bottom: rect.top - wrapperRect.top + rect.height,
-        x: rect.left - wrapperRect.left + rect.width / 2
-      };
-    });
-
-    // Define connection hierarchy across 8 stages (15 biomes)
-    const connections = [
-      { from: '1A', to: '2A' }, { from: '1A', to: '2B' },
-      { from: '1B', to: '2A' }, { from: '1B', to: '2B' },
-      { from: '2A', to: '3A' }, { from: '2B', to: '3B' },
-      { from: '3A', to: '4A' }, { from: '3B', to: '4B' },
-      { from: '4A', to: '5A' }, { from: '4B', to: '5B' },
-      { from: '5A', to: '6A' }, { from: '5B', to: '6B' },
-      { from: '6A', to: '7A' }, { from: '6B', to: '7B' },
-      { from: '7A', to: '8A' }, { from: '7B', to: '8A' }
-    ];
+    const nodesById = {};
+    mapData.nodes.forEach(n => { nodesById[n.id] = n; });
 
     let svgLines = '';
-    connections.forEach(conn => {
-      const src = nodesByKey[conn.from];
-      const tgt = nodesByKey[conn.to];
+    mapData.lines.forEach(line => {
+      const src = nodesById[line.from];
+      const tgt = nodesById[line.to];
       if (src && tgt) {
-        const color = stageColors[src.stage] || '#64748b';
-        const midY = (src.top + tgt.top) / 2;
-        const d = `M ${src.x} ${src.top} C ${src.x} ${midY}, ${tgt.x} ${midY}, ${tgt.x} ${tgt.top}`;
-        svgLines += `<path d="${d}" stroke="${color}" stroke-width="3" fill="none" opacity="0.75" stroke-dasharray="6,3" style="filter: drop-shadow(0 0 6px ${color});" />`;
-        // Connection node glow dots at target
-        svgLines += `<circle cx="${tgt.x}" cy="${tgt.top}" r="4" fill="${color}" />`;
+        const color = src.color || '#38bdf8';
+        const srcX = src.x + 100;
+        const srcY = src.y + 40;
+        const tgtX = tgt.x + 100;
+        const tgtY = tgt.y + 40;
+
+        const midY = (srcY + tgtY) / 2;
+        const d = `M ${srcX} ${srcY} C ${srcX} ${midY}, ${tgtX} ${midY}, ${tgtX} ${tgtY}`;
+        const dash = line.isMain ? 'none' : '6,3';
+        const strokeWidth = line.isMain ? 4 : 2.5;
+
+        svgLines += `<path d="${d}" stroke="${color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash}" fill="none" opacity="0.8" style="filter: drop-shadow(0 0 6px ${color});" />`;
+        svgLines += `<circle cx="${tgtX}" cy="${tgtY}" r="5" fill="${color}" />`;
       }
     });
 
