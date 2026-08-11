@@ -1359,7 +1359,7 @@ class UIManager {
         </select>
       </div>
       <div class="qa-hud-input-row">
-        <input type="text" id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task... (e.g. Task ; subtask 1 ; subtask 2 or Task - sub1 - sub2)" autocomplete="off" />
+        <textarea id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task... (Shift+Enter for new line, e.g. Task - sub1 - sub2)" autocomplete="off" rows="1"></textarea>
         <button type="button" id="quickAddHudSubmitBtn" class="qa-hud-submit-btn" title="Add Task">＋</button>
       </div>
     `;
@@ -1564,6 +1564,7 @@ class UIManager {
       }
 
       inputEl.value = '';
+      inputEl.style.height = 'auto'; // reset height
 
       if (typeof getGameState === 'function' && getGameState()) {
         getGameState().save();
@@ -1579,8 +1580,14 @@ class UIManager {
     };
 
     submitBtn.addEventListener('click', handleSubmission);
+    
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+    });
+    
     inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         handleSubmission();
       }

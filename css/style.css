@@ -13564,7 +13564,7 @@ body:has(.popup-overlay[style*="display: block"]) #minimizedHudDock {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
+  border-radius: 20px;
   padding: 6px 8px 6px 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   box-sizing: border-box;
@@ -13647,6 +13647,10 @@ body:has(.popup-overlay[style*="display: block"]) #minimizedHudDock {
   box-shadow: none !important;
   min-width: 0;
   width: 100%;
+  resize: none;
+  min-height: 20px;
+  max-height: 120px;
+  line-height: 1.4;
 }
 
 .qa-hud-input:focus {
