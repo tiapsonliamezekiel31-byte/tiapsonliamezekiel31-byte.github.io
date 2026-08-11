@@ -12,7 +12,7 @@ const DEFAULT_GAME_CONFIG = {
   soundEnabled: true,
   soundVolume: 0.6,
   maxPlayerLevel: 35,
-  maxStages: 7,
+  maxStages: 11,
   maxLevelPerStage: 5,
   
   // ============================================================
@@ -980,8 +980,30 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // BOSS CONFIGURATIONS
   // ============================================================
-  bosses: {
-    'Grave Sentinel': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 0.9, color: '#e2e8f0', p1Anim: 'Slam Wave', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.40, minion: 0.20, crit: 0.20, regular: 0.20 } },
+    bosses: {
+    'Ash Master': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Lava Shinobi': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Sun Priest': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Tomb Sentinel': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Empire Warlord': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Nomad King': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Abyss Lord': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.9, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Void Channeler': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.9, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Fate Sovereign': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Dawn Sentinel': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Reaper': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Damned General': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Rot Pontiff': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Hollow Bishop': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Toxic Behemoth': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Plague Master': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Miasma Prophet': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Ruin Avatar': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Fire Turtle': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.5, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Sky Terror': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.5, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Sea Behemoth': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Trench Leviathan': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+  },
     'Ashen Warden': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.8, color: '#f97316', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { bomb: 0.35, corrosive: 0.25, crit: 0.20, regular: 0.20 } },
     'Rune Overseer': { element: 'Aether', resist: 'Aether B', weak: 'Earth D', hpMult: 0.85, color: '#38bdf8', p1Anim: 'Orb Burst', p2Anim: 'Orb Burst', attackWeights: { heal: 0.30, crit: 0.30, heavy: 0.20, regular: 0.20 } },
     'Void Preceptor': { element: 'Void', resist: 'Void B', weak: 'Aether D', hpMult: 0.9, color: '#c084fc', p1Anim: 'Glitch Invert', p2Anim: 'Rage Pulse', attackWeights: { corrosive: 0.35, bomb: 0.25, heavy: 0.20, regular: 0.20 } },

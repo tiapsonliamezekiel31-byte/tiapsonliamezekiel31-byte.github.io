@@ -4,109 +4,1392 @@
  */
 
 const FORMATIONS = {
-  1: {
-    A: {
-      1: { enemies: [{ name: 'Goblin', count: '5-7' }, { name: 'Wolf', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Lion', count: '1' }] },
-      2: { enemies: [{ name: 'Goblin', count: '6-8' }, { name: 'Wolf', count: '1-2' }, { name: 'Goblin Wizard', count: '1' }, { name: 'Lion', count: '1' }] },
-      3: { enemies: [{ name: 'Goblin', count: '5-7' }, { name: 'Wolf', count: '1' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Goblin Wizard', count: '1-2' }] },
-      4: { enemies: [{ name: 'Goblin', count: '6-8' }, { name: 'Wolf', count: '1-2' }, { name: 'Gorilla Rebel', count: '1' }, { name: 'Bear', count: '1' }, { name: 'Lion', count: '1' }, { name: 'Goblin Wizard', count: '2' }] },
-      5: { isBoss: true, bossName: 'Demon' }
+  "1": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Ash Ninja",
+            "count": "3-4"
+          },
+          {
+            "name": "Cinder Shinobi",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Ember Assassin",
+            "count": "3-4"
+          },
+          {
+            "name": "Magma Kunoichi",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Obsidian Rogue",
+            "count": "2-3"
+          },
+          {
+            "name": "Pyro Master",
+            "count": "2"
+          },
+          {
+            "name": "Scorch Saboteur",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Lava Ronin",
+            "count": "3"
+          },
+          {
+            "name": "Smoke Stalker",
+            "count": "2"
+          },
+          {
+            "name": "Volcanic Shadow",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Ash Master"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Marcher', count: '1' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '5-7' }, { name: 'Raptor', count: '1-2' }] },
-      2: { enemies: [{ name: 'Marcher', count: '1-2' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '4-6' }, { name: 'Raptor', count: '2' }] },
-      3: { enemies: [{ name: 'Marcher', count: '2' }, { name: 'Grave Guardian', count: '1' }, { name: 'Drone', count: '4-6' }, { name: 'Raptor', count: '1-2' }] },
-      4: { enemies: [{ name: 'Marcher', count: '2' }, { name: 'Grave Guardian', count: '1-2' }, { name: 'Beetle', count: '1' }, { name: 'Drone', count: '5-7' }, { name: 'Raptor', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'Mummified Marcher' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Cinder Shinobi",
+            "count": "3-4"
+          },
+          {
+            "name": "Ash Ninja",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Magma Kunoichi",
+            "count": "3-4"
+          },
+          {
+            "name": "Ember Assassin",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Pyro Master",
+            "count": "2-3"
+          },
+          {
+            "name": "Obsidian Rogue",
+            "count": "2"
+          },
+          {
+            "name": "Lava Ronin",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Smoke Stalker",
+            "count": "3"
+          },
+          {
+            "name": "Volcanic Shadow",
+            "count": "2"
+          },
+          {
+            "name": "Scorch Saboteur",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Lava Shinobi"
+      }
     }
   },
-  2: {
-    A: {
-      1: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '1' }, { name: 'Dark Sorcerer', count: '1' }, { name: 'Death Bringer', count: '1' }] },
-      2: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '1-2' }, { name: 'Dark Sorcerer', count: '1-2' }, { name: 'Death Bringer', count: '1' }] },
-      3: { enemies: [{ name: 'Brain Eaters', count: '4-6' }, { name: 'Tarantulator', count: '2' }, { name: 'Dark Sorcerer', count: '1-2' }, { name: 'Death Bringer', count: '1-2' }] },
-      4: { enemies: [{ name: 'Brain Eaters', count: '5-7' }, { name: 'Tarantulator', count: '2' }, { name: 'Dark Sorcerer', count: '2' }, { name: 'Death Bringer', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'Crimson Wizard' }
+  "2": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Glyph Scholar",
+            "count": "3-4"
+          },
+          {
+            "name": "Sand Mage",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Tomb Oracle",
+            "count": "3-4"
+          },
+          {
+            "name": "Anubis Adept",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Sun Priest",
+            "count": "2-3"
+          },
+          {
+            "name": "Crypt Mystic",
+            "count": "2"
+          },
+          {
+            "name": "Scarab Invoker",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Desert Sage",
+            "count": "3"
+          },
+          {
+            "name": "Mirage Sorcerer",
+            "count": "2"
+          },
+          {
+            "name": "Sphinx Scholar",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Sun Priest"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1' }, { name: 'Zombie', count: '1' }] },
-      2: { enemies: [{ name: 'Zombie', count: '1' }, { name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1' }, { name: 'Croc', count: '1' }] },
-      3: { enemies: [{ name: 'Zombie', count: '1-2' }, { name: 'Leech', count: '2-3' }, { name: 'Giant Frog', count: '4-6' }, { name: 'Plagued', count: '1-2' }, { name: 'Croc', count: '1' }] },
-      4: { enemies: [{ name: 'Zombie', count: '2' }, { name: 'Leech', count: '3' }, { name: 'Giant Frog', count: '5-7' }, { name: 'Plagued', count: '2' }, { name: 'Croc', count: '1' }] },
-      5: { isBoss: true, bossName: 'Worm Eater' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Sand Mage",
+            "count": "3-4"
+          },
+          {
+            "name": "Glyph Scholar",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Anubis Adept",
+            "count": "3-4"
+          },
+          {
+            "name": "Tomb Oracle",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Crypt Mystic",
+            "count": "2-3"
+          },
+          {
+            "name": "Sun Priest",
+            "count": "2"
+          },
+          {
+            "name": "Desert Sage",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Mirage Sorcerer",
+            "count": "3"
+          },
+          {
+            "name": "Sphinx Scholar",
+            "count": "2"
+          },
+          {
+            "name": "Scarab Invoker",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Tomb Sentinel"
+      }
     }
   },
-  3: {
-    A: {
-      1: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1' }, { name: 'Yeti Hunter', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
-      2: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1' }, { name: 'Yeti Hunter', count: '1-2' }, { name: 'Yeti Mage', count: '1' }] },
-      3: { enemies: [{ name: 'Ice Spirit', count: '5-7' }, { name: 'Yeti Smasher', count: '1-2' }, { name: 'Yeti Hunter', count: '1' }, { name: 'Yeti Mage', count: '1' }] },
-      4: { enemies: [{ name: 'Ice Spirit', count: '6-8' }, { name: 'Yeti Smasher', count: '2' }, { name: 'Yeti Hunter', count: '1-2' }, { name: 'Yeti Mage', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'Jade Giant' }
+  "3": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Dune Legionnaire",
+            "count": "3-4"
+          },
+          {
+            "name": "Sand Strider",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Westward Shield",
+            "count": "3-4"
+          },
+          {
+            "name": "Desert Vanguard",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Marching Hoplite",
+            "count": "2-3"
+          },
+          {
+            "name": "Nomad Centurion",
+            "count": "2"
+          },
+          {
+            "name": "Sun Infantry",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Endless Walker",
+            "count": "3"
+          },
+          {
+            "name": "Empire Pioneer",
+            "count": "2"
+          },
+          {
+            "name": "Dust Phalanx",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Empire Warlord"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Stone Lizard', count: '2' }, { name: 'Termite', count: '5-7' }, { name: 'Turret', count: '1' }] },
-      2: { enemies: [{ name: 'Golem', count: '1' }, { name: 'Termite', count: '5-7' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Turret', count: '1' }] },
-      3: { enemies: [{ name: 'Golem', count: '1-2' }, { name: 'Termite', count: '4-6' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Turret', count: '1-2' }] },
-      4: { enemies: [{ name: 'Golem', count: '2' }, { name: 'Turret', count: '2' }, { name: 'Stone Lizard', count: '1-2' }, { name: 'Termite', count: '4-6' }] },
-      5: { isBoss: true, bossName: 'Star Computer' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Sand Strider",
+            "count": "3-4"
+          },
+          {
+            "name": "Dune Legionnaire",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Desert Vanguard",
+            "count": "3-4"
+          },
+          {
+            "name": "Westward Shield",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Nomad Centurion",
+            "count": "2-3"
+          },
+          {
+            "name": "Marching Hoplite",
+            "count": "2"
+          },
+          {
+            "name": "Endless Walker",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Empire Pioneer",
+            "count": "3"
+          },
+          {
+            "name": "Dust Phalanx",
+            "count": "2"
+          },
+          {
+            "name": "Sun Infantry",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Nomad King"
+      }
     }
   },
-  4: {
-    A: {
-      1: { enemies: [{ name: 'Skeleton', count: '6-8' }, { name: 'Ghost', count: '1' }, { name: 'Coffin Carrier', count: '1' }] },
-      2: { enemies: [{ name: 'Skeleton', count: '7-9' }, { name: 'Ghost', count: '1' }, { name: 'Coffin Carrier', count: '1' }, { name: 'Ferryman', count: '1' }] },
-      3: { enemies: [{ name: 'Skeleton', count: '5-7' }, { name: 'Ghost', count: '1-2' }, { name: 'Coffin Carrier', count: '1' }, { name: 'Ferryman', count: '1' }] },
-      4: { enemies: [{ name: 'Ghost', count: '2' }, { name: 'Ferryman', count: '1-2' }, { name: 'Skeleton', count: '5-7' }, { name: 'Coffin Carrier', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'Angel' }
+  "4": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Void Cultist",
+            "count": "3-4"
+          },
+          {
+            "name": "Abyssal Mage",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Shadow Caster",
+            "count": "3-4"
+          },
+          {
+            "name": "Gloom Warlock",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Deep Summoner",
+            "count": "2-3"
+          },
+          {
+            "name": "Cave Occultist",
+            "count": "2"
+          },
+          {
+            "name": "Dark Adept",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Nether Seeker",
+            "count": "3"
+          },
+          {
+            "name": "Hollow Channeler",
+            "count": "2"
+          },
+          {
+            "name": "Abyss Priest",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Abyss Lord"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Flying Skull', count: '6-8' }, { name: 'Knight', count: '1' }, { name: 'Baby Dragon', count: '1' }] },
-      2: { enemies: [{ name: 'Knight', count: '1' }, { name: 'Paladin', count: '1' }, { name: 'Fire Mage', count: '1' }, { name: 'Flying Skull', count: '6-8' }] },
-      3: { enemies: [{ name: 'Knight', count: '1' }, { name: 'Paladin', count: '1' }, { name: 'Fire Mage', count: '1' }, { name: 'Baby Dragon', count: '2-3' }, { name: 'Flying Skull', count: '4-6' }] },
-      4: { enemies: [{ name: 'Paladin', count: '2' }, { name: 'Fire Mage', count: '1' }, { name: 'Baby Dragon', count: '2-3' }, { name: 'Flying Skull', count: '5-7' }] },
-      5: { isBoss: true, bossName: 'Killer Queen' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Abyssal Mage",
+            "count": "3-4"
+          },
+          {
+            "name": "Void Cultist",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Gloom Warlock",
+            "count": "3-4"
+          },
+          {
+            "name": "Shadow Caster",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Cave Occultist",
+            "count": "2-3"
+          },
+          {
+            "name": "Deep Summoner",
+            "count": "2"
+          },
+          {
+            "name": "Nether Seeker",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Hollow Channeler",
+            "count": "3"
+          },
+          {
+            "name": "Abyss Priest",
+            "count": "2"
+          },
+          {
+            "name": "Dark Adept",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Void Channeler"
+      }
     }
   },
-  5: {
-    A: {
-      1: { enemies: [{ name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '5-7' }, { name: 'Master', count: '1' }] },
-      2: { enemies: [{ name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '4-6' }, { name: 'Master', count: '2' }, { name: 'Priest', count: '1' }] },
-      3: { enemies: [{ name: 'Master', count: '2-3' }, { name: 'Ninja', count: '5-7' }, { name: 'Priest', count: '1' }, { name: 'Magma Blob', count: '2-3' }] },
-      4: { enemies: [{ name: 'Priest', count: '1' }, { name: 'Master', count: '2-3' }, { name: 'Magma Blob', count: '2-3' }, { name: 'Ninja', count: '3-5' }] },
-      5: { isBoss: true, bossName: 'Satan\'s Shark', special: 'survival' }
+  "5": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Destiny Knight",
+            "count": "3-4"
+          },
+          {
+            "name": "Oath Paladin",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Fate Vanguard",
+            "count": "3-4"
+          },
+          {
+            "name": "Order Templar",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Shield of Dawn",
+            "count": "2-3"
+          },
+          {
+            "name": "Royal Lancer",
+            "count": "2"
+          },
+          {
+            "name": "Divine Sentinel",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Sovereign Blade",
+            "count": "3"
+          },
+          {
+            "name": "Justice Bringer",
+            "count": "2"
+          },
+          {
+            "name": "Valor Champion",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Fate Sovereign"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Air Wyvern', count: '1' }, { name: 'Water Drake', count: '1' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-7' }] },
-      2: { enemies: [{ name: 'Air Wyvern', count: '1' }, { name: 'Water Drake', count: '2' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-7' }] },
-      3: { enemies: [{ name: 'Air Wyvern', count: '2' }, { name: 'Water Drake', count: '1-2' }, { name: 'Earth Wyrm', count: '1' }, { name: 'Aetherian Hydra', count: '5-6' }] },
-      4: { enemies: [{ name: 'Aetherian Hydra', count: '2' }, { name: 'Air Wyvern', count: '2' }, { name: 'Water Drake', count: '1-2' }, { name: 'Earth Wyrm', count: '5-6' }] },
-      5: { isBoss: true, bossName: 'Fire Turtle', special: 'survival' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Oath Paladin",
+            "count": "3-4"
+          },
+          {
+            "name": "Destiny Knight",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Order Templar",
+            "count": "3-4"
+          },
+          {
+            "name": "Fate Vanguard",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Royal Lancer",
+            "count": "2-3"
+          },
+          {
+            "name": "Shield of Dawn",
+            "count": "2"
+          },
+          {
+            "name": "Sovereign Blade",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Justice Bringer",
+            "count": "3"
+          },
+          {
+            "name": "Valor Champion",
+            "count": "2"
+          },
+          {
+            "name": "Divine Sentinel",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Dawn Sentinel"
+      }
     }
   },
-  6: {
-    A: {
-      1: { enemies: [{ name: 'Dwarf', count: '7-9' }, { name: 'Driller', count: '1' }, { name: 'Atom', count: '1' }] },
-      2: { enemies: [{ name: 'Dwarf', count: '8-10' }, { name: 'Driller', count: '1' }, { name: 'Atom', count: '1' }] },
-      3: { enemies: [{ name: 'Driller', count: '2' }, { name: 'Atom', count: '1' }, { name: 'Dwarf', count: '6-8' }] },
-      4: { enemies: [{ name: 'Atom', count: '2' }, { name: 'Driller', count: '1-2' }, { name: 'Dwarf', count: '6-8' }] },
-      5: { isBoss: true, bossName: 'Banished King' }
+  "6": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Restless Soul",
+            "count": "3-4"
+          },
+          {
+            "name": "Damned Spirit",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Purgatory Wraith",
+            "count": "3-4"
+          },
+          {
+            "name": "Escaping Phantom",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Lost Shade",
+            "count": "2-3"
+          },
+          {
+            "name": "Ascending Ghost",
+            "count": "2"
+          },
+          {
+            "name": "Bound Revenant",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Mournful Specter",
+            "count": "3"
+          },
+          {
+            "name": "Ethereal Wanderer",
+            "count": "2"
+          },
+          {
+            "name": "Tormented Soul",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Reaper"
+      }
     },
-    B: {
-      1: { enemies: [{ name: 'Megalodon', count: '6-8' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }] },
-      2: { enemies: [{ name: 'Megalodon', count: '5-7' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }, { name: 'Constellation Crusher', count: '1' }] },
-      3: { enemies: [{ name: 'Megalodon', count: '5-7' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1' }, { name: 'Constellation Crusher', count: '1' }] },
-      4: { enemies: [{ name: 'Megalodon', count: '6-8' }, { name: 'Kraken', count: '1' }, { name: 'World Eating Snake', count: '1-2' }, { name: 'Constellation Crusher', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'The Sun' }
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Damned Spirit",
+            "count": "3-4"
+          },
+          {
+            "name": "Restless Soul",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Escaping Phantom",
+            "count": "3-4"
+          },
+          {
+            "name": "Purgatory Wraith",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Ascending Ghost",
+            "count": "2-3"
+          },
+          {
+            "name": "Lost Shade",
+            "count": "2"
+          },
+          {
+            "name": "Mournful Specter",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Ethereal Wanderer",
+            "count": "3"
+          },
+          {
+            "name": "Tormented Soul",
+            "count": "2"
+          },
+          {
+            "name": "Bound Revenant",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Damned General"
+      }
     }
   },
-  7: {
-    A: {
-      1: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '1' }, { name: 'Porcupine', count: '1' }, { name: 'Phoenix', count: '1' }] },
-      2: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '1-2' }, { name: 'Porcupine', count: '1' }, { name: 'Phoenix', count: '1' }] },
-      3: { enemies: [{ name: 'Bat', count: '4-6' }, { name: 'Slug', count: '1-2' }, { name: 'Porcupine', count: '1-2' }, { name: 'Phoenix', count: '1' }] },
-      4: { enemies: [{ name: 'Bat', count: '5-7' }, { name: 'Slug', count: '2' }, { name: 'Porcupine', count: '2' }, { name: 'Phoenix', count: '1-2' }] },
-      5: { isBoss: true, bossName: 'Nemesis', special: 'final' }
+  "7": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Husk Acolyte",
+            "count": "3-4"
+          },
+          {
+            "name": "Parasitic Monk",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Infested Cleric",
+            "count": "3-4"
+          },
+          {
+            "name": "Soulless Priest",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Hollow Bishop",
+            "count": "2-3"
+          },
+          {
+            "name": "Fungal Templar",
+            "count": "2"
+          },
+          {
+            "name": "Spore Zealot",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Rotting Friar",
+            "count": "3"
+          },
+          {
+            "name": "Tainted Deacon",
+            "count": "2"
+          },
+          {
+            "name": "Blighted Vicar",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Rot Pontiff"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Parasitic Monk",
+            "count": "3-4"
+          },
+          {
+            "name": "Husk Acolyte",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Soulless Priest",
+            "count": "3-4"
+          },
+          {
+            "name": "Infested Cleric",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Fungal Templar",
+            "count": "2-3"
+          },
+          {
+            "name": "Hollow Bishop",
+            "count": "2"
+          },
+          {
+            "name": "Rotting Friar",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Tainted Deacon",
+            "count": "3"
+          },
+          {
+            "name": "Blighted Vicar",
+            "count": "2"
+          },
+          {
+            "name": "Spore Zealot",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Hollow Bishop"
+      }
+    }
+  },
+  "8": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Plague Doctor",
+            "count": "3-4"
+          },
+          {
+            "name": "Mutated Subject",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Toxic Chemist",
+            "count": "3-4"
+          },
+          {
+            "name": "Viral Surgeon",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Rotted Scientist",
+            "count": "2-3"
+          },
+          {
+            "name": "Biohazard Brute",
+            "count": "2"
+          },
+          {
+            "name": "Pestilence Nurse",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Contaminated Medic",
+            "count": "3"
+          },
+          {
+            "name": "Fume Scholar",
+            "count": "2"
+          },
+          {
+            "name": "Blight Alchemist",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Toxic Behemoth"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Mutated Subject",
+            "count": "3-4"
+          },
+          {
+            "name": "Plague Doctor",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Viral Surgeon",
+            "count": "3-4"
+          },
+          {
+            "name": "Toxic Chemist",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Biohazard Brute",
+            "count": "2-3"
+          },
+          {
+            "name": "Rotted Scientist",
+            "count": "2"
+          },
+          {
+            "name": "Contaminated Medic",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Fume Scholar",
+            "count": "3"
+          },
+          {
+            "name": "Blight Alchemist",
+            "count": "2"
+          },
+          {
+            "name": "Pestilence Nurse",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Plague Master"
+      }
+    }
+  },
+  "9": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Corrupt Disciple",
+            "count": "3-4"
+          },
+          {
+            "name": "Rot Believer",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Decay Zealot",
+            "count": "3-4"
+          },
+          {
+            "name": "Miasma Prophet",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Tainted Worshipper",
+            "count": "2-3"
+          },
+          {
+            "name": "Foul Oracle",
+            "count": "2"
+          },
+          {
+            "name": "Spoil Initiate",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Defiled Mystic",
+            "count": "3"
+          },
+          {
+            "name": "Ruin Chanter",
+            "count": "2"
+          },
+          {
+            "name": "Pestilent Fanatic",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Miasma Prophet"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Rot Believer",
+            "count": "3-4"
+          },
+          {
+            "name": "Corrupt Disciple",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Miasma Prophet",
+            "count": "3-4"
+          },
+          {
+            "name": "Decay Zealot",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Foul Oracle",
+            "count": "2-3"
+          },
+          {
+            "name": "Tainted Worshipper",
+            "count": "2"
+          },
+          {
+            "name": "Defiled Mystic",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Ruin Chanter",
+            "count": "3"
+          },
+          {
+            "name": "Pestilent Fanatic",
+            "count": "2"
+          },
+          {
+            "name": "Spoil Initiate",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Ruin Avatar"
+      }
+    }
+  },
+  "10": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Scale Drake",
+            "count": "3-4"
+          },
+          {
+            "name": "Flame Wyrm",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Ember Dragon",
+            "count": "3-4"
+          },
+          {
+            "name": "Ash Hatchling",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Sky Serpent",
+            "count": "2-3"
+          },
+          {
+            "name": "Cinder Drake",
+            "count": "2"
+          },
+          {
+            "name": "Blaze Wyvern",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Soaring Behemoth",
+            "count": "3"
+          },
+          {
+            "name": "Inferno Dragon",
+            "count": "2"
+          },
+          {
+            "name": "Talon Scorch",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Fire Turtle"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Flame Wyrm",
+            "count": "3-4"
+          },
+          {
+            "name": "Scale Drake",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Ash Hatchling",
+            "count": "3-4"
+          },
+          {
+            "name": "Ember Dragon",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Cinder Drake",
+            "count": "2-3"
+          },
+          {
+            "name": "Sky Serpent",
+            "count": "2"
+          },
+          {
+            "name": "Soaring Behemoth",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Inferno Dragon",
+            "count": "3"
+          },
+          {
+            "name": "Talon Scorch",
+            "count": "2"
+          },
+          {
+            "name": "Blaze Wyvern",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Sky Terror"
+      }
+    }
+  },
+  "11": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Depth Lurker",
+            "count": "3-4"
+          },
+          {
+            "name": "Trench Behemoth",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Deep Leviathan",
+            "count": "3-4"
+          },
+          {
+            "name": "Abyssal Terror",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Sea Goliath",
+            "count": "2-3"
+          },
+          {
+            "name": "Maelstrom Horror",
+            "count": "2"
+          },
+          {
+            "name": "Void Kraken",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Ocean Colossus",
+            "count": "3"
+          },
+          {
+            "name": "Tsunami Beast",
+            "count": "2"
+          },
+          {
+            "name": "Dark Tide",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Sea Behemoth",
+        "special": "final"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Trench Behemoth",
+            "count": "3-4"
+          },
+          {
+            "name": "Depth Lurker",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Abyssal Terror",
+            "count": "3-4"
+          },
+          {
+            "name": "Deep Leviathan",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Maelstrom Horror",
+            "count": "2-3"
+          },
+          {
+            "name": "Sea Goliath",
+            "count": "2"
+          },
+          {
+            "name": "Ocean Colossus",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Tsunami Beast",
+            "count": "3"
+          },
+          {
+            "name": "Dark Tide",
+            "count": "2"
+          },
+          {
+            "name": "Void Kraken",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Trench Leviathan",
+        "special": "final"
+      }
     }
   }
 };
@@ -136,7 +1419,7 @@ class StageManager {
     if (!state.stageState.stageProgress) {
       state.stageState.stageProgress = {};
     }
-    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A'];
+    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11A','11B'];
     keys.forEach(k => {
       if (!state.stageState.stageProgress[k]) {
         state.stageState.stageProgress[k] = { maxCleared: 0, currentLevel: 1, isCleared: false };
@@ -183,7 +1466,7 @@ class StageManager {
     }
 
     // Victory check: Stage 8 (Main Boss) or maxStages 
-    const maxStg = state.config.maxStages || 8;
+    const maxStg = state.config.maxStages || 11;
     if (stage >= maxStg && level >= 5) {
       return { isVictory: true };
     }

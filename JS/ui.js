@@ -11316,9 +11316,10 @@ class UIManager {
       return state.stageState.branchingMap;
     }
 
-    const stageColors = {
+        const stageColors = {
       1: '#ef4444', 2: '#f59e0b', 3: '#eab308', 4: '#84cc16',
-      5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7'
+      5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7',
+      9: '#e81cff', 10: '#ff4d4d', 11: '#002244'
     };
 
     const minibossPool = [
@@ -11330,15 +11331,18 @@ class UIManager {
     const mapLines = [];
 
     // Main spine path: Stages 1 to 8 (Main bosses at the end of spine)
-    const mainStages = [
+        const mainStages = [
       { stage: 1, key: '1A', name: 'Volcano', icon: '🌋' },
-      { stage: 2, key: '2A', name: 'Marchers', icon: '🚶‍♂️' },
-      { stage: 3, key: '3A', name: 'Kingdom', icon: '🏰' },
-      { stage: 4, key: '4A', name: 'Church', icon: '⛪' },
-      { stage: 5, key: '5A', name: 'Cult', icon: '👁️' },
-      { stage: 6, key: '6A', name: 'Abyssal Sea', icon: '🌊' },
-      { stage: 7, key: '7A', name: 'Jade Village', icon: '🎋' },
-      { stage: 8, key: '8A', name: 'The Void Apex', icon: '👑', isApex: true }
+      { stage: 2, key: '2A', name: 'Pyramids', icon: '🏜️' },
+      { stage: 3, key: '3A', name: 'Marchers', icon: '🚶‍♂️' },
+      { stage: 4, key: '4A', name: 'Chasm', icon: '🕳️' },
+      { stage: 5, key: '5A', name: 'Kingdom', icon: '🏰' },
+      { stage: 6, key: '6A', name: 'Graveyard', icon: '🪦' },
+      { stage: 7, key: '7A', name: 'Church', icon: '⛪' },
+      { stage: 8, key: '8A', name: 'Lab', icon: '🧪' },
+      { stage: 9, key: '9A', name: 'Cult', icon: '👁️' },
+      { stage: 10, key: '10A', name: 'Dragon Isle', icon: '🐉' },
+      { stage: 11, key: '11A', name: 'Abyssal Sea', icon: '🌊', isApex: true },
     ];
 
     let lastSpineNodeId = null;
