@@ -980,7 +980,14 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // BOSS CONFIGURATIONS
   // ============================================================
-  bosses: {
+    'Grave Sentinel': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 0.9, color: '#e2e8f0', p1Anim: 'Slam Wave', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.40, minion: 0.20, crit: 0.20, regular: 0.20 } },
+    'Ashen Warden': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.8, color: '#f97316', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { bomb: 0.35, corrosive: 0.25, crit: 0.20, regular: 0.20 } },
+    'Rune Overseer': { element: 'Aether', resist: 'Aether B', weak: 'Earth D', hpMult: 0.85, color: '#38bdf8', p1Anim: 'Orb Burst', p2Anim: 'Orb Burst', attackWeights: { heal: 0.30, crit: 0.30, heavy: 0.20, regular: 0.20 } },
+    'Void Preceptor': { element: 'Void', resist: 'Void B', weak: 'Aether D', hpMult: 0.9, color: '#c084fc', p1Anim: 'Glitch Invert', p2Anim: 'Rage Pulse', attackWeights: { corrosive: 0.35, bomb: 0.25, heavy: 0.20, regular: 0.20 } },
+    'Rot Apostle': { element: 'Earth', resist: 'Earth B', weak: 'Fire D', hpMult: 0.85, color: '#84cc16', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { corrosive: 0.40, minion: 0.30, regular: 0.30 } },
+    'Blight Executioner': { element: 'Water', resist: 'Water B', weak: 'Earth D', hpMult: 0.95, color: '#10b981', p1Anim: 'Slam Wave', p2Anim: 'Slam Wave', attackWeights: { heavy: 0.50, crit: 0.25, regular: 0.25 } },
+    'Blood Harbinger': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.85, color: '#ef4444', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { crit: 0.40, heavy: 0.30, regular: 0.30 } },
+    'Czar Vanguard': { element: 'Aether', resist: 'Aether B', weak: 'Fire D', hpMult: 0.9, color: '#f59e0b', p1Anim: 'Slam Wave', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.35, minion: 0.25, crit: 0.20, regular: 0.20 } },
     'Demon': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 1.0, color: '#ff2222', p1Anim: 'Slam Wave', p2Anim: 'Glitch Invert', attackWeights: { bomb: 0.25, heavy: 0.20, crit: 0.20, minion: 0.10, regular: 0.10, corrosive: 0.05, heal: 0.05, null: 0.05 } },
     'Mummified Marcher': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 1.2, color: '#d4af37', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { minion: 0.35, corrosive: 0.20, heal: 0.15, heavy: 0.10, regular: 0.08, bomb: 0.05, crit: 0.04, null: 0.03 } },
     'Crimson Wizard': { element: 'Aether', resist: 'Aether B', weak: 'Fire D', hpMult: 0.8, color: '#8a2be2', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { corrosive: 0.30, crit: 0.25, bomb: 0.20, heal: 0.10, minion: 0.05, heavy: 0.04, regular: 0.03, null: 0.03 } },

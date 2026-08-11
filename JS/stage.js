@@ -150,14 +150,14 @@ class StageManager {
     return getGameState().stageState.stageProgress[key];
   }
 
-  static enterStageLevel(stage, variant, level) {
+  static enterStageLevel(stage, variant, level, bossNameOverride = null) {
     const state = getGameState();
     this.ensureStageProgress();
     state.stageState.stage = Number(stage);
     state.stageState.stageVariation = variant || 'A';
     state.stageState.inActiveLevel = true;
     
-    return this.generateLevel(Number(level));
+    return this.generateLevel(Number(level), bossNameOverride);
   }
 
   static leaveToWorldMap() {
@@ -167,83 +167,21 @@ class StageManager {
     this.syncUI();
   }
 
-  static onLevelCleared() {
-    const state = getGameState();
-    const stage = state.stageState.stage;
-    const variant = state.stageState.stageVariation;
-    const level = state.stageState.level;
-
-    this.ensureStageProgress();
-    const prog = this.getStageProgress(stage, variant);
-    if (prog) {
-      prog.maxCleared = Math.max(prog.maxCleared || 0, level);
-      if (level >= 5) {
-        prog.isCleared = true;
-      }
-    }
-
-    // Victory check: Stage 7 Level 5 Boss (Nemesis)
-    if (stage === 7 && variant === 'A' && level >= 5) {
-      return { isVictory: true };
-    }
-
-    return { isVictory: false, stage, variant, level };
-  }
-
-  static initializeRun(stage = 1) {
-    const state = getGameState();
-    
-    state.stageState.stage = stage;
-    state.stageState.level = 1;
-    state.stageState.inActiveLevel = false;
-    state.stageState.enemies = [];
-    state.stageState.dodgeCount = 0;
-    this.ensureStageProgress();
-
-    state.systemState.dialogueSeen = {};
-    state.systemState.runSeenEnemies = {};
-    state.systemState.gameStartTime = Date.now();
-    state.systemState.runCompletionHistory = [];
-    state.systemState.runStats = {
-      startClass: state.systemState.runStats?.startClass || state.playerState?.className || null,
-      enemiesDefeated: 0,
-      bossesSailed: 0,
-      totalGoldEarned: 0,
-      totalDiamondsEarned: 0,
-      totalDamageTaken: 0,
-      damageTakenCount: 0,
-      last15DealtHits: [],
-      buffsCollected: 0,
-      tasksCompleted: 0,
-      daysSurvived: 0
-    };
-    
-    // Clear special event data for new run
-    state.systemState.specialEvent = null;
-    state.playerState.talismans = [];
-    state.playerState.borrowedSkills = [];
-    
-    if (state.playerState.sacredTreeHpBonus) {
-      state.playerState.maxHp = Math.max(state.config.baseMaxHp, state.playerState.maxHp - state.playerState.sacredTreeHpBonus);
-      state.playerState.hp = Math.min(state.playerState.hp, state.playerState.maxHp);
-      state.playerState.sacredTreeHpBonus = 0;
-    }
-    if (state.playerState.sacredTreeManaBonus) {
-      state.playerState.maxMana = Math.max(state.config.baseMaxMana, state.playerState.maxMana - state.playerState.sacredTreeManaBonus);
-      state.playerState.mana = Math.min(state.playerState.mana, state.playerState.maxMana);
-      state.playerState.sacredTreeManaBonus = 0;
-    }
-    
-    // Choose stage variation (handles single-variant stages like Stage 7)
-    state.stageState.stageVariation = this.pickStageVariation(stage);
-    
-    this.syncUI();
-  }
-  
-  static generateLevel(level) {
+  static generateLevel(level, bossNameOverride = null) {
     const state = getGameState();
     const stage = state.stageState.stage;
     const variation = state.stageState.stageVariation;
+    
+    state.stageState.level = level;
+    state.stageState.enemies = [];
+    state.stageState.daysOnLevel = 0;
+    state.stageState.inActiveLevel = true;
+
+    if (bossNameOverride) {
+      this.generateBossLevel(bossNameOverride, 'miniboss');
+      this.syncUI();
+      return true;
+    }
     
     const stageFormations = FORMATIONS[stage] || FORMATIONS[1];
     const variationData = stageFormations[variation] || stageFormations['A'] || Object.values(stageFormations)[0];
@@ -252,11 +190,6 @@ class StageManager {
       console.error(`No formation found for Stage ${stage} Var ${variation} Level ${level}`);
       return false;
     }
-    
-    state.stageState.level = level;
-    state.stageState.enemies = [];
-    state.stageState.daysOnLevel = 0;
-    state.stageState.inActiveLevel = true;
     
     if (formationData.isBoss) {
       this.generateBossLevel(formationData.bossName, formationData.special);

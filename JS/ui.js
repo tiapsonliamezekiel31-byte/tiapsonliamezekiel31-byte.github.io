@@ -11309,16 +11309,15 @@ class UIManager {
       5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7'
     };
 
-    const minibossNames = [
+    const minibossPool = [
       'Grave Sentinel', 'Ashen Warden', 'Rune Overseer', 'Void Preceptor',
       'Rot Apostle', 'Blight Executioner', 'Blood Harbinger', 'Czar Vanguard'
     ];
 
-    // Seeded/procedural random path generator
     const mapNodes = [];
     const mapLines = [];
 
-    // Main spine path: Stages 1 to 8
+    // Main spine path: Stages 1 to 8 (Main bosses at the end of spine)
     const mainStages = [
       { stage: 1, key: '1A', name: 'Volcano', icon: '🌋' },
       { stage: 2, key: '2A', name: 'Marchers', icon: '🚶‍♂️' },
@@ -11327,14 +11326,14 @@ class UIManager {
       { stage: 5, key: '5A', name: 'Cult', icon: '👁️' },
       { stage: 6, key: '6A', name: 'Abyssal Sea', icon: '🌊' },
       { stage: 7, key: '7A', name: 'Jade Village', icon: '🎋' },
-      { stage: 8, key: '8A', name: 'The Void Apex (Main Boss)', icon: '👑', isApex: true }
+      { stage: 8, key: '8A', name: 'The Void Apex', icon: '👑', isApex: true }
     ];
 
     let lastSpineNodeId = null;
     mainStages.forEach((stg, i) => {
       const nodeId = `main_${stg.key}`;
-      const x = 400 + Math.floor((Math.random() - 0.5) * 120);
-      const y = 100 + i * 140;
+      const x = 500;
+      const y = 80 + i * 160;
 
       mapNodes.push({
         id: nodeId,
@@ -11345,7 +11344,8 @@ class UIManager {
         icon: stg.icon,
         x, y,
         isMain: true,
-        isBoss: !!stg.isApex,
+        isBoss: true,
+        bossName: null, // uses default formation boss
         color: stageColors[stg.stage]
       });
 
@@ -11353,50 +11353,42 @@ class UIManager {
         mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true });
       }
       lastSpineNodeId = nodeId;
-    });
 
-    // Generate 2-4 random side branches originating from main spine
-    const branchCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 branches
-    const eligibleBranchPoints = [1, 2, 3, 4, 5, 6]; // Stages that can branch off
+      // Generate 2-4 miniboss side-branches FOR THIS STAGE
+      const minibossCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 per stage
+      for (let m = 0; m < minibossCount; m++) {
+        const side = (m % 2 === 0) ? -1 : 1;
+        const branchDepth = Math.floor(Math.random() * 3) + 1; // 1 to 3 levels long path to miniboss
+        const assignedMiniboss = minibossPool[(stg.stage + m) % minibossPool.length];
+        
+        let prevNodeId = nodeId;
+        for (let step = 1; step <= branchDepth; step++) {
+          const isMinibossEnd = (step === branchDepth);
+          const subKey = `${stg.stage}B_${m}_${step}`;
+          const subId = `sub_${subKey}`;
+          const bx = x + side * (140 + (step - 1) * 110 + Math.floor(Math.random() * 30));
+          const by = y + (m - 1) * 35 + (step * 25);
 
-    for (let b = 0; b < branchCount; b++) {
-      if (!eligibleBranchPoints.length) break;
-      const startStageIdx = eligibleBranchPoints.splice(Math.floor(Math.random() * eligibleBranchPoints.length), 1)[0];
-      const parentNode = mapNodes.find(n => n.stage === startStageIdx && n.isMain);
-      if (!parentNode) continue;
+          mapNodes.push({
+            id: subId,
+            key: subKey,
+            stage: stg.stage,
+            variant: 'B',
+            name: isMinibossEnd ? `Miniboss: ${assignedMiniboss}` : `Path ${stg.stage}.${m + 1}`,
+            icon: isMinibossEnd ? '☠️' : '⚔️',
+            x: bx, y: by,
+            isMain: false,
+            isMiniboss: isMinibossEnd,
+            bossName: isMinibossEnd ? assignedMiniboss : null,
+            maxLevels: isMinibossEnd ? 1 : Math.floor(Math.random() * 3) + 1, // Short clean path length
+            color: stageColors[stg.stage]
+          });
 
-      const branchLength = Math.floor(Math.random() * 3) + 1; // 1 to 3 nodes deep
-      const side = (b % 2 === 0) ? -1 : 1;
-      let prevBranchId = parentNode.id;
-
-      for (let step = 1; step <= branchLength; step++) {
-        const isMinibossNode = (step === branchLength);
-        const branchKey = `${parentNode.stage}B_${b}_${step}`;
-        const mbName = minibossNames[Math.floor(Math.random() * minibossNames.length)];
-        const branchName = isMinibossNode ? `Miniboss: ${mbName}` : `Branch ${parentNode.stage}.${step}`;
-        const branchIcon = isMinibossNode ? '☠️' : '🌿';
-        const nodeId = `sub_${branchKey}`;
-
-        const bx = parentNode.x + side * (160 + step * 70 + Math.floor(Math.random() * 40));
-        const by = parentNode.y + step * 100 + Math.floor((Math.random() - 0.5) * 50);
-
-        mapNodes.push({
-          id: nodeId,
-          key: branchKey,
-          stage: parentNode.stage,
-          variant: 'B',
-          name: branchName,
-          icon: branchIcon,
-          x: bx, y: by,
-          isMain: false,
-          isMiniboss: isMinibossNode,
-          color: stageColors[parentNode.stage]
-        });
-
-        mapLines.push({ from: prevBranchId, to: nodeId, isMain: false });
-        prevBranchId = nodeId;
+          mapLines.push({ from: prevNodeId, to: subId, isMain: false });
+          prevNodeId = subId;
+        }
       }
-    }
+    });
 
     const branchingMap = { nodes: mapNodes, lines: mapLines };
     if (state?.stageState) state.stageState.branchingMap = branchingMap;
@@ -11437,7 +11429,7 @@ class UIManager {
         </div>
       </div>
       <div class="world-tree-viewport" style="position:relative; width:100vw; height:calc(100vh - 120px); overflow:hidden; cursor:grab; touch-action:none;">
-        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:1400px; transform-origin:0 0;">
+        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:1500px; transform-origin:0 0;">
           <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
           <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
     `;
@@ -11447,30 +11439,32 @@ class UIManager {
       const isCleared = !!prog.isCleared;
       const maxCleared = prog.maxCleared || 0;
       const color = node.color || '#38bdf8';
+      const levelCount = node.maxLevels || 5;
 
       html += `
         <div class="stage-node-card ${isCleared ? 'is-cleared' : ''} ${node.isMiniboss ? 'is-miniboss' : ''}" 
              data-node-id="${node.id}" 
              data-node-key="${node.key}" 
              data-stage="${node.stage}" 
-             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${color}; box-shadow: 0 0 14px ${color}35; background: rgba(15, 23, 42, 0.96); width:200px;">
+             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${color}; box-shadow: 0 0 14px ${color}35; background: rgba(15, 23, 42, 0.96); width:180px; padding:8px 10px;">
           <div class="stage-node-title" style="border-bottom:1px solid ${color}40; padding-bottom:4px; margin-bottom:6px;">
             <span style="color:${color}; font-family:'Orbitron', sans-serif; font-size:0.75rem;">${node.icon} ${node.name}</span>
             ${isCleared ? '<span class="cleared-badge">✓</span>' : ''}
           </div>
-          <div class="stage-node-levels">
+          <div class="stage-node-levels" style="display:flex; gap:4px; flex-wrap:wrap;">
       `;
 
-      for (let lvl = 1; lvl <= 5; lvl++) {
-        const isBossLvl = (lvl === 5);
+      for (let lvl = 1; lvl <= levelCount; lvl++) {
+        const isBossLvl = (lvl === levelCount);
         const isLevelCleared = (lvl <= maxCleared);
-        const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl ? `L5 ${node.isMiniboss ? '☠️' : '👑'}` : `L${lvl}`);
+        const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl && node.isMiniboss ? `☠️` : `L${lvl}`);
         html += `
           <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
                   data-stage="${node.stage}" 
                   data-variant="${node.variant}" 
                   data-level="${lvl}"
-                  style="${!isLevelCleared ? `border-color:${color}80;` : ''}">
+                  data-boss-override="${node.bossName || ''}"
+                  style="flex:1; min-width:32px; ${!isLevelCleared ? `border-color:${color}80;` : ''}">
             ${lvlBtnLabel}
           </button>
         `;
@@ -11580,8 +11574,9 @@ class UIManager {
         const stage = Number(btn.dataset.stage);
         const variant = btn.dataset.variant;
         const level = Number(btn.dataset.level);
+        const bossOverride = btn.dataset.bossOverride || null;
         if (typeof StageManager !== 'undefined' && StageManager.enterStageLevel) {
-          StageManager.enterStageLevel(stage, variant, level);
+          StageManager.enterStageLevel(stage, variant, level, bossOverride);
         }
       });
     });
