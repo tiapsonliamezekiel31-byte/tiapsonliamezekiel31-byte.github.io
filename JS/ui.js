@@ -11330,7 +11330,7 @@ class UIManager {
 
   static getOrGenerateBranchingMap(stageProgress) {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    if (state?.stageState?.branchingMap && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
+    if (state?.stageState?.branchingMap?.version === 2 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
       return state.stageState.branchingMap;
     }
 
@@ -11434,7 +11434,7 @@ class UIManager {
       }
     });
 
-    const branchingMap = { nodes: mapNodes, lines: mapLines };
+    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 2 };
     if (state?.stageState) state.stageState.branchingMap = branchingMap;
     return branchingMap;
   }
