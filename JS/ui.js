@@ -11299,11 +11299,11 @@ class UIManager {
   }
 
   static renderWorldMapNodeView() {
-    // Clear canvas connection lines if any
-    const canvas = document.getElementById('enemyConnectionCanvas');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Clear enemy canvas if any
+    const enemyCanvas = document.getElementById('enemyConnectionCanvas');
+    if (enemyCanvas) {
+      const ctx = enemyCanvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, enemyCanvas.width, enemyCanvas.height);
     }
 
     let mapContainer = document.querySelector('.world-map-container');
@@ -11319,29 +11319,42 @@ class UIManager {
     }
     const stageProgress = state?.stageState?.stageProgress || {};
 
+    const stageColors = {
+      1: '#22c55e', // Root Biomes: Emerald Green
+      2: '#a855f7', // Deep Caves & Swamps: Purple / Venom
+      3: '#38bdf8', // Frozen Ruins: Cyan Ice
+      4: '#f59e0b', // Castle & Tombs: Amber Gold
+      5: '#ef4444', // Infernal Dragon: Crimson Red
+      6: '#ec4899', // Mountain & Abyss: Rose Magenta
+      7: '#6366f1'  // Apex Void: Cosmic Indigo
+    };
+
     const tiers = [
-      { stage: 1, title: 'STAGE 1 — ROOT BIOMES', nodes: [{ key: '1A', variant: 'A', name: 'Forest', icon: '🌲' }, { key: '1B', variant: 'B', name: 'Desert', icon: '🏜️' }] },
-      { stage: 2, title: 'STAGE 2 — DEEP CAVES & SWAMPS', nodes: [{ key: '2A', variant: 'A', name: 'Crimson Cave', icon: '🕳️' }, { key: '2B', variant: 'B', name: 'Infected Swamp', icon: '☣️' }] },
-      { stage: 3, title: 'STAGE 3 — FROZEN RUINS', nodes: [{ key: '3A', variant: 'A', name: 'Glacier', icon: '🧊' }, { key: '3B', variant: 'B', name: 'Ruins', icon: '🏛️' }] },
-      { stage: 4, title: 'STAGE 4 — ANCIENT CASTLES & TOMBS', nodes: [{ key: '4A', variant: 'A', name: 'Graveyard', icon: '🪦' }, { key: '4B', variant: 'B', name: 'Castle', icon: '🏰' }] },
-      { stage: 5, title: 'STAGE 5 — INFERNAL DRAGON REGIONS', nodes: [{ key: '5A', variant: 'A', name: 'Volcano', icon: '🌋' }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉' }] },
-      { stage: 6, title: 'STAGE 6 — MOUNTAINS & ABYSS', nodes: [{ key: '6A', variant: 'A', name: 'Golden Mountain', icon: '⛰️' }, { key: '6B', variant: 'B', name: 'Abyssal Sea', icon: '🌊' }] },
-      { stage: 7, title: 'STAGE 7 — THE APEX VOID', nodes: [{ key: '7A', variant: 'A', name: 'The Void', icon: '🌌' }] }
+      { stage: 1, title: 'STAGE 1 — ROOT BIOMES', nodes: [{ key: '1A', variant: 'A', name: 'Forest', icon: '🌲', offsetX: -120 }, { key: '1B', variant: 'B', name: 'Desert', icon: '🏜️', offsetX: 120 }] },
+      { stage: 2, title: 'STAGE 2 — DEEP CAVES & SWAMPS', nodes: [{ key: '2A', variant: 'A', name: 'Crimson Cave', icon: '🕳️', offsetX: -140 }, { key: '2B', variant: 'B', name: 'Infected Swamp', icon: '☣️', offsetX: 140 }] },
+      { stage: 3, title: 'STAGE 3 — FROZEN RUINS', nodes: [{ key: '3A', variant: 'A', name: 'Glacier', icon: '🧊', offsetX: -100 }, { key: '3B', variant: 'B', name: 'Ruins', icon: '🏛️', offsetX: 130 }] },
+      { stage: 4, title: 'STAGE 4 — ANCIENT CASTLES & TOMBS', nodes: [{ key: '4A', variant: 'A', name: 'Graveyard', icon: '🪦', offsetX: -150 }, { key: '4B', variant: 'B', name: 'Castle', icon: '🏰', offsetX: 110 }] },
+      { stage: 5, title: 'STAGE 5 — INFERNAL DRAGON REGIONS', nodes: [{ key: '5A', variant: 'A', name: 'Volcano', icon: '🌋', offsetX: -110 }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉', offsetX: 150 }] },
+      { stage: 6, title: 'STAGE 6 — MOUNTAINS & ABYSS', nodes: [{ key: '6A', variant: 'A', name: 'Golden Mountain', icon: '⛰️', offsetX: -130 }, { key: '6B', variant: 'B', name: 'Abyssal Sea', icon: '🌊', offsetX: 120 }] },
+      { stage: 7, title: 'STAGE 7 — THE APEX VOID', nodes: [{ key: '7A', variant: 'A', name: 'The Void', icon: '🌌', offsetX: 0 }] }
     ];
 
     let html = `
       <div class="world-map-header">
-        <h2 style="margin:0 0 4px 0; color:#ffd700; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD MAP TREE</h2>
-        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Navigate the node tree. Completed levels are greyed out.</p>
+        <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.8rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD TREE NODE MAP</h2>
+        <p style="margin:0; font-size:0.9rem; color:#94a3b8;">Organic Stage Paths & Node Network</p>
       </div>
-      <div class="world-tree-container">
+      <div class="world-tree-graph-wrapper" style="position:relative; width:100%; max-width:850px; margin:0 auto;">
+        <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
+        <div class="world-tree-nodes-layer" style="position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; gap:40px; padding:20px 0 60px 0;">
     `;
 
-    tiers.forEach((tier, tIdx) => {
+    tiers.forEach((tier) => {
+      const color = stageColors[tier.stage] || '#64748b';
       html += `
-        <div class="world-tree-tier">
-          <div class="tier-label">${tier.title}</div>
-          <div class="tier-nodes-row">
+        <div class="world-tree-tier" data-stage="${tier.stage}" style="display:flex; flex-direction:column; align-items:center; width:100%;">
+          <div class="tier-label" style="font-size:0.75rem; font-weight:800; letter-spacing:1.5px; color:${color}; margin-bottom:12px; text-transform:uppercase; text-shadow:0 0 8px ${color}40;">${tier.title}</div>
+          <div class="tier-nodes-row" style="display:flex; justify-content:center; width:100%; gap:40px;">
       `;
 
       tier.nodes.forEach(node => {
@@ -11350,9 +11363,9 @@ class UIManager {
         const maxCleared = prog.maxCleared || 0;
 
         html += `
-          <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}">
-            <div class="stage-node-title">
-              <span>${node.icon} ${tier.stage}${node.variant}: ${node.name}</span>
+          <div class="stage-node-card ${isCleared ? 'is-cleared' : ''}" data-node-key="${node.key}" data-stage="${tier.stage}" style="border-color:${color}; transform: translateX(${node.offsetX}px); box-shadow: 0 0 12px ${color}25; background: rgba(15, 23, 42, 0.95);">
+            <div class="stage-node-title" style="border-bottom:1px solid ${color}40; padding-bottom:6px; margin-bottom:8px;">
+              <span style="color:${color}; font-family:'Orbitron', sans-serif;">${node.icon} ${tier.stage}${node.variant}: ${node.name}</span>
               ${isCleared ? '<span class="cleared-badge">✓ CLEARED</span>' : ''}
             </div>
             <div class="stage-node-levels">
@@ -11366,7 +11379,8 @@ class UIManager {
             <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
                     data-stage="${tier.stage}" 
                     data-variant="${node.variant}" 
-                    data-level="${lvl}">
+                    data-level="${lvl}"
+                    style="${!isLevelCleared ? `border-color:${color}80;` : ''}">
               ${lvlBtnLabel}
             </button>
           `;
@@ -11380,14 +11394,17 @@ class UIManager {
 
       html += `
           </div>
-          ${tIdx < tiers.length - 1 ? '<div class="tree-connector-line"></div>' : ''}
         </div>
       `;
     });
 
-    html += `</div>`;
+    html += `
+        </div>
+      </div>
+    `;
     mapContainer.innerHTML = html;
 
+    // Attach click events to buttons
     mapContainer.querySelectorAll('.node-level-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -11399,6 +11416,63 @@ class UIManager {
         }
       });
     });
+
+    // Draw lines between stage nodes after layout
+    setTimeout(() => {
+      this.drawWorldTreeLines(mapContainer, stageColors);
+    }, 50);
+  }
+
+  static drawWorldTreeLines(container, stageColors) {
+    const svg = container.querySelector('.world-tree-svg');
+    const wrapper = container.querySelector('.world-tree-graph-wrapper');
+    if (!svg || !wrapper) return;
+
+    const wrapperRect = wrapper.getBoundingClientRect();
+    svg.setAttribute('width', wrapperRect.width);
+    svg.setAttribute('height', wrapperRect.height);
+    svg.innerHTML = '';
+
+    const nodeCards = Array.from(container.querySelectorAll('.stage-node-card'));
+    const nodesByKey = {};
+    nodeCards.forEach(card => {
+      const key = card.dataset.nodeKey;
+      const rect = card.getBoundingClientRect();
+      nodesByKey[key] = {
+        key,
+        stage: Number(card.dataset.stage),
+        top: rect.top - wrapperRect.top + rect.height / 2,
+        bottom: rect.top - wrapperRect.top + rect.height,
+        x: rect.left - wrapperRect.left + rect.width / 2
+      };
+    });
+
+    // Define connection hierarchy
+    const connections = [
+      { from: '1A', to: '2A' }, { from: '1A', to: '2B' },
+      { from: '1B', to: '2A' }, { from: '1B', to: '2B' },
+      { from: '2A', to: '3A' }, { from: '2B', to: '3B' },
+      { from: '3A', to: '4A' }, { from: '3B', to: '4B' },
+      { from: '4A', to: '5A' }, { from: '4B', to: '5B' },
+      { from: '5A', to: '6A' }, { from: '5B', to: '6B' },
+      { from: '6A', to: '7A' }, { from: '6B', to: '7A' }
+    ];
+
+    let svgLines = '';
+    connections.forEach(conn => {
+      const src = nodesByKey[conn.from];
+      const tgt = nodesByKey[conn.to];
+      if (src && tgt) {
+        const color = stageColors[src.stage] || '#64748b';
+        const midY = (src.top + tgt.top) / 2;
+        const d = `M ${src.x} ${src.top} C ${src.x} ${midY}, ${tgt.x} ${midY}, ${tgt.x} ${tgt.top}`;
+        svgLines += `<path d="${d}" stroke="${color}" stroke-width="3" fill="none" opacity="0.75" stroke-dasharray="6,3" style="filter: drop-shadow(0 0 6px ${color});" />`;
+        // Connection node glow dots at target
+        svgLines += `<circle cx="${tgt.x}" cy="${tgt.top}" r="4" fill="${color}" />`;
+      }
+    });
+
+    svg.innerHTML = svgLines;
   }
 
   static _doRenderEnemies() {
