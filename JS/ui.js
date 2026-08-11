@@ -11448,11 +11448,11 @@ class UIManager {
     }
 
     let mapContainer = document.querySelector('.world-map-container');
-    if (!mapContainer) {
-      mapContainer = document.createElement('div');
-      mapContainer.className = 'world-map-container';
-      document.body.appendChild(mapContainer);
-    }
+    if (mapContainer) return; // Prevent rebuilding the map every tick
+    
+    mapContainer = document.createElement('div');
+    mapContainer.className = 'world-map-container';
+    document.body.appendChild(mapContainer);
 
     const state = typeof getGameState === 'function' ? getGameState() : null;
     if (typeof StageManager !== 'undefined' && StageManager.ensureStageProgress) {
@@ -11638,10 +11638,10 @@ class UIManager {
       const tgt = nodesById[line.to];
       if (src && tgt) {
         const color = src.color || '#38bdf8';
-        const srcX = src.x + 100;
-        const srcY = src.y + 40;
-        const tgtX = tgt.x + 100;
-        const tgtY = tgt.y + 40;
+        const srcX = src.x;
+        const srcY = src.y;
+        const tgtX = tgt.x;
+        const tgtY = tgt.y;
 
         const midY = (srcY + tgtY) / 2;
         const d = `M ${srcX} ${srcY} C ${srcX} ${midY}, ${tgtX} ${midY}, ${tgtX} ${tgtY}`;
