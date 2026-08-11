@@ -11364,18 +11364,20 @@ class UIManager {
     ];
 
     let lastSpineNodeId = null;
-    // We go upwards. 11 stages * 5 levels * 90px = ~4950px tall
-    let currentY = 5500;
-    const centerX = 600;
+    let currentY = 150;
+    const startX = 200;
 
     mainStages.forEach((stg) => {
+      let stageX = startX;
+      lastSpineNodeId = null; // Disconnect stages
+
       for (let lvl = 1; lvl <= 5; lvl++) {
         const isBoss = (lvl === 5);
         const nodeId = `main_${stg.key}_L${lvl}`;
         
         // slight wiggle
-        const x = centerX + (Math.random() * 60 - 30);
-        const y = currentY;
+        const x = stageX + (Math.random() * 20 - 10);
+        const y = currentY + (Math.random() * 20 - 10);
 
         mapNodes.push({
           id: nodeId,
@@ -11406,8 +11408,8 @@ class UIManager {
           const subKey = `${stg.stage}B_${lvl}`;
           const subId = `sub_${subKey}`;
           
-          const bx = x + side * (120 + Math.random() * 50);
-          const by = y - 30; // slightly above
+          const bx = x + (Math.random() * 20 - 10);
+          const by = y + side * (70 + Math.random() * 20);
 
           mapNodes.push({
             id: subId,
@@ -11429,9 +11431,9 @@ class UIManager {
           mapLines.push({ from: nodeId, to: subId, isMain: false });
         }
 
-        currentY -= 90;
+        stageX += 160;
       }
-      currentY -= 60; // Extra gap between stages
+      currentY += 250; // Vertical gap between stages
     });
 
     const branchingMap = { nodes: mapNodes, lines: mapLines };
@@ -11473,10 +11475,28 @@ class UIManager {
         </div>
       </div>
       <div class="world-tree-viewport" style="position:relative; width:100vw; height:calc(100vh - 120px); overflow:hidden; cursor:grab; touch-action:none;">
-        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:6000px; transform-origin:0 0;">
+        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:3200px; transform-origin:0 0;">
           <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
           <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
     `;
+
+    // Group nodes by stage to draw horizontal slots
+    const stagesRendered = new Set();
+    mapData.nodes.forEach(node => {
+      if (!stagesRendered.has(node.stage)) {
+        stagesRendered.add(node.stage);
+        const yTop = 150 + (node.stage - 1) * 250 - 60;
+        const color = node.color || '#fff';
+        const bg = `linear-gradient(90deg, ${color}25 0%, transparent 100%)`;
+        html += `
+          <div style="position:absolute; top:${yTop}px; left:80px; width:900px; height:140px; background:${bg}; border-radius:10px; border-left:4px solid ${color}; pointer-events:none; z-index:1;">
+             <div style="padding:10px 20px; font-family:'Orbitron', sans-serif; font-size:1.2rem; color:#fff; text-shadow:0 0 10px ${color}; opacity:0.8;">
+                ${node.icon} Stage ${node.stage}: ${node.name}
+             </div>
+          </div>
+        `;
+      }
+    });
 
     mapData.nodes.forEach(node => {
       const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
@@ -11519,7 +11539,7 @@ class UIManager {
     
     let scale = 0.85;
     let panX = (window.innerWidth - 1200 * scale) / 2;
-    let panY = -4500; // start near bottom
+    let panY = 50; // start near top
 
     const updateTransform = () => {
       content.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
@@ -11626,7 +11646,7 @@ class UIManager {
     if (!svg || !mapData) return;
 
     svg.setAttribute('width', 1200);
-    svg.setAttribute('height', 1400);
+    svg.setAttribute('height', 3200);
     svg.innerHTML = '';
 
     const nodesById = {};
