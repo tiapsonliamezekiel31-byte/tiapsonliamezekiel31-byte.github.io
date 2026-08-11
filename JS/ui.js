@@ -341,34 +341,17 @@ class UIManager {
   }
 
   static STAGE_BACKDROPS = {
-    1: {
-      A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' },
-      B: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }
-    },
-    2: {
-      A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' },
-      B: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' }
-    },
-    3: {
-      A: { src: 'assets/backgrounds/glacier.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' },
-      B: { src: 'assets/backgrounds/ruins.jpg', mobilePosition: 'center 34%', desktopPosition: 'center 36%' }
-    },
-    4: {
-      A: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' },
-      B: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' }
-    },
-    5: {
-      A: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' },
-      B: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' }
-    },
-    6: {
-      A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' },
-      B: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' }
-    },
-    7: {
-      A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' },
-      B: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }
-    }
+    1: { A: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' }, B: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' } },
+    2: { A: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }, B: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
+    3: { A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' }, B: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' } },
+    4: { A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }, B: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
+    5: { A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' }, B: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' } },
+    6: { A: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }, B: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
+    7: { A: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' }, B: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' } },
+    8: { A: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' }, B: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' } },
+    9: { A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }, B: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
+    10: { A: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' }, B: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' } },
+    11: { A: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' }, B: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' } }
   };
 
   static scheduleUpdateDailiesList(delay = 120) {
@@ -11310,13 +11293,48 @@ class UIManager {
     return this.circleRectCache || { left: 0, top: 0, width: 400, height: 400 };
   }
 
+
+  static showMapNodePopup(nodeData) {
+    const popup = document.createElement('div');
+    popup.className = 'custom-popup-overlay active';
+    popup.style.zIndex = '99999';
+    
+    // Fetch enemies for this node (simulated or real if StageManager allows)
+    let enemiesText = nodeData.isBoss || nodeData.isMiniboss ? `<div style="color:#ff5a5a; font-weight:bold; margin-top:10px;">${nodeData.isMiniboss ? '☠️ Miniboss' : '👑 Boss'}: ${nodeData.bossName || 'Unknown'}</div>` : `<div style="color:#a8b2d1; font-size:0.9rem; margin-top:10px;">Expected enemies: Native to ${nodeData.nodeName}</div>`;
+
+    popup.innerHTML = `
+      <div class="custom-popup" style="border: 2px solid ${nodeData.color}; background: #0f172a; max-width: 400px; text-align: center; box-shadow: 0 0 20px ${nodeData.color}40; margin:auto;">
+        <h2 style="color:${nodeData.color}; margin-top:0; font-family:'Orbitron', sans-serif;">${nodeData.nodeName} Level ${nodeData.level}</h2>
+        <p style="color:#cbd5e1; font-size:0.95rem;">Prepare your focus and tasks. Once you enter, you must clear the required objectives to advance.</p>
+        ${enemiesText}
+        <div style="margin-top: 25px; display: flex; gap: 15px; justify-content: center;">
+          <button id="mapNodeCancelBtn" class="popup-btn" style="background:#334155;">Cancel</button>
+          <button id="mapNodeEnterBtn" class="popup-btn" style="background:${nodeData.color}; color:#fff; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; border-radius:4px;">Enter Level</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(popup);
+    
+    popup.querySelector('#mapNodeCancelBtn').addEventListener('click', () => {
+      popup.remove();
+    });
+    
+    popup.querySelector('#mapNodeEnterBtn').addEventListener('click', () => {
+      popup.remove();
+      if (typeof StageManager !== 'undefined' && StageManager.enterStageLevel) {
+        StageManager.enterStageLevel(nodeData.stage, nodeData.variant, nodeData.level, nodeData.bossName);
+      }
+    });
+  }
+
   static getOrGenerateBranchingMap(stageProgress) {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    if (state?.stageState?.branchingMap) {
+    if (state?.stageState?.branchingMap && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
       return state.stageState.branchingMap;
     }
 
-        const stageColors = {
+            const stageColors = {
       1: '#ef4444', 2: '#f59e0b', 3: '#eab308', 4: '#84cc16',
       5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7',
       9: '#e81cff', 10: '#ff4d4d', 11: '#002244'
@@ -11330,7 +11348,7 @@ class UIManager {
     const mapNodes = [];
     const mapLines = [];
 
-    // Main spine path: Stages 1 to 8 (Main bosses at the end of spine)
+    // Main spine path: Stages 1 to 11
         const mainStages = [
       { stage: 1, key: '1A', name: 'Volcano', icon: '🌋' },
       { stage: 2, key: '2A', name: 'Pyramids', icon: '🏜️' },
@@ -11346,64 +11364,74 @@ class UIManager {
     ];
 
     let lastSpineNodeId = null;
-    mainStages.forEach((stg, i) => {
-      const nodeId = `main_${stg.key}`;
-      const x = 500;
-      const y = 80 + i * 160;
+    // We go upwards. 11 stages * 5 levels * 90px = ~4950px tall
+    let currentY = 5500;
+    const centerX = 600;
 
-      mapNodes.push({
-        id: nodeId,
-        key: stg.key,
-        stage: stg.stage,
-        variant: 'A',
-        name: stg.name,
-        icon: stg.icon,
-        x, y,
-        isMain: true,
-        isBoss: true,
-        bossName: null, // uses default formation boss
-        color: stageColors[stg.stage]
-      });
-
-      if (lastSpineNodeId) {
-        mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true });
-      }
-      lastSpineNodeId = nodeId;
-
-      // Generate 2-4 miniboss side-branches FOR THIS STAGE
-      const minibossCount = Math.floor(Math.random() * 3) + 2; // 2 to 4 per stage
-      for (let m = 0; m < minibossCount; m++) {
-        const side = (m % 2 === 0) ? -1 : 1;
-        const branchDepth = Math.floor(Math.random() * 3) + 1; // 1 to 3 levels long path to miniboss
-        const assignedMiniboss = minibossPool[(stg.stage + m) % minibossPool.length];
+    mainStages.forEach((stg) => {
+      for (let lvl = 1; lvl <= 5; lvl++) {
+        const isBoss = (lvl === 5);
+        const nodeId = `main_${stg.key}_L${lvl}`;
         
-        let prevNodeId = nodeId;
-        for (let step = 1; step <= branchDepth; step++) {
-          const isMinibossEnd = (step === branchDepth);
-          const subKey = `${stg.stage}B_${m}_${step}`;
+        // slight wiggle
+        const x = centerX + (Math.random() * 60 - 30);
+        const y = currentY;
+
+        mapNodes.push({
+          id: nodeId,
+          key: stg.key,
+          stage: stg.stage,
+          variant: 'A',
+          level: lvl,
+          name: stg.name,
+          icon: stg.icon,
+          x, y,
+          isMain: true,
+          isBoss: isBoss,
+          isMiniboss: false,
+          bossName: null,
+          color: stageColors[stg.stage],
+          maxLevels: 1 // for compatibility
+        });
+
+        if (lastSpineNodeId) {
+          mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true });
+        }
+        lastSpineNodeId = nodeId;
+
+        // Miniboss branch (1-2 per stage, only on non-boss levels)
+        if (!isBoss && Math.random() < 0.4) {
+          const side = (Math.random() > 0.5) ? -1 : 1;
+          const assignedMiniboss = minibossPool[Math.floor(Math.random() * minibossPool.length)];
+          const subKey = `${stg.stage}B_${lvl}`;
           const subId = `sub_${subKey}`;
-          const bx = x + side * (140 + (step - 1) * 110 + Math.floor(Math.random() * 30));
-          const by = y + (m - 1) * 35 + (step * 25);
+          
+          const bx = x + side * (120 + Math.random() * 50);
+          const by = y - 30; // slightly above
 
           mapNodes.push({
             id: subId,
             key: subKey,
             stage: stg.stage,
             variant: 'B',
-            name: isMinibossEnd ? `Miniboss: ${assignedMiniboss}` : `Path ${stg.stage}.${m + 1}`,
-            icon: isMinibossEnd ? '☠️' : '⚔️',
+            level: 1,
+            name: stg.name,
+            icon: '⚔️',
             x: bx, y: by,
             isMain: false,
-            isMiniboss: isMinibossEnd,
-            bossName: isMinibossEnd ? assignedMiniboss : null,
-            maxLevels: isMinibossEnd ? 1 : Math.floor(Math.random() * 3) + 1, // Short clean path length
-            color: stageColors[stg.stage]
+            isMiniboss: true,
+            isBoss: false,
+            bossName: assignedMiniboss,
+            color: stageColors[stg.stage],
+            maxLevels: 1
           });
 
-          mapLines.push({ from: prevNodeId, to: subId, isMain: false });
-          prevNodeId = subId;
+          mapLines.push({ from: nodeId, to: subId, isMain: false });
         }
+
+        currentY -= 90;
       }
+      currentY -= 60; // Extra gap between stages
     });
 
     const branchingMap = { nodes: mapNodes, lines: mapLines };
@@ -11445,50 +11473,36 @@ class UIManager {
         </div>
       </div>
       <div class="world-tree-viewport" style="position:relative; width:100vw; height:calc(100vh - 120px); overflow:hidden; cursor:grab; touch-action:none;">
-        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:1500px; transform-origin:0 0;">
+        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:1200px; height:6000px; transform-origin:0 0;">
           <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
           <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
     `;
 
     mapData.nodes.forEach(node => {
       const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
-      const isCleared = !!prog.isCleared;
-      const maxCleared = prog.maxCleared || 0;
+      const isLevelCleared = (node.level <= prog.maxCleared) || prog.isCleared;
+      const isCurrent = (node.level === prog.maxCleared + 1) && !prog.isCleared;
+      
       const color = node.color || '#38bdf8';
-      const levelCount = node.maxLevels || 5;
+      const label = node.isMiniboss ? '☠️' : (node.isBoss ? '👑' : `L${node.level}`);
+      const bg = isLevelCleared ? color + '40' : 'rgba(15, 23, 42, 0.96)';
+      const borderColor = isCurrent ? '#fff' : color;
 
       html += `
-        <div class="stage-node-card ${isCleared ? 'is-cleared' : ''} ${node.isMiniboss ? 'is-miniboss' : ''}" 
+        <button class="stage-node-circle ${isLevelCleared ? 'is-level-cleared' : ''} ${node.isBoss ? 'boss-lvl-btn' : ''} ${node.isMiniboss ? 'miniboss-lvl-btn' : ''}" 
              data-node-id="${node.id}" 
              data-node-key="${node.key}" 
              data-stage="${node.stage}" 
-             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${color}; box-shadow: 0 0 14px ${color}35; background: rgba(15, 23, 42, 0.96); width:180px; padding:8px 10px;">
-          <div class="stage-node-title" style="border-bottom:1px solid ${color}40; padding-bottom:4px; margin-bottom:6px;">
-            <span style="color:${color}; font-family:'Orbitron', sans-serif; font-size:0.75rem;">${node.icon} ${node.name}</span>
-            ${isCleared ? '<span class="cleared-badge">✓</span>' : ''}
-          </div>
-          <div class="stage-node-levels" style="display:flex; gap:4px; flex-wrap:wrap;">
-      `;
-
-      for (let lvl = 1; lvl <= levelCount; lvl++) {
-        const isBossLvl = (lvl === levelCount);
-        const isLevelCleared = (lvl <= maxCleared);
-        const lvlBtnLabel = isLevelCleared ? `✓ L${lvl}` : (isBossLvl && node.isMiniboss ? `☠️` : `L${lvl}`);
-        html += `
-          <button class="node-level-btn ${isBossLvl ? 'boss-lvl-btn' : ''} ${isLevelCleared ? 'is-level-cleared' : ''}" 
-                  data-stage="${node.stage}" 
-                  data-variant="${node.variant}" 
-                  data-level="${lvl}"
-                  data-boss-override="${node.bossName || ''}"
-                  style="flex:1; min-width:32px; ${!isLevelCleared ? `border-color:${color}80;` : ''}">
-            ${lvlBtnLabel}
-          </button>
-        `;
-      }
-
-      html += `
-          </div>
-        </div>
+             data-variant="${node.variant}"
+             data-level="${node.level}"
+             data-boss-override="${node.bossName || ''}"
+             data-node-name="${node.name}"
+             data-is-boss="${node.isBoss}"
+             data-is-miniboss="${node.isMiniboss}"
+             data-color="${color}"
+             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${borderColor}; box-shadow: 0 0 14px ${color}35; background: ${bg}; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron', sans-serif; font-size:1.1rem; color:#fff; border-width:2px; border-style:solid; cursor:pointer; z-index:5; transform: translate(-50%, -50%);">
+          ${label}
+        </button>
       `;
     });
 
@@ -11505,7 +11519,7 @@ class UIManager {
     
     let scale = 0.85;
     let panX = (window.innerWidth - 1200 * scale) / 2;
-    let panY = 20;
+    let panY = -4500; // start near bottom
 
     const updateTransform = () => {
       content.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
@@ -11583,17 +11597,21 @@ class UIManager {
 
     viewport.addEventListener('touchend', () => { isDragging = false; });
 
-    // Attach click events to level buttons
-    mapContainer.querySelectorAll('.node-level-btn').forEach(btn => {
+    // Attach click events to circular node buttons
+    mapContainer.querySelectorAll('.stage-node-circle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const stage = Number(btn.dataset.stage);
-        const variant = btn.dataset.variant;
-        const level = Number(btn.dataset.level);
-        const bossOverride = btn.dataset.bossOverride || null;
-        if (typeof StageManager !== 'undefined' && StageManager.enterStageLevel) {
-          StageManager.enterStageLevel(stage, variant, level, bossOverride);
-        }
+        const nodeData = {
+          stage: Number(btn.dataset.stage),
+          variant: btn.dataset.variant,
+          level: Number(btn.dataset.level),
+          bossName: btn.dataset.bossOverride || null,
+          nodeName: btn.dataset.nodeName,
+          isBoss: btn.dataset.isBoss === 'true',
+          isMiniboss: btn.dataset.isMiniboss === 'true',
+          color: btn.dataset.color
+        };
+        UIManager.showMapNodePopup(nodeData);
       });
     });
 

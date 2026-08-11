@@ -309,20 +309,27 @@ const DEFAULT_GAME_CONFIG = {
   },
   stageArchetypeSpecies: {
     '1A': { Fodder: 'Cinder Ash', Brute: 'Ash Shinobi', Support: 'Flame Shaman', Protector: 'Lava Guard', Commander: 'Fire Master' }, // Volcano
-    '1B': { Fodder: 'Sand Scholar', Brute: 'Rune Guardian', Support: 'Aether Sorcerer', Protector: 'Tomb Sentry', Commander: 'Grand Preceptor' }, // Pyramids
-    '2A': { Fodder: 'Marcher', Brute: 'Bone Bearer', Support: 'Dust Priest', Protector: 'Sarcophagus Guard', Commander: 'Iron Marcher' }, // Marchers
-    '2B': { Fodder: 'Gloom Leech', Brute: 'Shadow Crawler', Support: 'Void Sorcerer', Protector: 'Dark Sentinel', Commander: 'Abyssal Lord' }, // Chasm
-    '3A': { Fodder: 'Order Novice', Brute: 'Fate Knight', Support: 'Chalice Priest', Protector: 'Shield Warden', Commander: 'Grand Paladin' }, // Kingdom
-    '3B': { Fodder: 'Damned Spirit', Brute: 'Soul Collector', Support: 'Grave Monk', Protector: 'Ferry Guardian', Commander: 'Heaven Seeker' }, // Graveyard
-    '4A': { Fodder: 'Hollow Body', Brute: 'Bleed Parasite', Support: 'Flesh Shaman', Protector: 'Rot Husk', Commander: 'Graft Monster' }, // Church
-    '4B': { Fodder: 'Plague Doctor', Brute: 'Scalpel Mutant', Support: 'Research Scholar', Protector: 'Vat Guard', Commander: 'Chief Doctor' }, // Lab
-    '5A': { Fodder: 'Rot Believer', Brute: 'Corrupted Zealot', Support: 'Spore Chanter', Protector: 'Blight Shell', Commander: 'Rot Apostle' }, // Cult
-    '5B': { Fodder: 'Ashen Drake', Brute: 'Sky Wyvern', Support: 'Flame Shaman', Protector: 'Iron Wyrm', Commander: 'Turtle Lord' }, // Dragon Isle
-    '6A': { Fodder: 'Abyssal Siren', Brute: 'Sea Behemoth', Support: 'Star Weaver', Protector: 'Tide Leviathan', Commander: 'Cosmic Beast' }, // Abyssal Sea
-    '6B': { Fodder: 'Exiled Scraps', Brute: 'Forge Robot', Support: 'Core Tinker', Protector: 'Steel Automaton', Commander: 'Exiled King' }, // Golden Peak
-    '7A': { Fodder: 'Jade Villager', Brute: 'Hostile Guard', Support: 'Village Elder', Protector: 'Stone Warden', Commander: 'Jade Chief' }, // Jade Village
-    '7B': { Fodder: 'Palace Servant', Brute: 'Royal Executioner', Support: 'Czar Prelate', Protector: 'Imperial Guard', Commander: 'Blood Czar' }, // Palace
-    '8A': { Fodder: 'Void Shadow', Brute: 'Void Crusher', Support: 'Void Weaver', Protector: 'Void Warden', Commander: 'Void Nemesis' } // The Void
+    '1B': { Fodder: 'Cinder Ash', Brute: 'Ash Shinobi', Support: 'Flame Shaman', Protector: 'Lava Guard', Commander: 'Fire Master' }, 
+    '2A': { Fodder: 'Sand Scholar', Brute: 'Rune Guardian', Support: 'Aether Sorcerer', Protector: 'Tomb Sentry', Commander: 'Grand Preceptor' }, // Pyramids
+    '2B': { Fodder: 'Sand Scholar', Brute: 'Rune Guardian', Support: 'Aether Sorcerer', Protector: 'Tomb Sentry', Commander: 'Grand Preceptor' }, 
+    '3A': { Fodder: 'Marcher', Brute: 'Bone Bearer', Support: 'Dust Priest', Protector: 'Sarcophagus Guard', Commander: 'Iron Marcher' }, // Marchers
+    '3B': { Fodder: 'Marcher', Brute: 'Bone Bearer', Support: 'Dust Priest', Protector: 'Sarcophagus Guard', Commander: 'Iron Marcher' }, 
+    '4A': { Fodder: 'Gloom Leech', Brute: 'Shadow Crawler', Support: 'Void Sorcerer', Protector: 'Dark Sentinel', Commander: 'Abyssal Lord' }, // Chasm
+    '4B': { Fodder: 'Gloom Leech', Brute: 'Shadow Crawler', Support: 'Void Sorcerer', Protector: 'Dark Sentinel', Commander: 'Abyssal Lord' }, 
+    '5A': { Fodder: 'Order Novice', Brute: 'Fate Knight', Support: 'Chalice Priest', Protector: 'Shield Warden', Commander: 'Grand Paladin' }, // Kingdom
+    '5B': { Fodder: 'Order Novice', Brute: 'Fate Knight', Support: 'Chalice Priest', Protector: 'Shield Warden', Commander: 'Grand Paladin' }, 
+    '6A': { Fodder: 'Damned Spirit', Brute: 'Soul Collector', Support: 'Grave Monk', Protector: 'Ferry Guardian', Commander: 'Heaven Seeker' }, // Graveyard
+    '6B': { Fodder: 'Damned Spirit', Brute: 'Soul Collector', Support: 'Grave Monk', Protector: 'Ferry Guardian', Commander: 'Heaven Seeker' }, 
+    '7A': { Fodder: 'Hollow Body', Brute: 'Bleed Parasite', Support: 'Flesh Shaman', Protector: 'Rot Husk', Commander: 'Graft Monster' }, // Church
+    '7B': { Fodder: 'Hollow Body', Brute: 'Bleed Parasite', Support: 'Flesh Shaman', Protector: 'Rot Husk', Commander: 'Graft Monster' }, 
+    '8A': { Fodder: 'Plague Doctor', Brute: 'Scalpel Mutant', Support: 'Research Scholar', Protector: 'Vat Guard', Commander: 'Chief Doctor' }, // Lab
+    '8B': { Fodder: 'Plague Doctor', Brute: 'Scalpel Mutant', Support: 'Research Scholar', Protector: 'Vat Guard', Commander: 'Chief Doctor' }, 
+    '9A': { Fodder: 'Rot Believer', Brute: 'Corrupted Zealot', Support: 'Spore Chanter', Protector: 'Blight Shell', Commander: 'Rot Apostle' }, // Cult
+    '9B': { Fodder: 'Rot Believer', Brute: 'Corrupted Zealot', Support: 'Spore Chanter', Protector: 'Blight Shell', Commander: 'Rot Apostle' }, 
+    '10A': { Fodder: 'Ashen Drake', Brute: 'Sky Wyvern', Support: 'Flame Shaman', Protector: 'Iron Wyrm', Commander: 'Turtle Lord' }, // Dragon Isle
+    '10B': { Fodder: 'Ashen Drake', Brute: 'Sky Wyvern', Support: 'Flame Shaman', Protector: 'Iron Wyrm', Commander: 'Turtle Lord' }, 
+    '11A': { Fodder: 'Abyssal Siren', Brute: 'Sea Behemoth', Support: 'Star Weaver', Protector: 'Tide Leviathan', Commander: 'Cosmic Beast' }, // Abyssal Sea
+    '11B': { Fodder: 'Abyssal Siren', Brute: 'Sea Behemoth', Support: 'Star Weaver', Protector: 'Tide Leviathan', Commander: 'Cosmic Beast' }
   },
 
   // ============================================================
@@ -980,29 +987,37 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // BOSS CONFIGURATIONS
   // ============================================================
-    bosses: {
-    'Ash Master': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Lava Shinobi': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Sun Priest': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Tomb Sentinel': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Empire Warlord': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Nomad King': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Abyss Lord': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.9, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+      bosses: {
+    'Ash Master': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Lava Shinobi': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Sun Priest': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Tomb Sentinel': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.7, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Empire Warlord': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Nomad King': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.8, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Abyss Lord': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.9, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
     'Void Channeler': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.9, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Fate Sovereign': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Dawn Sentinel': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Reaper': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Damned General': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Rot Pontiff': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Hollow Bishop': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Toxic Behemoth': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Plague Master': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Miasma Prophet': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Ruin Avatar': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Fire Turtle': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.5, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Fate Sovereign': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Dawn Sentinel': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.0, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Reaper': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Damned General': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.1, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Rot Pontiff': { element: 'Water', resist: 'Water B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Hollow Bishop': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.2, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Toxic Behemoth': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Plague Master': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 2.3, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Miasma Prophet': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Ruin Avatar': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.4, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Fire Turtle': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 2.5, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
     'Sky Terror': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.5, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Sea Behemoth': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
-    'Trench Leviathan': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Sea Behemoth': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Trench Leviathan': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 2.6, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 } },
+    'Grave Sentinel': { element: 'Aether', resist: 'Aether B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Ashen Warden': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Rune Overseer': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Void Preceptor': { element: 'Void', resist: 'Void B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Rot Apostle': { element: 'Earth', resist: 'Earth B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Blight Executioner': { element: 'Fire', resist: 'Fire B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Blood Harbinger': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
+    'Czar Vanguard': { element: 'Air', resist: 'Air B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 } },
   },
 
   // PLANNER

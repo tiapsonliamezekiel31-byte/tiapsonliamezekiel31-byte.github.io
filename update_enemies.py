@@ -57,6 +57,15 @@ for s in range(1, 12):
         hpMult = round(1.5 + (s * 0.1), 1)
         bossesObj[boss] = f"{{ element: '{el}', resist: '{el} B', weak: 'None', hpMult: {hpMult}, color: '#aa3333', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: {{ heavy: 0.4, bomb: 0.2, minion: 0.2, regular: 0.2 }} }}"
 
+minibossPool = [
+    'Grave Sentinel', 'Ashen Warden', 'Rune Overseer', 'Void Preceptor',
+    'Rot Apostle', 'Blight Executioner', 'Blood Harbinger', 'Czar Vanguard'
+]
+for mb in minibossPool:
+    el = random.choice(elements)
+    bossesObj[mb] = f"{{ element: '{el}', resist: '{el} B', weak: 'None', hpMult: 1.4, color: '#ff6600', p1Anim: 'Rage Pulse', p2Anim: 'Rage Pulse', attackWeights: {{ heavy: 0.25, bomb: 0.25, minion: 0.25, regular: 0.25 }} }}"
+
+for s in range(1, 12):
     eArr = enemyNames[s]
     formationsObj[s] = {
         'A': {
