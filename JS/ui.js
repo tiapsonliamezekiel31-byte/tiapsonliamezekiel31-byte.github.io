@@ -6119,13 +6119,6 @@ class UIManager {
         }
 
         if (taskType === 'todo' && !interactiveInsideCard) {
-          // Unrelated requirement: Single click anywhere on a To-Do card reveals/toggles its subtasks
-          const subtasksContainer = card.querySelector('.todo-orbit-subtasks-stuck-bottom, .todo-subtasks-container, .subtasks-container');
-          if (subtasksContainer) {
-            const isHidden = window.getComputedStyle(subtasksContainer).display === 'none';
-            subtasksContainer.style.display = isHidden ? 'flex' : 'none';
-          }
-
           if (todoJoystickMode === 'edit') {
             if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
               PopupsManager.showEditTodo(taskId);
@@ -7449,6 +7442,12 @@ class UIManager {
         alchemistTarget = (StageManager.getAliveEnemies && StageManager.getAliveEnemies()[0]) || (StageManager.getAllEnemies && StageManager.getAllEnemies().find(enemy => enemy && !enemy.isDead)) || null;
       }
       if (!alchemistTarget) {
+        if (StageManager.allEnemiesDead()) {
+          this.finishAttackSpinner();
+          StageManager.onLevelCleared();
+          UIManager.renderWorldMapNodeView();
+          return;
+        }
         try {
           FloatingDamageNumber.show(
             window.innerWidth / 2,

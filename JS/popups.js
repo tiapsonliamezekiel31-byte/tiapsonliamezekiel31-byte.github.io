@@ -1379,20 +1379,36 @@ class PopupsManager {
     const popup = document.createElement('div');
     popup.className = 'popup victory-popup';
     popup.style.pointerEvents = 'auto';
+    popup.style.maxWidth = '550px';
     
     const html = `
       <h2>✨ VICTORY!</h2>
       <p>You have toppled the Nemesis.</p>
       <p>The cycle is broken… for now.</p>
       <div class="victory-stats">
-        <p>Class: <strong>${stats.class}</strong></p>
-        <p>Total days played: <strong>${stats.daysSurvived}</strong></p>
-        <p>Tasks completed: <strong>${stats.tasksCompleted}</strong></p>
-        <p>Gold accumulated: <strong>${stats.goldEarned}</strong></p>
+        <p>Class: <strong>${stats.class || 'Hero'}</strong></p>
+        <p>Total days played: <strong>${stats.daysSurvived || 0}</strong></p>
+        <p>Tasks completed: <strong>${stats.tasksCompleted || 0}</strong></p>
+        <p>Gold accumulated: <strong>${stats.goldEarned || 0}</strong></p>
       </div>
+      
+      <div style="margin: 16px 0; text-align: left; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,215,0,0.3);">
+        <h4 style="margin: 0 0 10px 0; color: #ffd700; font-size: 0.9rem; text-align: center;">⚙️ SELECT DATA TO RESET FOR NEW RUN</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; color: #e2e8f0;">
+          <label><input type="checkbox" id="rstStageProgress" checked /> Reset Stage Progress</label>
+          <label><input type="checkbox" id="rstPlayerStats" checked /> Reset Stats / Level</label>
+          <label><input type="checkbox" id="rstGold" checked /> Reset Gold & Diamonds</label>
+          <label><input type="checkbox" id="rstWeapons" checked /> Reset Weapons & Gear</label>
+          <label><input type="checkbox" id="rstBuffs" checked /> Reset Buffs & Runes</label>
+          <label><input type="checkbox" id="rstTasks" /> Reset To-Dos & Dailies</label>
+          <label><input type="checkbox" id="rstStreaks" /> Reset Streaks</label>
+          <label><input type="checkbox" id="rstAchievements" /> Reset Achievements</label>
+        </div>
+      </div>
+
       <p class="victory-quote">"Your ambition became a light in the void."</p>
       <div class="button-group">
-        <button class="btn-large btn-new-run">NEW RUN</button>
+        <button class="btn-large btn-new-run">NEW RUN (APPLY RESET)</button>
         <button class="btn-large btn-main-menu">MAIN MENU</button>
       </div>
     `;
@@ -1400,6 +1416,56 @@ class PopupsManager {
     popup.innerHTML = html;
     
     popup.querySelector('.btn-new-run').addEventListener('click', () => {
+      const state = getGameState();
+      
+      if (popup.querySelector('#rstStageProgress').checked) {
+        state.stageState.stage = 1;
+        state.stageState.level = 1;
+        state.stageState.stageProgress = {};
+        if (typeof StageManager !== 'undefined') StageManager.ensureStageProgress();
+      }
+
+      if (popup.querySelector('#rstPlayerStats').checked) {
+        state.playerState.level = 1;
+        state.playerState.hp = state.config.baseMaxHp || 100;
+        state.playerState.maxHp = state.config.baseMaxHp || 100;
+        state.playerState.ap = state.config.baseMaxAp || 100;
+        state.playerState.maxAp = state.config.baseMaxAp || 100;
+        state.playerState.attributePoints = 0;
+      }
+
+      if (popup.querySelector('#rstGold').checked) {
+        state.playerState.gold = 0;
+        state.playerState.diamonds = 0;
+      }
+
+      if (popup.querySelector('#rstWeapons').checked) {
+        state.playerState.weapons = ['Rusty Sword'];
+      }
+
+      if (popup.querySelector('#rstBuffs').checked) {
+        state.playerState.buffs = [];
+        state.playerState.runes = [];
+      }
+
+      if (popup.querySelector('#rstTasks').checked) {
+        if (state.todosState) state.todosState.todos = [];
+        if (state.dailiesState) state.dailiesState.dailies = [];
+      }
+
+      if (popup.querySelector('#rstStreaks').checked) {
+        if (state.dailiesState) {
+          state.dailiesState.currentStreak = 0;
+          state.dailiesState.bestStreak = 0;
+        }
+      }
+
+      if (popup.querySelector('#rstAchievements').checked) {
+        if (state.systemState) state.systemState.achievements = {};
+      }
+
+      try { state.save(); } catch (e) {}
+
       this.closeAllPopups();
       this.showClassSelection();
     });
