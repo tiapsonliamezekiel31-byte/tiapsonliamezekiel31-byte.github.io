@@ -11298,6 +11298,15 @@ class UIManager {
     const popup = document.createElement('div');
     popup.className = 'custom-popup-overlay active';
     popup.style.zIndex = '2147483647';
+    popup.style.position = 'fixed';
+    popup.style.top = '0';
+    popup.style.left = '0';
+    popup.style.width = '100vw';
+    popup.style.height = '100vh';
+    popup.style.background = 'rgba(0,0,0,0.85)';
+    popup.style.display = 'flex';
+    popup.style.alignItems = 'center';
+    popup.style.justifyContent = 'center';
     
     // Fetch enemies for this node (simulated or real if StageManager allows)
     let enemiesText = nodeData.isBoss || nodeData.isMiniboss ? `<div style="color:#ff5a5a; font-weight:bold; margin-top:10px;">${nodeData.isMiniboss ? '☠️ Miniboss' : '👑 Boss'}: ${nodeData.bossName || 'Unknown'}</div>` : `<div style="color:#a8b2d1; font-size:0.9rem; margin-top:10px;">Expected enemies: Native to ${nodeData.nodeName}</div>`;
