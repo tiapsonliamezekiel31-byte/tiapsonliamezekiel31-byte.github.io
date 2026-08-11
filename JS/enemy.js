@@ -244,8 +244,11 @@ class EnemyManager {
 
     const stageKey = `${stage}${variant || 'A'}`;
     const speciesMap = cfg.stageArchetypeSpecies?.[stageKey] || {
-      Fodder: 'Goblin', Brute: 'Wolf', Support: 'Goblin Wizard', Protector: 'Bear', Commander: 'Gorilla Rebel'
+      Fodder: 'Cinder Ash', Brute: 'Ash Shinobi', Support: 'Flame Shaman', Protector: 'Lava Guard', Commander: 'Fire Master'
     };
+
+    // Pool all available species from current stage as well as fallback pool
+    const poolSpeciesByArch = { ...speciesMap };
 
     const chosenUnits = [];
     let budgetRemaining = totalBudget;
@@ -258,7 +261,7 @@ class EnemyManager {
       if (!affordable.length) break;
 
       const pick = affordable[Math.floor(Math.random() * affordable.length)];
-      const speciesName = speciesMap[pick] || 'Goblin';
+      const speciesName = poolSpeciesByArch[pick] || 'Cinder Ash';
       
       const unit = this.createEnemy(speciesName, state?.playerState?.maxAp || 100, stage, false, pick);
       chosenUnits.push(unit);
