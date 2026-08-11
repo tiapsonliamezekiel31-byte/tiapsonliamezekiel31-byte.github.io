@@ -136,7 +136,7 @@ class StageManager {
     if (!state.stageState.stageProgress) {
       state.stageState.stageProgress = {};
     }
-    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A'];
+    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A'];
     keys.forEach(k => {
       if (!state.stageState.stageProgress[k]) {
         state.stageState.stageProgress[k] = { maxCleared: 0, currentLevel: 1, isCleared: false };

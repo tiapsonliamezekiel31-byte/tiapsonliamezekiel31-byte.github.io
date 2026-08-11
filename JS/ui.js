@@ -11320,23 +11320,25 @@ class UIManager {
     const stageProgress = state?.stageState?.stageProgress || {};
 
     const stageColors = {
-      1: '#22c55e', // Root Biomes: Emerald Green
-      2: '#a855f7', // Deep Caves & Swamps: Purple / Venom
-      3: '#38bdf8', // Frozen Ruins: Cyan Ice
-      4: '#f59e0b', // Castle & Tombs: Amber Gold
-      5: '#ef4444', // Infernal Dragon: Crimson Red
-      6: '#ec4899', // Mountain & Abyss: Rose Magenta
-      7: '#6366f1'  // Apex Void: Cosmic Indigo
+      1: '#ef4444', // Stage 1: Volcano & Pyramids
+      2: '#f59e0b', // Stage 2: Marchers & Chasm
+      3: '#eab308', // Stage 3: Kingdom & Graveyard
+      4: '#84cc16', // Stage 4: Church & Lab
+      5: '#10b981', // Stage 5: Cult & Dragon Isle
+      6: '#06b6d4', // Stage 6: Abyssal Sea & Golden Peak
+      7: '#6366f1', // Stage 7: Jade Village & Palace
+      8: '#a855f7'  // Stage 8: The Void
     };
 
     const tiers = [
-      { stage: 1, title: 'STAGE 1 — ROOT BIOMES', nodes: [{ key: '1A', variant: 'A', name: 'Forest', icon: '🌲', offsetX: -120 }, { key: '1B', variant: 'B', name: 'Desert', icon: '🏜️', offsetX: 120 }] },
-      { stage: 2, title: 'STAGE 2 — DEEP CAVES & SWAMPS', nodes: [{ key: '2A', variant: 'A', name: 'Crimson Cave', icon: '🕳️', offsetX: -140 }, { key: '2B', variant: 'B', name: 'Infected Swamp', icon: '☣️', offsetX: 140 }] },
-      { stage: 3, title: 'STAGE 3 — FROZEN RUINS', nodes: [{ key: '3A', variant: 'A', name: 'Glacier', icon: '🧊', offsetX: -100 }, { key: '3B', variant: 'B', name: 'Ruins', icon: '🏛️', offsetX: 130 }] },
-      { stage: 4, title: 'STAGE 4 — ANCIENT CASTLES & TOMBS', nodes: [{ key: '4A', variant: 'A', name: 'Graveyard', icon: '🪦', offsetX: -150 }, { key: '4B', variant: 'B', name: 'Castle', icon: '🏰', offsetX: 110 }] },
-      { stage: 5, title: 'STAGE 5 — INFERNAL DRAGON REGIONS', nodes: [{ key: '5A', variant: 'A', name: 'Volcano', icon: '🌋', offsetX: -110 }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉', offsetX: 150 }] },
-      { stage: 6, title: 'STAGE 6 — MOUNTAINS & ABYSS', nodes: [{ key: '6A', variant: 'A', name: 'Golden Mountain', icon: '⛰️', offsetX: -130 }, { key: '6B', variant: 'B', name: 'Abyssal Sea', icon: '🌊', offsetX: 120 }] },
-      { stage: 7, title: 'STAGE 7 — THE APEX VOID', nodes: [{ key: '7A', variant: 'A', name: 'The Void', icon: '🌌', offsetX: 0 }] }
+      { stage: 1, title: 'STAGE 1 — ASH & SUN', nodes: [{ key: '1A', variant: 'A', name: 'Volcano', icon: '🌋', offsetX: -120 }, { key: '1B', variant: 'B', name: 'Pyramids', icon: '🏺', offsetX: 120 }] },
+      { stage: 2, title: 'STAGE 2 — MARCH & VOID CHASM', nodes: [{ key: '2A', variant: 'A', name: 'Marchers', icon: '🚶‍♂️', offsetX: -140 }, { key: '2B', variant: 'B', name: 'Chasm', icon: '🕳️', offsetX: 140 }] },
+      { stage: 3, title: 'STAGE 3 — KINGDOM & GRAVES', nodes: [{ key: '3A', variant: 'A', name: 'Kingdom', icon: '🏰', offsetX: -100 }, { key: '3B', variant: 'B', name: 'Graveyard', icon: '🪦', offsetX: 130 }] },
+      { stage: 4, title: 'STAGE 4 — CHURCH & LAB', nodes: [{ key: '4A', variant: 'A', name: 'Church', icon: '⛪', offsetX: -150 }, { key: '4B', variant: 'B', name: 'Lab', icon: '🧪', offsetX: 110 }] },
+      { stage: 5, title: 'STAGE 5 — CORRUPTION & DRAGONS', nodes: [{ key: '5A', variant: 'A', name: 'Cult', icon: '👁️', offsetX: -110 }, { key: '5B', variant: 'B', name: 'Dragon Isle', icon: '🐉', offsetX: 150 }] },
+      { stage: 6, title: 'STAGE 6 — ABYSS & GOLDEN PEAK', nodes: [{ key: '6A', variant: 'A', name: 'Abyssal Sea', icon: '🌊', offsetX: -130 }, { key: '6B', variant: 'B', name: 'Golden Peak', icon: '⛰️', offsetX: 120 }] },
+      { stage: 7, title: 'STAGE 7 — JADE VILLAGE & PALACE', nodes: [{ key: '7A', variant: 'A', name: 'Jade Village', icon: '🎋', offsetX: -110 }, { key: '7B', variant: 'B', name: 'Palace', icon: '🏛️', offsetX: 140 }] },
+      { stage: 8, title: 'STAGE 8 — THE VOID APEX', nodes: [{ key: '8A', variant: 'A', name: 'The Void', icon: '🌌', offsetX: 0 }] }
     ];
 
     let html = `
@@ -11447,7 +11449,7 @@ class UIManager {
       };
     });
 
-    // Define connection hierarchy
+    // Define connection hierarchy across 8 stages (15 biomes)
     const connections = [
       { from: '1A', to: '2A' }, { from: '1A', to: '2B' },
       { from: '1B', to: '2A' }, { from: '1B', to: '2B' },
@@ -11455,7 +11457,8 @@ class UIManager {
       { from: '3A', to: '4A' }, { from: '3B', to: '4B' },
       { from: '4A', to: '5A' }, { from: '4B', to: '5B' },
       { from: '5A', to: '6A' }, { from: '5B', to: '6B' },
-      { from: '6A', to: '7A' }, { from: '6B', to: '7A' }
+      { from: '6A', to: '7A' }, { from: '6B', to: '7B' },
+      { from: '7A', to: '8A' }, { from: '7B', to: '8A' }
     ];
 
     let svgLines = '';

@@ -308,19 +308,21 @@ const DEFAULT_GAME_CONFIG = {
     }
   },
   stageArchetypeSpecies: {
-    '1A': { Fodder: 'Goblin', Brute: 'Wolf', Support: 'Goblin Wizard', Protector: 'Bear', Commander: 'Gorilla Rebel' },
-    '1B': { Fodder: 'Drone', Brute: 'Raptor', Support: 'Marcher', Protector: 'Beetle', Commander: 'Grave Guardian' },
-    '2A': { Fodder: 'Brain Eaters', Brute: 'Tarantulator', Support: 'Dark Sorcerer', Protector: 'Death Bringer', Commander: 'Death Bringer' },
-    '2B': { Fodder: 'Giant Frog', Brute: 'Plagued', Support: 'Leech', Protector: 'Zombie', Commander: 'Croc' },
-    '3A': { Fodder: 'Ice Spirit', Brute: 'Yeti Hunter', Support: 'Yeti Mage', Protector: 'Yeti Smasher', Commander: 'Yeti Smasher' },
-    '3B': { Fodder: 'Termite', Brute: 'Stone Lizard', Support: 'Turret', Protector: 'Golem', Commander: 'Golem' },
-    '4A': { Fodder: 'Skeleton', Brute: 'Ghost', Support: 'Coffin Carrier', Protector: 'Ferryman', Commander: 'Ferryman' },
-    '4B': { Fodder: 'Flying Skull', Brute: 'Knight', Support: 'Fire Mage', Protector: 'Paladin', Commander: 'Baby Dragon' },
-    '5A': { Fodder: 'Ninja', Brute: 'Master', Support: 'Priest', Protector: 'Magma Blob', Commander: 'Master' },
-    '5B': { Fodder: 'Aetherian Hydra', Brute: 'Air Wyvern', Support: 'Water Drake', Protector: 'Earth Wyrm', Commander: 'Aetherian Hydra' },
-    '6A': { Fodder: 'Dwarf', Brute: 'Driller', Support: 'Atom', Protector: 'Driller', Commander: 'Atom' },
-    '6B': { Fodder: 'Megalodon', Brute: 'Kraken', Support: 'World Eating Snake', Protector: 'Constellation Crusher', Commander: 'Constellation Crusher' },
-    '7A': { Fodder: 'Bat', Brute: 'Porcupine', Support: 'Slug', Protector: 'Phoenix', Commander: 'Phoenix' }
+    '1A': { Fodder: 'Cinder Ash', Brute: 'Ash Shinobi', Support: 'Flame Shaman', Protector: 'Lava Guard', Commander: 'Fire Master' }, // Volcano
+    '1B': { Fodder: 'Sand Scholar', Brute: 'Rune Guardian', Support: 'Aether Sorcerer', Protector: 'Tomb Sentry', Commander: 'Grand Preceptor' }, // Pyramids
+    '2A': { Fodder: 'Marcher', Brute: 'Bone Bearer', Support: 'Dust Priest', Protector: 'Sarcophagus Guard', Commander: 'Iron Marcher' }, // Marchers
+    '2B': { Fodder: 'Gloom Leech', Brute: 'Shadow Crawler', Support: 'Void Sorcerer', Protector: 'Dark Sentinel', Commander: 'Abyssal Lord' }, // Chasm
+    '3A': { Fodder: 'Order Novice', Brute: 'Fate Knight', Support: 'Chalice Priest', Protector: 'Shield Warden', Commander: 'Grand Paladin' }, // Kingdom
+    '3B': { Fodder: 'Damned Spirit', Brute: 'Soul Collector', Support: 'Grave Monk', Protector: 'Ferry Guardian', Commander: 'Heaven Seeker' }, // Graveyard
+    '4A': { Fodder: 'Hollow Body', Brute: 'Bleed Parasite', Support: 'Flesh Shaman', Protector: 'Rot Husk', Commander: 'Graft Monster' }, // Church
+    '4B': { Fodder: 'Plague Doctor', Brute: 'Scalpel Mutant', Support: 'Research Scholar', Protector: 'Vat Guard', Commander: 'Chief Doctor' }, // Lab
+    '5A': { Fodder: 'Rot Believer', Brute: 'Corrupted Zealot', Support: 'Spore Chanter', Protector: 'Blight Shell', Commander: 'Rot Apostle' }, // Cult
+    '5B': { Fodder: 'Ashen Drake', Brute: 'Sky Wyvern', Support: 'Flame Shaman', Protector: 'Iron Wyrm', Commander: 'Turtle Lord' }, // Dragon Isle
+    '6A': { Fodder: 'Abyssal Siren', Brute: 'Sea Behemoth', Support: 'Star Weaver', Protector: 'Tide Leviathan', Commander: 'Cosmic Beast' }, // Abyssal Sea
+    '6B': { Fodder: 'Exiled Scraps', Brute: 'Forge Robot', Support: 'Core Tinker', Protector: 'Steel Automaton', Commander: 'Exiled King' }, // Golden Peak
+    '7A': { Fodder: 'Jade Villager', Brute: 'Hostile Guard', Support: 'Village Elder', Protector: 'Stone Warden', Commander: 'Jade Chief' }, // Jade Village
+    '7B': { Fodder: 'Palace Servant', Brute: 'Royal Executioner', Support: 'Czar Prelate', Protector: 'Imperial Guard', Commander: 'Blood Czar' }, // Palace
+    '8A': { Fodder: 'Void Shadow', Brute: 'Void Crusher', Support: 'Void Weaver', Protector: 'Void Warden', Commander: 'Void Nemesis' } // The Void
   },
 
   // ============================================================
