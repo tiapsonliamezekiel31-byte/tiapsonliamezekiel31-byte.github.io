@@ -980,6 +980,7 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // BOSS CONFIGURATIONS
   // ============================================================
+  bosses: {
     'Grave Sentinel': { element: 'Earth', resist: 'Earth B', weak: 'Air D', hpMult: 0.9, color: '#e2e8f0', p1Anim: 'Slam Wave', p2Anim: 'Rage Pulse', attackWeights: { heavy: 0.40, minion: 0.20, crit: 0.20, regular: 0.20 } },
     'Ashen Warden': { element: 'Fire', resist: 'Fire B', weak: 'Water D', hpMult: 0.8, color: '#f97316', p1Anim: 'Glitch Invert', p2Anim: 'Glitch Invert', attackWeights: { bomb: 0.35, corrosive: 0.25, crit: 0.20, regular: 0.20 } },
     'Rune Overseer': { element: 'Aether', resist: 'Aether B', weak: 'Earth D', hpMult: 0.85, color: '#38bdf8', p1Anim: 'Orb Burst', p2Anim: 'Orb Burst', attackWeights: { heal: 0.30, crit: 0.30, heavy: 0.20, regular: 0.20 } },
