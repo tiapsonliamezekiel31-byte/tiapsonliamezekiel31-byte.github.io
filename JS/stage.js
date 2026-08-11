@@ -9,6 +9,132 @@ const FORMATIONS = {
       "1": {
         "enemies": [
           {
+            "name": "Treant",
+            "count": "3-4"
+          },
+          {
+            "name": "Dryad",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Wood Sprite",
+            "count": "3-4"
+          },
+          {
+            "name": "Leaf Blade",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Thorn Beast",
+            "count": "2-3"
+          },
+          {
+            "name": "Vine Weaver",
+            "count": "2"
+          },
+          {
+            "name": "Forest Guardian",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Bark Sentinel",
+            "count": "3"
+          },
+          {
+            "name": "Root Horror",
+            "count": "2"
+          },
+          {
+            "name": "Moss Brute",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Ancient Treant"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Dryad",
+            "count": "3-4"
+          },
+          {
+            "name": "Treant",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Leaf Blade",
+            "count": "3-4"
+          },
+          {
+            "name": "Wood Sprite",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Vine Weaver",
+            "count": "2-3"
+          },
+          {
+            "name": "Thorn Beast",
+            "count": "2"
+          },
+          {
+            "name": "Bark Sentinel",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Root Horror",
+            "count": "3"
+          },
+          {
+            "name": "Moss Brute",
+            "count": "2"
+          },
+          {
+            "name": "Forest Guardian",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Verdant Warden"
+      }
+    }
+  },
+  "2": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
             "name": "Ash Ninja",
             "count": "3-4"
           },
@@ -130,7 +256,7 @@ const FORMATIONS = {
       }
     }
   },
-  "2": {
+  "3": {
     "A": {
       "1": {
         "enemies": [
@@ -256,7 +382,7 @@ const FORMATIONS = {
       }
     }
   },
-  "3": {
+  "4": {
     "A": {
       "1": {
         "enemies": [
@@ -382,7 +508,133 @@ const FORMATIONS = {
       }
     }
   },
-  "4": {
+  "5": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Blood Bat",
+            "count": "3-4"
+          },
+          {
+            "name": "Crimson Slime",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Cave Stalker",
+            "count": "3-4"
+          },
+          {
+            "name": "Ruby Golem",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Vampire Bat",
+            "count": "2-3"
+          },
+          {
+            "name": "Gore Hound",
+            "count": "2"
+          },
+          {
+            "name": "Scarlet Arachnid",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Blood Mage",
+            "count": "3"
+          },
+          {
+            "name": "Crimson Knight",
+            "count": "2"
+          },
+          {
+            "name": "Flesh Weaver",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Crimson Fiend"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Crimson Slime",
+            "count": "3-4"
+          },
+          {
+            "name": "Blood Bat",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Ruby Golem",
+            "count": "3-4"
+          },
+          {
+            "name": "Cave Stalker",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Gore Hound",
+            "count": "2-3"
+          },
+          {
+            "name": "Vampire Bat",
+            "count": "2"
+          },
+          {
+            "name": "Blood Mage",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Crimson Knight",
+            "count": "3"
+          },
+          {
+            "name": "Flesh Weaver",
+            "count": "2"
+          },
+          {
+            "name": "Scarlet Arachnid",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Blood Seeker"
+      }
+    }
+  },
+  "6": {
     "A": {
       "1": {
         "enemies": [
@@ -508,7 +760,133 @@ const FORMATIONS = {
       }
     }
   },
-  "5": {
+  "7": {
+    "A": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Mud Slime",
+            "count": "3-4"
+          },
+          {
+            "name": "Toxic Toad",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Plague Fly",
+            "count": "3-4"
+          },
+          {
+            "name": "Marsh Zombie",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Swamp Beast",
+            "count": "2-3"
+          },
+          {
+            "name": "Venom Spider",
+            "count": "2"
+          },
+          {
+            "name": "Mire Horror",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Sludge Brute",
+            "count": "3"
+          },
+          {
+            "name": "Bog Witch",
+            "count": "2"
+          },
+          {
+            "name": "Rot Creeper",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Venom Queen"
+      }
+    },
+    "B": {
+      "1": {
+        "enemies": [
+          {
+            "name": "Toxic Toad",
+            "count": "3-4"
+          },
+          {
+            "name": "Mud Slime",
+            "count": "2"
+          }
+        ]
+      },
+      "2": {
+        "enemies": [
+          {
+            "name": "Marsh Zombie",
+            "count": "3-4"
+          },
+          {
+            "name": "Plague Fly",
+            "count": "1"
+          }
+        ]
+      },
+      "3": {
+        "enemies": [
+          {
+            "name": "Venom Spider",
+            "count": "2-3"
+          },
+          {
+            "name": "Swamp Beast",
+            "count": "2"
+          },
+          {
+            "name": "Sludge Brute",
+            "count": "1"
+          }
+        ]
+      },
+      "4": {
+        "enemies": [
+          {
+            "name": "Bog Witch",
+            "count": "3"
+          },
+          {
+            "name": "Rot Creeper",
+            "count": "2"
+          },
+          {
+            "name": "Mire Horror",
+            "count": "1-2"
+          }
+        ]
+      },
+      "5": {
+        "isBoss": true,
+        "bossName": "Swamp Thing"
+      }
+    }
+  },
+  "8": {
     "A": {
       "1": {
         "enemies": [
@@ -634,7 +1012,7 @@ const FORMATIONS = {
       }
     }
   },
-  "6": {
+  "9": {
     "A": {
       "1": {
         "enemies": [
@@ -760,394 +1138,16 @@ const FORMATIONS = {
       }
     }
   },
-  "7": {
-    "A": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Husk Acolyte",
-            "count": "3-4"
-          },
-          {
-            "name": "Parasitic Monk",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Infested Cleric",
-            "count": "3-4"
-          },
-          {
-            "name": "Soulless Priest",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Hollow Bishop",
-            "count": "2-3"
-          },
-          {
-            "name": "Fungal Templar",
-            "count": "2"
-          },
-          {
-            "name": "Spore Zealot",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Rotting Friar",
-            "count": "3"
-          },
-          {
-            "name": "Tainted Deacon",
-            "count": "2"
-          },
-          {
-            "name": "Blighted Vicar",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Rot Pontiff"
-      }
-    },
-    "B": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Parasitic Monk",
-            "count": "3-4"
-          },
-          {
-            "name": "Husk Acolyte",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Soulless Priest",
-            "count": "3-4"
-          },
-          {
-            "name": "Infested Cleric",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Fungal Templar",
-            "count": "2-3"
-          },
-          {
-            "name": "Hollow Bishop",
-            "count": "2"
-          },
-          {
-            "name": "Rotting Friar",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Tainted Deacon",
-            "count": "3"
-          },
-          {
-            "name": "Blighted Vicar",
-            "count": "2"
-          },
-          {
-            "name": "Spore Zealot",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Hollow Bishop"
-      }
-    }
-  },
-  "8": {
-    "A": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Plague Doctor",
-            "count": "3-4"
-          },
-          {
-            "name": "Mutated Subject",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Toxic Chemist",
-            "count": "3-4"
-          },
-          {
-            "name": "Viral Surgeon",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Rotted Scientist",
-            "count": "2-3"
-          },
-          {
-            "name": "Biohazard Brute",
-            "count": "2"
-          },
-          {
-            "name": "Pestilence Nurse",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Contaminated Medic",
-            "count": "3"
-          },
-          {
-            "name": "Fume Scholar",
-            "count": "2"
-          },
-          {
-            "name": "Blight Alchemist",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Toxic Behemoth"
-      }
-    },
-    "B": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Mutated Subject",
-            "count": "3-4"
-          },
-          {
-            "name": "Plague Doctor",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Viral Surgeon",
-            "count": "3-4"
-          },
-          {
-            "name": "Toxic Chemist",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Biohazard Brute",
-            "count": "2-3"
-          },
-          {
-            "name": "Rotted Scientist",
-            "count": "2"
-          },
-          {
-            "name": "Contaminated Medic",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Fume Scholar",
-            "count": "3"
-          },
-          {
-            "name": "Blight Alchemist",
-            "count": "2"
-          },
-          {
-            "name": "Pestilence Nurse",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Plague Master"
-      }
-    }
-  },
-  "9": {
-    "A": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Corrupt Disciple",
-            "count": "3-4"
-          },
-          {
-            "name": "Rot Believer",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Decay Zealot",
-            "count": "3-4"
-          },
-          {
-            "name": "Miasma Prophet",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Tainted Worshipper",
-            "count": "2-3"
-          },
-          {
-            "name": "Foul Oracle",
-            "count": "2"
-          },
-          {
-            "name": "Spoil Initiate",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Defiled Mystic",
-            "count": "3"
-          },
-          {
-            "name": "Ruin Chanter",
-            "count": "2"
-          },
-          {
-            "name": "Pestilent Fanatic",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Miasma Prophet"
-      }
-    },
-    "B": {
-      "1": {
-        "enemies": [
-          {
-            "name": "Rot Believer",
-            "count": "3-4"
-          },
-          {
-            "name": "Corrupt Disciple",
-            "count": "2"
-          }
-        ]
-      },
-      "2": {
-        "enemies": [
-          {
-            "name": "Miasma Prophet",
-            "count": "3-4"
-          },
-          {
-            "name": "Decay Zealot",
-            "count": "1"
-          }
-        ]
-      },
-      "3": {
-        "enemies": [
-          {
-            "name": "Foul Oracle",
-            "count": "2-3"
-          },
-          {
-            "name": "Tainted Worshipper",
-            "count": "2"
-          },
-          {
-            "name": "Defiled Mystic",
-            "count": "1"
-          }
-        ]
-      },
-      "4": {
-        "enemies": [
-          {
-            "name": "Ruin Chanter",
-            "count": "3"
-          },
-          {
-            "name": "Pestilent Fanatic",
-            "count": "2"
-          },
-          {
-            "name": "Spoil Initiate",
-            "count": "1-2"
-          }
-        ]
-      },
-      "5": {
-        "isBoss": true,
-        "bossName": "Ruin Avatar"
-      }
-    }
-  },
   "10": {
     "A": {
       "1": {
         "enemies": [
           {
-            "name": "Scale Drake",
+            "name": "Ice Spirit",
             "count": "3-4"
           },
           {
-            "name": "Flame Wyrm",
+            "name": "Yeti Hunter",
             "count": "2"
           }
         ]
@@ -1155,11 +1155,11 @@ const FORMATIONS = {
       "2": {
         "enemies": [
           {
-            "name": "Ember Dragon",
+            "name": "Yeti Mage",
             "count": "3-4"
           },
           {
-            "name": "Ash Hatchling",
+            "name": "Frost Golem",
             "count": "1"
           }
         ]
@@ -1167,15 +1167,15 @@ const FORMATIONS = {
       "3": {
         "enemies": [
           {
-            "name": "Sky Serpent",
+            "name": "Snow Wolf",
             "count": "2-3"
           },
           {
-            "name": "Cinder Drake",
+            "name": "Glacier Wraith",
             "count": "2"
           },
           {
-            "name": "Blaze Wyvern",
+            "name": "Winter Harpy",
             "count": "1"
           }
         ]
@@ -1183,33 +1183,33 @@ const FORMATIONS = {
       "4": {
         "enemies": [
           {
-            "name": "Soaring Behemoth",
+            "name": "Ice Weaver",
             "count": "3"
           },
           {
-            "name": "Inferno Dragon",
+            "name": "Blizzard Elemental",
             "count": "2"
           },
           {
-            "name": "Talon Scorch",
+            "name": "Frost Knight",
             "count": "1-2"
           }
         ]
       },
       "5": {
         "isBoss": true,
-        "bossName": "Fire Turtle"
+        "bossName": "Frost Colossus"
       }
     },
     "B": {
       "1": {
         "enemies": [
           {
-            "name": "Flame Wyrm",
+            "name": "Yeti Hunter",
             "count": "3-4"
           },
           {
-            "name": "Scale Drake",
+            "name": "Ice Spirit",
             "count": "2"
           }
         ]
@@ -1217,11 +1217,11 @@ const FORMATIONS = {
       "2": {
         "enemies": [
           {
-            "name": "Ash Hatchling",
+            "name": "Frost Golem",
             "count": "3-4"
           },
           {
-            "name": "Ember Dragon",
+            "name": "Yeti Mage",
             "count": "1"
           }
         ]
@@ -1229,15 +1229,15 @@ const FORMATIONS = {
       "3": {
         "enemies": [
           {
-            "name": "Cinder Drake",
+            "name": "Glacier Wraith",
             "count": "2-3"
           },
           {
-            "name": "Sky Serpent",
+            "name": "Snow Wolf",
             "count": "2"
           },
           {
-            "name": "Soaring Behemoth",
+            "name": "Ice Weaver",
             "count": "1"
           }
         ]
@@ -1245,22 +1245,22 @@ const FORMATIONS = {
       "4": {
         "enemies": [
           {
-            "name": "Inferno Dragon",
+            "name": "Blizzard Elemental",
             "count": "3"
           },
           {
-            "name": "Talon Scorch",
+            "name": "Frost Knight",
             "count": "2"
           },
           {
-            "name": "Blaze Wyvern",
+            "name": "Winter Harpy",
             "count": "1-2"
           }
         ]
       },
       "5": {
         "isBoss": true,
-        "bossName": "Sky Terror"
+        "bossName": "Ice Monarch"
       }
     }
   },
@@ -1269,11 +1269,11 @@ const FORMATIONS = {
       "1": {
         "enemies": [
           {
-            "name": "Depth Lurker",
+            "name": "Stone Golem",
             "count": "3-4"
           },
           {
-            "name": "Trench Behemoth",
+            "name": "Ruin Guardian",
             "count": "2"
           }
         ]
@@ -1281,11 +1281,11 @@ const FORMATIONS = {
       "2": {
         "enemies": [
           {
-            "name": "Deep Leviathan",
+            "name": "Dust Elemental",
             "count": "3-4"
           },
           {
-            "name": "Abyssal Terror",
+            "name": "Cursed Armor",
             "count": "1"
           }
         ]
@@ -1293,15 +1293,15 @@ const FORMATIONS = {
       "3": {
         "enemies": [
           {
-            "name": "Sea Goliath",
+            "name": "Ancient Phantom",
             "count": "2-3"
           },
           {
-            "name": "Maelstrom Horror",
+            "name": "Marble Brute",
             "count": "2"
           },
           {
-            "name": "Void Kraken",
+            "name": "Forgotten Sentinel",
             "count": "1"
           }
         ]
@@ -1309,22 +1309,22 @@ const FORMATIONS = {
       "4": {
         "enemies": [
           {
-            "name": "Ocean Colossus",
+            "name": "Ruin Specter",
             "count": "3"
           },
           {
-            "name": "Tsunami Beast",
+            "name": "Relic Defender",
             "count": "2"
           },
           {
-            "name": "Dark Tide",
+            "name": "Shattered Soul",
             "count": "1-2"
           }
         ]
       },
       "5": {
         "isBoss": true,
-        "bossName": "Sea Behemoth",
+        "bossName": "Ruin Golem",
         "special": "final"
       }
     },
@@ -1332,11 +1332,11 @@ const FORMATIONS = {
       "1": {
         "enemies": [
           {
-            "name": "Trench Behemoth",
+            "name": "Ruin Guardian",
             "count": "3-4"
           },
           {
-            "name": "Depth Lurker",
+            "name": "Stone Golem",
             "count": "2"
           }
         ]
@@ -1344,11 +1344,11 @@ const FORMATIONS = {
       "2": {
         "enemies": [
           {
-            "name": "Abyssal Terror",
+            "name": "Cursed Armor",
             "count": "3-4"
           },
           {
-            "name": "Deep Leviathan",
+            "name": "Dust Elemental",
             "count": "1"
           }
         ]
@@ -1356,15 +1356,15 @@ const FORMATIONS = {
       "3": {
         "enemies": [
           {
-            "name": "Maelstrom Horror",
+            "name": "Marble Brute",
             "count": "2-3"
           },
           {
-            "name": "Sea Goliath",
+            "name": "Ancient Phantom",
             "count": "2"
           },
           {
-            "name": "Ocean Colossus",
+            "name": "Ruin Specter",
             "count": "1"
           }
         ]
@@ -1372,22 +1372,22 @@ const FORMATIONS = {
       "4": {
         "enemies": [
           {
-            "name": "Tsunami Beast",
+            "name": "Relic Defender",
             "count": "3"
           },
           {
-            "name": "Dark Tide",
+            "name": "Shattered Soul",
             "count": "2"
           },
           {
-            "name": "Void Kraken",
+            "name": "Forgotten Sentinel",
             "count": "1-2"
           }
         ]
       },
       "5": {
         "isBoss": true,
-        "bossName": "Trench Leviathan",
+        "bossName": "Lost King",
         "special": "final"
       }
     }
@@ -1419,7 +1419,7 @@ class StageManager {
     if (!state.stageState.stageProgress) {
       state.stageState.stageProgress = {};
     }
-    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11A','11B'];
+    const keys = ['1A','1B','2A','2B','3A','3B','4A','4B','5A','5B','6A','6B','7A','7B','8A','8B','9A','9B','10A','10B','11A','11B','12A','12B','13A','13B','14A','14B','15A','15B','16A','16B','17A','17B','18A','18B'];
     keys.forEach(k => {
       if (!state.stageState.stageProgress[k]) {
         state.stageState.stageProgress[k] = { maxCleared: 0, currentLevel: 1, isCleared: false };
@@ -1466,7 +1466,7 @@ class StageManager {
     }
 
     // Victory check: Stage 8 (Main Boss) or maxStages 
-    const maxStg = state.config.maxStages || 11;
+    const maxStg = state.config.maxStages || 18;
     if (stage >= maxStg && level >= 5) {
       return { isVictory: true };
     }

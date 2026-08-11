@@ -341,17 +341,24 @@ class UIManager {
   }
 
   static STAGE_BACKDROPS = {
-    1: { A: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' }, B: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' } },
-    2: { A: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }, B: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
-    3: { A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' }, B: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' } },
-    4: { A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }, B: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
-    5: { A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' }, B: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' } },
-    6: { A: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' }, B: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
-    7: { A: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' }, B: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' } },
-    8: { A: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' }, B: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' } },
-    9: { A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' }, B: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
-    10: { A: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' }, B: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' } },
-    11: { A: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' }, B: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' } }
+    1: { A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' } },
+    2: { A: { src: 'assets/backgrounds/volcano.jpg', mobilePosition: 'center 48%', desktopPosition: 'center 50%' } },
+    3: { A: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
+    4: { A: { src: 'assets/backgrounds/desert.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
+    5: { A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
+    6: { A: { src: 'assets/backgrounds/cave.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
+    7: { A: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' } },
+    8: { A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' } },
+    9: { A: { src: 'assets/backgrounds/graveyard.jpg', mobilePosition: 'center 42%', desktopPosition: 'center 44%' } },
+    10: { A: { src: 'assets/backgrounds/forest.jpg', mobilePosition: 'center 30%', desktopPosition: 'center 34%' } },
+    11: { A: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' } },
+    12: { A: { src: 'assets/backgrounds/download.jpg', mobilePosition: 'center 40%', desktopPosition: 'center 42%' } },
+    13: { A: { src: 'assets/backgrounds/swamp.jpg', mobilePosition: 'center 38%', desktopPosition: 'center 40%' } },
+    14: { A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } },
+    15: { A: { src: 'assets/backgrounds/isle.jpg', mobilePosition: 'center 32%', desktopPosition: 'center 34%' } },
+    16: { A: { src: 'assets/backgrounds/mountain.jpg', mobilePosition: 'center 28%', desktopPosition: 'center 32%' } },
+    17: { A: { src: 'assets/backgrounds/sea.jpg', mobilePosition: 'center 36%', desktopPosition: 'center 38%' } },
+    18: { A: { src: 'assets/backgrounds/void.jpg', mobilePosition: 'center center', desktopPosition: 'center center' } }
   };
 
   static scheduleUpdateDailiesList(delay = 120) {
@@ -11339,14 +11346,16 @@ class UIManager {
 
   static getOrGenerateBranchingMap(stageProgress) {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    if (state?.stageState?.branchingMap?.version === 2 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
+    if (state?.stageState?.branchingMap?.version === 3 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
       return state.stageState.branchingMap;
     }
 
-            const stageColors = {
-      1: '#ef4444', 2: '#f59e0b', 3: '#eab308', 4: '#84cc16',
-      5: '#10b981', 6: '#06b6d4', 7: '#6366f1', 8: '#a855f7',
-      9: '#e81cff', 10: '#ff4d4d', 11: '#002244'
+                    const stageColors = {
+      1: '#22c55e', 2: '#ef4444', 3: '#f59e0b', 4: '#eab308',
+      5: '#dc2626', 6: '#84cc16', 7: '#10b981', 8: '#0ea5e9',
+      9: '#8b5cf6', 10: '#06b6d4', 11: '#6366f1', 12: '#a855f7',
+      13: '#c026d3', 14: '#db2777', 15: '#e81cff', 16: '#fcd34d',
+      17: '#0284c7', 18: '#0f172a'
     };
 
     const minibossPool = [
@@ -11358,18 +11367,25 @@ class UIManager {
     const mapLines = [];
 
     // Main spine path: Stages 1 to 11
-        const mainStages = [
-      { stage: 1, key: '1A', name: 'Volcano', icon: '🌋' },
-      { stage: 2, key: '2A', name: 'Pyramids', icon: '🏜️' },
-      { stage: 3, key: '3A', name: 'Marchers', icon: '🚶‍♂️' },
-      { stage: 4, key: '4A', name: 'Chasm', icon: '🕳️' },
-      { stage: 5, key: '5A', name: 'Kingdom', icon: '🏰' },
-      { stage: 6, key: '6A', name: 'Graveyard', icon: '🪦' },
-      { stage: 7, key: '7A', name: 'Church', icon: '⛪' },
-      { stage: 8, key: '8A', name: 'Lab', icon: '🧪' },
-      { stage: 9, key: '9A', name: 'Cult', icon: '👁️' },
-      { stage: 10, key: '10A', name: 'Dragon Isle', icon: '🐉' },
-      { stage: 11, key: '11A', name: 'Abyssal Sea', icon: '🌊', isApex: true },
+                const mainStages = [
+      { stage: 1, key: '1A', name: 'Forest', icon: '🌲' },
+      { stage: 2, key: '2A', name: 'Volcano', icon: '🌋' },
+      { stage: 3, key: '3A', name: 'Pyramids', icon: '🏜️' },
+      { stage: 4, key: '4A', name: 'Marchers', icon: '🚶‍♂️' },
+      { stage: 5, key: '5A', name: 'Crimson Cave', icon: '🕳️' },
+      { stage: 6, key: '6A', name: 'Chasm', icon: '🕳️' },
+      { stage: 7, key: '7A', name: 'Swamp', icon: '☣️' },
+      { stage: 8, key: '8A', name: 'Kingdom', icon: '🏰' },
+      { stage: 9, key: '9A', name: 'Graveyard', icon: '🪦' },
+      { stage: 10, key: '10A', name: 'Glacier', icon: '🧊' },
+      { stage: 11, key: '11A', name: 'Ruins', icon: '🏛️' },
+      { stage: 12, key: '12A', name: 'Church', icon: '⛪' },
+      { stage: 13, key: '13A', name: 'Lab', icon: '🧪' },
+      { stage: 14, key: '14A', name: 'Cult', icon: '👁️' },
+      { stage: 15, key: '15A', name: 'Dragon Isle', icon: '🐉' },
+      { stage: 16, key: '16A', name: 'Golden Peak', icon: '⛰️' },
+      { stage: 17, key: '17A', name: 'Abyssal Sea', icon: '🌊' },
+      { stage: 18, key: '18A', name: 'The Void', icon: '🌌', isApex: true },
     ];
 
     let lastSpineNodeId = null;
@@ -11443,7 +11459,7 @@ class UIManager {
       }
     });
 
-    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 2 };
+    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 3 };
     if (state?.stageState) state.stageState.branchingMap = branchingMap;
     return branchingMap;
   }
