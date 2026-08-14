@@ -11728,10 +11728,10 @@ class UIManager {
     viewport.addEventListener('touchend', () => { isDragging = false; });
 
     mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showDailiesTable === 'function') PopupsManager.showDailiesTable(); 
+      if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') UIManager.toggleTaskPanel('dailies'); 
     });
     mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBulkAddTodo === 'function') PopupsManager.showBulkAddTodo(); 
+      if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') UIManager.toggleTaskPanel('todos'); 
     });
     mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { 
       if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSatchel === 'function') PopupsManager.showSatchel(); 
