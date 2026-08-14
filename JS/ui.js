@@ -2648,11 +2648,26 @@ class UIManager {
 
     document.body.appendChild(bottomBar);
 
+    this.updateShopBtnVisibility();
+
     panel.querySelector('.shop-close').addEventListener('click', () => this.closeShop());
     // close when clicking overlay outside the panel
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) this.closeShop();
     });
+  }
+
+  static updateShopBtnVisibility() {
+    const shopBtn = document.getElementById('shopBtn');
+    if (!shopBtn) return;
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    const isWorldMap = Boolean(
+      state &&
+      state.stageState &&
+      !state.stageState.inActiveLevel &&
+      !state.playerState?.inLimbo
+    );
+    shopBtn.style.display = isWorldMap ? 'inline-block' : 'none';
   }
 
   static openShop() {
@@ -11316,13 +11331,13 @@ class UIManager {
     let enemiesText = nodeData.isBoss || nodeData.isMiniboss ? `<div style="color:#ff5a5a; font-weight:bold; margin-top:10px;">${nodeData.isMiniboss ? '☠️ Miniboss' : '👑 Boss'}: ${nodeData.bossName || 'Unknown'}</div>` : `<div style="color:#a8b2d1; font-size:0.9rem; margin-top:10px;">Expected enemies: Native to ${nodeData.nodeName}</div>`;
 
     popup.innerHTML = `
-      <div class="custom-popup" style="border: 2px solid ${nodeData.color}; background: #0f172a; max-width: 400px; text-align: center; box-shadow: 0 0 20px ${nodeData.color}40; margin:auto;">
-        <h2 style="color:${nodeData.color}; margin-top:0; font-family:'Orbitron', sans-serif;">${nodeData.nodeName} Level ${nodeData.level}</h2>
-        <p style="color:#cbd5e1; font-size:0.95rem;">Prepare your focus and tasks. Once you enter, you must clear the required objectives to advance.</p>
+      <div style="border: 2px solid ${nodeData.color}; background: #16181d; border-radius: 12px; padding: 24px 28px; max-width: 420px; text-align: center; box-shadow: 0 12px 32px rgba(0,0,0,0.8), 0 0 20px ${nodeData.color}35; margin:auto;">
+        <h2 style="color:${nodeData.color}; margin-top:0; margin-bottom:12px; font-family:'Orbitron', sans-serif; font-size:1.4rem; font-weight:700;">${nodeData.nodeName} Level ${nodeData.level}</h2>
+        <p style="color:#94a3b8; font-size:0.92rem; line-height:1.5; margin-bottom:16px;">Prepare your focus and tasks. Once you enter, you must clear the required objectives to advance.</p>
         ${enemiesText}
-        <div style="margin-top: 25px; display: flex; gap: 15px; justify-content: center;">
-          <button id="mapNodeCancelBtn" class="popup-btn" style="background:#334155;">Cancel</button>
-          <button id="mapNodeEnterBtn" class="popup-btn" style="background:${nodeData.color}; color:#fff; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; border-radius:4px;">Enter Level</button>
+        <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: center;">
+          <button id="mapNodeCancelBtn" style="background:#272a30; color:#e2e8f0; border:1px solid #475569; padding:10px 22px; font-weight:600; cursor:pointer; border-radius:6px; font-size:0.95rem; transition:background 0.2s;">Cancel</button>
+          <button id="mapNodeEnterBtn" style="background:${nodeData.color}; color:#ffffff; border:none; padding:10px 24px; font-weight:700; cursor:pointer; border-radius:6px; font-size:0.95rem; box-shadow: 0 4px 12px ${nodeData.color}50;">Enter Level</button>
         </div>
       </div>
     `;
@@ -11343,15 +11358,15 @@ class UIManager {
 
   static getOrGenerateBranchingMap(stageProgress) {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    if (state?.stageState?.branchingMap?.version === 3 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
+    if (state?.stageState?.branchingMap?.version === 6 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
       return state.stageState.branchingMap;
     }
 
-                    const stageColors = {
-      1: '#22c55e', 2: '#ef4444', 3: '#f59e0b', 4: '#eab308',
-      5: '#dc2626', 6: '#84cc16', 7: '#10b981', 8: '#0ea5e9',
-      9: '#8b5cf6', 10: '#06b6d4', 11: '#6366f1', 12: '#a855f7',
-      13: '#c026d3', 14: '#db2777', 15: '#e81cff', 16: '#fcd34d',
+    const stageColors = {
+      1: '#22c55e', 2: '#f97316', 3: '#eab308', 4: '#a855f7',
+      5: '#ef4444', 6: '#64748b', 7: '#14b8a6', 8: '#fbbf24',
+      9: '#6b7280', 10: '#38bdf8', 11: '#d97706', 12: '#8b5cf6',
+      13: '#06b6d4', 14: '#ec4899', 15: '#dc2626', 16: '#f59e0b',
       17: '#0284c7', 18: '#0f172a'
     };
 
@@ -11363,8 +11378,8 @@ class UIManager {
     const mapNodes = [];
     const mapLines = [];
 
-    // Main spine path: Stages 1 to 11
-                const mainStages = [
+    // Main spine path: Stages 1 to 18
+    const mainStages = [
       { stage: 1, key: '1A', name: 'Forest', icon: '🌲' },
       { stage: 2, key: '2A', name: 'Volcano', icon: '🌋' },
       { stage: 3, key: '3A', name: 'Pyramids', icon: '🏜️' },
@@ -11391,6 +11406,10 @@ class UIManager {
       let currentY = 900;
       let stageX = 300 + (stg.stage - 1) * 450;
       lastSpineNodeId = null; // Disconnect stages
+
+      // Every stage has 1 miniboss on a randomized level branch (L1-L4)
+      const chosenMinibossLevel = Math.floor(Math.random() * 4) + 1; // 1, 2, 3, or 4
+      const assignedMiniboss = minibossPool[Math.floor(Math.random() * minibossPool.length)];
 
       for (let lvl = 1; lvl <= 5; lvl++) {
         const isBoss = (lvl === 5);
@@ -11422,15 +11441,14 @@ class UIManager {
         }
         lastSpineNodeId = nodeId;
 
-        // Miniboss branch (1-2 per stage, only on non-boss levels)
-        if (!isBoss && Math.random() < 0.4) {
+        // Miniboss branch with Secret Vault behind it as a reward challenge
+        if (!isBoss && lvl === chosenMinibossLevel) {
           const side = (Math.random() > 0.5) ? -1 : 1;
-          const assignedMiniboss = minibossPool[Math.floor(Math.random() * minibossPool.length)];
           const subKey = `${stg.stage}B_${lvl}`;
           const subId = `sub_${subKey}`;
           
-          const bx = x + side * (90 + Math.random() * 40);
-          const by = y - (40 + Math.random() * 20);
+          const bx = x + side * (90 + Math.random() * 30);
+          const by = y - (30 + Math.random() * 20);
 
           mapNodes.push({
             id: subId,
@@ -11450,16 +11468,12 @@ class UIManager {
           });
 
           mapLines.push({ from: nodeId, to: subId, isMain: false });
-        }
 
-        // Secret Vault branch (on non-boss levels)
-        if (!isBoss && Math.random() < 0.3) {
-          const side = (Math.random() > 0.5) ? 1 : -1;
+          // Secret Vault unlocked by defeating the Miniboss challenge
           const vaultKey = `${stg.stage}V_${lvl}`;
           const vaultId = `vault_${vaultKey}`;
-          
-          const vx = x + side * (110 + Math.random() * 30);
-          const vy = y + (20 + Math.random() * 20);
+          const vx = bx + side * (70 + Math.random() * 20);
+          const vy = by - (40 + Math.random() * 20);
 
           mapNodes.push({
             id: vaultId,
@@ -11479,19 +11493,20 @@ class UIManager {
             maxLevels: 1
           });
 
-          mapLines.push({ from: nodeId, to: vaultId, isMain: false });
+          mapLines.push({ from: subId, to: vaultId, isMain: false });
         }
 
         currentY -= 150; // Move up for the next level
       }
     });
 
-    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 3 };
+    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 6 };
     if (state?.stageState) state.stageState.branchingMap = branchingMap;
     return branchingMap;
   }
 
   static renderWorldMapNodeView() {
+    this.updateShopBtnVisibility();
     // Clear enemy canvas if any
     const enemyCanvas = document.getElementById('enemyConnectionCanvas');
     if (enemyCanvas) {
@@ -11504,6 +11519,7 @@ class UIManager {
     
     mapContainer = document.createElement('div');
     mapContainer.className = 'world-map-container';
+    mapContainer.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000000; padding:24px; box-sizing:border-box; z-index:100; overflow:hidden;';
     document.body.appendChild(mapContainer);
 
     const state = typeof getGameState === 'function' ? getGameState() : null;
@@ -11515,12 +11531,12 @@ class UIManager {
     const mapData = this.getOrGenerateBranchingMap(stageProgress);
 
     let html = `
-      <div class="world-map-controls" style="position:fixed; top:12px; right:16px; z-index:100; display:flex; gap:8px; pointer-events:auto;">
+      <div class="world-map-controls" style="position:fixed; top:36px; right:40px; z-index:101; display:flex; gap:8px; pointer-events:auto;">
         <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 +</button>
         <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 -</button>
         <button id="mapReset" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🎯 Reset</button>
       </div>
-      <div class="world-tree-viewport" style="position:relative; width:100vw; height:100vh; overflow:hidden; cursor:grab; touch-action:none;">
+      <div class="world-tree-viewport" style="position:relative; width:100%; height:100%; background:#16181d; border-radius:16px; border:2px solid #272a30; overflow:hidden; cursor:grab; touch-action:none; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
         <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:5600px; height:1200px; transform-origin:0 0;">
           <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
           <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
@@ -11532,11 +11548,11 @@ class UIManager {
       if (!stagesRendered.has(node.stage)) {
         stagesRendered.add(node.stage);
         const xLeft = 300 + (node.stage - 1) * 450 - 180;
-        const color = node.color || '#fff';
-        const bg = `linear-gradient(180deg, ${color}25 0%, transparent 100%)`;
+        const color = node.color || '#3b82f6';
+        const bg = color;
         html += `
-          <div style="position:absolute; top:80px; left:${xLeft}px; width:360px; height:900px; background:${bg}; border-radius:15px; border-top:4px solid ${color}; pointer-events:none; z-index:1;">
-             <div style="padding:15px; text-align:center; font-family:'Orbitron', sans-serif; font-size:1.4rem; color:#fff; text-shadow:0 0 10px ${color}; opacity:0.9;">
+          <div style="position:absolute; top:80px; left:${xLeft}px; width:360px; height:900px; background:${bg}; border-radius:15px; border:2px solid ${color}; pointer-events:none; z-index:1; opacity:0.85;">
+             <div style="padding:15px; text-align:center; font-family:'Orbitron', sans-serif; font-size:1.4rem; color:#ffffff; font-weight:bold; opacity:1;">
                 ${node.icon} Stage ${node.stage}: ${node.name}
              </div>
           </div>
@@ -11806,6 +11822,7 @@ class UIManager {
   }
 
   static _doRenderEnemies() {
+    this.updateShopBtnVisibility();
     const state = getGameState();
     
     // Check if player is in Limbo
