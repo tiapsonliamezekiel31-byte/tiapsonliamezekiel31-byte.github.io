@@ -670,23 +670,7 @@ const DEFAULT_GAME_CONFIG = {
   // ============================================================
   // ELEMENTAL WEAPON INFUSION & RUNE SYSTEM
   // ============================================================
-  runes: {
-    tier1: {
-      'Flame Rune': { name: 'Flame Rune', icon: '🔥', description: 'Hits apply Burn (deals 10% weapon damage daily to the enemy for 3 days).' },
-      'Frost Rune': { name: 'Frost Rune', icon: '❄️', description: 'Hits apply Freeze (reduces target enemy\'s next attack damage by 45%).' },
-      'Storm Rune': { name: 'Storm Rune', icon: '⚡', description: 'Hits apply Shock (15% chance to stun target for 1 turn).' },
-      'Venom Rune': { name: 'Venom Rune', icon: '🧪', description: 'Hits apply Poison (deals daily damage equal to 4% of player\'s max AP, ignores all defense/shields, lasts 3 days).' }
-    },
-    tier2: {
-      'Siphon Rune': { name: 'Siphon Rune', icon: '🔮', description: 'Gain +10 Mana on scoring a critical hit.' },
-      'Focus Rune': { name: 'Focus Rune', icon: '🎯', description: 'Attacking weakness reduces weapon AP cost by 20% for that attack.' },
-      'Hoard Rune': { name: 'Hoard Rune', icon: '💰', description: 'Killing an enemy with this weapon awards 25% extra Gold.' }
-    },
-    tier3: {
-      'Blast Rune': { name: 'Blast Rune', icon: '💥', description: 'Hits deal 20% splash damage to the two adjacent enemies.' },
-      'Overpower Rune': { name: 'Overpower Rune', icon: '🌪️', description: 'Excess overkill damage is split with a 1.5× multiplier.' }
-    }
-  },
+  runes: {},
   
   // ============================================================
   // CONSUMABLES

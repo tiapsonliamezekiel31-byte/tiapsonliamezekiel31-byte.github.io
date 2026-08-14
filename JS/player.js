@@ -331,17 +331,19 @@ class PlayerManager {
   }
   
   static getKillTagUpgradeCost(weaponName) {
+    return this.getUpgradeGoldCost(weaponName);
+  }
+
+  static getUpgradeGoldCost(weaponName) {
     const state = getGameState();
-    let baseCost = 5;
-    if (state.playerState?.className === 'Ranger') {
-      baseCost = state.config?.killTagThresholdRanger || 3;
-    } else {
-      baseCost = state.config?.killTagsPerUpgrade || 5;
-    }
     const targetWeapon = weaponName || state.playerState?.equippedWeapon || 'Rusty Sword';
     const appliedUpgrades = (typeof this.getWeaponUpgrades === 'function') ? this.getWeaponUpgrades(targetWeapon) : [];
     const masteryLevel = Array.isArray(appliedUpgrades) ? appliedUpgrades.length : 0;
-    return baseCost + masteryLevel;
+    const maxGold = (typeof ShopManager !== 'undefined' && typeof ShopManager.calculateMaxGold === 'function')
+      ? ShopManager.calculateMaxGold()
+      : (TaskManager.getAllDailies().reduce((sum, d) => sum + (state.config?.taskRewards[d.difficulty]?.gold || 0), 0));
+    const baseCost = maxGold > 0 ? maxGold * 0.5 : 100;
+    return Math.max(50, Math.ceil(baseCost * (1 + 0.10 * masteryLevel)));
   }
 
   static getKillTags(weaponName) {

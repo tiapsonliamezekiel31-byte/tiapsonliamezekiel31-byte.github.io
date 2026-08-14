@@ -4517,6 +4517,9 @@ body::before {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
   border-radius: 8px;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 .edit-daily-popup,

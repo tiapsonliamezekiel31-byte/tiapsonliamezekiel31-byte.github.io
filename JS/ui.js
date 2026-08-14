@@ -1525,12 +1525,9 @@ class UIManager {
       }
 
       if (type === 'daily') {
-        const lines = (inputEl.value || '').split('\n');
-        lines.forEach(line => {
-          const lTrimmed = line.trim();
-          if (!lTrimmed) return;
-          const parsed = TaskManager.parseNaturalLanguage(lTrimmed, attr, diff, deadline);
-          TaskManager.addDaily(parsed.name, parsed.difficulty || diff, parsed.attribute || attr, 1, parsed.deadline || deadline);
+        const parsedTasks = TaskManager.parseBulkAddText(inputEl.value || '', attr, diff, deadline);
+        parsedTasks.forEach(t => {
+          TaskManager.addDaily(t.name, t.difficulty || diff, t.attribute || attr, 1, t.deadline || deadline);
         });
       } else if (type === 'todo') {
         const parsedTasks = TaskManager.parseBulkAddText(inputEl.value || '', attr, diff, deadline);
@@ -11490,6 +11487,12 @@ class UIManager {
     let html = `
       <div class="world-map-header" style="z-index:10; pointer-events:auto;">
         <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.6rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD BRANCHING MAP</h2>
+        <div class="world-map-tabs" style="display:flex; gap:8px; justify-content:center; margin: 6px 0;">
+          <button id="mapTabDailies" style="background:#3b82f6; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">📋 Dailies</button>
+          <button id="mapTabTodos" style="background:#8b5cf6; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">✅ Todos</button>
+          <button id="mapTabInventory" style="background:#f59e0b; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🎒 Inventory</button>
+          <button id="mapTabShop" style="background:#10b981; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🛒 Shop</button>
+        </div>
         <p style="margin:0 0 8px 0; font-size:0.85rem; color:#94a3b8;">Pinch/scroll to zoom out/in • Drag to pan • Side paths hold Minibosses</p>
         <div class="world-map-controls" style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
           <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 +</button>
@@ -11521,18 +11524,52 @@ class UIManager {
       }
     });
 
+    // Build map parent-child lookup for strict branch locks
+    const parentMap = {};
+    mapData.lines.forEach(l => {
+      if (!parentMap[l.to]) parentMap[l.to] = [];
+      parentMap[l.to].push(l.from);
+    });
+    const nodeLookup = {};
+    mapData.nodes.forEach(n => { nodeLookup[n.id] = n; });
+
     mapData.nodes.forEach(node => {
       const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
       const isLevelCleared = (node.level <= prog.maxCleared) || prog.isCleared;
-      const isCurrent = (node.level === prog.maxCleared + 1) && !prog.isCleared;
       
-      const color = node.color || '#38bdf8';
-      const label = node.isMiniboss ? '☠️' : (node.isBoss ? '👑' : `L${node.level}`);
-      const bg = isLevelCleared ? color + '40' : 'rgba(15, 23, 42, 0.96)';
+      // Strict branch lock: all preceding parent nodes must be cleared
+      const parentIds = parentMap[node.id] || [];
+      const allParentsCleared = parentIds.length === 0 || parentIds.every(pid => {
+        const parentNode = nodeLookup[pid];
+        if (!parentNode) return true;
+        const pProg = stageProgress[parentNode.key] || { maxCleared: 0, isCleared: false };
+        return (parentNode.level <= pProg.maxCleared) || pProg.isCleared;
+      });
+
+      const isLocked = !allParentsCleared;
+      const isCurrent = allParentsCleared && !isLevelCleared;
+      
+      const color = isLocked ? '#64748b' : (node.color || '#38bdf8');
+      let shapeStyle = 'border-radius:50%;'; // Normal Circle
+      let shapeSymbol = '⚪';
+      
+      if (node.isShop) {
+        shapeStyle = 'border-radius:4px;'; // Square
+        shapeSymbol = '🟩';
+      } else if (node.isMiniboss) {
+        shapeStyle = 'border-radius:4px; transform: translate(-50%, -50%) rotate(45deg);'; // Diamond
+        shapeSymbol = '🔷';
+      } else if (node.isBoss) {
+        shapeStyle = 'clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); border-radius:0;'; // Hexagon
+        shapeSymbol = '🛑';
+      }
+
+      const label = isLocked ? '🔒' : (node.isShop ? '🛒' : (node.isMiniboss ? '🔷' : (node.isBoss ? '🛑' : `L${node.level}`)));
+      const bg = isLocked ? 'rgba(30, 41, 59, 0.95)' : (isLevelCleared ? color + '40' : 'rgba(15, 23, 42, 0.96)');
       const borderColor = isCurrent ? '#fff' : color;
 
       html += `
-        <button class="stage-node-circle ${isLevelCleared ? 'is-level-cleared' : ''} ${node.isBoss ? 'boss-lvl-btn' : ''} ${node.isMiniboss ? 'miniboss-lvl-btn' : ''}" 
+        <button class="stage-node-circle ${isLevelCleared ? 'is-level-cleared' : ''} ${isLocked ? 'is-branch-locked' : ''}" 
              data-node-id="${node.id}" 
              data-node-key="${node.key}" 
              data-stage="${node.stage}" 
@@ -11542,9 +11579,11 @@ class UIManager {
              data-node-name="${node.name}"
              data-is-boss="${node.isBoss}"
              data-is-miniboss="${node.isMiniboss}"
+             data-is-locked="${isLocked}"
              data-color="${color}"
-             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${borderColor}; box-shadow: 0 0 14px ${color}35; background: ${bg}; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron', sans-serif; font-size:1.1rem; color:#fff; border-width:2px; border-style:solid; cursor:pointer; z-index:5; transform: translate(-50%, -50%);">
-          ${label}
+             ${isLocked ? 'disabled' : ''}
+             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${borderColor}; box-shadow: 0 0 14px ${color}35; background: ${bg}; width:48px; height:48px; ${shapeStyle} display:flex; align-items:center; justify-content:center; font-family:'Orbitron', sans-serif; font-size:1rem; color:#fff; border-width:2px; border-style:solid; cursor:${isLocked ? 'not-allowed' : 'pointer'}; z-index:5; ${!node.isMiniboss ? 'transform: translate(-50%, -50%);' : ''}">
+          <span style="${node.isMiniboss ? 'transform: rotate(-45deg); display:inline-block;' : ''}">${label}</span>
         </button>
       `;
     });
@@ -11640,10 +11679,21 @@ class UIManager {
 
     viewport.addEventListener('touchend', () => { isDragging = false; });
 
+    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showDailyTasks) PopupsManager.showDailyTasks(); });
+    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showTodosModal) PopupsManager.showTodosModal(); });
+    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { if (typeof InventoryManager !== 'undefined' && InventoryManager.showGridPopup) InventoryManager.showGridPopup(); });
+    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showShop) PopupsManager.showShop(); });
+
     // Attach click events to circular node buttons
     mapContainer.querySelectorAll('.stage-node-circle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (btn.dataset.isLocked === 'true') {
+          if (typeof FloatingDamageNumber !== 'undefined') {
+            FloatingDamageNumber.show(e.clientX || (window.innerWidth / 2), e.clientY || (window.innerHeight / 2), 'BRANCH LOCKED! Clear preceding levels first 🔒', { color: '#ff4444' });
+          }
+          return;
+        }
         const nodeData = {
           stage: Number(btn.dataset.stage),
           variant: btn.dataset.variant,
@@ -13018,6 +13068,13 @@ class UIManager {
     return series.slice(-20);
   }
 
+  static getOverallRunCompletionRate() {
+    const entries = this.getRunCompletionEntries().filter(e => !e.live);
+    if (!entries.length) return 0;
+    const sum = entries.reduce((acc, e) => acc + (e.pct || 0), 0);
+    return sum / entries.length;
+  }
+
   static buildDailyHistoryBoxes(dailyId) {
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
@@ -13607,7 +13664,12 @@ class UIManager {
         `;
       }
 
-      PopupsManager.closeAllPopups();
+      const existingEnemyPopup = document.querySelector('.enemy-info-popup');
+      if (existingEnemyPopup) {
+        const parentOverlay = existingEnemyPopup.closest('.popup-overlay');
+        if (parentOverlay) parentOverlay.remove();
+        else existingEnemyPopup.remove();
+      }
       const overlay = PopupsManager.createPopupOverlay();
       overlay.style.zIndex = '2147483647';
       overlay.style.pointerEvents = 'auto';

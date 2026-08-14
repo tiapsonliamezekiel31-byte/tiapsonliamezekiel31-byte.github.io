@@ -409,7 +409,7 @@ class PopupsManager {
       return sum + reward.gold;
     }, 0);
     
-    let html = `<h2>🛒 SHOP</h2><button class="btn-close">✕</button>`;
+    let html = `<div class="popup-drag-bar" style="width: 44px; height: 5px; background: #ffd700; border-radius: 3px; margin: 0 auto 10px auto; cursor: grab; opacity: 0.85;"></div><h2>🛒 SHOP</h2><button class="btn-close">✕</button>`;
     html += `<div class="shop-gold">Gold: 💰 ${state.playerState.gold}</div>`;
     html += '<div class="shop-grid">';
     
@@ -960,8 +960,8 @@ class PopupsManager {
     const popup = document.createElement('div');
     popup.className = 'popup weapon-upgrade-popup';
 
-    const tags = PlayerManager.getKillTags(weaponName) || 0;
-    const cost = (PlayerManager && typeof PlayerManager.getKillTagUpgradeCost === 'function') ? PlayerManager.getKillTagUpgradeCost(weaponName) : (state.config.killTagsPerUpgrade || 5);
+    const gold = state.playerState.gold || 0;
+    const cost = PlayerManager.getUpgradeGoldCost(weaponName);
 
     // Define available upgrades (modified types per user request)
     const upgrades = [
@@ -1229,17 +1229,12 @@ class PopupsManager {
         const upgrade = upgrades.find(u => u.id === id);
         if (!upgrade) return;
 
-        if ((PlayerManager.getKillTags(weaponName) || 0) < cost) {
-          FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, 'Not enough Kill Tags', { color: '#ff6666' });
+        if ((state.playerState.gold || 0) < cost) {
+          FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, `Not enough Gold! (Need 💰 ${cost})`, { color: '#ff6666' });
           return;
         }
 
-        // Spend tags and add upgrade
-        const ok = PlayerManager.spendKillTags(weaponName, cost);
-        if (!ok) {
-          FloatingDamageNumber.show(window.innerWidth/2, window.innerHeight/2, 'Failed to spend tags', { color: '#ff6666' });
-          return;
-        }
+        state.setGold(state.playerState.gold - cost);
 
         PlayerManager.addWeaponUpgrade(weaponName, upgrade.effect || upgrade);
         // persist
@@ -1275,13 +1270,13 @@ class PopupsManager {
     if (!overlay) {
       overlay = document.createElement('div');
       overlay.className = 'popup-overlay limbo-overlay';
-      overlay.style.pointerEvents = 'auto';
-      overlay.style.zIndex = '2147483647';
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '9000';
       document.body.appendChild(overlay);
     }
 
     const html = `
-      <div class="popup limbo-popup" style="text-align:center; max-width:440px; background:#0b0f19; border:2px solid #6366f1; border-radius:12px; padding:28px 20px;">
+      <div class="popup limbo-popup" style="text-align:center; max-width:440px; background:#0b0f19; border:2px solid #6366f1; border-radius:12px; padding:28px 20px; pointer-events:auto;">
         <div style="font-size: 3rem; margin-bottom: 8px;">👻</div>
         <h2 style="color:#a855f7; margin:0 0 8px 0; font-size:1.6rem; text-shadow:0 0 12px rgba(168,85,247,0.5);">YOU ARE IN LIMBO</h2>
         <p style="color:#cbd5e1; font-size:0.9rem; margin-bottom:16px;">
@@ -1291,10 +1286,29 @@ class PopupsManager {
           🌟 <strong>HOW TO RESPAWN:</strong><br>
           Log a <strong>100% Perfect Day</strong> check-in to break free from Limbo and respawn with 50% HP!
         </div>
+        <div style="display:flex; gap:10px; justify-center; margin-top:14px;">
+          <button id="limboOpenDailiesBtn" style="flex:1; background:#4338ca; color:#fff; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; font-weight:bold; cursor:pointer;">📋 Open Tasks</button>
+          <button id="limboMinimizeBtn" style="background:rgba(255,255,255,0.1); color:#ccc; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; cursor:pointer;">Minimize</button>
+        </div>
       </div>
     `;
 
     overlay.innerHTML = html;
+
+    const openBtn = overlay.querySelector('#limboOpenDailiesBtn');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => {
+        if (typeof UIManager !== 'undefined' && typeof UIManager.openDailyTasksTab === 'function') {
+          UIManager.openDailyTasksTab();
+        }
+      });
+    }
+    const minBtn = overlay.querySelector('#limboMinimizeBtn');
+    if (minBtn) {
+      minBtn.addEventListener('click', () => {
+        overlay.style.display = 'none';
+      });
+    }
   }
 
   // ============================================================

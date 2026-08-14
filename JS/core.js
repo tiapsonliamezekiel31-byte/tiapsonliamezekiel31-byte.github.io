@@ -1179,8 +1179,10 @@ class GameState {
     const passive = PlayerManager.getClassPassive();
 
     let D = TaskManager.calculateMissedDailyDamage();
+    let checkinMissedPct = EnemyManager.getWeightedMissedDailyPercentage();
     if (state.systemState && state.systemState.noCheckinDamageOnce) {
       D = 0;
+      checkinMissedPct = 0;
     }
     const N = D * 5;
 
@@ -1310,7 +1312,7 @@ class GameState {
       aliveNormalEnemies.forEach(enemy => {
         if (enemy.statusEffects?.stunned) return;
 
-        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal);
+        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal, { missedPct: checkinMissedPct });
         const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;
         damage *= incantMult;
 
@@ -1594,9 +1596,11 @@ function checkParryChallengeCompletion() {
   if (allCompleted && !chal.awarded) {
     chal.awarded = true;
     chal.completed = true;
-    state.playerState.parryCount = (state.playerState.parryCount || 0) + 3;
+    if (typeof state.addBuff === 'function') {
+      state.addBuff('Damage Boost');
+    }
     if (typeof FloatingDamageNumber !== 'undefined') {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+3 PARRIES! 🛡️', { color: '#00e5ff', scale: 1.2, duration: 2500 });
+      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'DAMAGE BUFF GRANTED! ⚔️', { color: '#ffaa00', scale: 1.3, duration: 2500 });
     }
     if (typeof UIManager !== 'undefined') {
       if (typeof UIManager.updateActionButtons === 'function') UIManager.updateActionButtons();
@@ -1621,6 +1625,14 @@ function performCheckIn() {
     return;
   }
   state.systemState.isCheckInRunning = true;
+  // Failsafe timeout to unlock check-in if an error or animation halts the flow
+  setTimeout(() => {
+    if (state && state.systemState && state.systemState.isCheckInRunning) {
+      console.warn('Watchdog unlocked check-in');
+      state.systemState.isCheckInRunning = false;
+      if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+    }
+  }, 12000);
   state.stageState.daysOnLevel = (state.stageState.daysOnLevel || 0) + 1;
 
   const initiallyDeadEnemyIds = new Set(
@@ -1774,10 +1786,12 @@ function performCheckIn() {
 
   // 1) Calculate missed-daily damage D and scale to N
   let D = TaskManager.calculateMissedDailyDamage();
+  let checkinMissedPct = EnemyManager.getWeightedMissedDailyPercentage();
   if (state.systemState && state.systemState.noCheckinDamageOnce) {
     D = 0;
+    checkinMissedPct = 0;
   }
-  const N = D * 5; // per blueprint: D × 5 = N
+  let N = D * 5; // per blueprint: D × 5 = N
 
   // --- Check-in enemy respawns ---
   const stageVal = state.stageState.stage || 1;
@@ -1848,7 +1862,7 @@ function performCheckIn() {
   state._lastCheckinRespawns = respawnedGains;
 
   const isAggressive = (state.stageState.daysOnLevel >= 3);
-  const checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
+  let checkinDamageMultiplier = isAggressive ? 1.5 : 1.0;
 
   // Madman: miss any daily -> die at check-in, no death defiance
   if (state.playerState.className === 'Madman' && !allDailiesComplete) {
@@ -1959,7 +1973,7 @@ function performCheckIn() {
         missedW += ({ Easy: 1, Medium: 2, Hard: 3, Ultra: 8 }[d.difficulty] || 1) + (isPhase2 ? 1 : 0);
       });
 
-      const N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
+      N = maxW > 0 ? Math.round((missedW / maxW) * 20) : 0;
       const rolledAttacks = [...GameState.getBossRolledAttacks(N, bossEnemy.name)];
 
       // Determine dodge charges for the boss
@@ -2440,7 +2454,7 @@ function performCheckIn() {
       aliveNormalEnemies.forEach(enemy => {
         if (state.playerState.hp <= 0) return;
         // Base enemy damage calculation (normal enemies split N)
-        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal, { excludeEnemyIds: initiallyDeadEnemyIds });
+        let damage = EnemyManager.calculateEnemyDamage(enemy, N, totalNormal, { excludeEnemyIds: initiallyDeadEnemyIds, missedPct: checkinMissedPct });
 
         // Incantation multiplier (applies to THIS check-in, then clears)
         const incantMult = (typeof enemy.incantationDamageMult === 'number') ? enemy.incantationDamageMult : 1;
@@ -2785,6 +2799,13 @@ function performCheckIn() {
   const doDailyRegenAndSave = async () => {
     try {
       if (state.playerState.hp <= 0) {
+        if (state.playerState.inLimbo) {
+          clearCheckInRunning();
+          state.save();
+          if (typeof UIManager !== 'undefined') UIManager.refreshGameUI();
+          return;
+        }
+
         const survived = PlayerManager.checkDeathDefiance();
         if (!survived) {
           state.playerState.inLimbo = true;

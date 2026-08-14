@@ -675,6 +675,38 @@ class TaskManager {
 
     state.systemState.runStats.tasksCompleted++;
 
+    // Ultra Task Boss Instant Damage: deals 50% of Player Max AP directly to active enemy/boss
+    if (daily.difficulty === 'Ultra') {
+      const maxAp = state.playerState?.maxAp || 100;
+      const ultraDmg = Math.round(maxAp * 0.5);
+      if (typeof StageManager !== 'undefined' && StageManager.getAliveEnemies) {
+        const enemies = StageManager.getAliveEnemies();
+        if (enemies.length > 0) {
+          enemies[0].takeDamage(ultraDmg);
+          if (typeof FloatingDamageNumber !== 'undefined') {
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `ULTRA STRIKE! -${ultraDmg} HP ⚡`, { color: '#ff0055', scale: 1.5 });
+          }
+        }
+      }
+    }
+
+    // Check Parry Grant Condition (today completion rate > overall run completion rate)
+    try {
+      const compD = TaskManager.getCompletedDailies();
+      const allD = TaskManager.getAllDailies();
+      const todayRate = TaskManager.getWeightedCompletionRate(compD, allD);
+      const runRate = (typeof UIManager !== 'undefined' && typeof UIManager.getOverallRunCompletionRate === 'function')
+        ? UIManager.getOverallRunCompletionRate()
+        : 0;
+      if (todayRate > runRate && !state.systemState._parryGrantedToday) {
+        state.systemState._parryGrantedToday = true;
+        state.playerState.parryCount = (state.playerState.parryCount || 0) + 3;
+        if (typeof FloatingDamageNumber !== 'undefined') {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, '+3 PARRIES! 🛡️', { color: '#00ffff', scale: 1.3, duration: 2500 });
+        }
+      }
+    } catch (e) {}
+
     // Check Parry Challenge (3 lowest completion rate dailies reward)
     if (typeof checkParryChallengeCompletion === 'function') {
       try { checkParryChallengeCompletion(); } catch (e) {}

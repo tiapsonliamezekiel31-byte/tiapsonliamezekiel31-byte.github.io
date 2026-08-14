@@ -276,14 +276,7 @@ class EnemyManager {
       const state = getGameState();
       if (!state.dailiesState) return 0;
 
-      // 1. Check last recorded check-in history entry for previous day's completion rate
-      const history = state.dailiesState.history || [];
-      if (history.length > 0) {
-        const lastEntry = history[history.length - 1];
-        if (typeof lastEntry.completionRate === 'number') {
-          return Math.max(0, 1.0 - lastEntry.completionRate);
-        }
-      }
+
 
       // 2. Fallback: calculate from current unreset scheduled dailies
       const today = TaskManager.getCurrentGameDateKey();
@@ -314,7 +307,11 @@ class EnemyManager {
     // Formula: (% missed based on weighted daily completion) * 200 * stagenum / total enemies, then apply enemy damage multiplier
     const missedPct = (typeof options.missedPct === 'number') ? options.missedPct : EnemyManager.getWeightedMissedDailyPercentage();
     const stage = state.stageState?.stage || enemy.stage || 1;
-    const totalEnemies = totalAliveEnemies > 0 ? totalAliveEnemies : 1;
+    let initialNormalCount = 1;
+    if (state.stageState && state.stageState.enemies) {
+      initialNormalCount = state.stageState.enemies.filter(e => !e.isBoss && !e.isBomb).length;
+    }
+    const totalEnemies = Math.max(1, initialNormalCount);
     
     const baseDamage = (missedPct * 200 * stage) / totalEnemies;
     const mult = (typeof enemy?.dmgMult === 'number') ? enemy.dmgMult : 1.0;

@@ -1758,7 +1758,7 @@ class StageManager {
   }
   
   static getEnemyById(id) {
-    return getGameState().stageState.enemies.find(e => e.id === id);
+    return getGameState().stageState.enemies.find(e => e && String(e.id) === String(id));
   }
 
   static rehydrateLoadedEnemies() {
