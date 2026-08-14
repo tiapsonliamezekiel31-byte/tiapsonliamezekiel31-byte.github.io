@@ -11515,22 +11515,12 @@ class UIManager {
     const mapData = this.getOrGenerateBranchingMap(stageProgress);
 
     let html = `
-      <div class="world-map-header" style="z-index:10; pointer-events:auto;">
-        <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.6rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD BRANCHING MAP</h2>
-        <div class="world-map-tabs" style="display:flex; gap:8px; justify-content:center; margin: 6px 0;">
-          <button id="mapTabDailies" style="background:#3b82f6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">📋 Dailies</button>
-          <button id="mapTabTodos" style="background:#8b5cf6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">✅ Todos</button>
-          <button id="mapTabInventory" style="background:#f59e0b; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🎒 Inventory</button>
-          <button id="mapTabShop" style="background:#10b981; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🛒 Shop</button>
-        </div>
-        <p style="margin:0 0 8px 0; font-size:0.85rem; color:#94a3b8;">Pinch/scroll to zoom out/in • Drag to pan • Side paths hold Minibosses & Secret Vaults 🔑</p>
-        <div class="world-map-controls" style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
-          <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 +</button>
-          <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 -</button>
-          <button id="mapReset" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🎯 Reset</button>
-        </div>
+      <div class="world-map-controls" style="position:fixed; top:12px; right:16px; z-index:100; display:flex; gap:8px; pointer-events:auto;">
+        <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 +</button>
+        <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 -</button>
+        <button id="mapReset" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🎯 Reset</button>
       </div>
-      <div class="world-tree-viewport" style="position:relative; width:100vw; height:calc(100vh - 120px); overflow:hidden; cursor:grab; touch-action:none;">
+      <div class="world-tree-viewport" style="position:relative; width:100vw; height:100vh; overflow:hidden; cursor:grab; touch-action:none;">
         <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:5600px; height:1200px; transform-origin:0 0;">
           <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
           <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
@@ -11851,7 +11841,7 @@ class UIManager {
 
     if (!enemies.length) {
       this.enemyPositionsCache = [];
-      if (typeof StageManager !== 'undefined' && StageManager.generateLevel) {
+      if (state.stageState?.inActiveLevel && typeof StageManager !== 'undefined' && StageManager.generateLevel) {
         const lvl = state.stageState?.level || 1;
         StageManager.generateLevel(lvl);
         return;
