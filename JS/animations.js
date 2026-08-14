@@ -1436,7 +1436,7 @@ class RetroDodgeAnimation {
     // Coordinate overlapping animations on the card
     const origTransform = cardElement.dataset.originalTransform !== undefined
       ? cardElement.dataset.originalTransform
-      : (cardElement.style.transform || 'translate(-50%, -50%)');
+      : (cardElement.style.transform || '');
 
     if (cardElement.dataset.originalTransform === undefined) {
       cardElement.dataset.originalTransform = origTransform;
@@ -1542,7 +1542,8 @@ class RetroDodgeAnimation {
         const progress = Math.min(1, elapsed / slideDuration);
 
         // Move horizontally and fade out
-        cardElement.style.transform = `${origTransform} translateX(${slideDistance * progress}px)`;
+        const baseTx = origTransform ? `${origTransform} ` : '';
+        cardElement.style.transform = `${baseTx}translateX(${slideDistance * progress}px)`;
         cardElement.style.opacity = 1 - progress;
 
         if (progress < 1) {
@@ -2561,7 +2562,7 @@ class RetroComboFinisherAnimation {
     // Coordinate overlapping animations on the card
     const origTransform = cardElement.dataset.originalTransform !== undefined
       ? cardElement.dataset.originalTransform
-      : (cardElement.style.transform || 'translate(-50%, -50%)');
+      : (cardElement.style.transform || '');
 
     if (cardElement.dataset.originalTransform === undefined) {
       cardElement.dataset.originalTransform = origTransform;
@@ -2594,12 +2595,13 @@ class RetroComboFinisherAnimation {
     }, 1000);
 
     // 2. Snappy Card Impact Bounce
+    const baseTx = origTransform ? `${origTransform} ` : '';
     cardElement.style.transition = 'none';
     cardElement.style.willChange = 'transform';
-    cardElement.style.transform = `${origTransform} scale(1.22) translateY(20px)`;
+    cardElement.style.transform = `${baseTx}scale(1.22) translateY(20px)`;
 
     setTimeout(() => {
-      cardElement.style.transform = `${origTransform} scale(0.9) translateY(-10px)`;
+      cardElement.style.transform = `${baseTx}scale(0.9) translateY(-10px)`;
       setTimeout(() => {
         resetCard();
       }, 120);

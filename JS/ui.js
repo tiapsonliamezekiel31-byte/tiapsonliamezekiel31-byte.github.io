@@ -6333,8 +6333,13 @@ class UIManager {
         const taskId = card.dataset.id;
         if (!taskId) return;
 
-        const timeModeDailies = !!state.systemState?.taskListFilters?.timeModeDailies;
-        if (taskType === 'daily' && !timeModeDailies) return;
+        if (taskType === 'daily') {
+          const timeModeDailies = !!state.systemState?.taskListFilters?.timeModeDailies;
+          if (!timeModeDailies) return;
+        } else if (taskType === 'todo') {
+          const todoJoystickMode = state.systemState?.taskListFilters?.todoJoystickMode || 'done';
+          if (todoJoystickMode !== 'time') return;
+        }
 
         const task = TaskManager.getTaskById(taskId);
         if (task) {
@@ -11859,9 +11864,12 @@ class UIManager {
     if (!enemies.length) {
       this.enemyPositionsCache = [];
       if (state.stageState?.inActiveLevel && typeof StageManager !== 'undefined' && StageManager.generateLevel) {
-        const lvl = state.stageState?.level || 1;
-        StageManager.generateLevel(lvl);
-        return;
+        const hasWorldMap = !!document.querySelector('.world-map-container');
+        if (!hasWorldMap) {
+          const lvl = state.stageState?.level || 1;
+          StageManager.generateLevel(lvl);
+          return;
+        }
       }
       layer.innerHTML = '<div class="enemy-empty">No enemies yet</div>';
       return;
