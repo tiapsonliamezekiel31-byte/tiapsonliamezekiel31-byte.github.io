@@ -675,16 +675,17 @@ class TaskManager {
 
     state.systemState.runStats.tasksCompleted++;
 
-    // Ultra Task Boss Instant Damage: deals 50% of Player Max AP directly to active enemy/boss
+    // Ultra Task Boss Instant Damage: deals 50% of Player Max AP directly to active boss/miniboss
     if (daily.difficulty === 'Ultra') {
       const maxAp = state.playerState?.maxAp || 100;
       const ultraDmg = Math.round(maxAp * 0.5);
       if (typeof StageManager !== 'undefined' && StageManager.getAliveEnemies) {
         const enemies = StageManager.getAliveEnemies();
-        if (enemies.length > 0) {
+        const isBossOrMinibossLevel = enemies.some(e => e.isBoss || e.isMiniboss) || (state.stageState?.level % 5 === 0);
+        if (enemies.length > 0 && isBossOrMinibossLevel) {
           enemies[0].takeDamage(ultraDmg);
           if (typeof FloatingDamageNumber !== 'undefined') {
-            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `ULTRA STRIKE! -${ultraDmg} HP ⚡`, { color: '#ff0055', scale: 1.5 });
+            FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, `-${ultraDmg}`, { color: '#ff0055', scale: 0.85 });
           }
         }
       }
