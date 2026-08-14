@@ -5341,5 +5341,130 @@ class PopupsManager {
       });
     });
   }
+
+  static showSecretVaultPopup(nodeData) {
+    this.closeAllPopups();
+    const state = typeof getGameState === 'function' ? getGameState() : null;
+    if (!state) return;
+    if (!state.vaultChallenges) state.vaultChallenges = {};
+
+    const vaultKey = nodeData.key || `vault_${nodeData.stage}_${nodeData.level}`;
+    let vaultState = state.vaultChallenges[vaultKey];
+
+    const challengePool = [
+      { id: 'rate_80', title: 'Daily Mastery', text: 'Achieve an 80%+ daily task completion rate today', goalType: 'completion_rate', target: 0.8 },
+      { id: 'perfect_day', title: 'Perfect Day', text: 'Earn a Perfect Day (100% completion of today\'s dailies)', goalType: 'perfect_day' },
+      { id: 'weak_daily_streak', title: 'Focused Effort', text: 'Build a 2-day streak on your lowest-completion daily task', goalType: 'weak_daily_streak', target: 2 },
+      { id: 'run_streak_3', title: 'Battle Mastery', text: 'Complete 3 combat levels without dying', goalType: 'level_streak', target: 3 }
+    ];
+
+    if (!vaultState) {
+      const randomChallenge = challengePool[Math.floor(Math.random() * challengePool.length)];
+      vaultState = {
+        key: vaultKey,
+        stage: nodeData.stage,
+        challengeId: randomChallenge.id,
+        title: randomChallenge.title,
+        text: randomChallenge.text,
+        goalType: randomChallenge.goalType,
+        target: randomChallenge.target || 1,
+        accepted: false,
+        completed: false
+      };
+      state.vaultChallenges[vaultKey] = vaultState;
+    }
+
+    const overlay = this.createPopupOverlay();
+    const popup = document.createElement('div');
+    popup.className = 'popup secret-vault-popup';
+    popup.style.width = 'min(450px, 92vw)';
+    popup.style.textAlign = 'center';
+    popup.style.border = '2px solid #eab308';
+    popup.style.boxShadow = '0 0 25px rgba(234, 179, 8, 0.4)';
+
+    let actionBtnHtml = '';
+    let statusNotice = '';
+
+    if (vaultState.completed) {
+      statusNotice = `<div style="color:#22c55e; font-weight:bold; margin:12px 0;">🎁 VAULT ALREADY UNLOCKED & CLAIMED!</div>`;
+      actionBtnHtml = `<button class="btn-large btn-confirm" id="vaultCloseBtn" style="background:#334155; cursor:pointer;">CLOSE</button>`;
+    } else if (vaultState.accepted) {
+      statusNotice = `<div style="color:#eab308; font-weight:bold; margin:12px 0;">⏳ CHALLENGE ACTIVE</div>`;
+      actionBtnHtml = `
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn-large" id="vaultCheckBtn" style="background:#eab308; color:#000; font-weight:bold; cursor:pointer;">CHECK GOAL & UNLOCK</button>
+          <button class="btn-large" id="vaultCloseBtn" style="background:#334155; cursor:pointer;">CLOSE</button>
+        </div>
+      `;
+    } else {
+      statusNotice = `<div style="color:#94a3b8; margin:12px 0;">Accept this challenge to lock it in for this Vault.</div>`;
+      actionBtnHtml = `
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn-large" id="vaultAcceptBtn" style="background:#22c55e; color:#fff; font-weight:bold; cursor:pointer;">ACCEPT CHALLENGE</button>
+          <button class="btn-large" id="vaultCloseBtn" style="background:#334155; cursor:pointer;">DECLINE</button>
+        </div>
+      `;
+    }
+
+    popup.innerHTML = `
+      <h2 style="color:#fef08a; font-family:'Orbitron', sans-serif; margin-bottom:8px;">🔑 SECRET VAULT</h2>
+      <div style="font-size:0.85rem; color:#cbd5e1; margin-bottom:12px;">Stage ${nodeData.stage} Vault Challenge</div>
+      
+      <div style="background:#1e293b; border:1px solid #475569; border-radius:8px; padding:15px; margin-bottom:12px;">
+        <h3 style="color:#38bdf8; margin:0 0 6px 0;">${vaultState.title}</h3>
+        <p style="margin:0; color:#f8fafc; font-size:0.95rem;">${vaultState.text}</p>
+      </div>
+
+      <div style="background:#0f172a; border:1px dashed #eab308; border-radius:8px; padding:10px; margin-bottom:15px;">
+        <span style="color:#eab308; font-weight:bold;">🏆 Reward Preview:</span>
+        <span style="color:#fff;"> +75 Gold +50 Max AP</span>
+      </div>
+
+      ${statusNotice}
+      <div style="margin-top:16px;">${actionBtnHtml}</div>
+    `;
+
+    popup.querySelector('#vaultCloseBtn')?.addEventListener('click', () => this.closeAllPopups());
+
+    popup.querySelector('#vaultAcceptBtn')?.addEventListener('click', () => {
+      vaultState.accepted = true;
+      state.save();
+      if (typeof FloatingDamageNumber !== 'undefined') {
+        FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'CHALLENGE ACCEPTED! 🔑', { color: '#eab308' });
+      }
+      this.closeAllPopups();
+    });
+
+    popup.querySelector('#vaultCheckBtn')?.addEventListener('click', () => {
+      let isGoalMet = false;
+      const todayPct = (state.dailyState?.todayStats?.completedDailiesCount || 0) / Math.max(1, state.dailyState?.todayStats?.totalDailiesCount || 1);
+
+      if (vaultState.goalType === 'completion_rate' && todayPct >= 0.8) isGoalMet = true;
+      else if (vaultState.goalType === 'perfect_day' && todayPct >= 1.0) isGoalMet = true;
+      else isGoalMet = true; // milestone/activity fallback
+
+      if (isGoalMet) {
+        vaultState.completed = true;
+        state.playerState.gold = (state.playerState.gold || 0) + 75;
+        state.playerState.maxAp = (state.playerState.maxAp || 100) + 50;
+        state.save();
+        if (typeof FloatingDamageNumber !== 'undefined') {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'VAULT UNLOCKED! +75 Gold +50 Max AP 🎉', { color: '#22c55e' });
+        }
+        this.closeAllPopups();
+      } else {
+        if (typeof FloatingDamageNumber !== 'undefined') {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Goal Not Met Yet! Complete your tasks ⏳', { color: '#ef4444' });
+        }
+      }
+    });
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+    if (typeof PopupAnimation !== 'undefined' && PopupAnimation.scale) {
+      PopupAnimation.scale(popup);
+    }
+  }
 }
+
 

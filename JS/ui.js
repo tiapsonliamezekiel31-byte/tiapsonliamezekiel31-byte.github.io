@@ -11452,6 +11452,36 @@ class UIManager {
           mapLines.push({ from: nodeId, to: subId, isMain: false });
         }
 
+        // Secret Vault branch (on non-boss levels)
+        if (!isBoss && Math.random() < 0.3) {
+          const side = (Math.random() > 0.5) ? 1 : -1;
+          const vaultKey = `${stg.stage}V_${lvl}`;
+          const vaultId = `vault_${vaultKey}`;
+          
+          const vx = x + side * (110 + Math.random() * 30);
+          const vy = y + (20 + Math.random() * 20);
+
+          mapNodes.push({
+            id: vaultId,
+            key: vaultKey,
+            stage: stg.stage,
+            variant: 'V',
+            level: 1,
+            name: 'Secret Vault',
+            icon: '🔑',
+            x: vx, y: vy,
+            isMain: false,
+            isMiniboss: false,
+            isVault: true,
+            isBoss: false,
+            bossName: null,
+            color: '#eab308',
+            maxLevels: 1
+          });
+
+          mapLines.push({ from: nodeId, to: vaultId, isMain: false });
+        }
+
         currentY -= 150; // Move up for the next level
       }
     });
@@ -11488,12 +11518,12 @@ class UIManager {
       <div class="world-map-header" style="z-index:10; pointer-events:auto;">
         <h2 style="margin:0 0 4px 0; color:#ffd700; font-family:'Orbitron', sans-serif; font-size:1.6rem; text-shadow:0 0 15px rgba(255,215,0,0.5);">🌐 WORLD BRANCHING MAP</h2>
         <div class="world-map-tabs" style="display:flex; gap:8px; justify-content:center; margin: 6px 0;">
-          <button id="mapTabDailies" style="background:#3b82f6; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">📋 Dailies</button>
-          <button id="mapTabTodos" style="background:#8b5cf6; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">✅ Todos</button>
-          <button id="mapTabInventory" style="background:#f59e0b; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🎒 Inventory</button>
-          <button id="mapTabShop" style="background:#10b981; color:#fff; border:none; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px;">🛒 Shop</button>
+          <button id="mapTabDailies" style="background:#3b82f6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">📋 Dailies</button>
+          <button id="mapTabTodos" style="background:#8b5cf6; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">✅ Todos</button>
+          <button id="mapTabInventory" style="background:#f59e0b; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🎒 Inventory</button>
+          <button id="mapTabShop" style="background:#10b981; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:13px; box-shadow: 0 2px 6px rgba(0,0,0,0.4);">🛒 Shop</button>
         </div>
-        <p style="margin:0 0 8px 0; font-size:0.85rem; color:#94a3b8;">Pinch/scroll to zoom out/in • Drag to pan • Side paths hold Minibosses</p>
+        <p style="margin:0 0 8px 0; font-size:0.85rem; color:#94a3b8;">Pinch/scroll to zoom out/in • Drag to pan • Side paths hold Minibosses & Secret Vaults 🔑</p>
         <div class="world-map-controls" style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
           <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 +</button>
           <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:4px 12px; border-radius:4px; cursor:pointer;">🔍 -</button>
@@ -11553,7 +11583,10 @@ class UIManager {
       let shapeStyle = 'border-radius:50%;'; // Normal Circle
       let shapeSymbol = '⚪';
       
-      if (node.isShop) {
+      if (node.isVault) {
+        shapeStyle = 'clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); border-radius:0;'; // Pentagon / Vault Shield
+        shapeSymbol = '🔑';
+      } else if (node.isShop) {
         shapeStyle = 'border-radius:4px;'; // Square
         shapeSymbol = '🟩';
       } else if (node.isMiniboss) {
@@ -11564,7 +11597,7 @@ class UIManager {
         shapeSymbol = '🛑';
       }
 
-      const label = isLocked ? '🔒' : (node.isShop ? '🛒' : (node.isMiniboss ? '🔷' : (node.isBoss ? '🛑' : `L${node.level}`)));
+      const label = isLocked ? '🔒' : (node.isVault ? '🔑' : (node.isShop ? '🛒' : (node.isMiniboss ? '🔷' : (node.isBoss ? '🛑' : `L${node.level}`))));
       const bg = isLocked ? 'rgba(30, 41, 59, 0.95)' : (isLevelCleared ? color + '40' : 'rgba(15, 23, 42, 0.96)');
       const borderColor = isCurrent ? '#fff' : color;
 
@@ -11579,6 +11612,7 @@ class UIManager {
              data-node-name="${node.name}"
              data-is-boss="${node.isBoss}"
              data-is-miniboss="${node.isMiniboss}"
+             data-is-vault="${node.isVault || false}"
              data-is-locked="${isLocked}"
              data-color="${color}"
              ${isLocked ? 'disabled' : ''}
@@ -11612,6 +11646,20 @@ class UIManager {
     mapContainer.querySelector('#mapZoomIn')?.addEventListener('click', () => { scale = Math.min(2.0, scale + 0.15); updateTransform(); });
     mapContainer.querySelector('#mapZoomOut')?.addEventListener('click', () => { scale = Math.max(0.35, scale - 0.15); updateTransform(); });
     mapContainer.querySelector('#mapReset')?.addEventListener('click', () => { scale = 0.85; panX = (window.innerWidth - 1200 * scale) / 2; panY = 20; updateTransform(); });
+
+    // Tab buttons event listeners
+    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showDailiesTable === 'function') PopupsManager.showDailiesTable(); 
+    });
+    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBulkAddTodo === 'function') PopupsManager.showBulkAddTodo(); 
+    });
+    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSatchel === 'function') PopupsManager.showSatchel(); 
+    });
+    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showShop === 'function') PopupsManager.showShop(); 
+    });
 
     // Wheel zoom
     viewport.addEventListener('wheel', (e) => {
@@ -11679,10 +11727,18 @@ class UIManager {
 
     viewport.addEventListener('touchend', () => { isDragging = false; });
 
-    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showDailyTasks) PopupsManager.showDailyTasks(); });
-    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showTodosModal) PopupsManager.showTodosModal(); });
-    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { if (typeof InventoryManager !== 'undefined' && InventoryManager.showGridPopup) InventoryManager.showGridPopup(); });
-    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { if (typeof PopupsManager !== 'undefined' && PopupsManager.showShop) PopupsManager.showShop(); });
+    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showDailiesTable === 'function') PopupsManager.showDailiesTable(); 
+    });
+    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBulkAddTodo === 'function') PopupsManager.showBulkAddTodo(); 
+    });
+    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSatchel === 'function') PopupsManager.showSatchel(); 
+    });
+    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { 
+      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showShop === 'function') PopupsManager.showShop(); 
+    });
 
     // Attach click events to circular node buttons
     mapContainer.querySelectorAll('.stage-node-circle').forEach(btn => {
@@ -11698,12 +11754,22 @@ class UIManager {
           stage: Number(btn.dataset.stage),
           variant: btn.dataset.variant,
           level: Number(btn.dataset.level),
+          key: btn.dataset.nodeKey,
           bossName: btn.dataset.bossOverride || null,
           nodeName: btn.dataset.nodeName,
           isBoss: btn.dataset.isBoss === 'true',
           isMiniboss: btn.dataset.isMiniboss === 'true',
+          isVault: btn.dataset.isVault === 'true',
           color: btn.dataset.color
         };
+
+        if (nodeData.isVault) {
+          if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSecretVaultPopup === 'function') {
+            PopupsManager.showSecretVaultPopup(nodeData);
+          }
+          return;
+        }
+
         UIManager.showMapNodePopup(nodeData);
       });
     });
