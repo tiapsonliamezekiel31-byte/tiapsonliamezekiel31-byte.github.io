@@ -2304,23 +2304,23 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   background: #111422;
-  padding: 6px 8px 5px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 8px 12px 7px;
+  border: 1.5px solid rgba(255, 255, 255, 0.16);
   border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.6);
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.7);
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .daily-top-stat-pill:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 215, 106, 0.4);
+  border-color: rgba(255, 215, 106, 0.5);
 }
 
 .daily-top-stat-icon {
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1;
 }
 
@@ -2333,16 +2333,16 @@ body::before {
 
 .daily-top-stat-label {
   font-family: 'Orbitron', monospace;
-  font-size: 7px;
+  font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.8px;
   color: #94a3b8;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .daily-top-stat-val {
   font-family: 'Orbitron', monospace;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
   letter-spacing: 0.5px;
   line-height: 1;
@@ -2352,28 +2352,28 @@ body::before {
 
 /* AP is the Hero & Biggest */
 .daily-top-stat-pill.stat-ap-hero {
-  flex: 1.35;
-  padding: 8px 12px 6px;
+  flex: 1.4;
+  padding: 10px 16px 8px;
   background: #171624;
-  border: 1.5px solid rgba(255, 215, 106, 0.45);
+  border: 2px solid rgba(255, 215, 106, 0.55);
   border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.7);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.8);
 }
 
 .daily-top-stat-pill.stat-ap-hero .daily-top-stat-icon {
-  font-size: 17px;
+  font-size: 22px;
 }
 
 .daily-top-stat-pill.stat-ap-hero .daily-top-stat-label {
-  font-size: 8px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #fbbf24;
   letter-spacing: 1px;
 }
 
 .daily-top-stat-pill.stat-ap-hero .daily-top-stat-val {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 950;
   color: #ffd700;
 }
@@ -11907,11 +11907,12 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 }
 
 /* =========================================================================
-   FLOATING BOTTOM JOYSTICK MODE TOGGLE
+   FLOATING TOP JOYSTICK MODE TOGGLE
    ========================================================================= */
 .nemesis-joystick-container {
   position: fixed;
-  bottom: 24px;
+  top: 60px;
+  bottom: auto;
   left: 50%;
   transform: translateX(-50%);
   z-index: 19999;
