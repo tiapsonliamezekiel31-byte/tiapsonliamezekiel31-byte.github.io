@@ -6626,10 +6626,10 @@ class UIManager {
         board.classList.add('daily-heartbeat-jitter');
       }
 
-      // Mini vibration
+      // Stronger tactile heartbeat vibration
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
-          navigator.vibrate(15);
+          navigator.vibrate([45, 30, 45]);
         } catch (e) {}
       }
 
