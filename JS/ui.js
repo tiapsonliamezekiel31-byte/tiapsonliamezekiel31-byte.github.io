@@ -6613,9 +6613,17 @@ class UIManager {
         return;
       }
 
-      // Low sound every beat instead of saturation
+      // Low sound every beat
       if (window.SoundManager) {
         try { SoundManager.play('heartbeat'); } catch (e) {}
+      }
+
+      // Micro-camera shake (Option 7)
+      const board = dailiesPanel.querySelector('.daily-board') || dailiesPanel;
+      if (board) {
+        board.classList.remove('daily-heartbeat-jitter');
+        void board.offsetWidth;
+        board.classList.add('daily-heartbeat-jitter');
       }
 
       // Mini vibration
@@ -6635,17 +6643,17 @@ class UIManager {
         }
       } catch (e) {}
 
-      // Progress from initial base (500ms) to regular 1000ms (1 sec) at full run completion
-      const targetBase = 500 + (1000 - 500) * completionRatio;
-      // Positive random offset (+0 to +1500ms / +1.5s) at 0 completion, with maximum value approaching 0 at 100% completion
+      // Minimum 1000ms (1 sec) base interval no matter completion rate
+      const baseInterval = 1000;
+      // Chinese water torture random offset (+0 to +1500ms / +1.5s) on top of 1s base, decaying to 0 at 100% completion
       const maxRandomOffset = 1500 * (1 - completionRatio);
       const randomOffset = Math.random() * maxRandomOffset;
-      const nextDelay = Math.round(targetBase + randomOffset);
+      const nextDelay = Math.round(baseInterval + randomOffset);
 
       this._dailyHeartbeatTimer = setTimeout(triggerPulse, nextDelay);
     };
 
-    this._dailyHeartbeatTimer = setTimeout(triggerPulse, 500);
+    this._dailyHeartbeatTimer = setTimeout(triggerPulse, 1000);
   }
 
   static stopDailyHeartbeat() {
@@ -6655,7 +6663,8 @@ class UIManager {
     }
     const dailiesPanel = document.getElementById('dailiesPanel');
     if (dailiesPanel) {
-      dailiesPanel.classList.remove('screen-heartbeat-pulse');
+      const board = dailiesPanel.querySelector('.daily-board') || dailiesPanel;
+      if (board) board.classList.remove('daily-heartbeat-jitter');
     }
   }
 
