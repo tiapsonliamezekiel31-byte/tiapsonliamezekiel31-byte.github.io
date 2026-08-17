@@ -6606,7 +6606,7 @@ class UIManager {
   static startDailyHeartbeat() {
     this.stopDailyHeartbeat();
 
-    const checkSpinAndPulse = () => {
+    const updateGalaxySpinSpeed = () => {
       const dailiesPanel = document.getElementById('dailiesPanel');
       if (!dailiesPanel || !dailiesPanel.classList.contains('open')) {
         this.stopDailyHeartbeat();
@@ -6625,37 +6625,39 @@ class UIManager {
         }
       } catch (e) {}
 
-      // Transition smoothly from jittery to calm, silky smooth spin on completion
-      if (isComplete || completionRatio >= 0.99) {
-        dailiesPanel.classList.add('daily-spin-smooth');
-      } else {
-        dailiesPanel.classList.remove('daily-spin-smooth');
+      // Uniform target duration at 100% is 30s
+      const uniformDuration = 30;
+
+      if (isComplete || completionRatio >= 0.999) {
+        // Uniform stable spin speed
+        dailiesPanel.style.setProperty('--daily-galaxy-spin-duration', `${uniformDuration}s`);
+        this._dailyHeartbeatTimer = setTimeout(updateGalaxySpinSpeed, 2000);
+        return;
       }
 
-      // Soft haptic feedback pulse without whole screen flashing
+      // Smooth with random varying speeds, variance shrinks towards 0 as completion increases
+      const speedVariance = 18 * (1 - completionRatio); // Up to ±18s variation when incomplete
+      const randomShift = (Math.random() * 2 - 1) * speedVariance;
+      const currentDuration = Math.max(6, Math.round((uniformDuration + randomShift) * 10) / 10);
+
+      dailiesPanel.style.setProperty('--daily-galaxy-spin-duration', `${currentDuration}s`);
+
+      // Soft haptic feedback
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
           navigator.vibrate(10);
         } catch (e) {}
       }
 
-      // If already complete, gently pulse or stay regular
-      if (isComplete) {
-        this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, 800);
-        return;
-      }
+      // Shift interval also tightens from randomized to uniform
+      const baseInterval = 1200;
+      const intervalVariance = 800 * (1 - completionRatio);
+      const nextDelay = Math.max(400, Math.round(baseInterval + (Math.random() * 2 - 1) * intervalVariance));
 
-      // Base 500ms (0.5s)
-      const baseInterval = 500;
-      // Irregular offset varies +- 500ms at 0 completion, smoothing out as completion approaches
-      const maxRandomOffset = 500 * (1 - completionRatio);
-      const randomOffset = (Math.random() * 2 - 1) * maxRandomOffset;
-      const nextDelay = Math.max(150, Math.round(baseInterval + randomOffset));
-
-      this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, nextDelay);
+      this._dailyHeartbeatTimer = setTimeout(updateGalaxySpinSpeed, nextDelay);
     };
 
-    this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, 500);
+    this._dailyHeartbeatTimer = setTimeout(updateGalaxySpinSpeed, 300);
   }
 
   static stopDailyHeartbeat() {
@@ -6665,7 +6667,7 @@ class UIManager {
     }
     const dailiesPanel = document.getElementById('dailiesPanel');
     if (dailiesPanel) {
-      dailiesPanel.classList.remove('screen-heartbeat-pulse');
+      dailiesPanel.style.removeProperty('--daily-galaxy-spin-duration');
     }
   }
 
