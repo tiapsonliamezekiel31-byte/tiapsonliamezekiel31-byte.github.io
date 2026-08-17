@@ -1949,6 +1949,9 @@ body::before {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+  background: #0b0d13 !important;
+  background-color: #0b0d13 !important;
+  background-image: none !important;
 }
 
 .right-tab.open .tab-header {
@@ -2588,8 +2591,12 @@ body::before {
   position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
-  padding: 10px;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px 10px 40px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .daily-panel-summary {
@@ -3290,20 +3297,9 @@ body::before {
 }
 
 .task-card-todo {
-  padding: 8px 8px 7px;
-  gap: 4px;
-  position: absolute;
-  width: clamp(156px, 20vw, 220px);
-  /* height is now dynamic to allow subtasks to expand */
-  overflow: visible;
-  cursor: grab;
-  user-select: none;
-  touch-action: none !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  z-index: 500;
-  transition: left 0.15s ease, top 0.15s ease;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .task-card-todo.dragging {
@@ -14812,6 +14808,482 @@ body:has(.popup-overlay[style*="display: block"]) #minimizedHudDock {
   align-items: center;
   gap: 45px;
   padding: 20px 0 80px 0;
+}
+
+/* ============================================================
+   REVAMPED TO-DOS CARD LIST & GESTURES (SOLID COLORS)
+   ============================================================ */
+
+#todosPanel,
+#todosPanel.open,
+#todosPanel.right-tab,
+.pull-tab.right-tab#todosPanel,
+.right-tab#todosPanel,
+#todosPanel .tab-content,
+#todosList,
+.todo-board {
+  background: #0d0f14 !important;
+  background-color: #0d0f14 !important;
+  background-image: none !important;
+  opacity: 1 !important;
+}
+
+#todosPanel::before,
+#todosPanel::after,
+#todosList::before,
+#todosList::after {
+  display: none !important;
+  content: none !important;
+}
+
+.todo-board {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px 10px 40px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #0d0f14 !important;
+  background-color: #0d0f14 !important;
+  background-image: none !important;
+  color: #f1f5f9;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Empty State */
+.todo-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+  color: #64748b;
+  gap: 8px;
+}
+
+.todo-empty-icon {
+  font-size: 36px;
+  opacity: 0.7;
+}
+
+.todo-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #94a3b8;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.todo-empty-sub {
+  font-size: 12px;
+  color: #64748b;
+  max-width: 240px;
+}
+
+/* Deadline Section Groups */
+.todo-deadline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.todo-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  background: #151821;
+  border-left: 3px solid var(--group-accent, #64748b);
+  border-radius: 4px;
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #e2e8f0;
+  text-transform: uppercase;
+}
+
+.todo-group-header .group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.todo-group-count {
+  font-size: 9px;
+  background: #242938;
+  color: #94a3b8;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.todo-group-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-height: 20px;
+}
+
+/* Swipe Wrapper & Swipe Delete Background */
+.todo-card-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  touch-action: pan-y;
+  width: 100%;
+  transition: border-top 0.15s ease;
+}
+
+.todo-card-wrapper.drag-over {
+  border-top: 2px solid #3b82f6;
+}
+
+.todo-swipe-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #dc2626;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 18px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border-radius: 8px;
+  z-index: 1;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Main To-Do Card */
+.todo-card-v2 {
+  position: relative;
+  z-index: 2;
+  background: #181b24;
+  border: 1.5px solid var(--attr-color, #475569);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, opacity 0.2s ease, border-color 0.15s ease;
+  user-select: text;
+  cursor: default;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.todo-card-v2.completed {
+  opacity: 0.45;
+}
+
+.todo-card-v2.is-swiping {
+  transition: none !important;
+}
+
+.todo-card-v2.is-dragging {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+/* Difficulty solid intensities */
+.todo-card-v2.diff-Easy {
+  background: #141722;
+  border-color: var(--attr-color, #334155);
+  border-width: 1.5px;
+}
+
+.todo-card-v2.diff-Medium {
+  background: #181c28;
+  border-color: var(--attr-color, #64748b);
+  border-width: 2px;
+}
+
+.todo-card-v2.diff-Hard {
+  background: #1e1926;
+  border-color: var(--attr-color, #e11d48);
+  border-width: 2.5px;
+}
+
+.todo-card-v2.diff-Ultra {
+  background: #090a10;
+  border-color: #f8fafc;
+  border-width: 2.5px;
+}
+
+/* Hold Progress Fill Overlay */
+.todo-card-v2 .hold-progress-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%;
+  background: var(--attr-color, #f59e0b);
+  opacity: 0.3;
+  pointer-events: none;
+  border-radius: 6px;
+  z-index: 10;
+  transition: width 0s linear;
+}
+
+.todo-card-v2.is-holding .hold-progress-overlay {
+  width: 100%;
+  transition: width 850ms cubic-bezier(0.2, 0, 0.3, 1);
+}
+
+/* Badges Header Row */
+.todo-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.todo-badges-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.todo-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 13px;
+  cursor: grab;
+  padding: 0 4px;
+  user-select: none;
+  touch-action: none;
+  transition: color 0.15s;
+}
+
+.todo-drag-handle:hover {
+  color: #cbd5e1;
+}
+
+.todo-card-delete-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.15s, color 0.15s;
+}
+
+.todo-card-delete-btn:hover {
+  background: #3f1212;
+  color: #ef4444;
+}
+
+.todo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 800;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-family: 'Orbitron', monospace;
+  box-sizing: border-box;
+}
+
+.todo-badge-attr {
+  background: var(--attr-color, #475569);
+  color: var(--attr-text-color, #ffffff);
+}
+
+.todo-badge-diff {
+  background: #232838;
+  color: #cbd5e1;
+  border: 1px solid #3b4256;
+}
+
+.todo-badge-oath {
+  background: #991b1b;
+  color: #fef2f2;
+  border: 1px solid #dc2626;
+}
+
+.todo-badge-subtasks {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
+.todo-badge-deadline {
+  background: #232838;
+  color: #e2e8f0;
+  cursor: pointer;
+  border: 1px solid #3b4256;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.todo-badge-deadline:hover {
+  background: #333a4f;
+  border-color: #64748b;
+}
+
+.todo-badge-deadline.overdue {
+  background: #7f1d1d;
+  color: #fecaca;
+  border-color: #ef4444;
+}
+
+/* Card Title Editable */
+.todo-title-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.4;
+  outline: none;
+  min-height: 22px;
+  word-break: break-word;
+  padding: 3px 5px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  cursor: text;
+}
+
+.todo-title-text:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.todo-title-text:focus {
+  background: #222736;
+  border-bottom: 2px solid var(--attr-color, #38bdf8);
+}
+
+/* Subtasks List */
+.todo-subtasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+  padding-left: 6px;
+  border-left: 2.5px solid #283042;
+}
+
+.todo-subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #11141c;
+  border: 1px solid #1e2433;
+}
+
+.todo-subtask-item.completed {
+  opacity: 0.55;
+}
+
+.todo-subtask-item.completed .todo-subtask-text {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+.todo-subtask-check {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--attr-color, #3b82f6);
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.todo-subtask-text {
+  flex: 1 1 auto;
+  color: #e2e8f0;
+  outline: none;
+  min-height: 18px;
+  word-break: break-word;
+  padding: 1px 4px;
+  border-radius: 3px;
+  cursor: text;
+}
+
+.todo-subtask-text:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.todo-subtask-text:focus {
+  background: #222736;
+}
+
+.todo-subtask-delete-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.todo-subtask-delete-btn:hover {
+  color: #ef4444;
+  background: #2d1818;
+}
+
+/* Undo Snackbar */
+.todo-undo-snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #181c28;
+  border: 1.5px solid #3b4256;
+  border-radius: 8px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #f8fafc;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+  z-index: 999999;
+  font-family: inherit;
+}
+
+.todo-undo-snackbar .undo-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-family: 'Orbitron', monospace;
+  letter-spacing: 0.04em;
+  transition: background 0.15s;
+}
+
+.todo-undo-snackbar .undo-btn:hover {
+  background: #1d4ed8;
 }
 
 

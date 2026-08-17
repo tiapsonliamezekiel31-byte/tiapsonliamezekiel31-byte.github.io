@@ -1363,6 +1363,16 @@ class TaskManager {
     return true;
   }
 
+  static editSubtask(todoId, subtaskId, newName) {
+    const state = getGameState();
+    const todo = state?.dailiesState?.todos?.find(t => t.id === todoId);
+    if (!todo || !todo.subtasks) return false;
+    const subtask = todo.subtasks.find(st => st.id === subtaskId);
+    if (!subtask) return false;
+    subtask.name = newName;
+    return true;
+  }
+
   static getAllTodos() {
     const state = getGameState();
     return [...state.dailiesState.todos];

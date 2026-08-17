@@ -1349,7 +1349,7 @@ class UIManager {
         </select>
       </div>
       <div class="qa-hud-input-row">
-        <textarea id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task... (Shift+Enter for new line, e.g. Task - sub1 - sub2)" autocomplete="off" rows="1"></textarea>
+        <textarea id="quickAddHudInput" class="qa-hud-input" placeholder="Quick add task... (Enter for new line, e.g. Task - sub1 - sub2)" autocomplete="off" rows="1"></textarea>
         <button type="button" id="quickAddHudSubmitBtn" class="qa-hud-submit-btn" title="Add Task">＋</button>
       </div>
     `;
@@ -1571,13 +1571,6 @@ class UIManager {
     inputEl.addEventListener('input', () => {
       inputEl.style.height = 'auto';
       inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
-    });
-    
-    inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmission();
-      }
     });
 
     if (typeof HUDMinimizer !== 'undefined') {
@@ -2464,29 +2457,9 @@ class UIManager {
       <div class="tab-header">
         <h3>TO-DOS</h3>
         <div style="display: flex; align-items: center; gap: 6px;">
-          <select id="todosDifficultyFilter" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
-            <option value="All">All Diff</option>
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-            <option value="Ultra">Ultra</option>
-          </select>
-          <select id="addTodoNoteBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); border-radius: 999px; color: #f5f5f7; cursor: pointer; width: auto; height: auto;">
-            <option value="" disabled selected>＋ Add Note/Sticker</option>
-            <option value="note">＋ Text Note</option>
-            <option value="grid">＋ Grid Board</option>
-            <option value="arrow">＋ Arrow Line</option>
-            <option value="calendar">＋ Calendar</option>
-          </select>
-          <button id="todosEraserBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" style="font-family: inherit; font-size: 8px; padding: 4px 8px; border-radius: 999px; cursor: pointer; width: auto; height: auto;">Eraser: OFF</button>
           <button id="todosShowCompletedBtn" class="btn-add btn-toggle btn-toggle-pill btn-toggle-compact" aria-pressed="false">Completed: off</button>
           <button class="tab-close">✕</button>
         </div>
-      </div>
-      <div class="quick-day-bar" id="quickDayBar">
-        <span class="quick-day-label">⚡ Quick Day:</span>
-        <button id="quickDayBtn" class="quick-day-value">Not set</button>
-        <button id="quickDayClearBtn" class="quick-day-clear" title="Clear quick day">✕</button>
       </div>
       <div class="tab-content todo-board" id="todosList"></div>
     `;
@@ -10044,595 +10017,134 @@ class UIManager {
     };
   }
 
-  static getDefaultTodoLayout(index, metrics, tileSize, hasHeader = false) {
-    const boardWidth = metrics?.width || 800;
-    const boardHeight = metrics?.height || 600;
-    const cardW = tileSize?.width || 180;
-    const cardH = tileSize?.height || 180;
-
-    const cols = Math.max(1, Math.floor((boardWidth - 20) / (cardW + 15)));
-    const col = index % cols;
-    const row = Math.floor(index / cols);
-
-    const xPx = 15 + col * (cardW + 15);
-    const yPx = 15 + row * (cardH + 20);
-
-    const xPct = Math.min(85, (xPx / boardWidth) * 100);
-    const yPct = Math.min(85, (yPx / boardHeight) * 100);
-
-    return { x: xPct, y: yPct };
+  static escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   static positionTodoCards() {
-    // In Orbit mode, node positioning is handled dynamically by updateTodosList() along concentric deadline rings
     return;
   }
 
-  static bindTodoBoardInteractions() {
-    const board = document.getElementById('todosList');
-    if (!board || board.dataset.dragBound === '1') return;
+  static _undoTimeout = null;
 
-    board.dataset.dragBound = '1';
+  static showTodoUndoSnackbar(deletedTodo, originalIndex = 0) {
+    if (!deletedTodo) return;
+    const existing = document.getElementById('todoUndoSnackbar');
+    if (existing) existing.remove();
+    if (this._undoTimeout) clearTimeout(this._undoTimeout);
 
-    board.addEventListener('dblclick', (event) => {
-      const card = event.target.closest('.task-card-todo');
-      if (!card) return;
+    const snackbar = document.createElement('div');
+    snackbar.id = 'todoUndoSnackbar';
+    snackbar.className = 'todo-undo-snackbar';
+    snackbar.innerHTML = `
+      <span>Deleted "${this.escapeHtml(deletedTodo.name || 'To-Do')}"</span>
+      <button type="button" class="undo-btn">UNDO</button>
+    `;
 
-      const todoId = card.dataset.id;
-      if (!todoId) return;
+    document.body.appendChild(snackbar);
 
-      const mode = getGameState().systemState?.taskListFilters?.todoJoystickMode || 'done';
-
-      if (mode === 'done') {
-        const res = TaskManager.completeTodo(todoId);
-        if (res && res.success) {
-          card.style.transition = 'filter 150ms ease, opacity 400ms ease';
-          card.style.filter = 'brightness(10) contrast(1.5)';
-          const rect = card.getBoundingClientRect();
-
-          if (res.isJackpot) {
-            try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
-          }
-          if (res.rewards && res.rewards.ap) {
-            FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false });
-          }
-          if (res.rewards && res.rewards.diamonds) {
-            UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
-          }
-          if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-            RetroTaskCompleteAnimation.play(card);
-          }
-          setTimeout(() => {
-            UIManager.updateTodosList();
-          }, 200);
-          try { getGameState().save(); } catch (e) {}
-          UIManager.renderEnemies();
-        }
-      } else if (mode === 'edit') {
-        if (typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
-          PopupsManager.showEditTodo(todoId);
-        }
-      } else if (mode === 'del') {
-        const todo = TaskManager.getTaskById(todoId);
-        const name = todo?.name || 'this to-do';
-        if (confirm(`Delete "${name}"?`)) {
-          TaskManager.removeTodo(todoId);
-          try { getGameState().save(); } catch (e) {}
-          UIManager.updateTodosList();
-          UIManager.renderEnemies();
-        }
-      }
+    snackbar.querySelector('.undo-btn')?.addEventListener('click', () => {
+      const state = getGameState();
+      if (!state.dailiesState.todos) state.dailiesState.todos = [];
+      const insertAt = Math.min(originalIndex, state.dailiesState.todos.length);
+      state.dailiesState.todos.splice(insertAt, 0, deletedTodo);
+      try { state.save(); } catch (err) {}
+      snackbar.remove();
+      UIManager.updateTodosList();
     });
 
-    board.addEventListener('click', (event) => {
-      const deadlineCard = event.target.closest('.todo-plain-deadline-num, .todo-massive-deadline-left, .todo-deadline-card-badge-top');
-      if (deadlineCard) {
-        event.stopPropagation();
-        event.preventDefault();
-        const todoId = deadlineCard.dataset.todoId;
-        if (todoId && typeof PopupsManager !== 'undefined' && PopupsManager.showQuickDayPicker) {
-          PopupsManager.showQuickDayPicker((newTs) => {
-            TaskManager.editTodo(todoId, { deadline: newTs });
-            UIManager.updateTodosList();
-            try { getGameState().save(); } catch (e) {}
-          });
-        }
-        return;
-      }
-
-      const existingWizard = document.querySelector('.floating-wizard');
-      if (existingWizard) {
-        if (Date.now() - (this.wizardOpenedTime || 0) < 300) {
-          return;
-        }
-        if (!existingWizard.contains(event.target)) existingWizard.remove();
-        return;
-      }
-      const card = event.target.closest('.task-card-todo');
-      if (card && !event.target.closest('.todo-subtask-rect, .subtask-remove')) {
-        document.querySelectorAll('.task-card-todo.selected').forEach(el => el.classList.remove('selected'));
-        card.classList.add('selected');
-      }
-    });
-
-    board.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0) return;
-
-      if (UIManager.isEraserActive) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        const eraseAt = (x, y) => {
-          const target = document.elementFromPoint(x, y);
-          if (!target) return;
-          const card = target.closest('.task-card-todo');
-          const note = target.closest('.todo-note-card');
-          if (card) {
-            const todoId = card.dataset.id;
-            const state = getGameState();
-            const idx = state.dailiesState.todos.findIndex(t => t.id === todoId);
-            if (idx !== -1) {
-              state.dailiesState.todos.splice(idx, 1);
-              try { getGameState().save(); } catch (e) {}
-              UIManager.updateTodosList();
-              try { FloatingDamageNumber.show(x, y, 'Erased ✕', { color: '#ff4d4d' }); } catch (e) {}
-            }
-          } else if (note) {
-            const noteId = note.dataset.noteId;
-            if (noteId) {
-              getGameState().removeTodoNote?.(noteId);
-              try { getGameState().save(); } catch (e) {}
-              UIManager.renderTodoNotes();
-              try { FloatingDamageNumber.show(x, y, 'Erased ✕', { color: '#ff4d4d' }); } catch (e) {}
-            }
-          }
-        };
-
-        eraseAt(event.clientX, event.clientY);
-
-        const onEraserMove = (moveEv) => {
-          eraseAt(moveEv.clientX, moveEv.clientY);
-        };
-        const onEraserUp = () => {
-          document.removeEventListener('pointermove', onEraserMove);
-          document.removeEventListener('pointerup', onEraserUp);
-        };
-        document.addEventListener('pointermove', onEraserMove);
-        document.addEventListener('pointerup', onEraserUp);
-        return;
-      }
-
-      if (UIManager.isDrawingArrow) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        const boardRect = board.getBoundingClientRect();
-        const startX = event.clientX - boardRect.left + board.scrollLeft;
-        const startY = event.clientY - boardRect.top + board.scrollTop;
-
-        let previewSvg = document.getElementById('arrow-preview-svg');
-        if (!previewSvg) {
-          previewSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          previewSvg.id = 'arrow-preview-svg';
-          previewSvg.style.position = 'absolute';
-          previewSvg.style.pointerEvents = 'none';
-          previewSvg.style.zIndex = '999';
-          previewSvg.style.width = `${board.scrollWidth}px`;
-          previewSvg.style.height = `${board.scrollHeight}px`;
-          previewSvg.style.left = '0';
-          previewSvg.style.top = '0';
-          previewSvg.innerHTML = `
-            <defs>
-              <marker id="preview-arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-gold)" />
-              </marker>
-            </defs>
-            <line id="preview-arrow-line" stroke="var(--accent-gold)" stroke-width="6" marker-end="url(#preview-arrowhead)" />
-          `;
-          board.appendChild(previewSvg);
-        }
-        const line = previewSvg.querySelector('#preview-arrow-line');
-        line.setAttribute('x1', String(startX));
-        line.setAttribute('y1', String(startY));
-        line.setAttribute('x2', String(startX));
-        line.setAttribute('y2', String(startY));
-
-        const onDrawMove = (moveEvent) => {
-          const currentX = moveEvent.clientX - boardRect.left + board.scrollLeft;
-          const currentY = moveEvent.clientY - boardRect.top + board.scrollTop;
-          line.setAttribute('x2', String(currentX));
-          line.setAttribute('y2', String(currentY));
-        };
-
-        const onDrawUp = (upEvent) => {
-          document.removeEventListener('pointermove', onDrawMove);
-          document.removeEventListener('pointerup', onDrawUp);
-          if (previewSvg) previewSvg.remove();
-
-          const endX = upEvent.clientX - boardRect.left + board.scrollLeft;
-          const endY = upEvent.clientY - boardRect.top + board.scrollTop;
-          const dx = endX - startX;
-          const dy = endY - startY;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist > 15) {
-            const width = Math.max(50, Math.round(dist));
-            const height = 40;
-            const xPercent = (startX / Math.max(1, board.scrollWidth)) * 100;
-            const yPercent = (startY / Math.max(1, board.scrollHeight)) * 100;
-            const angle = Math.round(Math.atan2(dy, dx) * 180 / Math.PI);
-
-            const state = getGameState();
-            state.addTodoNote('', { x: xPercent, y: yPercent }, 'arrow', { 
-              width, 
-              height, 
-              direction: String(angle) 
-            });
-            UIManager.renderTodoNotes();
-          }
-
-          UIManager.isDrawingArrow = false;
-          board.classList.remove('drawing-arrow-mode');
-        };
-
-        document.addEventListener('pointermove', onDrawMove);
-        document.addEventListener('pointerup', onDrawUp);
-        return;
-      }
-
-      // Check plus button for adding subtasks (toggles inline subtask field)
-      const addSubtaskPlus = event.target.closest('.btn-add-subtask-plus');
-      if (addSubtaskPlus) {
-        event.stopPropagation();
-        const card = addSubtaskPlus.closest('.task-card-todo');
-        const inlineContainer = card ? card.querySelector('.subtask-add-inline') : null;
-        if (inlineContainer) {
-          const isHidden = inlineContainer.style.display === 'none';
-          inlineContainer.style.display = isHidden ? 'flex' : 'none';
-          if (isHidden) {
-            const input = inlineContainer.querySelector('input');
-            if (input) input.focus();
-          }
-        }
-        return;
-      }
-
-      // Check subtask rectangle double tap
-      const subtaskRect = event.target.closest('.todo-subtask-rect');
-      if (subtaskRect) {
-        if (event.target.closest('.subtask-remove')) {
-          const todoId = subtaskRect.dataset.todoId;
-          const subtaskId = subtaskRect.dataset.subtaskId;
-          if (todoId && subtaskId) {
-            TaskManager.removeSubtask(todoId, subtaskId);
-            try { getGameState().save(); } catch (e) {}
-            UIManager.updateTodosList();
-          }
-          return;
-        }
-
-        const now = Date.now();
-        const lastTap = Number(subtaskRect.dataset.lastTapTime || 0);
-        if (now - lastTap < 350) {
-          subtaskRect.dataset.lastTapTime = '0';
-          const todoId = subtaskRect.dataset.todoId;
-          const subtaskId = subtaskRect.dataset.subtaskId;
-          if (todoId && subtaskId) {
-            TaskManager.toggleSubtask(todoId, subtaskId);
-            try { getGameState().save(); } catch (e) {}
-            UIManager.updateTodosList();
-          }
-        } else {
-          subtaskRect.dataset.lastTapTime = String(now);
-        }
-        return;
-      }
-
-      if (event.target.closest('button, input, textarea, select, label, .todo-subtask-rect, .subtask-add-inline')) return;
-
-      const card = event.target.closest('.task-card-todo');
-      const isNote = event.target.closest('.todo-note-card');
-      if (isNote) return;
-
-      const startX = event.clientX;
-      const startY = event.clientY;
-
-      if (card) {
-        const todoId = card.dataset.id;
-        if (!todoId) return;
-
-        event.preventDefault();
-
-        // Check double tap for completing To-Do (only when clicking the main shape)
-        const targetIsShape = !!event.target.closest('.todo-main-shape');
-        const now = Date.now();
-        const lastTap = Number(card.dataset.lastTapTime || 0);
-        if (targetIsShape && (now - lastTap < 300)) {
-          card.dataset.lastTapTime = '0';
-          
-          const res = TaskManager.completeTodo(todoId);
-          if (res && res.success) {
-            card.style.transition = 'filter 100ms ease, opacity 400ms ease';
-            card.style.filter = 'brightness(10) contrast(1.5)';
-            setTimeout(() => {
-              card.style.filter = '';
-            }, 100);
-
-            UIManager.accelerateBackground(2.0, 2000);
-            if (typeof navigator !== 'undefined' && navigator.vibrate) {
-              try { navigator.vibrate([15, 30, 45]); } catch (e) {}
-            }
-            const rect = card.getBoundingClientRect();
-
-            if (res.isJackpot) {
-              try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
-            }
-            if (res.rewards && res.rewards.ap) {
-              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true });
-            }
-            if (res.rewards && res.rewards.diamonds) {
-              UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
-            }
-            let countUpDelay = 0;
-            if (res.rewards && res.rewards.ap) {
-              const apVal = Math.ceil(res.rewards.ap);
-              countUpDelay = Math.min(1200, Math.max(650, apVal * 25));
-            }
-
-            UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
-              if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                RetroTaskCompleteAnimation.play(card);
-              }
-              setTimeout(() => {
-                UIManager.updateTodosList();
-              }, 200);
-            });
-            try { getGameState().save(); } catch (e) {}
-            UIManager.renderEnemies();
-          }
-          return;
-        }
-        if (targetIsShape) {
-          card.dataset.lastTapTime = String(now);
-        }
-
-        let isDragging = false;
-        const todo = TaskManager.getTaskById(todoId);
-        const isCluster = todo && todo.clusterId;
-        let clusterCards = [];
-        let firstCardTodo = null;
-        let firstCardElement = null;
-
-        if (isCluster) {
-          clusterCards = Array.from(board.querySelectorAll(`.task-card-todo[data-cluster-id="${todo.clusterId}"]`))
-            .sort((a, b) => (Number(a.dataset.clusterIndex) || 0) - (Number(b.dataset.clusterIndex) || 0));
-
-          if (clusterCards.length > 0) {
-            firstCardElement = clusterCards[0];
-            firstCardTodo = TaskManager.getTaskById(firstCardElement.dataset.id);
-          }
-        }
-
-        const leftStyle = card.style.left || '';
-        const topStyle = card.style.top || '';
-        const matchX = leftStyle.match(/calc\(50%\s*([+-]\s*[\d.]+)px\)/);
-        const matchY = topStyle.match(/calc\(50%\s*([+-]\s*[\d.]+)px\)/);
-
-        const boardWidth = board.clientWidth || board.offsetWidth || 800;
-        const boardHeight = board.clientHeight || board.offsetHeight || 600;
-
-        let initX = matchX ? parseFloat(matchX[1].replace(/\s+/g, '')) : (card.offsetLeft - (boardWidth / 2));
-        let initY = matchY ? parseFloat(matchY[1].replace(/\s+/g, '')) : (card.offsetTop - (boardHeight / 2));
-
-        const onTouchMovePrevent = (touchEv) => {
-          if (isDragging && touchEv.cancelable) {
-            touchEv.preventDefault();
-          }
-        };
-
-        const onCardMove = (moveEvent) => {
-          if (moveEvent.pointerId !== event.pointerId) return;
-          if (moveEvent.clientX === 0 && moveEvent.clientY === 0) return;
-
-          const deltaX = moveEvent.clientX - startX;
-          const deltaY = moveEvent.clientY - startY;
-
-          if (!isDragging) {
-            if (Math.hypot(deltaX, deltaY) > 4) {
-              isDragging = true;
-              try { card.setPointerCapture(event.pointerId); } catch (error) { }
-
-              const panel = document.getElementById('todosPanel');
-              if (panel) panel.style.overflow = 'hidden';
-
-              document.addEventListener('touchmove', onTouchMovePrevent, { passive: false });
-
-              this.todoDragState = {
-                todoId,
-                card,
-                board,
-                pointerId: event.pointerId,
-                moved: true
-              };
-
-              card.classList.add('dragging');
-            } else {
-              return;
-            }
-          }
-
-          const scale = this.orbitScale || 1;
-          const currentX = initX + (deltaX / scale);
-          const currentY = initY + (deltaY / scale);
-
-          card.style.left = `calc(50% + ${currentX.toFixed(1)}px)`;
-          card.style.top = `calc(50% + ${currentY.toFixed(1)}px)`;
-        };
-
-        const onCardUp = (upEvent) => {
-          if (upEvent.pointerId !== event.pointerId) return;
-          cleanupCard();
-
-          if (isDragging) {
-            card.classList.remove('dragging');
-            try { card.releasePointerCapture(event.pointerId); } catch (error) { }
-          }
-
-          this.todoDragState = null;
-        };
-
-        const cleanupCard = () => {
-          document.removeEventListener('pointermove', onCardMove);
-          document.removeEventListener('pointerup', onCardUp);
-          document.removeEventListener('pointercancel', onCardUp);
-          document.removeEventListener('touchmove', onTouchMovePrevent);
-        };
-
-        document.addEventListener('pointermove', onCardMove);
-        document.addEventListener('pointerup', onCardUp);
-        document.addEventListener('pointercancel', onCardUp);
-
-      } else {
-        const existingWizard = document.querySelector('.floating-wizard');
-        if (existingWizard && existingWizard.contains(event.target)) return;
-
-        const timer = setTimeout(() => {
-          if (typeof PopupsManager !== 'undefined' && PopupsManager.showAddTodoWizard) {
-            const boardRect = board.getBoundingClientRect();
-            const xPx = event.clientX - boardRect.left + board.scrollLeft;
-            const yPx = event.clientY - boardRect.top + board.scrollTop;
-            const xPercent = (xPx / board.scrollWidth) * 100;
-            const yPercent = (yPx / board.scrollHeight) * 100;
-            PopupsManager.showAddTodoWizard(xPercent, yPercent, xPx, yPx);
-            this.wizardOpenedTime = Date.now();
-          }
-        }, 500);
-
-        const onMove = (moveEvent) => {
-          if (moveEvent.pointerId !== event.pointerId) return;
-          const dist = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-          if (dist > 10) {
-            clearTimeout(timer);
-            cleanup();
-          }
-        };
-
-        const onUp = (upEvent) => {
-          if (upEvent.pointerId !== event.pointerId) return;
-          clearTimeout(timer);
-          cleanup();
-        };
-
-        const cleanup = () => {
-          document.removeEventListener('pointermove', onMove);
-          document.removeEventListener('pointerup', onUp);
-          document.removeEventListener('pointercancel', onUp);
-        };
-
-        document.addEventListener('pointermove', onMove);
-        document.addEventListener('pointerup', onUp);
-        document.addEventListener('pointercancel', onUp);
-      }
-    });
+    this._undoTimeout = setTimeout(() => {
+      snackbar.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      snackbar.style.opacity = '0';
+      snackbar.style.transform = 'translate(-50%, 15px)';
+      setTimeout(() => snackbar.remove(), 300);
+    }, 5000);
   }
 
-  static orbitPanX = 0;
-  static orbitPanY = 0;
-  static orbitScale = 1;
-
   static updateTodosList() {
-    if (this.todoDragState) return;
     try { this.updatePendingDamageDisplay(); } catch (e) { }
     const panel = document.getElementById('todosPanel');
-    if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return; // Skip if hidden on mobile
+    if (panel && !panel.classList.contains('open') && window.innerWidth <= 900) return;
     const todos = TaskManager.getAllTodos();
     const container = document.getElementById('todosList');
-
     if (!container) return;
 
     const showCompleted = !!getGameState().systemState?.taskListFilters?.showCompletedTodos;
-    const diffFilter = UIManager.currentTodoDifficultyFilter || 'All';
     const visibleTodos = todos.filter(todo => {
-      if (diffFilter !== 'All' && todo.difficulty !== diffFilter) {
-        return false;
-      }
-      if (todo.completed && !todo.clusterId) {
-        return showCompleted;
-      }
-      if (todo.clusterId) {
-        const clusterTodos = todos.filter(t => t.clusterId === todo.clusterId);
-        const allCompleted = clusterTodos.every(t => t.completed);
-        if (allCompleted) {
-          return showCompleted;
-        }
-        return !todo.completed || (todo.completed && todo.clusterId);
-      }
+      if (todo.completed) return showCompleted;
       return true;
     });
 
-    const palette = getGameState()?.config?.attributeColors || {};
+    const palette = getGameState()?.config?.attributeColors || {
+      STR: '#ef4444',
+      INT: '#3b82f6',
+      DISC: '#f97316',
+      CREA: '#a855f7',
+      SOC: '#ec4899',
+      CAP: '#eab308',
+      RESP: '#22c55e'
+    };
 
-    const ringBuckets = [[], [], [], [], []];
+    const now = Date.now();
+    const groups = [
+      { id: 'overdue', title: '⚡ Overdue', accent: '#ef4444', todos: [] },
+      { id: 'today', title: '📅 Today', accent: '#eab308', todos: [] },
+      { id: 'upcoming13', title: '🗓️ 1–3 Days', accent: '#3b82f6', todos: [] },
+      { id: 'upcoming47', title: '📆 4–7 Days', accent: '#a855f7', todos: [] },
+      { id: 'later', title: '⏳ Later (>7 Days)', accent: '#64748b', todos: [] },
+      { id: 'no_deadline', title: '♾️ No Deadline', accent: '#475569', todos: [] }
+    ];
 
     visibleTodos.forEach(todo => {
       if (!todo.deadline) {
-        ringBuckets[4].push(todo);
+        groups[5].todos.push(todo);
       } else {
-        const diffMs = todo.deadline - Date.now();
-        const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-        if (days <= 1) ringBuckets[0].push(todo);
-        else if (days <= 3) ringBuckets[1].push(todo);
-        else if (days <= 7) ringBuckets[2].push(todo);
-        else ringBuckets[3].push(todo);
+        const diffMs = Number(todo.deadline) - now;
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (diffMs < 0) {
+          groups[0].todos.push(todo);
+        } else if (days <= 1) {
+          groups[1].todos.push(todo);
+        } else if (days <= 3) {
+          groups[2].todos.push(todo);
+        } else if (days <= 7) {
+          groups[3].todos.push(todo);
+        } else {
+          groups[4].todos.push(todo);
+        }
       }
     });
 
-    const RING_RADII = [95, 175, 255, 335, 415];
-    const nodesData = [];
+    if (visibleTodos.length === 0) {
+      container.innerHTML = `
+        <div class="todo-empty-state">
+          <div class="todo-empty-icon">📝</div>
+          <div class="todo-empty-title">No To-Dos Found</div>
+          <div class="todo-empty-sub">Use the Quick Add bar to create a task!</div>
+        </div>
+      `;
+      this.bindTodoBoardInteractions();
+      return;
+    }
 
-    ringBuckets.forEach((ringTodos, ringIdx) => {
-      const radius = RING_RADII[ringIdx];
-      const count = ringTodos.length;
-      if (count === 0) return;
+    let html = '';
+    groups.forEach(group => {
+      if (group.todos.length === 0) return;
 
-      const angleStep = (2 * Math.PI) / count;
-      const ringAngleOffset = (ringIdx * 0.25) - Math.PI / 2;
+      html += `
+        <div class="todo-deadline-group" data-group-id="${group.id}" style="--group-accent: ${group.accent};">
+          <div class="todo-group-header">
+            <span class="group-title">${group.title}</span>
+            <span class="todo-group-count">${group.todos.length}</span>
+          </div>
+          <div class="todo-group-cards" data-group-id="${group.id}">
+      `;
 
-      ringTodos.forEach((todo, idx) => {
-        const angle = ringAngleOffset + (idx * angleStep);
-        const x = radius * Math.cos(angle);
-        const y = radius * Math.sin(angle);
-
-        const displayName = (todo.name === 'New To-Do') ? '' : (todo.name || '');
-
-        let plainNumText = '∞';
-        let naturalDeadlineText = 'No deadline';
-
-        if (todo.deadline) {
-          const diffMs = todo.deadline - Date.now();
-          const d = new Date(todo.deadline);
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-          const mName = months[d.getMonth()];
-          const dayNum = d.getDate();
-          const hh = String(d.getHours()).padStart(2, '0');
-          const mm = String(d.getMinutes()).padStart(2, '0');
-          naturalDeadlineText = `${mName} ${dayNum}, ${hh}:${mm}`;
-
-          if (diffMs < 0) {
-            plainNumText = '!';
-          } else {
-            const hours = Math.ceil(diffMs / (1000 * 60 * 60));
-            const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-            if (hours <= 24) {
-              plainNumText = `${Math.max(1, hours)}h`;
-            } else {
-              plainNumText = `${days}d`;
-            }
-          }
-        }
-
+      group.todos.forEach(todo => {
         let displayAttr = todo.attribute || 'RESP';
         if (todo.clusterAttributes && typeof todo.clusterAttributes === 'object') {
           let maxVal = -1;
@@ -10643,643 +10155,491 @@ class UIManager {
             }
           }
         }
-        const attrColor = palette[displayAttr] || '#555';
+        const attrColor = palette[displayAttr] || '#64748b';
         const textColor = UIManager.getTextColorForHex(attrColor);
-        const shadeColor = UIManager.shadeColor ? UIManager.shadeColor(attrColor, -20) : attrColor;
-        const shapeClass = this.shapeClassForDifficulty(todo.difficulty);
+        const diff = todo.difficulty || 'Medium';
 
-        const subtaskRects = (todo.subtasks || []).map(st => `
-          <div class="todo-subtask-rect ${st.completed ? 'completed' : ''}" data-todo-id="${todo.id}" data-subtask-id="${st.id}">
-            <span class="subtask-title">${st.name}</span>
-            <button class="subtask-remove" data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Remove">×</button>
+        let deadlineBadgeText = 'No deadline';
+        let isOverdue = false;
+        if (todo.deadline) {
+          const diffMs = Number(todo.deadline) - now;
+          const d = new Date(todo.deadline);
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const mName = months[d.getMonth()];
+          const dayNum = d.getDate();
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mm = String(d.getMinutes()).padStart(2, '0');
+          deadlineBadgeText = `${mName} ${dayNum}, ${hh}:${mm}`;
+
+          if (diffMs < 0) {
+            isOverdue = true;
+            const pastDays = Math.abs(Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+            deadlineBadgeText = `⚠️ Overdue (${pastDays > 0 ? pastDays + 'd' : 'Today'})`;
+          }
+        }
+
+        const subtasks = Array.isArray(todo.subtasks) ? todo.subtasks : [];
+        const completedSubtasks = subtasks.filter(st => st.completed).length;
+        const subtasksBadge = subtasks.length > 0 ? `<span class="todo-badge todo-badge-subtasks" title="Subtask Progress">✓ ${completedSubtasks}/${subtasks.length}</span>` : '';
+
+        const subtasksHtml = subtasks.length > 0 ? `
+          <div class="todo-subtasks-list" data-todo-id="${todo.id}">
+            ${subtasks.map(st => `
+              <div class="todo-subtask-item ${st.completed ? 'completed' : ''}" data-subtask-id="${st.id}" data-todo-id="${todo.id}">
+                <input type="checkbox" class="todo-subtask-check" ${st.completed ? 'checked' : ''} data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Toggle subtask" />
+                <span class="todo-subtask-text" contenteditable="true" spellcheck="false" data-todo-id="${todo.id}" data-subtask-id="${st.id}">${this.escapeHtml(st.name || '')}</span>
+                <button type="button" class="todo-subtask-delete-btn" data-todo-id="${todo.id}" data-subtask-id="${st.id}" title="Delete subtask">✕</button>
+              </div>
+            `).join('')}
           </div>
-        `).join('');
+        ` : '';
 
-        const nodeHTML = `
-          <div class="task-card task-clickable task-card-todo todo-shape-wrapper todo-orbit-node ${todo.completed ? 'completed' : ''}${todo.bloodOathActive ? ' blood-oath-active' : ''}" 
-               data-id="${todo.id}" 
-               data-type="todo" 
-               data-difficulty="${todo.difficulty || ''}" 
-               tabindex="0" 
-               style="left: calc(50% + ${x.toFixed(1)}px); top: calc(50% + ${y.toFixed(1)}px); --task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor};">
-            
-            <!-- Plain Deadline Counter Number directly on LEFT side -->
-            <div class="todo-plain-deadline-num" data-todo-id="${todo.id}" title="Click to change due deadline" style="color:${attrColor};">
-              ${plainNumText}
+        html += `
+          <div class="todo-card-wrapper" data-id="${todo.id}">
+            <div class="todo-swipe-bg">
+              <span class="swipe-delete-icon">🗑️ Delete</span>
             </div>
+            <div class="todo-card-v2 diff-${diff} ${todo.completed ? 'completed' : ''}" 
+                 data-id="${todo.id}" 
+                 data-attribute="${displayAttr}" 
+                 data-difficulty="${diff}"
+                 style="--attr-color: ${attrColor}; --attr-text-color: ${textColor};"
+                 tabindex="0"
+                 draggable="true">
+              
+              <div class="hold-progress-overlay"></div>
 
-            <!-- Card Main Stack (Top Deadline Badge + Shape + Subtasks) -->
-            <div class="todo-card-main-stack">
-              <!-- Regular deadline text on top -->
-              <div class="todo-deadline-card-badge-top" data-todo-id="${todo.id}" style="background:${attrColor}; color:${textColor};">
-                <span class="todo-deadline-date">${naturalDeadlineText}</span>
-              </div>
-
-              <!-- Main Shape Card -->
-              <div class="shape-task shape-${shapeClass} todo-main-shape" style="--task-accent:${attrColor}; --task-accent-strong:${shadeColor}; --task-ink:${textColor}; position: relative;">
-                ${todo.bloodOathActive ? `
-                  <div class="blood-oath-fire-container">
-                    <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-                    <div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div><div class="flame-square"></div>
-                  </div>
-                ` : ''}
-
-                <div class="task-shape-name">${displayName}</div>
-              </div>
-
-              <!-- Subtasks stuck directly to BOTTOM of shape -->
-              ${(todo.subtasks || []).length > 0 ? `
-                <div class="todo-orbit-subtasks-stuck-bottom" style="background:${attrColor}; color:${textColor};">
-                  ${subtaskRects}
+              <div class="todo-card-top-row">
+                <div class="todo-badges-left">
+                  <span class="todo-drag-handle" title="Drag to reorder">⠿</span>
+                  <span class="todo-badge todo-badge-attr" style="background:${attrColor}; color:${textColor};">${displayAttr}</span>
+                  <span class="todo-badge todo-badge-diff">${diff}</span>
+                  ${todo.bloodOathActive ? '<span class="todo-badge todo-badge-oath">🔥 Blood Oath</span>' : ''}
+                  ${subtasksBadge}
                 </div>
-              ` : ''}
-            </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                  <button type="button" class="todo-badge todo-badge-deadline ${isOverdue ? 'overdue' : ''}" data-todo-id="${todo.id}" title="Click to change deadline">
+                    ${deadlineBadgeText}
+                  </button>
+                  <button type="button" class="todo-card-delete-btn" data-todo-id="${todo.id}" title="Delete to-do">✕</button>
+                </div>
+              </div>
 
+              <div class="todo-title-text" contenteditable="true" spellcheck="false" data-todo-id="${todo.id}">${this.escapeHtml(todo.name || '')}</div>
+
+              ${subtasksHtml}
+            </div>
           </div>
         `;
-        nodesData.push(nodeHTML);
       });
+
+      html += `
+          </div>
+        </div>
+      `;
     });
 
-    container.innerHTML = `
-      <div class="todo-orbit-viewport" id="todoOrbitViewport">
-        <div class="todo-orbit-controls">
-          <button class="orbit-control-btn" id="todoOrbitZoomIn" title="Zoom In">＋</button>
-          <button class="orbit-control-btn" id="todoOrbitZoomOut" title="Zoom Out">－</button>
-          <button class="orbit-control-btn" id="todoOrbitReset" title="Reset View">⊙</button>
-        </div>
-
-        <div class="todo-orbit-canvas-container" id="todoOrbitCanvasContainer">
-          <svg class="todo-orbit-svg" viewBox="-500 -500 1000 1000" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="orbitCenterGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.8" />
-                <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.3" />
-                <stop offset="100%" stop-color="#d97706" stop-opacity="0" />
-              </radialGradient>
-              <filter id="ringGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            <circle cx="0" cy="0" r="32" fill="url(#orbitCenterGlow)" />
-            <circle cx="0" cy="0" r="16" fill="#fbbf24" filter="url(#ringGlow)" />
-            <text x="0" y="4" text-anchor="middle" fill="#000" font-weight="900" font-size="10" font-family="'Orbitron', monospace">NOW</text>
-
-            <circle cx="0" cy="0" r="95" class="orbit-ring ring-0" vector-effect="non-scaling-stroke" />
-            <text x="0" y="-99" text-anchor="middle" class="orbit-ring-label ring-label-0">⚡ TODAY / OVERDUE</text>
-
-            <circle cx="0" cy="0" r="175" class="orbit-ring ring-1" vector-effect="non-scaling-stroke" />
-            <text x="0" y="-179" text-anchor="middle" class="orbit-ring-label ring-label-1">1 - 3 DAYS</text>
-
-            <circle cx="0" cy="0" r="255" class="orbit-ring ring-2" vector-effect="non-scaling-stroke" />
-            <text x="0" y="-259" text-anchor="middle" class="orbit-ring-label ring-label-2">4 - 7 DAYS</text>
-
-            <circle cx="0" cy="0" r="335" class="orbit-ring ring-3" vector-effect="non-scaling-stroke" />
-            <text x="0" y="-339" text-anchor="middle" class="orbit-ring-label ring-label-3">> 7 DAYS</text>
-
-            <circle cx="0" cy="0" r="415" class="orbit-ring ring-4" vector-effect="non-scaling-stroke" />
-            <text x="0" y="-419" text-anchor="middle" class="orbit-ring-label ring-label-4">NO DEADLINE</text>
-          </svg>
-
-          <div class="todo-orbit-nodes-layer" id="todoOrbitNodesLayer">
-            ${nodesData.join('')}
-          </div>
-        </div>
-      </div>
-
-      <!-- Viewport Floating HUD 1: Attributes + Difficulty -->
-      <div class="preset-hud-card hud-attr-diff" id="hudAttrDiff" style="left: 16px; top: 70px;">
-        <div class="hud-header">
-          <span class="hud-drag-handle">⠿ PRESETS HUD</span>
-          <button class="hud-collapse-btn" title="Toggle HUD">−</button>
-        </div>
-        <div class="hud-body">
-          <div class="preset-group preset-diff-group" title="Select Preset Difficulty Shape">
-            <span class="preset-label">DIFFICULTY</span>
-            <div class="preset-shape-selector" id="todoPresetDiffShapes">
-              <button class="preset-shape-btn shape-easy" data-diff="Easy" title="Easy (Circle)"><span class="shape-icon"></span></button>
-              <button class="preset-shape-btn shape-medium active" data-diff="Medium" title="Medium (Diamond)"><span class="shape-icon"></span></button>
-              <button class="preset-shape-btn shape-hard" data-diff="Hard" title="Hard (Square)"><span class="shape-icon"></span></button>
-              <button class="preset-shape-btn shape-ultra" data-diff="Ultra" title="Ultra (Octagon)"><span class="shape-icon"></span></button>
-            </div>
-          </div>
-          <div class="preset-group preset-orbit-group" title="Select Preset Attribute">
-            <span class="preset-label">ATTRIBUTE</span>
-            <div class="preset-orbit-container" id="todoPresetOrbit">
-              <div class="preset-orbit-center" id="todoPresetAttrCenter" data-selected-attr="STR">STR</div>
-              <div class="preset-orbit-nodes" id="todoPresetOrbitNodes"></div>
-            </div>
-          </div>
-        </div>
-        <div class="hud-resizer"></div>
-      </div>
-
-      <!-- Viewport Floating HUD 2: Deadline -->
-      <div class="preset-hud-card hud-deadline" id="hudDeadline" style="right: 16px; top: 70px;">
-        <div class="hud-header">
-          <span class="hud-drag-handle">⠿ DEADLINE HUD</span>
-          <button class="hud-collapse-btn" title="Toggle HUD">−</button>
-        </div>
-        <div class="hud-body">
-          <span class="preset-label">DUE DEADLINE</span>
-          <div class="preset-date-vertical-cells">
-            <div class="preset-date-chips-column">
-              <button class="preset-chip" data-days="0">Today</button>
-              <button class="preset-chip active" data-days="1">Tomorrow</button>
-              <button class="preset-chip" data-days="3">+3 Days</button>
-              <button class="preset-chip" data-days="7">+7 Days</button>
-            </div>
-            <input type="date" id="todoPresetDate" class="preset-input" title="Preset Deadline Date" />
-            <input type="time" id="todoPresetTime" class="preset-input" value="23:59" title="Preset Deadline Time" style="margin-top: 4px;" />
-          </div>
-        </div>
-        <div class="hud-resizer"></div>
-      </div>
-    `;
-
-    this.bindTaskInteractions();
+    container.innerHTML = html;
     this.bindTodoBoardInteractions();
-    this.setupTodoOrbitPanZoom();
-    this.renderTodoNotes();
-    this.setupPresetHuds();
     this.startUltraSkullEmitters();
-    try { this.updateTodoJoystickUI(); } catch (e) {}
   }
 
-  static hudStates = {};
+  static bindTodoBoardInteractions() {
+    const board = document.getElementById('todosList');
+    if (!board || board.dataset.dragBound === '1') return;
+    board.dataset.dragBound = '1';
 
-  static saveTodoHudStates() {
-    try {
-      localStorage.setItem('nemesis_todo_hud_states', JSON.stringify(this.hudStates || {}));
-      const state = getGameState();
-      if (state) state.todoHudStates = this.hudStates;
-    } catch (e) {
-      console.error('Failed to save todo HUD states', e);
-    }
-  }
+    let holdTimer = null;
+    let holdCard = null;
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let currentY = 0;
+    let isSwiping = false;
+    let activeSwipeWrapper = null;
+    let activeSwipeCard = null;
+    let lastTapTime = 0;
+    let lastTapCard = null;
 
-  static loadTodoHudStates() {
-    try {
-      const saved = localStorage.getItem('nemesis_todo_hud_states');
-      if (saved) {
-        this.hudStates = JSON.parse(saved);
-      } else {
-        const state = getGameState();
-        if (state?.todoHudStates) this.hudStates = state.todoHudStates;
-        else this.hudStates = {};
-      }
-    } catch (e) {
-      this.hudStates = {};
-    }
-  }
-
-  static setupPresetHuds() {
-    this.loadTodoHudStates();
-    this.hudStates = this.hudStates || {};
-    const huds = document.querySelectorAll('.preset-hud-card');
-
-    huds.forEach(hud => {
-      const hudId = hud.id;
-      const saved = this.hudStates[hudId];
-      if (saved) {
-        if (saved.left !== undefined) {
-          hud.style.left = saved.left;
-          hud.style.right = 'auto';
-        }
-        if (saved.top !== undefined) {
-          hud.style.top = saved.top;
-        }
-        if (saved.width !== undefined) {
-          hud.style.width = saved.width;
-        }
-        if (saved.height !== undefined) {
-          hud.style.height = saved.height;
-        }
-        if (saved.collapsed) {
-          hud.classList.add('collapsed');
-        }
-      }
-
-      const header = hud.querySelector('.hud-header');
-      const resizer = hud.querySelector('.hud-resizer');
-      const collapseBtn = hud.querySelector('.hud-collapse-btn');
-      const body = hud.querySelector('.hud-body');
-
-      if (collapseBtn && body) {
-        if (hud.classList.contains('collapsed')) {
-          collapseBtn.textContent = '+';
-        }
-        collapseBtn.onclick = (e) => {
-          e.stopPropagation();
-          hud.classList.toggle('collapsed');
-          const isCollapsed = hud.classList.contains('collapsed');
-          collapseBtn.textContent = isCollapsed ? '+' : '−';
-          this.hudStates[hudId] = this.hudStates[hudId] || {};
-          this.hudStates[hudId].collapsed = isCollapsed;
-          this.saveTodoHudStates();
-        };
-      }
-
-      if (header) {
-        let isDragging = false;
-        let startX = 0, startY = 0;
-        let initLeft = 0, initTop = 0;
-
-        header.onpointerdown = (e) => {
-          if (e.target.closest('.hud-collapse-btn')) return;
-          e.stopPropagation();
-          isDragging = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          initLeft = parseFloat(hud.style.left) || hud.offsetLeft;
-          initTop = parseFloat(hud.style.top) || hud.offsetTop;
-          try { header.setPointerCapture(e.pointerId); } catch (err) {}
-        };
-
-        header.onpointermove = (e) => {
-          if (!isDragging) return;
-          e.stopPropagation();
-          const dx = e.clientX - startX;
-          const dy = e.clientY - startY;
-          const leftPx = `${initLeft + dx}px`;
-          const topPx = `${initTop + dy}px`;
-          hud.style.left = leftPx;
-          hud.style.top = topPx;
-          hud.style.right = 'auto';
-
-          this.hudStates[hudId] = this.hudStates[hudId] || {};
-          this.hudStates[hudId].left = leftPx;
-          this.hudStates[hudId].top = topPx;
-        };
-
-        const stopDrag = (e) => {
-          if (!isDragging) return;
-          e.stopPropagation();
-          isDragging = false;
-          try { header.releasePointerCapture(e.pointerId); } catch (err) {}
-          this.saveTodoHudStates();
-        };
-
-        header.onpointerup = stopDrag;
-        header.onpointercancel = stopDrag;
-      }
-
-      if (resizer) {
-        let isResizing = false;
-        let startX = 0, startY = 0;
-        let initWidth = 0, initHeight = 0;
-
-        resizer.onpointerdown = (e) => {
-          e.stopPropagation();
-          isResizing = true;
-          startX = e.clientX;
-          startY = e.clientY;
-          initWidth = hud.offsetWidth;
-          initHeight = hud.offsetHeight;
-          try { resizer.setPointerCapture(e.pointerId); } catch (err) {}
-        };
-
-        resizer.onpointermove = (e) => {
-          if (!isResizing) return;
-          e.stopPropagation();
-          const dw = e.clientX - startX;
-          const dh = e.clientY - startY;
-          const widthPx = `${Math.max(130, initWidth + dw)}px`;
-          const heightPx = `${Math.max(100, initHeight + dh)}px`;
-          hud.style.width = widthPx;
-          hud.style.height = heightPx;
-
-          this.hudStates[hudId] = this.hudStates[hudId] || {};
-          this.hudStates[hudId].width = widthPx;
-          this.hudStates[hudId].height = heightPx;
-        };
-
-        const stopResize = (e) => {
-          if (!isResizing) return;
-          e.stopPropagation();
-          isResizing = false;
-          try { resizer.releasePointerCapture(e.pointerId); } catch (err) {}
-          this.saveTodoHudStates();
-        };
-
-        resizer.onpointerup = stopResize;
-        resizer.onpointercancel = stopResize;
+    // Double-click / Double-tap for editing fields
+    board.addEventListener('dblclick', (e) => {
+      const card = e.target.closest('.todo-card-v2');
+      if (!card) return;
+      if (e.target.closest('.todo-title-text, .todo-subtask-text, .todo-subtask-check, .todo-subtask-delete-btn, .todo-card-delete-btn, .todo-badge-deadline, .todo-drag-handle')) return;
+      const todoId = card.dataset.id;
+      if (todoId && typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
+        PopupsManager.showEditTodo(todoId);
       }
     });
 
-    this.initPresetOrbitNodes();
-    this.initPresetShapeSelector();
-    this.initPresetDeadlineHud();
-  }
-
-  static initPresetShapeSelector() {
-    const selector = document.getElementById('todoPresetDiffShapes');
-    if (!selector) return;
-
-    const hudId = 'hudAttrDiff';
-    const savedDiff = this.hudStates[hudId]?.selectedDiff || 'Medium';
-    this.presetDifficulty = savedDiff;
-
-    selector.querySelectorAll('.preset-shape-btn').forEach(btn => {
-      const diff = btn.dataset.diff;
-      btn.classList.toggle('active', diff === savedDiff);
-
-      btn.onclick = (e) => {
+    // Click handlers
+    board.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('.todo-card-delete-btn');
+      if (deleteBtn) {
         e.stopPropagation();
-        selector.querySelectorAll('.preset-shape-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        this.hudStates[hudId] = this.hudStates[hudId] || {};
-        this.hudStates[hudId].selectedDiff = diff;
-        this.presetDifficulty = diff;
-        this.saveTodoHudStates();
-      };
+        const todoId = deleteBtn.dataset.todoId;
+        if (todoId) {
+          const cardWrapper = deleteBtn.closest('.todo-card-wrapper');
+          if (cardWrapper) {
+            cardWrapper.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+            cardWrapper.style.opacity = '0';
+            cardWrapper.style.transform = 'scale(0.9)';
+          }
+          setTimeout(() => {
+            const state = getGameState();
+            const idx = state.dailiesState.todos.findIndex(t => t.id === todoId);
+            if (idx !== -1) {
+              const deletedTodo = state.dailiesState.todos.splice(idx, 1)[0];
+              try { state.save(); } catch (err) {}
+              UIManager.updateTodosList();
+              UIManager.showTodoUndoSnackbar(deletedTodo, idx);
+            }
+          }, 180);
+        }
+        return;
+      }
+
+      const deadlineBtn = e.target.closest('.todo-badge-deadline');
+      if (deadlineBtn) {
+        e.stopPropagation();
+        const todoId = deadlineBtn.dataset.todoId;
+        if (todoId && typeof PopupsManager !== 'undefined' && PopupsManager.showQuickDayPicker) {
+          PopupsManager.showQuickDayPicker((newTs) => {
+            TaskManager.editTodo(todoId, { deadline: newTs });
+            try { getGameState().save(); } catch (err) {}
+            UIManager.updateTodosList();
+          });
+        }
+        return;
+      }
+
+      const subtaskCheck = e.target.closest('.todo-subtask-check');
+      if (subtaskCheck) {
+        e.stopPropagation();
+        const todoId = subtaskCheck.dataset.todoId;
+        const subtaskId = subtaskCheck.dataset.subtaskId;
+        if (todoId && subtaskId) {
+          TaskManager.toggleSubtask(todoId, subtaskId);
+          try { getGameState().save(); } catch (err) {}
+          UIManager.updateTodosList();
+        }
+        return;
+      }
+
+      const subtaskDel = e.target.closest('.todo-subtask-delete-btn');
+      if (subtaskDel) {
+        e.stopPropagation();
+        const todoId = subtaskDel.dataset.todoId;
+        const subtaskId = subtaskDel.dataset.subtaskId;
+        if (todoId && subtaskId) {
+          TaskManager.removeSubtask(todoId, subtaskId);
+          try { getGameState().save(); } catch (err) {}
+          UIManager.updateTodosList();
+        }
+        return;
+      }
     });
-  }
 
-  static initPresetDeadlineHud() {
-    const deadlineHud = document.getElementById('hudDeadline');
-    if (!deadlineHud) return;
-
-    const hudId = 'hudDeadline';
-    const chipsColumn = deadlineHud.querySelector('.preset-date-chips-column');
-    const dateInput = deadlineHud.querySelector('#todoPresetDate');
-    const timeInput = deadlineHud.querySelector('#todoPresetTime');
-
-    const savedDays = this.hudStates[hudId]?.selectedDays;
-    const savedDate = this.hudStates[hudId]?.selectedDate;
-    const savedTime = this.hudStates[hudId]?.selectedTime || '23:59';
-
-    if (timeInput) {
-      timeInput.value = savedTime;
-    }
-
-    const getTimeHoursMinutes = () => {
-      const timeVal = timeInput ? timeInput.value || '23:59' : '23:59';
-      const [h, m] = timeVal.split(':').map(Number);
-      return { hours: isNaN(h) ? 23 : h, minutes: isNaN(m) ? 59 : m };
-    };
-
-    const updateDeadlineTs = (targetDate) => {
-      const { hours, minutes } = getTimeHoursMinutes();
-      targetDate.setHours(hours, minutes, 0, 0);
-      const dTs = targetDate.getTime();
-      if (!isNaN(dTs)) UIManager.quickDayDeadline = dTs;
-    };
-
-    if (savedDate && dateInput) {
-      dateInput.value = savedDate;
-      const target = new Date(savedDate);
-      updateDeadlineTs(target);
-    } else if (savedDays !== undefined && savedDays !== null) {
-      const daysNum = Number(savedDays);
-      const target = new Date();
-      if (daysNum !== 0) {
-        target.setDate(target.getDate() + daysNum);
+    // Blur (auto-saving editable texts)
+    board.addEventListener('blur', (e) => {
+      const titleEl = e.target.closest('.todo-title-text');
+      if (titleEl) {
+        const todoId = titleEl.dataset.todoId;
+        const newText = (titleEl.innerText || '').trim();
+        if (todoId && newText) {
+          TaskManager.editTodo(todoId, { name: newText });
+          try { getGameState().save(); } catch (err) {}
+        }
+        return;
       }
-      updateDeadlineTs(target);
-      if (dateInput) {
-        const y = target.getFullYear();
-        const m = String(target.getMonth() + 1).padStart(2, '0');
-        const day = String(target.getDate()).padStart(2, '0');
-        dateInput.value = `${y}-${m}-${day}`;
-      }
-    }
 
-    if (chipsColumn) {
-      chipsColumn.querySelectorAll('.preset-chip').forEach(chip => {
-        const days = chip.dataset.days;
-        if (savedDays !== undefined && String(savedDays) === String(days)) {
-          chip.classList.add('active');
-        } else if (savedDays === undefined && days === '1') {
-          chip.classList.add('active');
-        } else {
-          chip.classList.remove('active');
+      const subtaskEl = e.target.closest('.todo-subtask-text');
+      if (subtaskEl) {
+        const todoId = subtaskEl.dataset.todoId;
+        const subtaskId = subtaskEl.dataset.subtaskId;
+        const newText = (subtaskEl.innerText || '').trim();
+        if (todoId && subtaskId && newText) {
+          TaskManager.editSubtask(todoId, subtaskId, newText);
+          try { getGameState().save(); } catch (err) {}
+        }
+        return;
+      }
+    }, true);
+
+    // Keydown on editable texts (Enter creates new subtask line)
+    board.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const titleEl = e.target.closest('.todo-title-text');
+        if (titleEl) {
+          e.preventDefault();
+          const todoId = titleEl.dataset.todoId;
+          const currentText = (titleEl.innerText || '').trim();
+          if (todoId) {
+            if (currentText) TaskManager.editTodo(todoId, { name: currentText });
+            const created = TaskManager.addSubtask(todoId, 'New subtask');
+            try { getGameState().save(); } catch (err) {}
+            UIManager.updateTodosList();
+            setTimeout(() => {
+              if (created) {
+                const newEl = board.querySelector(`.todo-subtask-text[data-subtask-id="${created.id}"]`);
+                if (newEl) {
+                  newEl.focus();
+                  const range = document.createRange();
+                  range.selectNodeContents(newEl);
+                  const sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                }
+              }
+            }, 50);
+          }
+          return;
         }
 
-        chip.onclick = (e) => {
-          e.stopPropagation();
-          chipsColumn.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
-          chip.classList.add('active');
-
-          const daysNum = Number(days);
-          const target = new Date();
-          if (daysNum !== 0) {
-            target.setDate(target.getDate() + daysNum);
+        const subtaskEl = e.target.closest('.todo-subtask-text');
+        if (subtaskEl) {
+          e.preventDefault();
+          const todoId = subtaskEl.dataset.todoId;
+          const currentSubtaskId = subtaskEl.dataset.subtaskId;
+          const currentText = (subtaskEl.innerText || '').trim();
+          if (todoId) {
+            if (currentSubtaskId && currentText) {
+              TaskManager.editSubtask(todoId, currentSubtaskId, currentText);
+            }
+            const created = TaskManager.addSubtask(todoId, 'New subtask');
+            try { getGameState().save(); } catch (err) {}
+            UIManager.updateTodosList();
+            setTimeout(() => {
+              if (created) {
+                const newEl = board.querySelector(`.todo-subtask-text[data-subtask-id="${created.id}"]`);
+                if (newEl) {
+                  newEl.focus();
+                  const range = document.createRange();
+                  range.selectNodeContents(newEl);
+                  const sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                }
+              }
+            }, 50);
           }
-          updateDeadlineTs(target);
-
-          if (dateInput) {
-            const y = target.getFullYear();
-            const m = String(target.getMonth() + 1).padStart(2, '0');
-            const d = String(target.getDate()).padStart(2, '0');
-            dateInput.value = `${y}-${m}-${d}`;
-          }
-
-          this.hudStates[hudId] = this.hudStates[hudId] || {};
-          this.hudStates[hudId].selectedDays = days;
-          this.hudStates[hudId].selectedDate = dateInput ? dateInput.value : null;
-          this.hudStates[hudId].selectedTime = timeInput ? timeInput.value || '23:59' : '23:59';
-          this.saveTodoHudStates();
-        };
-      });
-    }
-
-    const onDateOrTimeChange = (e) => {
-      e?.stopPropagation();
-      if (!dateInput || !dateInput.value) {
-        UIManager.quickDayDeadline = null;
-      } else {
-        const target = new Date(dateInput.value);
-        updateDeadlineTs(target);
-      }
-      this.hudStates[hudId] = this.hudStates[hudId] || {};
-      this.hudStates[hudId].selectedDate = dateInput ? dateInput.value : null;
-      this.hudStates[hudId].selectedTime = timeInput ? timeInput.value || '23:59' : '23:59';
-      this.saveTodoHudStates();
-    };
-
-    if (dateInput) {
-      dateInput.onchange = (e) => {
-        if (chipsColumn) {
-          chipsColumn.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+          return;
         }
-        delete this.hudStates[hudId]?.selectedDays;
-        onDateOrTimeChange(e);
-      };
-    }
+      }
+    });
 
-    if (timeInput) {
-      timeInput.onchange = (e) => {
-        onDateOrTimeChange(e);
-      };
-    }
-  }
+    // Pointer events for Long-Press to complete & Swipe-right to delete
+    board.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      const card = e.target.closest('.todo-card-v2');
+      const wrapper = e.target.closest('.todo-card-wrapper');
+      if (!card || !wrapper) return;
 
-  static initPresetOrbitNodes() {
-    const attributes = getGameState().config.attributes || ['STR', 'AGI', 'INT', 'VIT', 'LUK'];
-    const orbitNodesContainer = document.getElementById('todoPresetOrbitNodes');
-    const orbitCenter = document.getElementById('todoPresetAttrCenter');
-
-    const hudId = 'hudAttrDiff';
-    const savedAttr = this.hudStates[hudId]?.selectedAttr || (attributes[0] || 'STR');
-    this.presetAttribute = savedAttr;
-
-    if (orbitNodesContainer) {
-      const angleStep = 360 / attributes.length;
-      const radius = 45;
-      const centerXY = 63;
-      orbitNodesContainer.innerHTML = attributes.map((attr, i) => {
-        const angle = angleStep * i - 90;
-        const rad = (angle * Math.PI) / 180;
-        const x = Math.round(centerXY + radius * Math.cos(rad));
-        const y = Math.round(centerXY + radius * Math.sin(rad));
-        const color = getGameState().config.attributeColors?.[attr] || '#4facfe';
-        const isActive = attr === savedAttr;
-        return `<div class="preset-orbit-node ${isActive ? 'active' : ''}" data-attr="${attr}" style="left:${x}px; top:${y}px; --attr-color:${color};" title="${attr}">${attr}</div>`;
-      }).join('');
-
-      if (orbitCenter) {
-        orbitCenter.textContent = savedAttr;
-        orbitCenter.dataset.selectedAttr = savedAttr;
-        const col = getGameState().config.attributeColors?.[savedAttr] || '#4facfe';
-        orbitCenter.style.color = col;
-        orbitCenter.style.borderColor = col;
+      if (e.target.closest('.todo-title-text, .todo-subtask-text, .todo-subtask-check, .todo-subtask-delete-btn, .todo-card-delete-btn, .todo-badge-deadline, .todo-drag-handle')) {
+        return;
       }
 
-      orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach((node) => {
-        node.onclick = (e) => {
-          e.stopPropagation();
-          orbitNodesContainer.querySelectorAll('.preset-orbit-node').forEach((n) => n.classList.remove('active'));
-          node.classList.add('active');
-          const attr = node.dataset.attr;
-          if (orbitCenter) {
-            orbitCenter.textContent = attr;
-            orbitCenter.dataset.selectedAttr = attr;
-            const color = getGameState().config.attributeColors?.[attr] || '#4facfe';
-            orbitCenter.style.color = color;
-            orbitCenter.style.borderColor = color;
-          }
-          this.hudStates[hudId] = this.hudStates[hudId] || {};
-          this.hudStates[hudId].selectedAttr = attr;
-          this.presetAttribute = attr;
-          this.saveTodoHudStates();
-        };
-      });
-    }
-  }
-
-  static setupTodoOrbitPanZoom() {
-    const viewport = document.getElementById('todoOrbitViewport');
-    const container = document.getElementById('todoOrbitCanvasContainer');
-    if (!viewport || !container) return;
-
-    this.applyOrbitTransform();
-
-    viewport.onwheel = (e) => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 1.12 : 0.88;
-      this.orbitScale = Math.max(0.35, Math.min(2.8, this.orbitScale * delta));
-      this.applyOrbitTransform();
-    };
-
-    document.getElementById('todoOrbitZoomIn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.orbitScale = Math.min(2.8, this.orbitScale * 1.25);
-      this.applyOrbitTransform();
-    });
-    document.getElementById('todoOrbitZoomOut')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.orbitScale = Math.max(0.35, this.orbitScale / 1.25);
-      this.applyOrbitTransform();
-    });
-    document.getElementById('todoOrbitReset')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.orbitPanX = 0;
-      this.orbitPanY = 0;
-      this.orbitScale = 1;
-      this.applyOrbitTransform();
-    });
-
-    let isDragging = false;
-    let startX = 0, startY = 0;
-    let initPanX = 0, initPanY = 0;
-
-    viewport.onpointerdown = (e) => {
-      if (e.target.closest('.task-card-todo, .todo-subtask-rect, .subtask-remove, .orbit-control-btn')) return;
-      isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
-      initPanX = this.orbitPanX;
-      initPanY = this.orbitPanY;
-      viewport.style.cursor = 'grabbing';
-      try { viewport.setPointerCapture(e.pointerId); } catch (err) {}
+      currentX = e.clientX;
+      currentY = e.clientY;
+      holdCard = card;
+      activeSwipeWrapper = wrapper;
+      activeSwipeCard = card;
+      isSwiping = false;
+
+      const now = Date.now();
+      if (lastTapCard === card && (now - lastTapTime < 300)) {
+        if (holdTimer) clearTimeout(holdTimer);
+        holdTimer = null;
+        holdCard.classList.remove('is-holding');
+        const todoId = card.dataset.id;
+        if (todoId && typeof PopupsManager !== 'undefined' && PopupsManager.showEditTodo) {
+          PopupsManager.showEditTodo(todoId);
+        }
+        lastTapTime = 0;
+        lastTapCard = null;
+        return;
+      }
+      lastTapTime = now;
+      lastTapCard = card;
+
+      holdCard.classList.add('is-holding');
+      holdTimer = setTimeout(() => {
+        if (!holdCard) return;
+        const todoId = holdCard.dataset.id;
+        holdCard.classList.remove('is-holding');
+        holdTimer = null;
+
+        if (todoId) {
+          const res = TaskManager.completeTodo(todoId);
+          if (res && res.success) {
+            try {
+              if (typeof navigator !== 'undefined' && navigator.vibrate) {
+                navigator.vibrate([20, 30, 40]);
+              }
+            } catch (err) {}
+
+            const rect = holdCard.getBoundingClientRect();
+            if (res.isJackpot) {
+              try { if (window.SoundManager) SoundManager.play('crit'); } catch (err) {}
+              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
+            }
+            if (res.rewards && res.rewards.ap) {
+              FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), `+${Math.ceil(res.rewards.ap)} AP`, { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true });
+            }
+            if (res.rewards && res.rewards.diamonds) {
+              UIManager.spawnDiamondFloatingPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, res.rewards.diamonds);
+            }
+
+            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+              RetroTaskCompleteAnimation.play(holdCard);
+            }
+
+            holdCard.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            holdCard.style.opacity = '0';
+            holdCard.style.transform = 'scale(0.9)';
+
+            setTimeout(() => {
+              UIManager.updateTodosList();
+            }, 250);
+
+            try { getGameState().save(); } catch (err) {}
+            UIManager.renderEnemies();
+          }
+        }
+      }, 850);
+    });
+
+    const onPointerMove = (e) => {
+      if (!holdCard) return;
+      currentX = e.clientX;
+      currentY = e.clientY;
+      const dx = currentX - startX;
+      const dy = currentY - startY;
+
+      if (Math.hypot(dx, dy) > 10 && holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+        holdCard.classList.remove('is-holding');
+      }
+
+      if (dx > 25 && Math.abs(dx) > Math.abs(dy) * 2 && activeSwipeCard) {
+        isSwiping = true;
+        activeSwipeCard.classList.add('is-swiping');
+        activeSwipeCard.style.transform = `translateX(${Math.max(0, dx)}px)`;
+      }
     };
 
-    viewport.onpointermove = (e) => {
-      if (!isDragging) return;
-      this.orbitPanX = initPanX + (e.clientX - startX);
-      this.orbitPanY = initPanY + (e.clientY - startY);
-      this.applyOrbitTransform();
+    const onPointerUp = (e) => {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+      if (holdCard) {
+        holdCard.classList.remove('is-holding');
+      }
+
+      if (isSwiping && activeSwipeCard) {
+        const dx = currentX - startX;
+        activeSwipeCard.classList.remove('is-swiping');
+        if (dx > 80) {
+          const todoId = activeSwipeCard.dataset.id;
+          activeSwipeCard.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+          activeSwipeCard.style.transform = 'translateX(110%)';
+          activeSwipeCard.style.opacity = '0';
+
+          setTimeout(() => {
+            const state = getGameState();
+            const idx = state.dailiesState.todos.findIndex(t => t.id === todoId);
+            if (idx !== -1) {
+              const deletedTodo = state.dailiesState.todos.splice(idx, 1)[0];
+              try { state.save(); } catch (err) {}
+              UIManager.updateTodosList();
+              UIManager.showTodoUndoSnackbar(deletedTodo, idx);
+            }
+          }, 200);
+        } else {
+          activeSwipeCard.style.transition = 'transform 0.2s ease';
+          activeSwipeCard.style.transform = 'translateX(0px)';
+        }
+      }
+
+      holdCard = null;
+      activeSwipeWrapper = null;
+      activeSwipeCard = null;
+      isSwiping = false;
     };
 
-    const stopPan = (e) => {
-      if (!isDragging) return;
-      isDragging = false;
-      viewport.style.cursor = 'grab';
-      try { viewport.releasePointerCapture(e.pointerId); } catch (err) {}
-    };
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+    document.addEventListener('pointercancel', onPointerUp);
 
-    viewport.onpointerup = stopPan;
-    viewport.onpointercancel = stopPan;
+    // Native Drag and Drop for card reordering
+    let draggedCardId = null;
 
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
+    board.addEventListener('dragstart', (e) => {
+      const card = e.target.closest('.todo-card-v2');
+      if (!card) return;
+      draggedCardId = card.dataset.id;
+      card.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', draggedCardId);
+    });
 
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 2) {
-        isDragging = false;
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        pinchStartDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        pinchStartScale = this.orbitScale || 1;
+    board.addEventListener('dragend', (e) => {
+      const card = e.target.closest('.todo-card-v2');
+      if (card) card.classList.remove('is-dragging');
+      board.querySelectorAll('.todo-card-wrapper.drag-over').forEach(w => w.classList.remove('drag-over'));
+      draggedCardId = null;
+    });
+
+    board.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const targetWrapper = e.target.closest('.todo-card-wrapper');
+      board.querySelectorAll('.todo-card-wrapper.drag-over').forEach(w => {
+        if (w !== targetWrapper) w.classList.remove('drag-over');
+      });
+      if (targetWrapper && targetWrapper.dataset.id !== draggedCardId) {
+        targetWrapper.classList.add('drag-over');
       }
-    }, { passive: true });
+    });
 
-    viewport.addEventListener('touchmove', (e) => {
-      if (e.touches.length === 2 && pinchStartDist > 0) {
-        if (e.cancelable) e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
-        const factor = dist / pinchStartDist;
-        this.orbitScale = Math.max(0.35, Math.min(2.8, pinchStartScale * factor));
-        this.applyOrbitTransform();
+    board.addEventListener('dragleave', (e) => {
+      const targetWrapper = e.target.closest('.todo-card-wrapper');
+      if (targetWrapper) targetWrapper.classList.remove('drag-over');
+    });
+
+    board.addEventListener('drop', (e) => {
+      e.preventDefault();
+      board.querySelectorAll('.todo-card-wrapper.drag-over').forEach(w => w.classList.remove('drag-over'));
+      const targetCard = e.target.closest('.todo-card-v2');
+      if (!targetCard || !draggedCardId) return;
+      const targetId = targetCard.dataset.id;
+      if (draggedCardId === targetId) return;
+
+      const state = getGameState();
+      const todos = state.dailiesState.todos;
+      const fromIndex = todos.findIndex(t => t.id === draggedCardId);
+      const toIndex = todos.findIndex(t => t.id === targetId);
+
+      if (fromIndex !== -1 && toIndex !== -1) {
+        const [moved] = todos.splice(fromIndex, 1);
+        todos.splice(toIndex, 0, moved);
+        try { state.save(); } catch (err) {}
+        UIManager.updateTodosList();
       }
-    }, { passive: false });
-
-    viewport.addEventListener('touchend', (e) => {
-      if (e.touches.length < 2) {
-        pinchStartDist = 0;
-      }
-    }, { passive: true });
-  }
-
-  static applyOrbitTransform() {
-    const container = document.getElementById('todoOrbitCanvasContainer');
-    if (container) {
-      container.style.transform = `translate3d(${this.orbitPanX.toFixed(1)}px, ${this.orbitPanY.toFixed(1)}px, 0px) scale(${this.orbitScale.toFixed(3)})`;
-    }
-    const invScale = (1 / (this.orbitScale || 1)).toFixed(3);
-    document.querySelectorAll('.todo-note-card').forEach(n => {
-      n.style.transform = `scale(${invScale})`;
-      n.style.transformOrigin = 'center center';
     });
   }
+
+  // Safe stubs for legacy calls
+  static setupTodoOrbitPanZoom() {}
+  static renderTodoNotes() {}
+  static setupPresetHuds() {}
+  static saveTodoHudStates() {}
+  static loadTodoHudStates() {}
+  static applyOrbitTransform() {}
 
   static getRingInfo(index, totalCount) {
     const capacityPerRing = 8;

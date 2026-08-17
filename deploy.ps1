@@ -1,13 +1,13 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: completion animation offset, world map teleport, and todo timer"
+$commitMsg = "feat: revamp to-dos with deadline card lists, solid colors, and mobile gestures"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
 $triggerPagesRebuild = $false
 $confirmBeforePush = $false
-$pollLiveSwSecs = 30
+$pollLiveSwSecs = 15
 
 function Get-RepoInfo {
     $remoteUrl = git config --get remote.origin.url
