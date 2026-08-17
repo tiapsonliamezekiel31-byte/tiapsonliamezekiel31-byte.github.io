@@ -2410,6 +2410,27 @@ body::before {
   100% { transform: translate(0, 0); }
 }
 
+/* Incomplete Card Restless Breathing / Tease */
+.daily-card:not(.completed):not(.done):not(.card-completed) {
+  animation: dailyCardRestlessBreath 2.2s ease-in-out infinite;
+}
+
+.daily-circle-card:not(.completed):not(.done):not(.card-completed) {
+  animation: dailyCircleRestlessBreath 2.2s ease-in-out infinite;
+}
+
+@keyframes dailyCardRestlessBreath {
+  0%, 100% { transform: scale(var(--card-scale, 1)); }
+  45% { transform: scale(calc(var(--card-scale, 1) * 1.028)) translate(0.5px, -0.5px); }
+  70% { transform: scale(calc(var(--card-scale, 1) * 0.992)) translate(-0.5px, 0.5px); }
+}
+
+@keyframes dailyCircleRestlessBreath {
+  0%, 100% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--card-scale, 1)); }
+  45% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(calc(var(--card-scale, 1) * 1.03)) translate(0.5px, -0.5px); }
+  70% { transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(calc(var(--card-scale, 1) * 0.99)) translate(-0.5px, 0.5px); }
+}
+
 .btn-header-nav {
   font-family: 'Orbitron', monospace;
   font-size: 9px !important;
