@@ -2274,6 +2274,65 @@ body::before {
   margin: 0;
 }
 
+/* Big Numbers Badge Attached to Daily Top Bar */
+.daily-top-stats-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 215, 106, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.daily-top-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Orbitron', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.daily-top-stat-icon {
+  font-size: 10px;
+}
+
+.daily-top-stat-val {
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  transition: color 0.15s ease, transform 0.15s ease;
+  display: inline-block;
+}
+
+.daily-top-stat-pill.stat-streak .daily-top-stat-val {
+  color: #ff9800;
+  text-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
+}
+
+.daily-top-stat-pill.stat-ap .daily-top-stat-val {
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.daily-top-stat-pill.stat-diamonds .daily-top-stat-val {
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.daily-stat-bump {
+  animation: statNumberPop 0.35s ease-out;
+}
+
+@keyframes statNumberPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.45); filter: brightness(1.6); }
+  100% { transform: scale(1); }
+}
+
 .btn-header-nav {
   font-family: 'Orbitron', monospace;
   font-size: 9px !important;

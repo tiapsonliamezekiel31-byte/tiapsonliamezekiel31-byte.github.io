@@ -1600,7 +1600,10 @@ function checkParryChallengeCompletion() {
       state.addBuff('Damage Boost');
     }
     if (typeof FloatingDamageNumber !== 'undefined') {
-      FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'DAMAGE BUFF GRANTED! ⚔️', { color: '#ffaa00', scale: 1.3, duration: 2500 });
+      const topCoords = (typeof UIManager !== 'undefined' && typeof UIManager.getDailyTopStatsCoords === 'function')
+        ? UIManager.getDailyTopStatsCoords()
+        : { x: window.innerWidth / 2, y: 40 };
+      FloatingDamageNumber.show(topCoords.x, topCoords.y - 20, 'DAMAGE BUFF GRANTED! ⚔️', { color: '#ffaa00', scale: 1.3, duration: 2500 });
     }
     if (typeof UIManager !== 'undefined') {
       if (typeof UIManager.updateActionButtons === 'function') UIManager.updateActionButtons();

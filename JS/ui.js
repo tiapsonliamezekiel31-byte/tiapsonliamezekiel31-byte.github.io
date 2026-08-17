@@ -2281,6 +2281,20 @@ class UIManager {
       <div class="tab-header dailies-top-bar">
         <div class="tab-header-left">
           <h3 class="tab-header-title">DAILIES</h3>
+          <div class="daily-top-stats-container" id="dailyTopStatsBadge">
+            <div class="daily-top-stat-pill stat-streak" title="Average Streak">
+              <span class="daily-top-stat-icon">🔥</span>
+              <span class="daily-top-stat-val" id="topAvgStreakVal">0</span>
+            </div>
+            <div class="daily-top-stat-pill stat-ap" title="Player AP">
+              <span class="daily-top-stat-icon">⚡</span>
+              <span class="daily-top-stat-val" id="topApVal">0</span>
+            </div>
+            <div class="daily-top-stat-pill stat-diamonds" title="Player Diamonds">
+              <span class="daily-top-stat-icon">💎</span>
+              <span class="daily-top-stat-val" id="topDiamondsVal">0</span>
+            </div>
+          </div>
         </div>
         <div class="tab-header-controls">
           <div class="header-btn-group">
@@ -6173,15 +6187,13 @@ class UIManager {
             const res = TaskManager.completeDaily(taskId);
             if (!res || !res.success) return;
 
-            // Immediate visual feedback on the card
+            // Immediate visual feedback on the card (no scale pulse)
             try {
               card.classList.add('just-completed');
-              card.style.transition = 'transform 100ms ease, filter 100ms ease, opacity 400ms ease';
-              card.style.transform = 'scale(1.04)';
+              card.style.transition = 'filter 100ms ease, opacity 400ms ease';
               card.style.filter = 'brightness(10) contrast(1.5)';
               setTimeout(() => {
                 card.style.filter = '';
-                card.style.transform = '';
               }, 100);
 
               UIManager.accelerateBackground(2.0, 2000);
@@ -6189,19 +6201,23 @@ class UIManager {
                 try { navigator.vibrate([15, 30, 45]); } catch (e) {}
               }
 
+              // Update & animate top stats badge rapidly
+              UIManager.updateDailyTopStats(true);
+
+              const topStatsCoords = UIManager.getDailyTopStatsCoords();
+
               // Show reward popup numbers
               if (res.isHeld || res.isMiss) {
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                const rect = card.getBoundingClientRect();
-                // Red MISS floating popup
-                FloatingDamageNumber.show(rect.left + rect.width / 2, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', isMiss: true, scale: 1.4, duration: 1800 });
+                // Red MISS floating popup above top stats bar
+                FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 12, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.4, duration: 1800 });
               } else {
                 if (res.isJackpot) {
                   try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-                  const rect = card.getBoundingClientRect();
+                  // JACKPOT floating popup above top stats bar
                   FloatingDamageNumber.show(
-                    rect.left + rect.width / 2,
-                    Math.max(12, rect.top - 38),
+                    topStatsCoords.x,
+                    topStatsCoords.y - 20,
                     'JACKPOT!',
                     { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
                   );
@@ -6245,18 +6261,17 @@ class UIManager {
                 countUpDelay = Math.min(1200, Math.max(650, Math.ceil(res.rewards.ap) * 25));
               }
 
-                UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
-                  if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-                    RetroTaskCompleteAnimation.play(card);
-                  }
-                  const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
-                  card.style.transition = 'opacity 300ms ease, transform 300ms ease, filter 300ms ease';
-                  card.style.opacity = '0';
-                  card.style.transform = `scale(${sizeScale * 0.85})`;
-                  setTimeout(() => {
-                    this.scheduleUpdateDailiesList();
-                  }, 300);
-                });
+              UIManager.applyTaskChargingEffect(card, countUpDelay, () => {
+                if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+                  RetroTaskCompleteAnimation.play(card);
+                }
+                const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
+                card.style.transition = 'opacity 300ms ease, filter 300ms ease';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                  this.scheduleUpdateDailiesList();
+                }, 300);
+              });
             } catch (e) {
               this.scheduleUpdateDailiesList();
             }
@@ -6440,9 +6455,106 @@ class UIManager {
         const minutesDisplay = timeStr ? ` <span style="font-size: 0.85em; opacity: 0.7; font-weight: normal;">(${timeStr})</span>` : '';
         summaryEl.innerHTML = `${completedCount}/${scheduledDailies.length} complete${minutesDisplay}${pendingDmg > 0 ? ` (Pending Dmg: ${pendingDmg})` : ''}`;
       }
+      this.updateDailyTopStats();
     } catch (e) {
       console.warn('updatePendingDamageDisplay error', e);
     }
+  }
+
+  static animateStatValue(el, startVal, targetVal, durationMs = 600, isFloat = false) {
+    if (!el) return;
+    if (el._statAnimFrame) cancelAnimationFrame(el._statAnimFrame);
+    const startTime = performance.now();
+    startVal = Number(startVal) || 0;
+    targetVal = Number(targetVal) || 0;
+
+    el.classList.remove('daily-stat-bump');
+    void el.offsetWidth;
+    el.classList.add('daily-stat-bump');
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const current = startVal + (targetVal - startVal) * ease;
+      el.textContent = isFloat ? current.toFixed(1) : Math.round(current);
+      if (progress < 1) {
+        el._statAnimFrame = requestAnimationFrame(step);
+      } else {
+        el.textContent = isFloat ? targetVal.toFixed(1) : Math.round(targetVal);
+        el._statAnimFrame = null;
+      }
+    };
+    el._statAnimFrame = requestAnimationFrame(step);
+  }
+
+  static updateDailyTopStats(animate = false) {
+    try {
+      const state = getGameState();
+      if (!state) return;
+      
+      const dailies = TaskManager.getAllDailies() || [];
+      let avgStreak = 0;
+      if (dailies.length > 0) {
+        const totalStreak = dailies.reduce((sum, d) => {
+          const streak = (typeof TaskManager.computeDailyStreak === 'function') ? TaskManager.computeDailyStreak(d.id) : (d.streak || 0);
+          return sum + streak;
+        }, 0);
+        avgStreak = parseFloat((totalStreak / dailies.length).toFixed(1));
+      }
+
+      const currentAp = Number(state.playerState?.ap) || 0;
+      const currentDiamonds = Number(state.playerState?.diamonds) || 0;
+
+      const streakEl = document.getElementById('topAvgStreakVal');
+      const apEl = document.getElementById('topApVal');
+      const diamondsEl = document.getElementById('topDiamondsVal');
+
+      if (streakEl) {
+        const prev = parseFloat(streakEl.textContent) || 0;
+        if (animate && prev !== avgStreak) {
+          this.animateStatValue(streakEl, prev, avgStreak, 500, true);
+        } else if (!streakEl._statAnimFrame) {
+          streakEl.textContent = avgStreak;
+        }
+      }
+
+      if (apEl) {
+        const prev = parseFloat(apEl.textContent) || 0;
+        if (animate && prev !== currentAp) {
+          this.animateStatValue(apEl, prev, currentAp, 600, false);
+        } else if (!apEl._statAnimFrame) {
+          apEl.textContent = Math.round(currentAp);
+        }
+      }
+
+      if (diamondsEl) {
+        const prev = parseFloat(diamondsEl.textContent) || 0;
+        if (animate && prev !== currentDiamonds) {
+          this.animateStatValue(diamondsEl, prev, currentDiamonds, 600, false);
+        } else if (!diamondsEl._statAnimFrame) {
+          diamondsEl.textContent = Math.round(currentDiamonds);
+        }
+      }
+    } catch (err) {
+      console.warn('updateDailyTopStats error', err);
+    }
+  }
+
+  static getDailyTopStatsCoords() {
+    const badge = document.getElementById('dailyTopStatsBadge') || document.querySelector('.dailies-top-bar');
+    if (badge) {
+      const rect = badge.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: Math.max(12, rect.top - 8)
+      };
+    }
+    return {
+      x: window.innerWidth / 2,
+      y: 40
+    };
   }
 
   static updateManaBar(detail) {
@@ -6479,6 +6591,7 @@ class UIManager {
       try { MeterAnimation.crackle(apFillEl, UIManager.themeColor('--ap-gold', '#FFB33F')); } catch (e) { }
     }
     this.updateActionCosts();
+    try { this.updateDailyTopStats(true); } catch (e) {}
   }
 
   static updateGoldDisplay(detail) {
@@ -6489,6 +6602,7 @@ class UIManager {
   static updateDiamondDisplay(detail) {
     const diamondEl = document.getElementById('diamondValue');
     if (diamondEl) diamondEl.textContent = Math.ceil(Number(detail?.newDiamonds) || 0);
+    try { this.updateDailyTopStats(true); } catch (e) {}
   }
 
   static updateLootboxKeysDisplay(detail) {
@@ -9826,29 +9940,31 @@ class UIManager {
             if (res && res.success) {
               try {
                 card.classList.add('just-completed');
-                card.style.transition = 'transform 100ms ease, filter 100ms ease, opacity 400ms ease';
+                card.style.transition = 'filter 100ms ease, opacity 400ms ease';
                 card.style.filter = 'brightness(10) contrast(1.5)';
-                const sizeScale = Math.max(0.5, Number(card.dataset.sizeScale) || 1);
-                card.style.transform = `scale(${sizeScale * 1.04})`;
                 setTimeout(() => {
                   card.style.filter = '';
-                  card.style.transform = `scale(${sizeScale})`;
                 }, 100);
 
                 UIManager.accelerateBackground(2.0, 2000);
                 if (typeof navigator !== 'undefined' && navigator.vibrate) {
                   try { navigator.vibrate([15, 30, 45]); } catch (e) {}
                 }
+
+                // Update & animate top stats badge rapidly
+                UIManager.updateDailyTopStats(true);
+
+                const topStatsCoords = UIManager.getDailyTopStatsCoords();
                 const rect = card.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 if (res.isHeld || res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 18), 'MISS', { color: '#ef4444', isMiss: true, scale: 1.3, duration: 2000 });
+                  FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 12, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.3, duration: 2000 });
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - 38), 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
+                    FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 20, 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
                   }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
