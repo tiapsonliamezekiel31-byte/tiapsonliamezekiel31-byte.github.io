@@ -2284,29 +2284,35 @@ class UIManager {
         </div>
         <div class="tab-header-controls">
           <div class="header-btn-group">
-            <button id="completeDayBtn" class="btn-header-action primary">Complete Day</button>
             <button id="dailiesAddBtn" class="btn-header-icon" title="Add Daily">＋ Daily</button>
-            <button id="addDailyNoteBtn" class="btn-header-action">＋ Note</button>
-            <button id="addDailyRectBtn" class="btn-header-action">＋ Rect</button>
-          </div>
-          <div class="header-divider"></div>
-          <div class="header-btn-group">
-            <button id="dailiesShowCompletedBtn" class="btn-header-toggle" aria-pressed="false">Completed: Off</button>
-            <button id="dailiesEditModeBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Edit: Off</button>
-            <button id="dailiesLockModeBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Lock: Off</button>
-            <button id="dailiesConnectionsBtn" class="btn-header-toggle" aria-pressed="false">Connections: Off</button>
-            <button id="dailiesFocusBtn" class="btn-header-toggle" aria-pressed="false" style="display: none;">Focus: Off</button>
-          </div>
-          <div class="header-divider"></div>
-          <div class="header-btn-group">
-            <select id="dailiesFilterSelect" class="header-select" title="Daily Filter & Heatmap">
-              <option value="regular">Filter: Regular</option>
-              <option value="streak">Filter: Streak</option>
-              <option value="completion">Filter: Completion Rate</option>
-              <option value="rewards">Filter: Rewards</option>
-              <option value="safety">Filter: Safety</option>
-            </select>
             <button id="dailiesTableViewBtn" class="btn-header-action">📋 Table</button>
+            <button id="addDailyNoteBtn" class="btn-header-action">＋ Note</button>
+            
+            <div class="daily-more-dropdown-container">
+              <button id="dailyMoreMenuBtn" class="btn-header-action daily-dropdown-trigger" title="More Options" aria-haspopup="true" aria-expanded="false">⚙ More ▾</button>
+              <div id="dailyMoreDropdownMenu" class="daily-custom-dropdown" style="display: none;">
+                <button id="completeDayBtn" class="daily-dropdown-item primary">⚡ Complete Day</button>
+                <div class="daily-dropdown-divider"></div>
+                <button id="addDailyRectBtn" class="daily-dropdown-item">＋ Rect</button>
+                <div class="daily-dropdown-divider"></div>
+                <button id="dailiesShowCompletedBtn" class="daily-dropdown-item toggle-item" aria-pressed="false">Completed: Off</button>
+                <button id="dailiesConnectionsBtn" class="daily-dropdown-item toggle-item" aria-pressed="false">Connections: Off</button>
+                <button id="dailiesEditModeBtn" class="daily-dropdown-item toggle-item" aria-pressed="false" style="display: none;">Edit: Off</button>
+                <button id="dailiesLockModeBtn" class="daily-dropdown-item toggle-item" aria-pressed="false" style="display: none;">Lock: Off</button>
+                <button id="dailiesFocusBtn" class="daily-dropdown-item toggle-item" aria-pressed="false" style="display: none;">Focus: Off</button>
+                <div class="daily-dropdown-divider"></div>
+                <div class="daily-dropdown-filter-group">
+                  <span class="daily-dropdown-label">Filter:</span>
+                  <select id="dailiesFilterSelect" class="header-select daily-dropdown-select" title="Daily Filter & Heatmap">
+                    <option value="regular">Regular</option>
+                    <option value="streak">Streak</option>
+                    <option value="completion">Completion Rate</option>
+                    <option value="rewards">Rewards</option>
+                    <option value="safety">Safety</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
           <button class="tab-close header-close-btn" title="Close Panel">✕</button>
         </div>
@@ -4992,8 +4998,36 @@ class UIManager {
     document.getElementById('diamondRewardsBtn').addEventListener('click', () => {
       try { UIManager.showDiamondRewards(); } catch (e) { console.warn('Failed to open diamond rewards popup', e); }
     });
+    // Dailies More Dropdown toggle
+    const dailyMoreBtn = document.getElementById('dailyMoreMenuBtn');
+    const dailyMoreMenu = document.getElementById('dailyMoreDropdownMenu');
+    if (dailyMoreBtn && dailyMoreMenu) {
+      dailyMoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dailyMoreMenu.style.display !== 'none';
+        dailyMoreMenu.style.display = isOpen ? 'none' : 'flex';
+        dailyMoreBtn.setAttribute('aria-expanded', String(!isOpen));
+        dailyMoreBtn.classList.toggle('active', !isOpen);
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!dailyMoreMenu.contains(e.target) && e.target !== dailyMoreBtn) {
+          dailyMoreMenu.style.display = 'none';
+          dailyMoreBtn.setAttribute('aria-expanded', 'false');
+          dailyMoreBtn.classList.remove('active');
+        }
+      });
+    }
+
     document.getElementById('checkInBtn').addEventListener('click', () => this.handleCheckInClick());
-    document.getElementById('completeDayBtn')?.addEventListener('click', () => this.handleCompleteDayClick());
+    document.getElementById('completeDayBtn')?.addEventListener('click', () => {
+      if (dailyMoreMenu) {
+        dailyMoreMenu.style.display = 'none';
+        dailyMoreBtn?.setAttribute('aria-expanded', 'false');
+        dailyMoreBtn?.classList.remove('active');
+      }
+      this.handleCompleteDayClick();
+    });
     document.getElementById('dailiesShowCompletedBtn')?.addEventListener('click', () => this.toggleShowCompleted('dailies'));
     document.getElementById('dailiesEditModeBtn')?.addEventListener('click', () => this.toggleEditMode('dailies'));
     document.getElementById('dailiesLockModeBtn')?.addEventListener('click', () => {
