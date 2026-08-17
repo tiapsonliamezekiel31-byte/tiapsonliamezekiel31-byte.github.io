@@ -419,7 +419,7 @@ class UIManager {
       coords.x,
       coords.y,
       `+${Math.ceil(amount)} AP`,
-      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true, scale: 1.35, ...options }
+      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true, scale: 0.95, ...options }
     );
   }
 
@@ -430,9 +430,9 @@ class UIManager {
 
     FloatingDamageNumber.show(
       coords.x,
-      coords.y - 18,
+      coords.y - 14,
       `+${amount} Keys 🔑`,
-      { color: '#ffd700', cycleText: false, countUp: true, scale: 1.25, ...options }
+      { color: '#ffd700', cycleText: false, countUp: true, scale: 0.9, ...options }
     );
   }
 
@@ -447,19 +447,19 @@ class UIManager {
 
       FloatingDamageNumber.show(posX, posY, `+${amount} 💎`, {
         color: '#00e5ff',
-        scale: 1.3,
+        scale: 0.95,
         cycleText: false,
         countUp: true,
         ...options
       });
       if (typeof ParticleSystem !== 'undefined') {
         const p = new ParticleSystem();
-        p.emit(posX, posY, 8, {
+        p.emit(posX, posY, 5, {
           color: '#00e5ff',
-          glow: true,
-          size: 3,
-          velocity: 3,
-          lifetime: 800
+          glow: false,
+          size: 2,
+          velocity: 2,
+          lifetime: 600
         });
       }
     } catch (e) {
@@ -6229,16 +6229,16 @@ class UIManager {
               if (res.isHeld || res.isMiss) {
                 try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
                 // Red MISS floating popup above top stats bar
-                FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 12, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.4, duration: 1800 });
+                FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 10, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.0, duration: 1600 });
               } else {
                 if (res.isJackpot) {
                   try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
                   // JACKPOT floating popup above top stats bar
                   FloatingDamageNumber.show(
                     topStatsCoords.x,
-                    topStatsCoords.y - 20,
+                    topStatsCoords.y - 14,
                     'JACKPOT!',
-                    { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 }
+                    { className: 'rainbow-jackpot-text', scale: 1.1, duration: 1800 }
                   );
                 }
                 if (res.rewards && res.rewards.ap) {
@@ -6255,19 +6255,19 @@ class UIManager {
                 // Separate floating popup for released held rewards
                 const released = res.releasedHeld || res.releasedHeldRewards;
                 if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
-                  const rect = card.getBoundingClientRect();
-                  const centerX = rect.left + rect.width / 2;
-                  let offset = 48;
+                  const apCoords = UIManager.getDailyTopStatsCoords('ap');
+                  const diaCoords = UIManager.getDailyTopStatsCoords('diamonds');
+                  let offset = 20;
                   if (released.ap > 0) {
-                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
-                    offset += 24;
+                    FloatingDamageNumber.show(apCoords.x, Math.max(12, apCoords.y - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 0.95, duration: 2200, countUp: true });
+                    offset += 16;
                   }
                   if (released.diamonds > 0) {
-                    FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500, countUp: true });
-                    offset += 24;
+                    FloatingDamageNumber.show(diaCoords.x, Math.max(12, diaCoords.y - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 0.95, duration: 2200, countUp: true });
+                    offset += 16;
                   }
                   if (released.keys > 0) {
-                    FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
+                    FloatingDamageNumber.show(apCoords.x, Math.max(12, apCoords.y - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 0.9, duration: 2200, countUp: true });
                   }
                 }
               }
@@ -9987,11 +9987,11 @@ class UIManager {
                 const centerY = rect.top + rect.height / 2;
                 if (res.isHeld || res.isMiss) {
                   try { if (window.SoundManager) SoundManager.play('miss'); } catch (e) {}
-                  FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 12, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.3, duration: 2000 });
+                  FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 10, 'MISS', { color: '#ef4444', isMiss: true, scale: 1.0, duration: 1600 });
                 } else {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
-                    FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 20, 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.5, duration: 2000 });
+                    FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 14, 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.1, duration: 1800 });
                   }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
@@ -10005,17 +10005,19 @@ class UIManager {
 
                   const released = res.releasedHeld || res.releasedHeldRewards;
                   if (released && (released.ap > 0 || released.diamonds > 0 || released.keys > 0)) {
-                    let offset = 48;
+                    const apCoords = UIManager.getDailyTopStatsCoords('ap');
+                    const diaCoords = UIManager.getDailyTopStatsCoords('diamonds');
+                    let offset = 20;
                     if (released.ap > 0) {
-                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
-                      offset += 24;
+                      FloatingDamageNumber.show(apCoords.x, Math.max(12, apCoords.y - offset), `+${Math.ceil(released.ap)} AP (Held)`, { color: '#f59e0b', scale: 0.95, duration: 2200, countUp: true });
+                      offset += 16;
                     }
                     if (released.diamonds > 0) {
-                      FloatingDamageNumber.show(centerX + 25, Math.max(12, rect.top - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 1.25, duration: 2500, countUp: true });
-                      offset += 24;
+                      FloatingDamageNumber.show(diaCoords.x, Math.max(12, diaCoords.y - offset), `+${released.diamonds} 💎 (Held)`, { color: '#00e5ff', scale: 0.95, duration: 2200, countUp: true });
+                      offset += 16;
                     }
                     if (released.keys > 0) {
-                      FloatingDamageNumber.show(centerX, Math.max(12, rect.top - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 1.25, duration: 2500, countUp: true });
+                      FloatingDamageNumber.show(apCoords.x, Math.max(12, apCoords.y - offset), `+${released.keys} Keys (Held) 🔑`, { color: '#f59e0b', scale: 0.9, duration: 2200, countUp: true });
                     }
                   }
                 }
