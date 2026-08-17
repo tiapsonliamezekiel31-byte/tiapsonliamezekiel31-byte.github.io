@@ -411,42 +411,50 @@ class UIManager {
   }
 
   static showDailyApReward(card, amount, options = {}) {
-    const rect = card?.getBoundingClientRect?.();
-    if (!rect) return;
+    const coords = (typeof this.getDailyTopStatsCoords === 'function')
+      ? this.getDailyTopStatsCoords('ap')
+      : { x: window.innerWidth / 2, y: 40 };
 
     FloatingDamageNumber.show(
-      rect.left + rect.width / 2,
-      Math.max(12, rect.top - 18),
+      coords.x,
+      coords.y,
       `+${Math.ceil(amount)} AP`,
-      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true, ...options }
+      { color: UIManager.themeColor('--ap-gold', '#FFB33F'), cycleText: false, countUp: true, scale: 1.35, ...options }
     );
   }
 
   static showDailyKeysReward(card, amount, options = {}) {
-    const rect = card?.getBoundingClientRect?.();
-    if (!rect) return;
+    const coords = (typeof this.getDailyTopStatsCoords === 'function')
+      ? this.getDailyTopStatsCoords('ap')
+      : { x: window.innerWidth / 2, y: 40 };
 
     FloatingDamageNumber.show(
-      rect.left + rect.width / 2,
-      Math.max(12, rect.top - 18),
+      coords.x,
+      coords.y - 18,
       `+${amount} Keys 🔑`,
-      { color: '#ffd700', cycleText: false, countUp: true, ...options }
+      { color: '#ffd700', cycleText: false, countUp: true, scale: 1.25, ...options }
     );
   }
 
   static spawnDiamondFloatingPopup(x, y, amount, options = {}) {
     if (!amount || amount <= 0) return;
     try {
-      FloatingDamageNumber.show(x, y, `+${amount} 💎`, {
+      const coords = (typeof this.getDailyTopStatsCoords === 'function')
+        ? this.getDailyTopStatsCoords('diamonds')
+        : null;
+      const posX = coords ? coords.x : x;
+      const posY = coords ? coords.y : y;
+
+      FloatingDamageNumber.show(posX, posY, `+${amount} 💎`, {
         color: '#00e5ff',
-        scale: 1.2,
+        scale: 1.3,
         cycleText: false,
         countUp: true,
         ...options
       });
       if (typeof ParticleSystem !== 'undefined') {
         const p = new ParticleSystem();
-        p.emit(x, y, 8, {
+        p.emit(posX, posY, 8, {
           color: '#00e5ff',
           glow: true,
           size: 3,
@@ -2281,20 +2289,6 @@ class UIManager {
       <div class="tab-header dailies-top-bar">
         <div class="tab-header-left">
           <h3 class="tab-header-title">DAILIES</h3>
-          <div class="daily-top-stats-container" id="dailyTopStatsBadge">
-            <div class="daily-top-stat-pill stat-streak" title="Average Streak">
-              <span class="daily-top-stat-icon">🔥</span>
-              <span class="daily-top-stat-val" id="topAvgStreakVal">0</span>
-            </div>
-            <div class="daily-top-stat-pill stat-ap" title="Player AP">
-              <span class="daily-top-stat-icon">⚡</span>
-              <span class="daily-top-stat-val" id="topApVal">0</span>
-            </div>
-            <div class="daily-top-stat-pill stat-diamonds" title="Player Diamonds">
-              <span class="daily-top-stat-icon">💎</span>
-              <span class="daily-top-stat-val" id="topDiamondsVal">0</span>
-            </div>
-          </div>
         </div>
         <div class="tab-header-controls">
           <div class="header-btn-group">
@@ -2329,6 +2323,31 @@ class UIManager {
             </div>
           </div>
           <button class="tab-close header-close-btn" title="Close Panel">✕</button>
+        </div>
+      </div>
+      <div class="daily-top-hanging-banner">
+        <div class="daily-top-stats-container" id="dailyTopStatsBadge">
+          <div class="daily-top-stat-pill stat-streak" id="statStreakPill" title="Average Streak">
+            <span class="daily-top-stat-icon">🔥</span>
+            <div class="daily-top-stat-body">
+              <span class="daily-top-stat-label">AVG STREAK</span>
+              <span class="daily-top-stat-val" id="topAvgStreakVal">0</span>
+            </div>
+          </div>
+          <div class="daily-top-stat-pill stat-ap stat-ap-hero" id="statApPill" title="Player Action Points (AP)">
+            <span class="daily-top-stat-icon">⚡</span>
+            <div class="daily-top-stat-body">
+              <span class="daily-top-stat-label">AP</span>
+              <span class="daily-top-stat-val" id="topApVal">0</span>
+            </div>
+          </div>
+          <div class="daily-top-stat-pill stat-diamonds" id="statDiamondsPill" title="Player Diamonds">
+            <span class="daily-top-stat-icon">💎</span>
+            <div class="daily-top-stat-body">
+              <span class="daily-top-stat-label">DIAMONDS</span>
+              <span class="daily-top-stat-val" id="topDiamondsVal">0</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
@@ -6542,13 +6561,21 @@ class UIManager {
     }
   }
 
-  static getDailyTopStatsCoords() {
-    const badge = document.getElementById('dailyTopStatsBadge') || document.querySelector('.dailies-top-bar');
-    if (badge) {
-      const rect = badge.getBoundingClientRect();
+  static getDailyTopStatsCoords(statType = null) {
+    let target = null;
+    if (statType === 'ap') target = document.getElementById('statApPill') || document.getElementById('topApVal');
+    else if (statType === 'streak') target = document.getElementById('statStreakPill') || document.getElementById('topAvgStreakVal');
+    else if (statType === 'diamonds') target = document.getElementById('statDiamondsPill') || document.getElementById('topDiamondsVal');
+
+    if (!target) {
+      target = document.getElementById('dailyTopStatsBadge') || document.querySelector('.daily-top-hanging-banner') || document.querySelector('.dailies-top-bar');
+    }
+
+    if (target) {
+      const rect = target.getBoundingClientRect();
       return {
         x: rect.left + rect.width / 2,
-        y: Math.max(12, rect.top - 8)
+        y: Math.max(12, rect.top - 10)
       };
     }
     return {
