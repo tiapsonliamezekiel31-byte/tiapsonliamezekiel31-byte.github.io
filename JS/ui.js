@@ -2325,7 +2325,9 @@ class UIManager {
           <button class="tab-close header-close-btn" title="Close Panel">✕</button>
         </div>
       </div>
-      <div class="daily-top-hanging-banner">
+      <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
+      <div class="tab-content daily-board" id="dailiesList"></div>
+      <div class="daily-bottom-stats-banner">
         <div class="daily-top-stats-container" id="dailyTopStatsBadge">
           <div class="daily-top-stat-pill stat-streak" id="statStreakPill" title="Average Streak">
             <span class="daily-top-stat-icon">🔥</span>
@@ -2350,8 +2352,6 @@ class UIManager {
           </div>
         </div>
       </div>
-      <div class="daily-panel-summary"><span id="dailiesSummary">0/0 complete</span></div>
-      <div class="tab-content daily-board" id="dailiesList"></div>
     `;
     document.body.appendChild(leftTab);
 

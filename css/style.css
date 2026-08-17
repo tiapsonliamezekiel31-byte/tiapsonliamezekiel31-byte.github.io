@@ -2274,29 +2274,29 @@ body::before {
   margin: 0;
 }
 
-/* Big Numbers Hanging Banner Attached to Daily Panel (Fixed at bottom of screen sticking up) */
-.daily-top-hanging-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  padding: 0 10px;
-  background: transparent;
-  z-index: 12050;
-  pointer-events: none;
+/* Big Numbers Banner Attached to Daily Panel (Fixed at bottom of screen sticking up) */
+.daily-bottom-stats-banner {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-end !important;
+  padding: 0 10px !important;
+  background: transparent !important;
+  z-index: 12500 !important;
+  pointer-events: none !important;
 }
 
 .daily-top-stats-container {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  max-width: 480px;
-  pointer-events: auto;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  pointer-events: auto !important;
 }
 
 .daily-top-stat-pill {
