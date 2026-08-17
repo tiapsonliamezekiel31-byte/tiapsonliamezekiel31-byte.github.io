@@ -6637,10 +6637,10 @@ class UIManager {
 
       // Progress from initial base (500ms) to regular 1000ms (1 sec) at full run completion
       const targetBase = 500 + (1000 - 500) * completionRatio;
-      // Irregular offset varies +- 500ms at 0 completion, smoothing to 0 at 100% completion
-      const maxRandomOffset = 500 * (1 - completionRatio);
-      const randomOffset = (Math.random() * 2 - 1) * maxRandomOffset;
-      const nextDelay = Math.max(120, Math.round(targetBase + randomOffset));
+      // Positive random offset (+0 to +1500ms / +1.5s) at 0 completion, with maximum value approaching 0 at 100% completion
+      const maxRandomOffset = 1500 * (1 - completionRatio);
+      const randomOffset = Math.random() * maxRandomOffset;
+      const nextDelay = Math.round(targetBase + randomOffset);
 
       this._dailyHeartbeatTimer = setTimeout(triggerPulse, nextDelay);
     };
