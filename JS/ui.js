@@ -6240,6 +6240,7 @@ class UIManager {
                     'JACKPOT!',
                     { className: 'rainbow-jackpot-text', scale: 1.1, duration: 1800 }
                   );
+                  UIManager.triggerJackpotRainbowGlow();
                 }
                 if (res.rewards && res.rewards.ap) {
                   UIManager.showDailyApReward(card, res.rewards.ap);
@@ -6582,6 +6583,18 @@ class UIManager {
       x: window.innerWidth / 2,
       y: 40
     };
+  }
+
+  static triggerJackpotRainbowGlow() {
+    const statsBadge = document.getElementById('dailyTopStatsBadge');
+    if (statsBadge) {
+      statsBadge.classList.remove('jackpot-rainbow-glow');
+      void statsBadge.offsetWidth;
+      statsBadge.classList.add('jackpot-rainbow-glow');
+      setTimeout(() => {
+        statsBadge.classList.remove('jackpot-rainbow-glow');
+      }, 3600);
+    }
   }
 
   static updateManaBar(detail) {
@@ -9992,6 +10005,7 @@ class UIManager {
                   if (res.isJackpot) {
                     try { if (window.SoundManager) SoundManager.play('crit'); } catch (e) {}
                     FloatingDamageNumber.show(topStatsCoords.x, topStatsCoords.y - 14, 'JACKPOT!', { className: 'rainbow-jackpot-text', scale: 1.1, duration: 1800 });
+                    UIManager.triggerJackpotRainbowGlow();
                   }
                   if (res.rewards && res.rewards.ap) {
                     UIManager.showDailyApReward(card, res.rewards.ap);
