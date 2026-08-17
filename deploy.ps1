@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: revamp to-dos with deadline card lists, solid colors, and mobile gestures"
+$commitMsg = "fix: mobile touch long-press and isolated tab scrolling for to-dos"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

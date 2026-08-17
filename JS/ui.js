@@ -10204,14 +10204,13 @@ class UIManager {
                  data-attribute="${displayAttr}" 
                  data-difficulty="${diff}"
                  style="--attr-color: ${attrColor}; --attr-text-color: ${textColor};"
-                 tabindex="0"
-                 draggable="true">
+                 tabindex="0">
               
               <div class="hold-progress-overlay"></div>
 
               <div class="todo-card-top-row">
                 <div class="todo-badges-left">
-                  <span class="todo-drag-handle" title="Drag to reorder">⠿</span>
+                  <span class="todo-drag-handle" title="Drag to reorder" draggable="true">⠿</span>
                   <span class="todo-badge todo-badge-attr" style="background:${attrColor}; color:${textColor};">${displayAttr}</span>
                   <span class="todo-badge todo-badge-diff">${diff}</span>
                   ${todo.bloodOathActive ? '<span class="todo-badge todo-badge-oath">🔥 Blood Oath</span>' : ''}
@@ -10260,6 +10259,13 @@ class UIManager {
     let activeSwipeCard = null;
     let lastTapTime = 0;
     let lastTapCard = null;
+
+    // Prevent context menu on cards to allow mobile long press
+    board.addEventListener('contextmenu', (e) => {
+      if (e.target.closest('.todo-card-v2')) {
+        e.preventDefault();
+      }
+    });
 
     // Double-click / Double-tap for editing fields
     board.addEventListener('dblclick', (e) => {
@@ -10430,7 +10436,7 @@ class UIManager {
 
     // Pointer events for Long-Press to complete & Swipe-right to delete
     board.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 && e.button !== undefined) return;
       const card = e.target.closest('.todo-card-v2');
       const wrapper = e.target.closest('.todo-card-wrapper');
       if (!card || !wrapper) return;
@@ -10508,7 +10514,7 @@ class UIManager {
             UIManager.renderEnemies();
           }
         }
-      }, 850);
+      }, 650);
     });
 
     const onPointerMove = (e) => {
@@ -10518,7 +10524,7 @@ class UIManager {
       const dx = currentX - startX;
       const dy = currentY - startY;
 
-      if (Math.hypot(dx, dy) > 10 && holdTimer) {
+      if ((Math.abs(dy) > 6 || Math.hypot(dx, dy) > 10) && holdTimer) {
         clearTimeout(holdTimer);
         holdTimer = null;
         holdCard.classList.remove('is-holding');
@@ -10573,7 +10579,14 @@ class UIManager {
 
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
-    document.addEventListener('pointercancel', onPointerUp);
+    document.addEventListener('pointercancel', (e) => {
+      // On mobile, only cancel if swiping or moved significantly
+      const dx = (e.clientX || currentX) - startX;
+      const dy = (e.clientY || currentY) - startY;
+      if (Math.hypot(dx, dy) > 12 || isSwiping) {
+        onPointerUp(e);
+      }
+    });
 
     // Native Drag and Drop for card reordering
     let draggedCardId = null;
