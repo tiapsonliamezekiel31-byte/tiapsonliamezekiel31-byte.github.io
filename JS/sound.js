@@ -69,6 +69,7 @@ class SoundManager {
         case 'cow_moo': this._playSequence([170, 140, 110], [0.18, 0.28, 0.38], 'sine', 0.15); break;
         case 'lion_roar': this._playSequence([100, 80, 60, 40], [0.18, 0.18, 0.28, 0.38], 'sawtooth', 0.22); break;
         case 'tick': this._playTone(1800, 0.03, 'sine', 0.15); break;
+        case 'heartbeat': this._playTone(75, 0.09, 'sine', 0.14); break;
         default: this._playTone(600, 0.05, 'sine', 0.08); break;
       }
     } catch (e) { console.warn('Sound play failed', e); }

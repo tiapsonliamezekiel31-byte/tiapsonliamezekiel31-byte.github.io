@@ -6613,10 +6613,10 @@ class UIManager {
         return;
       }
 
-      // Saturation heartbeat pulse
-      dailiesPanel.classList.remove('screen-heartbeat-pulse');
-      void dailiesPanel.offsetWidth;
-      dailiesPanel.classList.add('screen-heartbeat-pulse');
+      // Low sound every beat instead of saturation
+      if (window.SoundManager) {
+        try { SoundManager.play('heartbeat'); } catch (e) {}
+      }
 
       // Mini vibration
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
