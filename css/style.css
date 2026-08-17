@@ -1862,7 +1862,7 @@ body::before {
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
-  background: #04060c;
+  background: linear-gradient(135deg, #000000 0%, #000000 50%, #060914 50.1%, #090e20 100%);
 }
 
 #dailiesPanel::before {
@@ -1876,21 +1876,29 @@ body::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  animation: spinDailyGalaxy 90s linear infinite;
-  will-change: transform;
   pointer-events: none;
   z-index: 0;
   opacity: 0.45;
-  filter: brightness(0.65) contrast(1.15);
+  filter: brightness(0.7) contrast(1.2);
+  will-change: transform;
+  animation: spinDailyGalaxyJittery 16s steps(18, end) infinite;
 }
 
-@keyframes spinDailyGalaxy {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+#dailiesPanel.daily-spin-smooth::before {
+  animation: spinDailyGalaxySmooth 40s linear infinite !important;
+}
+
+@keyframes spinDailyGalaxyJittery {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(85deg); }
+  50% { transform: rotate(190deg); }
+  75% { transform: rotate(260deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes spinDailyGalaxySmooth {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 #dailiesPanel > * {

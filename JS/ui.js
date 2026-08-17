@@ -6606,46 +6606,56 @@ class UIManager {
   static startDailyHeartbeat() {
     this.stopDailyHeartbeat();
 
-    const triggerPulse = () => {
+    const checkSpinAndPulse = () => {
       const dailiesPanel = document.getElementById('dailiesPanel');
       if (!dailiesPanel || !dailiesPanel.classList.contains('open')) {
         this.stopDailyHeartbeat();
         return;
       }
 
-      // Saturation heartbeat pulse
-      dailiesPanel.classList.remove('screen-heartbeat-pulse');
-      void dailiesPanel.offsetWidth;
-      dailiesPanel.classList.add('screen-heartbeat-pulse');
-
-      // Mini vibration
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try {
-          navigator.vibrate(15);
-        } catch (e) {}
-      }
-
       // Calculate progress towards run completion
       let completionRatio = 0;
+      let isComplete = false;
       try {
         const scheduled = TaskManager.getAllDailies ? TaskManager.getAllDailies() : [];
         if (scheduled && scheduled.length > 0) {
           const completed = scheduled.filter(d => d.completed).length;
           completionRatio = Math.min(1, completed / scheduled.length);
+          isComplete = completed >= scheduled.length;
         }
       } catch (e) {}
 
+      // Transition smoothly from jittery to calm, silky smooth spin on completion
+      if (isComplete || completionRatio >= 0.99) {
+        dailiesPanel.classList.add('daily-spin-smooth');
+      } else {
+        dailiesPanel.classList.remove('daily-spin-smooth');
+      }
+
+      // Soft haptic feedback pulse without whole screen flashing
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(10);
+        } catch (e) {}
+      }
+
+      // If already complete, gently pulse or stay regular
+      if (isComplete) {
+        this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, 800);
+        return;
+      }
+
       // Base 500ms (0.5s)
       const baseInterval = 500;
-      // Irregular offset varies +- 500ms at 0 completion, smoothing to 0 at 100% completion
+      // Irregular offset varies +- 500ms at 0 completion, smoothing out as completion approaches
       const maxRandomOffset = 500 * (1 - completionRatio);
       const randomOffset = (Math.random() * 2 - 1) * maxRandomOffset;
-      const nextDelay = Math.max(120, Math.round(baseInterval + randomOffset));
+      const nextDelay = Math.max(150, Math.round(baseInterval + randomOffset));
 
-      this._dailyHeartbeatTimer = setTimeout(triggerPulse, nextDelay);
+      this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, nextDelay);
     };
 
-    this._dailyHeartbeatTimer = setTimeout(triggerPulse, 500);
+    this._dailyHeartbeatTimer = setTimeout(checkSpinAndPulse, 500);
   }
 
   static stopDailyHeartbeat() {
