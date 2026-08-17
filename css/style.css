@@ -2396,29 +2396,21 @@ body::before {
   100% { transform: scale(1); }
 }
 
-/* Rainbow Jackpot Glow for the Hanging Banner */
-.daily-top-stats-container.jackpot-rainbow-glow .daily-top-stat-pill {
-  animation: jackpotRainbowBorder 3.5s linear forwards, jackpotRainbowGlow 3.5s ease-in-out forwards;
+/* Screen Heartbeat Saturation Pulse */
+.screen-heartbeat-pulse {
+  animation: screenHeartbeatSaturation 0.22s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
 
-@keyframes jackpotRainbowBorder {
-  0% { border-color: #ff0055; }
-  16% { border-color: #ff9900; }
-  33% { border-color: #ffff00; }
-  50% { border-color: #00ff66; }
-  66% { border-color: #00e5ff; }
-  83% { border-color: #aa00ff; }
-  100% { border-color: rgba(255, 215, 106, 0.45); }
-}
-
-@keyframes jackpotRainbowGlow {
-  0% { box-shadow: 0 -4px 16px rgba(255, 0, 85, 0.8), 0 0 20px rgba(255, 0, 85, 0.5); }
-  16% { box-shadow: 0 -4px 16px rgba(255, 153, 0, 0.8), 0 0 20px rgba(255, 153, 0, 0.5); }
-  33% { box-shadow: 0 -4px 16px rgba(255, 255, 0, 0.8), 0 0 20px rgba(255, 255, 0, 0.5); }
-  50% { box-shadow: 0 -4px 16px rgba(0, 255, 102, 0.8), 0 0 20px rgba(0, 255, 102, 0.5); }
-  66% { box-shadow: 0 -4px 16px rgba(0, 229, 255, 0.8), 0 0 20px rgba(0, 229, 255, 0.5); }
-  83% { box-shadow: 0 -4px 16px rgba(170, 0, 255, 0.8), 0 0 20px rgba(170, 0, 255, 0.5); }
-  100% { box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.6); }
+@keyframes screenHeartbeatSaturation {
+  0% {
+    filter: saturate(100%);
+  }
+  35% {
+    filter: saturate(190%) brightness(1.08);
+  }
+  100% {
+    filter: saturate(100%);
+  }
 }
 
 .btn-header-nav {

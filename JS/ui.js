@@ -5468,6 +5468,7 @@ class UIManager {
           } else if (which === 'dailies') {
             this.scheduleUpdateDailiesList();
             this.positionDailyCards();
+            this.startDailyHeartbeat();
           } else if (which === 'achievements') {
             this.updateAchievementsList();
           } else if (which === 'pet') {
@@ -5489,6 +5490,9 @@ class UIManager {
           which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
+    if (which === 'dailies') {
+      this.stopDailyHeartbeat();
+    }
     this.updateJoystickUI();
     this.updateTodoJoystickUI();
   }
@@ -6594,6 +6598,64 @@ class UIManager {
       setTimeout(() => {
         statsBadge.classList.remove('jackpot-rainbow-glow');
       }, 3600);
+    }
+  }
+
+  static _dailyHeartbeatTimer = null;
+
+  static startDailyHeartbeat() {
+    this.stopDailyHeartbeat();
+
+    const triggerPulse = () => {
+      const dailiesPanel = document.getElementById('dailiesPanel');
+      if (!dailiesPanel || !dailiesPanel.classList.contains('open')) {
+        this.stopDailyHeartbeat();
+        return;
+      }
+
+      // Saturation heartbeat pulse
+      dailiesPanel.classList.remove('screen-heartbeat-pulse');
+      void dailiesPanel.offsetWidth;
+      dailiesPanel.classList.add('screen-heartbeat-pulse');
+
+      // Mini vibration
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(15);
+        } catch (e) {}
+      }
+
+      // Calculate progress towards run completion
+      let completionRatio = 0;
+      try {
+        const scheduled = TaskManager.getAllDailies ? TaskManager.getAllDailies() : [];
+        if (scheduled && scheduled.length > 0) {
+          const completed = scheduled.filter(d => d.completed).length;
+          completionRatio = Math.min(1, completed / scheduled.length);
+        }
+      } catch (e) {}
+
+      // Base 500ms (0.5s)
+      const baseInterval = 500;
+      // Irregular offset varies +- 500ms at 0 completion, smoothing to 0 at 100% completion
+      const maxRandomOffset = 500 * (1 - completionRatio);
+      const randomOffset = (Math.random() * 2 - 1) * maxRandomOffset;
+      const nextDelay = Math.max(120, Math.round(baseInterval + randomOffset));
+
+      this._dailyHeartbeatTimer = setTimeout(triggerPulse, nextDelay);
+    };
+
+    this._dailyHeartbeatTimer = setTimeout(triggerPulse, 500);
+  }
+
+  static stopDailyHeartbeat() {
+    if (this._dailyHeartbeatTimer) {
+      clearTimeout(this._dailyHeartbeatTimer);
+      this._dailyHeartbeatTimer = null;
+    }
+    const dailiesPanel = document.getElementById('dailiesPanel');
+    if (dailiesPanel) {
+      dailiesPanel.classList.remove('screen-heartbeat-pulse');
     }
   }
 
