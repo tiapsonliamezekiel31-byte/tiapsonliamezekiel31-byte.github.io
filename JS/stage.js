@@ -1594,7 +1594,7 @@ class StageManager {
     const stage = state.stageState.stage;
     const bossCfg = (state.config.bosses && state.config.bosses[bossName]) || {};
     const hpMultiplier = bossCfg.hpMult || this.getBossHpMultiplier(bossName);
-    const calculatedHp = Math.round(state.playerState.maxAp * (2.0 + stage * 0.6) * hpMultiplier);
+    const calculatedHp = Math.round(state.playerState.maxAp * (2.0 + stage * 0.6) * hpMultiplier * 0.7);
     
     state.stageState.enemies = [];
     state.stageState.bossData = {

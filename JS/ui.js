@@ -59,12 +59,6 @@ class HUDMinimizer {
       icon: '🏁',
       storageKey: 'nemesis_hud_minimized_runCompletionPanel'
     },
-    eventBannerPanel: {
-      id: 'eventBannerPanel',
-      name: 'EVENTS',
-      icon: '⛩️',
-      storageKey: 'nemesis_hud_minimized_eventBannerPanel'
-    },
     buffPanel: {
       id: 'buffPanel',
       name: 'BUFFS',
@@ -1868,12 +1862,6 @@ class UIManager {
           <div id="satchelPanel" class="satchel-panel" aria-label="Consumables"></div>
       </div>
       <div id="buffPanel" class="buff-panel" aria-label="Buffs"></div>
-      <div id="eventBannerPanel" class="event-banner-panel" aria-label="Event Banner" style="display: none;">
-        <div class="event-banner-content">
-          <span id="eventBannerEmoji" class="event-banner-emoji" title="Click to claim reward">⛩️</span>
-          <div id="eventBannerSlots" class="event-banner-slots"></div>
-        </div>
-      </div>
       <div class="combo-indicator" id="comboIndicator"></div>
       <div class="focus-overlay" id="focusOverlay"></div>
       <div id="focus-clock-popup">
@@ -6605,55 +6593,6 @@ class UIManager {
 
   static startDailyHeartbeat() {
     this.stopDailyHeartbeat();
-
-    const triggerPulse = () => {
-      const dailiesPanel = document.getElementById('dailiesPanel');
-      if (!dailiesPanel || !dailiesPanel.classList.contains('open')) {
-        this.stopDailyHeartbeat();
-        return;
-      }
-
-      // Low sound every beat
-      if (window.SoundManager) {
-        try { SoundManager.play('heartbeat'); } catch (e) {}
-      }
-
-      // Micro-camera shake (Option 7)
-      const board = dailiesPanel.querySelector('.daily-board') || dailiesPanel;
-      if (board) {
-        board.classList.remove('daily-heartbeat-jitter');
-        void board.offsetWidth;
-        board.classList.add('daily-heartbeat-jitter');
-      }
-
-      // Stronger tactile heartbeat vibration
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try {
-          navigator.vibrate([45, 30, 45]);
-        } catch (e) {}
-      }
-
-      // Calculate progress towards run completion
-      let completionRatio = 0;
-      try {
-        const scheduled = TaskManager.getAllDailies ? TaskManager.getAllDailies() : [];
-        if (scheduled && scheduled.length > 0) {
-          const completed = scheduled.filter(d => d.completed).length;
-          completionRatio = Math.min(1, completed / scheduled.length);
-        }
-      } catch (e) {}
-
-      // Minimum 1000ms (1 sec) base interval no matter completion rate
-      const baseInterval = 1000;
-      // Chinese water torture random offset (+0 to +1500ms / +1.5s) on top of 1s base, decaying to 0 at 100% completion
-      const maxRandomOffset = 1500 * (1 - completionRatio);
-      const randomOffset = Math.random() * maxRandomOffset;
-      const nextDelay = Math.round(baseInterval + randomOffset);
-
-      this._dailyHeartbeatTimer = setTimeout(triggerPulse, nextDelay);
-    };
-
-    this._dailyHeartbeatTimer = setTimeout(triggerPulse, 1000);
   }
 
   static stopDailyHeartbeat() {
@@ -12612,110 +12551,7 @@ class UIManager {
 
   static refreshEventBanner() {
     const banner = document.getElementById('eventBannerPanel');
-    if (!banner) return;
-
-    const state = getGameState();
-    const event = state.systemState.specialEvent;
-
-    if (!event || event.claimed) {
-      banner.style.display = 'none';
-      return;
-    }
-
-    banner.style.display = 'flex';
-
-    const emojiEl = document.getElementById('eventBannerEmoji');
-    const slotsEl = document.getElementById('eventBannerSlots');
-
-    let emojiIcon = '⛩️';
-    if (event.type === 'Shrine') {
-      emojiIcon = '⛩️';
-    } else if (event.type === 'Statue') {
-      emojiIcon = '🗿';
-    } else if (event.type === 'Sacred Tree') {
-      emojiIcon = '🌳';
-    }
-    if (emojiEl) emojiEl.textContent = emojiIcon;
-
-    let isComplete = false;
-    let slotsHtml = '';
-
-    const eventUnlockMap = {
-      'Sacred Tree': { key: 'sacredTree', streak: 5 },
-      'Statue': { key: 'statue', streak: 8 },
-      'Shrine': { key: 'shrine', streak: 9 }
-    };
-    const req = eventUnlockMap[event.type];
-    const isEventUnlocked = req && typeof TaskManager !== 'undefined' && typeof TaskManager.isFeatureUnlocked === 'function'
-      ? TaskManager.isFeatureUnlocked(req.key)
-      : true;
-
-    if (!isEventUnlocked && req) {
-      if (slotsEl) {
-        slotsEl.innerHTML = `
-          <div class="event-task-slot locked-event-slot" style="color: var(--accent-gold, #ffd700); font-weight: bold; font-size: 11px; padding: 4px 10px; border: 1px solid var(--accent-gold, #ffd700); border-radius: 6px; background: rgba(0,0,0,0.4);">
-            🔒 Unlocks at Streak ${req.streak}
-          </div>
-        `;
-      }
-      if (emojiEl) {
-        emojiEl.classList.remove('ready');
-        emojiEl.title = `Unlocks at Streak ${req.streak}`;
-      }
-      return;
-    }
-
-    const attrColors = state.config?.attributeColors || {
-      STR: '#ff4d4d', DISC: '#4d94ff', RESP: '#00e5ff', SOC: '#ff9933', CAP: '#ffd700', CREA: '#cc66ff', INT: '#33cc66'
-    };
-
-    if (event.type === 'Shrine') {
-      const activeDailies = state.dailiesState?.dailies || [];
-      isComplete = TaskManager.isAllDailiesComplete() && activeDailies.length > 0;
-      slotsHtml = `
-        <div class="event-task-slot shrine-slot ${isComplete ? 'completed' : ''}">
-          everything
-        </div>
-      `;
-    } else if (event.type === 'Statue' || event.type === 'Sacred Tree') {
-      const targets = event.targets || [];
-      const missed = TaskManager.getMissedDailies().map(d => d.id);
-      isComplete = targets.length > 0 && targets.every(t => !missed.includes(t));
-
-      slotsHtml = targets.map(targetId => {
-        const daily = (state.dailiesState?.dailies || []).find(d => d.id === targetId);
-        if (daily) {
-          const isDone = !missed.includes(targetId) && !!daily.completed;
-          const attrKey = (daily.attribute || 'STR').toUpperCase();
-          const dailyColor = attrColors[attrKey] || '#e8b84a';
-          return `
-            <div class="event-task-slot ${isDone ? 'completed' : ''}" style="--slot-color: ${dailyColor}; border-color: ${dailyColor}; color: ${dailyColor};" title="${daily.name}">
-              <span class="slot-status">${isDone ? '✓' : '○'}</span>
-              <span class="slot-name">${daily.name}</span>
-            </div>
-          `;
-        } else {
-          return `
-            <div class="event-task-slot completed" style="--slot-color: #666; border-color: #666; color: #888;">
-              <span class="slot-status">✓</span>
-              <span class="slot-name" style="text-decoration: line-through;">[Deleted]</span>
-            </div>
-          `;
-        }
-      }).join('');
-    }
-
-    if (slotsEl) slotsEl.innerHTML = slotsHtml;
-
-    if (emojiEl) {
-      if (isComplete) {
-        emojiEl.classList.add('ready');
-        emojiEl.title = 'Ready to claim! Click emoji to claim reward.';
-      } else {
-        emojiEl.classList.remove('ready');
-        emojiEl.title = 'Event in progress. Click emoji to claim when ready.';
-      }
-    }
+    if (banner) banner.style.display = 'none';
   }
 
   static updatePauseBtn() {
@@ -12744,18 +12580,9 @@ class UIManager {
   static updateStageBackdrop() {
     const gameArea = document.getElementById('gameArea');
     if (!gameArea) return;
-
-    const backdrop = this.getStageBackdropConfig();
-    if (!backdrop.src) return;
-
-    if (this._stageBackdropKey === backdrop.key && gameArea.style.getPropertyValue('--stage-bg-image')) {
-      return;
-    }
-
-    this._stageBackdropKey = backdrop.key;
-    const absoluteSrc = new URL(backdrop.src, window.location.href).href;
-    gameArea.style.setProperty('--stage-bg-image', `url("${absoluteSrc}")`);
-    gameArea.style.setProperty('--stage-bg-position', backdrop.position);
+    this._stageBackdropKey = null;
+    gameArea.style.removeProperty('--stage-bg-image');
+    gameArea.style.removeProperty('--stage-bg-position');
   }
 
   static getRunCompletionEntries() {

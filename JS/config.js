@@ -246,7 +246,7 @@ const DEFAULT_GAME_CONFIG = {
   // STAGES & FORMATIONS
   // ============================================================
   stageHpPercentages: [30, 35, 40, 50, 60, 65, 70],
-  enemyHpMultiplier: 3,
+  enemyHpMultiplier: 2.1,
   eliteEnemyChance: 0.1,
   eliteEnemyChanceByStage: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35],
   eliteEnemyHpMultiplier: 2,

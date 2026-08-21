@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: mobile touch long-press and isolated tab scrolling for to-dos"
+$commitMsg = "feat: nerf enemy hp 0.7x, remove stage bgs & event hud, 2x circle size, mute daily tick"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
