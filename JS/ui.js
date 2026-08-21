@@ -2020,156 +2020,158 @@ class UIManager {
     }
 
     const ebPanel = gameArea.querySelector('#eventBannerPanel');
-    let isEbDragging = false;
-    let ebStartX = 0, ebStartY = 0, ebInitialLeft = 0, ebInitialTop = 0;
-    let ebLatestX = 0, ebLatestY = 0;
-    let ebRafId = null;
+    if (ebPanel) {
+      let isEbDragging = false;
+      let ebStartX = 0, ebStartY = 0, ebInitialLeft = 0, ebInitialTop = 0;
+      let ebLatestX = 0, ebLatestY = 0;
+      let ebRafId = null;
 
-    const savedEbPos = localStorage.getItem('nemesis_event_banner_pos');
-    if (savedEbPos) {
-      try {
-        const { left, top } = JSON.parse(savedEbPos);
+      const savedEbPos = localStorage.getItem('nemesis_event_banner_pos');
+      if (savedEbPos) {
+        try {
+          const { left, top } = JSON.parse(savedEbPos);
+          ebPanel.style.right = 'auto';
+          ebPanel.style.transform = 'none';
+          ebPanel.style.left = left + 'px';
+          ebPanel.style.top = top + 'px';
+        } catch (e) { }
+      } else {
+        // Default position top center
+        ebPanel.style.left = '50%';
+        ebPanel.style.top = '10px';
+        ebPanel.style.transform = 'translateX(-50%)';
+      }
+
+      const savedEbSize = localStorage.getItem('nemesis_event_banner_size');
+      if (savedEbSize) {
+        try {
+          const { width, height } = JSON.parse(savedEbSize);
+          ebPanel.style.width = width + 'px';
+          ebPanel.style.height = height + 'px';
+        } catch (e) { }
+      }
+
+      // Save size when resizing ends
+      ebPanel.addEventListener('pointerup', () => {
+        localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
+          width: ebPanel.offsetWidth,
+          height: ebPanel.offsetHeight
+        }));
+      });
+
+      const onEbDown = (e) => {
+        if (e.target.closest('#eventBannerEmoji, .event-banner-emoji, .event-task-slot, button')) return;
+        isEbDragging = true;
+        ebStartX = e.clientX;
+        ebStartY = e.clientY;
+        const rect = ebPanel.getBoundingClientRect();
+        ebInitialLeft = rect.left;
+        ebInitialTop = rect.top;
         ebPanel.style.right = 'auto';
         ebPanel.style.transform = 'none';
-        ebPanel.style.left = left + 'px';
-        ebPanel.style.top = top + 'px';
-      } catch (e) { }
-    } else {
-      // Default position top center
-      ebPanel.style.left = '50%';
-      ebPanel.style.top = '10px';
-      ebPanel.style.transform = 'translateX(-50%)';
-    }
+        ebPanel.style.left = ebInitialLeft + 'px';
+        ebPanel.style.top = ebInitialTop + 'px';
+        try { ebPanel.setPointerCapture(e.pointerId); } catch (err) { }
 
-    const savedEbSize = localStorage.getItem('nemesis_event_banner_size');
-    if (savedEbSize) {
-      try {
-        const { width, height } = JSON.parse(savedEbSize);
-        ebPanel.style.width = width + 'px';
-        ebPanel.style.height = height + 'px';
-      } catch (e) { }
-    }
+        document.addEventListener('pointermove', onEbMove);
+        document.addEventListener('pointerup', onEbUp);
+        document.addEventListener('pointercancel', onEbUp);
+      };
 
-    // Save size when resizing ends
-    ebPanel.addEventListener('pointerup', () => {
-      localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
-        width: ebPanel.offsetWidth,
-        height: ebPanel.offsetHeight
-      }));
-    });
-
-    const onEbDown = (e) => {
-      if (e.target.closest('#eventBannerEmoji, .event-banner-emoji, .event-task-slot, button')) return;
-      isEbDragging = true;
-      ebStartX = e.clientX;
-      ebStartY = e.clientY;
-      const rect = ebPanel.getBoundingClientRect();
-      ebInitialLeft = rect.left;
-      ebInitialTop = rect.top;
-      ebPanel.style.right = 'auto';
-      ebPanel.style.transform = 'none';
-      ebPanel.style.left = ebInitialLeft + 'px';
-      ebPanel.style.top = ebInitialTop + 'px';
-      try { ebPanel.setPointerCapture(e.pointerId); } catch (err) { }
-
-      document.addEventListener('pointermove', onEbMove);
-      document.addEventListener('pointerup', onEbUp);
-      document.addEventListener('pointercancel', onEbUp);
-    };
-
-    const onEbMove = (e) => {
-      if (!isEbDragging) return;
-      e.preventDefault();
-      ebLatestX = e.clientX;
-      ebLatestY = e.clientY;
-
-      if (!ebRafId) {
-        ebRafId = requestAnimationFrame(() => {
-          const dx = ebLatestX - ebStartX;
-          const dy = ebLatestY - ebStartY;
-          let newLeft = ebInitialLeft + dx;
-          let newTop = ebInitialTop + dy;
-
-          const maxX = window.innerWidth - ebPanel.offsetWidth;
-          const maxY = window.innerHeight - ebPanel.offsetHeight;
-          newLeft = Math.max(0, Math.min(newLeft, maxX));
-          newTop = Math.max(0, Math.min(newTop, maxY));
-
-          ebPanel.style.left = newLeft + 'px';
-          ebPanel.style.top = newTop + 'px';
-          ebRafId = null;
-        });
-      }
-    };
-
-    const onEbUp = (e) => {
-      if (!isEbDragging) return;
-      isEbDragging = false;
-      if (ebRafId) {
-        cancelAnimationFrame(ebRafId);
-        ebRafId = null;
-      }
-      document.removeEventListener('pointermove', onEbMove);
-      document.removeEventListener('pointerup', onEbUp);
-      document.removeEventListener('pointercancel', onEbUp);
-      try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) { }
-      localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
-        left: parseInt(ebPanel.style.left, 10) || 0,
-        top: parseInt(ebPanel.style.top, 10) || 0
-      }));
-      localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
-        width: ebPanel.offsetWidth,
-        height: ebPanel.offsetHeight
-      }));
-    };
-
-    ebPanel.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button, input, textarea, select, label')) return;
-      if (e.button !== 0 && e.pointerType === 'mouse') return;
-
-      const rect = ebPanel.getBoundingClientRect();
-      // Ignore dragging if click was on or near the bottom-right resizer corner (within 48px)
-      if (e.clientX > rect.right - 48 && e.clientY > rect.bottom - 48) {
-        return;
-      }
-      onEbDown(e);
-    });
-
-    // Custom touch-friendly resize handle
-    const resizeHandle = gameArea.querySelector('#eventBannerResizeHandle');
-    if (resizeHandle) {
-      let isResizing = false;
-      let resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
-
-      resizeHandle.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        isResizing = true;
-        resizeStartX = e.clientX;
-        resizeStartY = e.clientY;
-        resizeStartW = ebPanel.offsetWidth;
-        resizeStartH = ebPanel.offsetHeight;
-        try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) { }
-      });
-
-      resizeHandle.addEventListener('pointermove', (e) => {
-        if (!isResizing) return;
+      const onEbMove = (e) => {
+        if (!isEbDragging) return;
         e.preventDefault();
-        const newW = Math.max(120, resizeStartW + (e.clientX - resizeStartX));
-        const newH = Math.max(80, resizeStartH + (e.clientY - resizeStartY));
-        ebPanel.style.width = newW + 'px';
-        ebPanel.style.height = newH + 'px';
-      });
+        ebLatestX = e.clientX;
+        ebLatestY = e.clientY;
 
-      const onResizeEnd = () => {
-        if (!isResizing) return;
-        isResizing = false;
+        if (!ebRafId) {
+          ebRafId = requestAnimationFrame(() => {
+            const dx = ebLatestX - ebStartX;
+            const dy = ebLatestY - ebStartY;
+            let newLeft = ebInitialLeft + dx;
+            let newTop = ebInitialTop + dy;
+
+            const maxX = window.innerWidth - ebPanel.offsetWidth;
+            const maxY = window.innerHeight - ebPanel.offsetHeight;
+            newLeft = Math.max(0, Math.min(newLeft, maxX));
+            newTop = Math.max(0, Math.min(newTop, maxY));
+
+            ebPanel.style.left = newLeft + 'px';
+            ebPanel.style.top = newTop + 'px';
+            ebRafId = null;
+          });
+        }
+      };
+
+      const onEbUp = (e) => {
+        if (!isEbDragging) return;
+        isEbDragging = false;
+        if (ebRafId) {
+          cancelAnimationFrame(ebRafId);
+          ebRafId = null;
+        }
+        document.removeEventListener('pointermove', onEbMove);
+        document.removeEventListener('pointerup', onEbUp);
+        document.removeEventListener('pointercancel', onEbUp);
+        try { ebPanel.releasePointerCapture(e.pointerId); } catch (err) { }
+        localStorage.setItem('nemesis_event_banner_pos', JSON.stringify({
+          left: parseInt(ebPanel.style.left, 10) || 0,
+          top: parseInt(ebPanel.style.top, 10) || 0
+        }));
         localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
           width: ebPanel.offsetWidth,
           height: ebPanel.offsetHeight
         }));
       };
-      resizeHandle.addEventListener('pointerup', onResizeEnd);
-      resizeHandle.addEventListener('pointercancel', onResizeEnd);
+
+      ebPanel.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button, input, textarea, select, label')) return;
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+        const rect = ebPanel.getBoundingClientRect();
+        // Ignore dragging if click was on or near the bottom-right resizer corner (within 48px)
+        if (e.clientX > rect.right - 48 && e.clientY > rect.bottom - 48) {
+          return;
+        }
+        onEbDown(e);
+      });
+
+      // Custom touch-friendly resize handle
+      const resizeHandle = gameArea.querySelector('#eventBannerResizeHandle');
+      if (resizeHandle) {
+        let isResizing = false;
+        let resizeStartX = 0, resizeStartY = 0, resizeStartW = 0, resizeStartH = 0;
+
+        resizeHandle.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          isResizing = true;
+          resizeStartX = e.clientX;
+          resizeStartY = e.clientY;
+          resizeStartW = ebPanel.offsetWidth;
+          resizeStartH = ebPanel.offsetHeight;
+          try { resizeHandle.setPointerCapture(e.pointerId); } catch (err) { }
+        });
+
+        resizeHandle.addEventListener('pointermove', (e) => {
+          if (!isResizing) return;
+          e.preventDefault();
+          const newW = Math.max(120, resizeStartW + (e.clientX - resizeStartX));
+          const newH = Math.max(80, resizeStartH + (e.clientY - resizeStartY));
+          ebPanel.style.width = newW + 'px';
+          ebPanel.style.height = newH + 'px';
+        });
+
+        const onResizeEnd = () => {
+          if (!isResizing) return;
+          isResizing = false;
+          localStorage.setItem('nemesis_event_banner_size', JSON.stringify({
+            width: ebPanel.offsetWidth,
+            height: ebPanel.offsetHeight
+          }));
+        };
+        resizeHandle.addEventListener('pointerup', onResizeEnd);
+        resizeHandle.addEventListener('pointercancel', onResizeEnd);
+      }
     }
 
     this.updateStageBackdrop();

@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: nerf enemy hp 0.7x, remove stage bgs & event hud, 2x circle size, mute daily tick"
+$commitMsg = "fix: guard null event banner listener and set circle size to 1.5x"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

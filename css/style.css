@@ -1015,8 +1015,8 @@ body::before {
 
 .enemy-circle-container {
   position: relative;
-  width: 800px;
-  height: 800px;
+  width: 600px;
+  height: 600px;
   flex-shrink: 0;
   border: 3px solid #ffd76a;
   border-radius: 50%;
@@ -4121,8 +4121,8 @@ body::before {
   }
 
   .enemy-circle-container {
-    width: 500px;
-    height: 500px;
+    width: 375px;
+    height: 375px;
     box-shadow: none;
   }
 
