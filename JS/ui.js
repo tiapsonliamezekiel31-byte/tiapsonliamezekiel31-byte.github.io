@@ -5630,26 +5630,28 @@ class UIManager {
       }).join('');
     }
 
-    // 2. Render Todos (hide completed todos in checklist view)
+    // 2. Render Todos (hide completed todos only after next check in)
     const todos = state.dailiesState?.todos || [];
-    const activeTodos = todos.filter(t => !t.completed);
-    const completedTodosCount = todos.filter(t => t.completed).length;
+    const visibleTodos = todos.filter(t => !t.hiddenAfterCheckin);
+    const completedTodosCount = visibleTodos.filter(t => t.completed).length;
     if (todosCountEl) {
-      todosCountEl.textContent = `${activeTodos.length}`;
+      todosCountEl.textContent = `${completedTodosCount}/${visibleTodos.length}`;
     }
 
-    if (activeTodos.length === 0) {
-      todosListEl.innerHTML = `<div class="checklist-empty">No active to-dos</div>`;
+    if (visibleTodos.length === 0) {
+      todosListEl.innerHTML = `<div class="checklist-empty">No to-dos</div>`;
     } else {
-      todosListEl.innerHTML = activeTodos.map((todo, index) => {
+      todosListEl.innerHTML = visibleTodos.map((todo, index) => {
         const attrColor = this.getAttributeColor(todo.attribute);
+        const isCompleted = !!todo.completed;
         return `
-          <div class="checklist-item" 
+          <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
                data-task-id="${todo.id}" 
                data-task-type="todo" 
                data-index="${index}" 
                draggable="true">
-            <button class="checklist-checkbox-btn" data-action="toggle-todo" data-task-id="${todo.id}" title="Mark Done">
+            <button class="checklist-checkbox-btn" data-action="toggle-todo" data-task-id="${todo.id}" title="${isCompleted ? 'Completed' : 'Mark Done'}">
+              ${isCompleted ? '✓' : ''}
             </button>
             <div class="checklist-item-content">
               <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(todo.name || 'To-Do')}</span>

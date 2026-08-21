@@ -1718,6 +1718,9 @@ class TaskManager {
     });
 
     (state.dailiesState.todos || []).forEach(todo => {
+      if (todo.completed) {
+        todo.hiddenAfterCheckin = true;
+      }
       todo.bloodOath = false;
       todo.bloodOathActive = false;
     });
