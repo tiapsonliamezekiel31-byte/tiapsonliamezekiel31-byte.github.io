@@ -5612,7 +5612,6 @@ class UIManager {
       dailiesListEl.innerHTML = activeDailies.map((daily, index) => {
         const attrColor = this.getAttributeColor(daily.attribute);
         const isCompleted = !!daily.completed;
-        const diff = daily.difficulty || 'Easy';
         return `
           <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
                data-task-id="${daily.id}" 
@@ -5624,15 +5623,7 @@ class UIManager {
               ${isCompleted ? '✓' : ''}
             </button>
             <div class="checklist-item-content">
-              <div class="checklist-item-header">
-                <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(daily.name || daily.baseName || 'Daily')}</span>
-                <span class="checklist-attr-tag" style="background: ${attrColor};">${daily.attribute || 'RESP'}</span>
-              </div>
-              <div class="checklist-item-meta">
-                <span>${diff}</span>
-                ${daily.maxCompletionsPerDay > 1 ? `<span>• ${daily.completionsToday || 0}/${daily.maxCompletionsPerDay}</span>` : ''}
-                ${daily.bloodOathActive ? `<span style="color: #ef4444;">• Oath</span>` : ''}
-              </div>
+              <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(daily.name || daily.baseName || 'Daily')}</span>
             </div>
             <span class="checklist-drag-handle" title="Drag to reorder">⋮⋮</span>
           </div>
@@ -5653,9 +5644,6 @@ class UIManager {
       todosListEl.innerHTML = todos.map((todo, index) => {
         const attrColor = this.getAttributeColor(todo.attribute);
         const isCompleted = !!todo.completed;
-        const diff = todo.difficulty || 'Easy';
-        const subtasksCount = (todo.subtasks || []).length;
-        const subtasksDone = (todo.subtasks || []).filter(s => s.completed).length;
         return `
           <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
                data-task-id="${todo.id}" 
@@ -5667,15 +5655,7 @@ class UIManager {
               ${isCompleted ? '✓' : ''}
             </button>
             <div class="checklist-item-content">
-              <div class="checklist-item-header">
-                <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(todo.name || 'To-Do')}</span>
-                <span class="checklist-attr-tag" style="background: ${attrColor};">${todo.attribute || 'RESP'}</span>
-              </div>
-              <div class="checklist-item-meta">
-                <span>${diff}</span>
-                ${subtasksCount > 0 ? `<span>• Subtasks: ${subtasksDone}/${subtasksCount}</span>` : ''}
-                ${todo.bloodOathActive ? `<span style="color: #ef4444;">• Oath</span>` : ''}
-              </div>
+              <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(todo.name || 'To-Do')}</span>
             </div>
             <span class="checklist-drag-handle" title="Drag to reorder">⋮⋮</span>
           </div>
