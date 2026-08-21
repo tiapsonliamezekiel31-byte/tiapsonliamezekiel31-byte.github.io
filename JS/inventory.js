@@ -65,14 +65,14 @@ class InventoryManager {
 
         <!-- TALISMANS GRID -->
         <div class="inv-section" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px;">
-          <h3 style="margin: 0 0 10px 0; font-size: 12px; color: #a855f7; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+          <h3 style="margin: 0 0 10px 0; font-size: 12px; color: #1B4332; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
             <span>🔷</span> Equipped Talismans & Trinkets
           </h3>
           <div class="grid-slots" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1.0fr)); gap: 8px;">
             ${talismans.length === 0 ? '<div style="grid-column: 1/-1; color: #64748b; font-size: 11px; text-align: center; padding: 10px;">No Talismans in possession</div>' : talismans.map(t => {
               const isEq = equippedTalismans.includes(t);
               return `
-                <div class="inv-slot talisman-slot ${isEq ? 'is-equipped' : ''}" data-talisman="${t}" style="background: ${isEq ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isEq ? '#a855f7' : 'rgba(255,255,255,0.15)'}; border-radius: 6px; padding: 8px; cursor: pointer; text-align: center;">
+                <div class="inv-slot talisman-slot ${isEq ? 'is-equipped' : ''}" data-talisman="${t}" style="background: ${isEq ? 'rgba(27, 67, 50, 0.2)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${isEq ? '#1B4332' : 'rgba(255,255,255,0.15)'}; border-radius: 6px; padding: 8px; cursor: pointer; text-align: center;">
                   <div style="font-size: 1.5rem; margin-bottom: 4px;">💎</div>
                   <div style="font-size: 11px; font-weight: bold; color: #fff;">${t}</div>
                 </div>

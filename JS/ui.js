@@ -942,7 +942,7 @@ class UIManager {
       const leading = leadingAttrs[0];
       const attr = leading.attr;
       const phrase = tauntPhrases[attr] || 'better';
-      const color = colors[attr] || '#a15cff';
+      const color = colors[attr] || '#1B4332';
 
       contentEl.innerHTML = `I'm <span class="taunt-highlight" style="color: ${color}; text-shadow: 0 0 6px ${color}80;">${phrase}</span> than you`;
     } else {
@@ -1141,7 +1141,21 @@ class UIManager {
     if (score < 30) return { rank: 4, name: 'Veteran', color: '#ffd700', glow: '#ffb700' };
     if (score < 50) return { rank: 5, name: 'Master', color: '#e5e4e2', glow: '#38bdf8' };
     if (score < 80) return { rank: 6, name: 'Grandmaster', color: '#10b981', glow: '#34d399' };
-    return { rank: 7, name: 'Celestial', color: '#a855f7', glow: '#ec4899' };
+    return { rank: 7, name: 'Celestial', color: '#1B4332', glow: '#ec4899' };
+  }
+
+  static getScoreDelta(todayCompletionPct, avgStreak = 0) {
+    let delta = 0;
+    if (todayCompletionPct >= 100) delta = 2;
+    else if (todayCompletionPct >= 75) delta = 1;
+    else if (todayCompletionPct >= 50) delta = 0;
+    else if (todayCompletionPct >= 25) delta = -1;
+    else delta = -2;
+
+    if (todayCompletionPct >= 100 && avgStreak >= 3) {
+      delta += 1;
+    }
+    return delta;
   }
 
   static updateScoreHud() {
@@ -1150,7 +1164,7 @@ class UIManager {
     if (!hud) hud = this.createScoreHud();
 
     const rawScore = (typeof state.systemState?.consistencyScore === 'number') ? state.systemState.consistencyScore : 0;
-    const score = Math.max(-20, rawScore);
+    const score = Math.max(-20, Math.round(rawScore));
     const rankInfo = this.getScoreRank(score);
 
     const entries = (typeof this.getRunCompletionEntries === 'function') ? this.getRunCompletionEntries() : [];
@@ -1161,13 +1175,16 @@ class UIManager {
       : 0;
 
     const avgStreak = (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function')
-      ? TaskManager.getWeightedAverageStreak()
+      ? Math.round(TaskManager.getWeightedAverageStreak())
       : 0;
-    const avgStreakText = avgStreak.toFixed(1);
+    const avgStreakText = `${avgStreak}`;
+
+    const projectedDelta = this.getScoreDelta(todayCompletionPct, avgStreak);
+    const deltaSign = projectedDelta > 0 ? `+${projectedDelta}` : `${projectedDelta}`;
 
     hud.className = `draggable-score-hud rank-tier-${rankInfo.rank}`;
     hud.style.display = 'flex';
-    hud.title = `Consistency Score: ${score} | Rank: ${rankInfo.name} | Average Streak: ${avgStreakText} | Run Completion: ${runCompletionPct}% | Today: ${todayCompletionPct}%`;
+    hud.title = `Consistency Score: ${score} (Projected: ${deltaSign}) | Rank: ${rankInfo.name} | Average Streak: ${avgStreakText} | Run Completion: ${runCompletionPct}% | Today: ${todayCompletionPct}%`;
 
     hud.innerHTML = `
       <button class="hud-minimize-btn" title="Minimize Score HUD" onclick="event.stopPropagation(); HUDMinimizer.minimize('scoreHud')">－</button>
@@ -1337,7 +1354,7 @@ class UIManager {
           <option value="Easy" style="color: #00e676; background-color: #181824;">🟢 Easy</option>
           <option value="Medium" selected style="color: #ffd600; background-color: #181824;">🟡 Med</option>
           <option value="Hard" style="color: #ff1744; background-color: #181824;">🔴 Hard</option>
-          <option value="Ultra" style="color: #d500f9; background-color: #181824;">☠️ Ultra</option>
+          <option value="Ultra" style="color: #C89B3C; background-color: #181824;">☠️ Ultra</option>
         </select>
         <select id="qaAttrSelect" class="qa-hud-select qa-attr-select" title="Attribute">
           ${attrOptions}
@@ -1459,7 +1476,7 @@ class UIManager {
       Easy: { color: '#00e676', bg: 'rgba(0, 230, 118, 0.18)', border: 'rgba(0, 230, 118, 0.5)' },
       Medium: { color: '#ffd600', bg: 'rgba(255, 214, 0, 0.18)', border: 'rgba(255, 214, 0, 0.5)' },
       Hard: { color: '#ff1744', bg: 'rgba(255, 23, 68, 0.18)', border: 'rgba(255, 23, 68, 0.5)' },
-      Ultra: { color: '#d500f9', bg: 'rgba(213, 0, 249, 0.18)', border: 'rgba(213, 0, 249, 0.5)' }
+      Ultra: { color: '#C89B3C', bg: 'rgba(200, 155, 60, 0.18)', border: 'rgba(200, 155, 60, 0.5)' }
     };
 
     const updateDiffColor = () => {
@@ -2405,8 +2422,16 @@ class UIManager {
                 <svg id="runCompletionGraph" viewBox="0 0 160 56" preserveAspectRatio="none" aria-hidden="true"></svg>
               </div>
               <div id="weeklyHeatmapPanel" class="weekly-heatmap-panel embedded-stats-widget" aria-label="Consistency Heatmap">
-                <div class="weekly-heatmap-head">
-                  <span>CONSISTENCY HEATMAP</span>
+                <div class="weekly-heatmap-head" id="weeklyHeatmapHead">
+                  <div class="heatmap-head-left">
+                    <span class="heatmap-title-text">HEATMAP</span>
+                    <span id="heatmapMonthStat" class="heatmap-month-stat-badge">--</span>
+                  </div>
+                  <div class="heatmap-month-nav">
+                    <button id="heatmapPrevMonthBtn" class="heatmap-nav-btn" title="Previous Month" type="button">‹</button>
+                    <span id="heatmapMonthTitle" class="heatmap-month-title-display" title="Click to jump to current month">--</span>
+                    <button id="heatmapNextMonthBtn" class="heatmap-nav-btn" title="Next Month" type="button">›</button>
+                  </div>
                   <button id="weeklyHeatmapCollapseBtn" class="stage-notes-collapse-btn" style="display:none;">－</button>
                 </div>
                 <div class="weekly-heatmap-body" id="weeklyHeatmapBody"></div>
@@ -3202,13 +3227,13 @@ class UIManager {
       if (taskType === 'daily') {
         const res = TaskManager.completeDaily(task.id);
         if (res && res.success) {
-          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! Daily Finished ⚡', { color: '#a855f7', scale: 1.5 }); } catch (e) {}
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! Daily Finished ⚡', { color: '#1B4332', scale: 1.5 }); } catch (e) {}
         }
         UIManager.scheduleUpdateDailiesList();
       } else {
         const res = TaskManager.completeTodo(task.id);
         if (res && res.success) {
-          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! To-Do Finished ⚡', { color: '#a855f7', scale: 1.5 }); } catch (e) {}
+          try { FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Timer Complete! To-Do Finished ⚡', { color: '#1B4332', scale: 1.5 }); } catch (e) {}
         }
         UIManager.updateTodosList();
       }
@@ -3239,7 +3264,7 @@ class UIManager {
         isRunning = false; // Pause main countdown
         restSeconds = 300; // 5 mins
         restBtn.textContent = 'Resume Task';
-        restBtn.style.background = '#a855f7';
+        restBtn.style.background = '#1B4332';
         restBtn.style.color = '#ffffff';
         clockDisplay.textContent = `REST ${formatTime(restSeconds)}`;
       } else {
@@ -5469,6 +5494,10 @@ class UIManager {
     });
   }
 
+  static openDailyTasksTab() {
+    this.toggleTaskPanel('dailies');
+  }
+
   static toggleTaskPanel(which) {
     const panels = ['dailies', 'checklist', 'todos', 'achievements', 'pet', 'cosmetics'];
     panels.forEach(p => {
@@ -7118,7 +7147,7 @@ class UIManager {
         RetroSandstormAnimation.play(card, color, intensity);
       }
     } else if (nameLower.includes('wizard')) {
-      const color = attackType === 'crit' ? '#bf5af2' : '#8a2be2';
+      const color = attackType === 'crit' ? '#2D5A43' : '#1B4332';
       if (typeof RetroMagicCircleAnimation !== 'undefined') {
         RetroMagicCircleAnimation.play(card, color, intensity);
       }
@@ -7158,7 +7187,7 @@ class UIManager {
         RetroLavaSpitAnimation.play(card, color, intensity);
       }
     } else if (nameLower.includes('king')) {
-      const color = attackType === 'minion' ? '#4b0082' : '#8a2be2';
+      const color = attackType === 'minion' ? '#4b0082' : '#1B4332';
       if (typeof RetroSpectralSwordsAnimation !== 'undefined') {
         RetroSpectralSwordsAnimation.play(card, color, intensity);
       }
@@ -7168,7 +7197,7 @@ class UIManager {
         RetroSolarFlareAnimation.play(card, color, intensity);
       }
     } else if (nameLower.includes('nemesis')) {
-      const color = attackType === 'crit' ? '#d500f9' : (attackType === 'heavy' ? '#4a0e4e' : '#a855f7');
+      const color = attackType === 'crit' ? '#C89B3C' : (attackType === 'heavy' ? '#4a0e4e' : '#1B4332');
       if (typeof RetroVoidBlackHoleAnimation !== 'undefined') {
         RetroVoidBlackHoleAnimation.play(card, color, intensity);
       }
@@ -7260,7 +7289,7 @@ class UIManager {
       } else if (step.isHeal) {
         FloatingDamageNumber.show(x, y - 10, `HEALED! 💚 (+${step.healAmount})`, { color: '#00ff66', duration: 1200, scale: 1.2 });
       } else if (step.isMinionSummon) {
-        FloatingDamageNumber.show(x, y - 10, `SUMMON: ${step.minionName}! 👿`, { color: '#8a2be2', duration: 1200, scale: 1.2 });
+        FloatingDamageNumber.show(x, y - 10, `SUMMON: ${step.minionName}! 👿`, { color: '#1B4332', duration: 1200, scale: 1.2 });
       } else {
         FloatingDamageNumber.show(x, y - 10, `-${Math.ceil(step.damage)}`, {
           color: step.isBoss ? (step.isCrit ? '#ff3366' : (step.isHeavy ? '#ffaa00' : UIManager.themeColor('--accent-gold', '#FFB33F'))) : (step.damage > 0 ? UIManager.themeColor('--danger-red', '#C00707') : UIManager.themeColor('--text-muted', '#aaaaaa')),
@@ -7736,14 +7765,14 @@ class UIManager {
                 }
 
                 if (typeof RetroHitAnimation !== 'undefined') {
-                  RetroHitAnimation.play(targetX, targetY, '#a855f7');
+                  RetroHitAnimation.play(targetX, targetY, '#1B4332');
                 }
 
                 FloatingDamageNumber.show(
                   targetX,
                   targetY - 20,
                   `ECHO: -${echoDmg} ⏳`,
-                  { color: '#a855f7', scale: 1.2, duration: 1500 }
+                  { color: '#1B4332', scale: 1.2, duration: 1500 }
                 );
 
                 try { this.renderEnemies(); } catch (e) { }
@@ -7792,7 +7821,7 @@ class UIManager {
                 Water: '#134E8E',
                 Fire: '#FF4400',
                 Air: '#cbd5e1',
-                Aether: '#A15CFF'
+                Aether: '#1B4332'
               };
               const elementColor = elementColors[hit.element] || '#ffffff';
 
@@ -7971,7 +8000,7 @@ class UIManager {
             // Bypass Final Stand: next attack bypasses Final Stand
             state.combatState.skillEffects.bypassFinalStand = true;
             if (typeof FloatingDamageNumber !== 'undefined') {
-              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Bypass Final Stand Ready!', { color: '#a855f7' });
+              FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Bypass Final Stand Ready!', { color: '#1B4332' });
             }
             break;
 
@@ -8708,8 +8737,21 @@ class UIManager {
   }
 
   static handleCheckInClick() {
+    const state = (typeof getGameState === 'function') ? getGameState() : null;
+    if (state && state.systemState && state.systemState.isCheckInRunning) {
+      console.warn('Resetting stuck isCheckInRunning lock');
+      state.systemState.isCheckInRunning = false;
+    }
     if (typeof performCheckIn === 'function') {
-      performCheckIn();
+      try {
+        performCheckIn();
+      } catch (err) {
+        console.error('Error during check-in:', err);
+        if (state && state.systemState) state.systemState.isCheckInRunning = false;
+        if (typeof FloatingDamageNumber !== 'undefined') {
+          FloatingDamageNumber.show(window.innerWidth / 2, window.innerHeight / 2, 'Check-in processed', { color: '#22c55e' });
+        }
+      }
     } else {
       console.warn('Check-in is not wired yet.');
     }
@@ -8933,7 +8975,7 @@ class UIManager {
       if (activeColorFilter === 'streak' && visibleDailies.length > 0) {
         const curStreak = computeDailyStreak(daily.id);
         const norm = maxStreakVal > minStreakVal ? (curStreak - minStreakVal) / (maxStreakVal - minStreakVal) : 0.5;
-        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+        attributeColor = interpolateColor('#ef4444', '#1B4332', norm);
       } else if (activeColorFilter === 'completion') {
         let rate = typeof daily.completionRate === 'number' ? daily.completionRate : null;
         if (rate === null && typeof TaskManager !== 'undefined' && typeof TaskManager.computeDailyCompletionRate === 'function') {
@@ -8943,14 +8985,14 @@ class UIManager {
           rate = daily.completed ? 1.0 : (completionsToday / maxCompletions);
         }
         const norm = Math.max(0, Math.min(1, Number(rate) || 0));
-        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+        attributeColor = interpolateColor('#ef4444', '#1B4332', norm);
       } else if (activeColorFilter === 'rewards' && visibleDailies.length > 0) {
         const curReward = gs.config?.taskRewards?.[daily.difficulty]?.ap || 10;
         const norm = maxRewardVal > minRewardVal ? (curReward - minRewardVal) / (maxRewardVal - minRewardVal) : 0.5;
-        attributeColor = interpolateColor('#ef4444', '#a855f7', norm);
+        attributeColor = interpolateColor('#ef4444', '#1B4332', norm);
       } else if (activeColorFilter === 'safety') {
         const isSafe = !!(daily.streakSaver || daily.streakSaverActive || daily.hasStreakSaver);
-        attributeColor = isSafe ? '#a855f7' : '#ef4444';
+        attributeColor = isSafe ? '#1B4332' : '#ef4444';
       } else if (focusModeActive && visibleDailies.length > 0) {
         const rankIndex = sortedByRate.findIndex(d => d.id === daily.id);
         const normRank = sortedByRate.length > 1 ? rankIndex / (sortedByRate.length - 1) : 1.0;
@@ -9002,7 +9044,7 @@ class UIManager {
         unscheduledIndicator = '<span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--accent-gold);color:#000;font-size:7px;padding:2px 4px;border-radius:4px;z-index:3;font-weight:bold;white-space:nowrap;">' + text + '</span>';
       }
 
-      const focusBorderStyle = focusModeActive ? '--task-border-color:#a855f7 !important;' : '';
+      const focusBorderStyle = focusModeActive ? '--task-border-color:#1B4332 !important;' : '';
 
       if (!daily.completed && !focusModeActive && daily.locked) {
         html += '<div class="task-daily-lock-badge" data-daily-id="' + daily.id + '" title="Locked Daily" style="position: absolute; z-index: 1000; cursor: pointer; user-select: none; font-size: 11px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(0,0,0,0.7); border-radius: 50%; border: 1px solid #ff5a5a; color: #fff;">🔒</div>';
@@ -10558,7 +10600,7 @@ class UIManager {
       STR: '#ef4444',
       INT: '#3b82f6',
       DISC: '#f97316',
-      CREA: '#a855f7',
+      CREA: '#1B4332',
       SOC: '#ec4899',
       CAP: '#eab308',
       RESP: '#22c55e'
@@ -10569,7 +10611,7 @@ class UIManager {
       { id: 'overdue', title: '⚡ Overdue', accent: '#ef4444', todos: [] },
       { id: 'today', title: '📅 Today', accent: '#eab308', todos: [] },
       { id: 'upcoming13', title: '🗓️ 1–3 Days', accent: '#3b82f6', todos: [] },
-      { id: 'upcoming47', title: '📆 4–7 Days', accent: '#a855f7', todos: [] },
+      { id: 'upcoming47', title: '📆 4–7 Days', accent: '#1B4332', todos: [] },
       { id: 'later', title: '⏳ Later (>7 Days)', accent: '#64748b', todos: [] },
       { id: 'no_deadline', title: '♾️ No Deadline', accent: '#475569', todos: [] }
     ];
@@ -11211,156 +11253,228 @@ class UIManager {
 
   static getOrGenerateBranchingMap(stageProgress) {
     const state = typeof getGameState === 'function' ? getGameState() : null;
-    if (state?.stageState?.branchingMap?.version === 6 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 50) {
+    if (state?.stageState?.branchingMap?.version === 10 && state.stageState.branchingMap.nodes && state.stageState.branchingMap.nodes.length > 40) {
       return state.stageState.branchingMap;
     }
 
     const stageColors = {
-      1: '#22c55e', 2: '#f97316', 3: '#eab308', 4: '#a855f7',
-      5: '#ef4444', 6: '#64748b', 7: '#14b8a6', 8: '#fbbf24',
-      9: '#6b7280', 10: '#38bdf8', 11: '#d97706', 12: '#8b5cf6',
-      13: '#06b6d4', 14: '#ec4899', 15: '#dc2626', 16: '#f59e0b',
+      1: '#22c55e', 2: '#ef4444', 3: '#f59e0b', 4: '#eab308',
+      5: '#dc2626', 6: '#84cc16', 7: '#10b981', 8: '#0ea5e9',
+      9: '#1B4332', 10: '#06b6d4', 11: '#6366f1', 12: '#1B4332',
+      13: '#c026d3', 14: '#db2777', 15: '#e81cff', 16: '#fcd34d',
       17: '#0284c7', 18: '#0f172a'
     };
 
     const minibossPool = [
-      'Grave Sentinel', 'Ashen Warden', 'Rune Overseer', 'Void Preceptor',
-      'Rot Apostle', 'Blight Executioner', 'Blood Harbinger', 'Czar Vanguard'
+      "Ironbark Juggernaut",
+      "Magma Sentinel",
+      "Sun-Gilded Phantasm",
+      "Dune Executioner",
+      "Bloodfiend Stalker",
+      "Nether Abomination",
+      "Toxic Goliath",
+      "High Inquisitor Malice",
+      "Grim Bone-Harvester",
+      "Frostbite Berserker",
+      "Rune Golem Guardian",
+      "Blighted Priest",
+      "Mutant Warbeast",
+      "Cultist High Occultist",
+      "Ember Wyrmling Lord",
+      "Aurelian Sky-Knight",
+      "Trench Abomination",
+      "Null-Warp Spectre",
+      "Dread Knight Commander",
+      "Chaos Warmachine",
+      "Spectral Archon",
+      "Plague Champion",
+      "Tempest Stormcaller",
+      "Shadow Overlord"
     ];
 
     const mapNodes = [];
     const mapLines = [];
 
-    // Main spine path: Stages 1 to 18
-    const mainStages = [
-      { stage: 1, key: '1A', name: 'Forest', icon: '🌲' },
-      { stage: 2, key: '2A', name: 'Volcano', icon: '🌋' },
-      { stage: 3, key: '3A', name: 'Pyramids', icon: '🏜️' },
-      { stage: 4, key: '4A', name: 'Marchers', icon: '🚶‍♂️' },
-      { stage: 5, key: '5A', name: 'Crimson Cave', icon: '🕳️' },
-      { stage: 6, key: '6A', name: 'Chasm', icon: '🕳️' },
-      { stage: 7, key: '7A', name: 'Swamp', icon: '☣️' },
-      { stage: 8, key: '8A', name: 'Kingdom', icon: '🏰' },
-      { stage: 9, key: '9A', name: 'Graveyard', icon: '🪦' },
-      { stage: 10, key: '10A', name: 'Glacier', icon: '🧊' },
-      { stage: 11, key: '11A', name: 'Ruins', icon: '🏛️' },
-      { stage: 12, key: '12A', name: 'Church', icon: '⛪' },
-      { stage: 13, key: '13A', name: 'Lab', icon: '🧪' },
-      { stage: 14, key: '14A', name: 'Cult', icon: '👁️' },
-      { stage: 15, key: '15A', name: 'Dragon Isle', icon: '🐉' },
-      { stage: 16, key: '16A', name: 'Golden Peak', icon: '⛰️' },
-      { stage: 17, key: '17A', name: 'Abyssal Sea', icon: '🌊' },
-      { stage: 18, key: '18A', name: 'The Void', icon: '🌌', isApex: true },
+    const TIERS = [
+      { tier: 1, title: 'I: Origin', stages: [{ stage: 1, key: '1A', name: 'Forest', icon: '🌲' }] },
+      { tier: 2, title: 'II: Split', stages: [
+        { stage: 2, key: '2A', name: 'Volcano', icon: '🌋' },
+        { stage: 3, key: '3A', name: 'Pyramids', icon: '🏜️' },
+        { stage: 4, key: '4A', name: 'Marchers', icon: '🚶‍♂️' }
+      ]},
+      { tier: 3, title: 'III: Depths', stages: [
+        { stage: 5, key: '5A', name: 'Crimson Cave', icon: '🕳️' },
+        { stage: 6, key: '6A', name: 'Chasm', icon: '🕳️' },
+        { stage: 7, key: '7A', name: 'Swamp', icon: '☣️' }
+      ]},
+      { tier: 4, title: 'IV: Realms', stages: [
+        { stage: 8, key: '8A', name: 'Kingdom', icon: '🏰' },
+        { stage: 9, key: '9A', name: 'Graveyard', icon: '🪦' },
+        { stage: 10, key: '10A', name: 'Glacier', icon: '🧊' }
+      ]},
+      { tier: 5, title: 'V: Sanctuary', stages: [
+        { stage: 11, key: '11A', name: 'Ruins', icon: '🏛️' },
+        { stage: 12, key: '12A', name: 'Church', icon: '⛪' },
+        { stage: 13, key: '13A', name: 'Lab', icon: '🧪' }
+      ]},
+      { tier: 6, title: 'VI: Ascent', stages: [
+        { stage: 14, key: '14A', name: 'Cult', icon: '👁️' },
+        { stage: 15, key: '15A', name: 'Dragon Isle', icon: '🐉' },
+        { stage: 16, key: '16A', name: 'Golden Peak', icon: '⛰️' }
+      ]},
+      { tier: 7, title: 'VII: Gateway', stages: [{ stage: 17, key: '17A', name: 'Abyssal Sea', icon: '🌊' }] },
+      { tier: 8, title: 'VIII: Apex', stages: [{ stage: 18, key: '18A', name: 'The Void', icon: '🌌', isApex: true }] }
     ];
 
-    let lastSpineNodeId = null;
+    const stageMaxLvlMap = {};
 
-    mainStages.forEach((stg) => {
-      let currentY = 900;
-      let stageX = 300 + (stg.stage - 1) * 450;
-      lastSpineNodeId = null; // Disconnect stages
+    TIERS.forEach((t) => {
+      t.stages.forEach((stg) => {
+        let lastSpineNodeId = null;
+        const stageMaxLvl = (typeof StageManager !== 'undefined' && StageManager.getMaxLevelsForStage)
+          ? StageManager.getMaxLevelsForStage(stg.stage)
+          : (state?.config?.stageMaxLevels?.[stg.stage] || 5);
+        stageMaxLvlMap[stg.stage] = stageMaxLvl;
 
-      // Every stage has 1 miniboss on a randomized level branch (L1-L4)
-      const chosenMinibossLevel = Math.floor(Math.random() * 4) + 1; // 1, 2, 3, or 4
-      const assignedMiniboss = minibossPool[Math.floor(Math.random() * minibossPool.length)];
+        const chosenMinibossLevel = Math.floor(Math.random() * (stageMaxLvl - 1)) + 1;
+        const assignedMiniboss = minibossPool[Math.floor(Math.random() * minibossPool.length)];
 
-      for (let lvl = 1; lvl <= 5; lvl++) {
-        const isBoss = (lvl === 5);
-        const nodeId = `main_${stg.key}_L${lvl}`;
-        
-        // slight wiggle
-        const x = stageX + (Math.random() * 30 - 15);
-        const y = currentY + (Math.random() * 20 - 10);
+        const xPctMap5 = { 1: 12, 2: 30, 3: 48, 4: 68, 5: 88 };
+        const xPctMap3 = { 1: 18, 2: 52, 3: 86 };
+        const xPctMap = (stageMaxLvl === 3) ? xPctMap3 : xPctMap5;
 
-        mapNodes.push({
-          id: nodeId,
-          key: stg.key,
-          stage: stg.stage,
-          variant: 'A',
-          level: lvl,
-          name: stg.name,
-          icon: stg.icon,
-          x, y,
-          isMain: true,
-          isBoss: isBoss,
-          isMiniboss: false,
-          bossName: null,
-          color: stageColors[stg.stage],
-          maxLevels: 1 // for compatibility
-        });
-
-        if (lastSpineNodeId) {
-          mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true });
-        }
-        lastSpineNodeId = nodeId;
-
-        // Miniboss branch with Secret Vault behind it as a reward challenge
-        if (!isBoss && lvl === chosenMinibossLevel) {
-          const side = (Math.random() > 0.5) ? -1 : 1;
-          const subKey = `${stg.stage}B_${lvl}`;
-          const subId = `sub_${subKey}`;
-          
-          const bx = x + side * (90 + Math.random() * 30);
-          const by = y - (30 + Math.random() * 20);
+        for (let lvl = 1; lvl <= stageMaxLvl; lvl++) {
+          const isBoss = (lvl === stageMaxLvl);
+          const nodeId = `main_${stg.key}_L${lvl}`;
+          const xPct = xPctMap[lvl];
+          const yPct = 56;
 
           mapNodes.push({
-            id: subId,
-            key: subKey,
+            id: nodeId,
+            key: stg.key,
             stage: stg.stage,
-            variant: 'B',
-            level: 1,
+            variant: 'A',
+            level: lvl,
             name: stg.name,
-            icon: '⚔️',
-            x: bx, y: by,
-            isMain: false,
-            isMiniboss: true,
-            isBoss: false,
-            bossName: assignedMiniboss,
-            color: stageColors[stg.stage],
-            maxLevels: 1
-          });
-
-          mapLines.push({ from: nodeId, to: subId, isMain: false });
-
-          // Secret Vault unlocked by defeating the Miniboss challenge
-          const vaultKey = `${stg.stage}V_${lvl}`;
-          const vaultId = `vault_${vaultKey}`;
-          const vx = bx + side * (70 + Math.random() * 20);
-          const vy = by - (40 + Math.random() * 20);
-
-          mapNodes.push({
-            id: vaultId,
-            key: vaultKey,
-            stage: stg.stage,
-            variant: 'V',
-            level: 1,
-            name: 'Secret Vault',
-            icon: '🔑',
-            x: vx, y: vy,
-            isMain: false,
+            icon: stg.icon,
+            xPct, yPct,
+            isMain: true,
+            isBoss: isBoss,
             isMiniboss: false,
-            isVault: true,
-            isBoss: false,
             bossName: null,
-            color: '#eab308',
-            maxLevels: 1
+            color: stageColors[stg.stage],
+            maxLevels: stageMaxLvl
           });
 
-          mapLines.push({ from: subId, to: vaultId, isMain: false });
-        }
+          if (lastSpineNodeId) {
+            mapLines.push({ from: lastSpineNodeId, to: nodeId, isMain: true, stage: stg.stage, isCrossStage: false });
+          }
+          lastSpineNodeId = nodeId;
 
-        currentY -= 150; // Move up for the next level
-      }
+          if (!isBoss && lvl === chosenMinibossLevel) {
+            const subKey = `${stg.stage}B_${lvl}`;
+            const subId = `sub_${subKey}`;
+            const bxPct = xPct + 8;
+            const byPct = 20;
+
+            mapNodes.push({
+              id: subId,
+              key: subKey,
+              stage: stg.stage,
+              variant: 'B',
+              level: 1,
+              name: stg.name,
+              icon: '⚔️',
+              xPct: bxPct, yPct: byPct,
+              isMain: false,
+              isMiniboss: true,
+              isBoss: false,
+              bossName: assignedMiniboss,
+              color: stageColors[stg.stage],
+              maxLevels: 1
+            });
+
+            mapLines.push({ from: nodeId, to: subId, isMain: false, stage: stg.stage, isCrossStage: false });
+
+            const vaultKey = `${stg.stage}V_${lvl}`;
+            const vaultId = `vault_${vaultKey}`;
+            const vxPct = bxPct + 11;
+            const vyPct = 20;
+
+            mapNodes.push({
+              id: vaultId,
+              key: vaultKey,
+              stage: stg.stage,
+              variant: 'V',
+              level: 1,
+              name: 'Secret Vault',
+              icon: '🔑',
+              xPct: vxPct, yPct: vyPct,
+              isMain: false,
+              isMiniboss: false,
+              isVault: true,
+              isBoss: false,
+              bossName: null,
+              color: '#eab308',
+              maxLevels: 1
+            });
+
+            mapLines.push({ from: subId, to: vaultId, isMain: false, stage: stg.stage, isCrossStage: false });
+          }
+        }
+      });
     });
 
-    const branchingMap = { nodes: mapNodes, lines: mapLines, version: 6 };
+    // Cross-Stage Branching & Convergence Lines:
+    const CROSS_STAGE_CONNECTIONS = [
+      // Tier 1 -> Tier 2 (Forest branches out to Volcano, Pyramids, Marchers)
+      { from: 1, to: [2, 3, 4] },
+      // Tier 2 -> Tier 3
+      { from: 2, to: [5, 6] },
+      { from: 3, to: [5, 6, 7] },
+      { from: 4, to: [6, 7] },
+      // Tier 3 -> Tier 4
+      { from: 5, to: [8, 9] },
+      { from: 6, to: [8, 9, 10] },
+      { from: 7, to: [9, 10] },
+      // Tier 4 -> Tier 5
+      { from: 8, to: [11, 12] },
+      { from: 9, to: [11, 12, 13] },
+      { from: 10, to: [12, 13] },
+      // Tier 5 -> Tier 6
+      { from: 11, to: [14, 15] },
+      { from: 12, to: [14, 15, 16] },
+      { from: 13, to: [15, 16] },
+      // Tier 6 -> Tier 7 (Cult, Dragon Isle, Golden Peak converge into Abyssal Sea)
+      { from: 14, to: [17] },
+      { from: 15, to: [17] },
+      { from: 16, to: [17] },
+      // Tier 7 -> Tier 8 (Abyssal Sea branches into The Void)
+      { from: 17, to: [18] }
+    ];
+
+    CROSS_STAGE_CONNECTIONS.forEach(conn => {
+      const fromMax = stageMaxLvlMap[conn.from] || 5;
+      const fromNodeId = `main_${conn.from}A_L${fromMax}`;
+      conn.to.forEach(toStageNum => {
+        const toNodeId = `main_${toStageNum}A_L1`;
+        mapLines.push({
+          from: fromNodeId,
+          to: toNodeId,
+          isMain: true,
+          stage: conn.from,
+          isCrossStage: true
+        });
+      });
+    });
+
+    const branchingMap = { nodes: mapNodes, lines: mapLines, tiers: TIERS, version: 10 };
     if (state?.stageState) state.stageState.branchingMap = branchingMap;
     return branchingMap;
   }
 
   static renderWorldMapNodeView() {
     this.updateShopBtnVisibility();
-    // Clear enemy canvas if any
     const enemyCanvas = document.getElementById('enemyConnectionCanvas');
     if (enemyCanvas) {
       const ctx = enemyCanvas.getContext('2d');
@@ -11368,11 +11482,10 @@ class UIManager {
     }
 
     let mapContainer = document.querySelector('.world-map-container');
-    if (mapContainer) return; // Prevent rebuilding the map every tick
-    
+    if (mapContainer) return;
+
     mapContainer = document.createElement('div');
     mapContainer.className = 'world-map-container';
-    mapContainer.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#000000; padding:24px; box-sizing:border-box; z-index:100; overflow:hidden;';
     document.body.appendChild(mapContainer);
 
     const state = typeof getGameState === 'function' ? getGameState() : null;
@@ -11380,40 +11493,9 @@ class UIManager {
       StageManager.ensureStageProgress();
     }
     const stageProgress = state?.stageState?.stageProgress || {};
-
     const mapData = this.getOrGenerateBranchingMap(stageProgress);
 
-    let html = `
-      <div class="world-map-controls" style="position:fixed; top:36px; right:40px; z-index:101; display:flex; gap:8px; pointer-events:auto;">
-        <button id="mapZoomIn" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 +</button>
-        <button id="mapZoomOut" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🔍 -</button>
-        <button id="mapReset" style="background:#1e293b; border:1px solid #64748b; color:#fff; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.5);">🎯 Reset</button>
-      </div>
-      <div class="world-tree-viewport" style="position:relative; width:100%; height:100%; background:#16181d; border-radius:16px; border:2px solid #272a30; overflow:hidden; cursor:grab; touch-action:none; box-shadow: 0 8px 32px rgba(0,0,0,0.8);">
-        <div class="world-tree-canvas-content" style="position:absolute; top:0; left:0; width:5600px; height:1200px; transform-origin:0 0;">
-          <svg class="world-tree-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1; overflow:visible;"></svg>
-          <div class="world-tree-nodes-layer" style="position:relative; z-index:2; width:100%; height:100%;">
-    `;
-
-    // Group nodes by stage to draw vertical slots
-    const stagesRendered = new Set();
-    mapData.nodes.forEach(node => {
-      if (!stagesRendered.has(node.stage)) {
-        stagesRendered.add(node.stage);
-        const xLeft = 300 + (node.stage - 1) * 450 - 180;
-        const color = node.color || '#3b82f6';
-        const bg = color;
-        html += `
-          <div style="position:absolute; top:80px; left:${xLeft}px; width:360px; height:900px; background:${bg}; border-radius:15px; border:2px solid ${color}; pointer-events:none; z-index:1; opacity:0.85;">
-             <div style="padding:15px; text-align:center; font-family:'Orbitron', sans-serif; font-size:1.4rem; color:#ffffff; font-weight:bold; opacity:1;">
-                ${node.icon} Stage ${node.stage}: ${node.name}
-             </div>
-          </div>
-        `;
-      }
-    });
-
-    // Build map parent-child lookup for strict branch locks
+    // Build parent map for unlock requirements
     const parentMap = {};
     mapData.lines.forEach(l => {
       if (!parentMap[l.to]) parentMap[l.to] = [];
@@ -11422,193 +11504,287 @@ class UIManager {
     const nodeLookup = {};
     mapData.nodes.forEach(n => { nodeLookup[n.id] = n; });
 
-    mapData.nodes.forEach(node => {
-      const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
-      const isLevelCleared = (node.level <= prog.maxCleared) || prog.isCleared;
-      
-      // Strict branch lock: all preceding parent nodes must be cleared
-      const parentIds = parentMap[node.id] || [];
-      const allParentsCleared = parentIds.length === 0 || parentIds.every(pid => {
-        const parentNode = nodeLookup[pid];
-        if (!parentNode) return true;
-        const pProg = stageProgress[parentNode.key] || { maxCleared: 0, isCleared: false };
-        return (parentNode.level <= pProg.maxCleared) || pProg.isCleared;
+    const stageGroups = {};
+    mapData.nodes.forEach(n => {
+      if (!stageGroups[n.stage]) stageGroups[n.stage] = [];
+      stageGroups[n.stage].push(n);
+    });
+
+    const tiers = mapData.tiers || [
+      { tier: 1, title: 'I: Origin', stages: [{ stage: 1 }] },
+      { tier: 2, title: 'II: Split', stages: [{ stage: 2 }, { stage: 3 }, { stage: 4 }] },
+      { tier: 3, title: 'III: Depths', stages: [{ stage: 5 }, { stage: 6 }, { stage: 7 }] },
+      { tier: 4, title: 'IV: Realms', stages: [{ stage: 8 }, { stage: 9 }, { stage: 10 }] },
+      { tier: 5, title: 'V: Sanctuary', stages: [{ stage: 11 }, { stage: 12 }, { stage: 13 }] },
+      { tier: 6, title: 'VI: Ascent', stages: [{ stage: 14 }, { stage: 15 }, { stage: 16 }] },
+      { tier: 7, title: 'VII: Gateway', stages: [{ stage: 17 }] },
+      { tier: 8, title: 'VIII: Apex', stages: [{ stage: 18 }] }
+    ];
+
+    let html = `
+      <div class="world-map-header-bar">
+        <div class="world-map-header-left">
+          <span class="world-map-title-badge">🌌 WORLD MAP // CONVERGENCE</span>
+          <span class="world-map-subtitle">Forest ➔ Branching Realms ➔ The Void</span>
+        </div>
+        <div class="world-map-zoom-controls">
+          <button class="world-map-zoom-btn" id="mapEyeToggleBtn" title="Hide HUDs & Tabs (Except Checklist)">👁️</button>
+          <button class="world-map-zoom-btn" id="mapZoomOutBtn" title="Zoom Out">🔍 -</button>
+          <button class="world-map-zoom-btn" id="mapZoomResetBtn" title="Reset View">⟲ 100%</button>
+          <button class="world-map-zoom-btn" id="mapZoomInBtn" title="Zoom In">🔍 +</button>
+          <button class="world-map-zoom-btn" id="mapCenterBtn" title="Center Focus">🎯 Focus</button>
+        </div>
+      </div>
+      <div class="world-map-scroll-viewport">
+        <div class="world-map-horizontal-grid">
+          <svg class="world-map-global-connectors"></svg>
+    `;
+
+    tiers.forEach(t => {
+      html += `
+        <div class="world-map-tier-column" data-tier="${t.tier}">
+          <div class="world-map-tier-header">${t.title}</div>
+      `;
+
+      t.stages.forEach(stgInfo => {
+        const stageNum = stgInfo.stage;
+        const stageNodes = stageGroups[stageNum] || [];
+        if (!stageNodes.length) return;
+        const rep = stageNodes[0];
+        const color = rep.color || '#3b82f6';
+
+        html += `
+          <div class="stage-horizontal-row" data-stage="${stageNum}" style="border-color:${color}35;">
+            <div class="stage-badge-col" style="border-color:${color}60;">
+              <span class="stage-badge-num" style="color:${color};">${rep.icon} S${stageNum}</span>
+              <span class="stage-badge-name">${rep.name}</span>
+            </div>
+            <div class="stage-track-area">
+              <svg class="stage-track-svg" data-stage="${stageNum}"></svg>
+        `;
+
+        stageNodes.forEach(node => {
+          const prog = stageProgress[node.key] || { maxCleared: 0, isCleared: false };
+          const isLevelCleared = (node.level <= prog.maxCleared) || prog.isCleared;
+          const nodeColor = node.color || '#38bdf8';
+
+          let label = `L${node.level}`;
+          let extraClass = '';
+
+          if (node.isVault) {
+            label = '🔑';
+            extraClass = 'is-vault-node';
+          } else if (node.isMiniboss) {
+            label = '⚔️';
+            extraClass = 'is-miniboss-node';
+          } else if (node.isBoss) {
+            label = '👑';
+            extraClass = 'is-boss-node';
+          }
+
+          const bg = isLevelCleared ? '#1e293b' : '#0b0f17';
+          const borderColor = isLevelCleared ? '#22c55e' : nodeColor;
+
+          html += `
+            <button class="stage-node-circle ${extraClass} ${isLevelCleared ? 'is-level-cleared' : ''}" 
+                 data-node-id="${node.id}" 
+                 data-node-key="${node.key}" 
+                 data-stage="${node.stage}" 
+                 data-variant="${node.variant}"
+                 data-level="${node.level}"
+                 data-boss-override="${node.bossName || ''}"
+                 data-node-name="${node.name}"
+                 data-is-boss="${node.isBoss}"
+                 data-is-miniboss="${node.isMiniboss}"
+                 data-is-vault="${node.isVault || false}"
+                 data-is-locked="false"
+                 data-color="${nodeColor}"
+                 title="Stage ${node.stage}: ${node.name} (Level ${node.level})"
+                 style="left:${node.xPct}%; top:${node.yPct}%; border-color:${borderColor}; background:${bg}; color:${nodeColor};">
+              <span>${label}</span>
+            </button>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
       });
 
-      const isLocked = !allParentsCleared;
-      const isCurrent = allParentsCleared && !isLevelCleared;
-      
-      const color = isLocked ? '#64748b' : (node.color || '#38bdf8');
-      let shapeStyle = 'border-radius:50%;'; // Normal Circle
-      let shapeSymbol = '⚪';
-      
-      if (node.isVault) {
-        shapeStyle = 'clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%); border-radius:0;'; // Pentagon / Vault Shield
-        shapeSymbol = '🔑';
-      } else if (node.isShop) {
-        shapeStyle = 'border-radius:4px;'; // Square
-        shapeSymbol = '🟩';
-      } else if (node.isMiniboss) {
-        shapeStyle = 'border-radius:4px; transform: translate(-50%, -50%) rotate(45deg);'; // Diamond
-        shapeSymbol = '🔷';
-      } else if (node.isBoss) {
-        shapeStyle = 'clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); border-radius:0;'; // Hexagon
-        shapeSymbol = '🛑';
-      }
-
-      const label = isLocked ? '🔒' : (node.isVault ? '🔑' : (node.isShop ? '🛒' : (node.isMiniboss ? '🔷' : (node.isBoss ? '🛑' : `L${node.level}`))));
-      const bg = isLocked ? 'rgba(30, 41, 59, 0.95)' : (isLevelCleared ? color + '40' : 'rgba(15, 23, 42, 0.96)');
-      const borderColor = isCurrent ? '#fff' : color;
-
       html += `
-        <button class="stage-node-circle ${isLevelCleared ? 'is-level-cleared' : ''} ${isLocked ? 'is-branch-locked' : ''}" 
-             data-node-id="${node.id}" 
-             data-node-key="${node.key}" 
-             data-stage="${node.stage}" 
-             data-variant="${node.variant}"
-             data-level="${node.level}"
-             data-boss-override="${node.bossName || ''}"
-             data-node-name="${node.name}"
-             data-is-boss="${node.isBoss}"
-             data-is-miniboss="${node.isMiniboss}"
-             data-is-vault="${node.isVault || false}"
-             data-is-locked="${isLocked}"
-             data-color="${color}"
-             ${isLocked ? 'disabled' : ''}
-             style="position:absolute; left:${node.x}px; top:${node.y}px; border-color:${borderColor}; box-shadow: 0 0 14px ${color}35; background: ${bg}; width:48px; height:48px; ${shapeStyle} display:flex; align-items:center; justify-content:center; font-family:'Orbitron', sans-serif; font-size:1rem; color:#fff; border-width:2px; border-style:solid; cursor:${isLocked ? 'not-allowed' : 'pointer'}; z-index:5; ${!node.isMiniboss ? 'transform: translate(-50%, -50%);' : ''}">
-          <span style="${node.isMiniboss ? 'transform: rotate(-45deg); display:inline-block;' : ''}">${label}</span>
-        </button>
+        </div>
       `;
     });
 
     html += `
-          </div>
         </div>
       </div>
     `;
     mapContainer.innerHTML = html;
 
-    // Pan & Zoom controls
-    const viewport = mapContainer.querySelector('.world-tree-viewport');
-    const content = mapContainer.querySelector('.world-tree-canvas-content');
-    
-    let scale = 0.85;
-    let panX = 50; // start near left
-    let panY = (window.innerHeight - 1200 * scale) / 2;
+    const viewport = mapContainer.querySelector('.world-map-scroll-viewport');
+    const grid = mapContainer.querySelector('.world-map-horizontal-grid');
 
-    const updateTransform = () => {
-      content.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    let panX = 40;
+    let panY = 0;
+    let zoom = 0.85;
+    const MIN_ZOOM = 0.35;
+    const MAX_ZOOM = 2.2;
+
+    const updateTransform = (smooth = false) => {
+      if (!grid) return;
+      grid.style.transition = smooth ? 'transform 0.22s ease-out' : 'none';
+      grid.style.transform = `translate(${panX}px, calc(-50% + ${panY}px)) scale(${zoom})`;
     };
+
     updateTransform();
 
-    // Zoom Buttons
-    mapContainer.querySelector('#mapZoomIn')?.addEventListener('click', () => { scale = Math.min(2.0, scale + 0.15); updateTransform(); });
-    mapContainer.querySelector('#mapZoomOut')?.addEventListener('click', () => { scale = Math.max(0.35, scale - 0.15); updateTransform(); });
-    mapContainer.querySelector('#mapReset')?.addEventListener('click', () => { scale = 0.85; panX = (window.innerWidth - 1200 * scale) / 2; panY = 20; updateTransform(); });
+    let isDragging = false;
+    let startPointerX = 0;
+    let startPointerY = 0;
+    let initialPanX = 0;
+    let initialPanY = 0;
+    let totalDragDistance = 0;
 
-    // Tab buttons event listeners
-    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showDailiesTable === 'function') PopupsManager.showDailiesTable(); 
-    });
-    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showBulkAddTodo === 'function') PopupsManager.showBulkAddTodo(); 
-    });
-    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSatchel === 'function') PopupsManager.showSatchel(); 
-    });
-    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showShop === 'function') PopupsManager.showShop(); 
+    const activePointers = new Map();
+    let initialPinchDist = 0;
+    let initialPinchZoom = 1;
+
+    viewport.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size === 1) {
+        isDragging = true;
+        startPointerX = e.clientX;
+        startPointerY = e.clientY;
+        initialPanX = panX;
+        initialPanY = panY;
+        totalDragDistance = 0;
+      } else if (activePointers.size === 2) {
+        isDragging = false;
+        viewport.classList.remove('is-dragging-map');
+        const pts = Array.from(activePointers.values());
+        initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        initialPinchZoom = zoom;
+      }
     });
 
-    // Wheel zoom
+    window.addEventListener('pointermove', (e) => {
+      if (activePointers.has(e.pointerId)) {
+        activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      if (activePointers.size === 2 && initialPinchDist > 0) {
+        const pts = Array.from(activePointers.values());
+        const currentDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, initialPinchZoom * (currentDist / initialPinchDist)));
+        zoom = newZoom;
+        updateTransform();
+        return;
+      }
+
+      if (isDragging && activePointers.size === 1) {
+        const dx = e.clientX - startPointerX;
+        const dy = e.clientY - startPointerY;
+        totalDragDistance += Math.abs(dx) + Math.abs(dy);
+        if (totalDragDistance > 5) {
+          viewport.classList.add('is-dragging-map');
+        }
+        panX = initialPanX + dx;
+        panY = initialPanY + dy;
+        updateTransform();
+      }
+    });
+
+    const onPointerEnd = (e) => {
+      activePointers.delete(e.pointerId);
+      if (activePointers.size === 0) {
+        isDragging = false;
+        viewport.classList.remove('is-dragging-map');
+      }
+    };
+
+    window.addEventListener('pointerup', onPointerEnd);
+    window.addEventListener('pointercancel', onPointerEnd);
+
+    // Mouse wheel zoom
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-      scale = Math.max(0.35, Math.min(2.0, scale * zoomFactor));
+      const rect = viewport.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const factor = e.deltaY < 0 ? 1.15 : 0.88;
+      const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+      
+      panX = mouseX - (mouseX - panX) * (newZoom / zoom);
+      panY = mouseY - (mouseY - panY) * (newZoom / zoom);
+      zoom = newZoom;
       updateTransform();
     }, { passive: false });
 
-    // Touch Pinch & Pan
-    let isDragging = false;
-    let startX = 0, startY = 0;
-    let touchStartDist = 0;
+    // Eye Toggle Button (Clean View: Hide HUDs/Tabs except checklist)
+    const eyeBtn = mapContainer.querySelector('#mapEyeToggleBtn');
+    if (eyeBtn) {
+      const isClean = document.body.classList.contains('world-map-clean-view');
+      eyeBtn.innerHTML = isClean ? '👁️‍🗨️' : '👁️';
+      eyeBtn.style.color = isClean ? '#38bdf8' : '#94a3b8';
+      eyeBtn.style.borderColor = isClean ? '#38bdf8' : '#334155';
+      eyeBtn.style.background = isClean ? '#1e293b' : '#141a24';
 
-    viewport.addEventListener('mousedown', (e) => {
-      isDragging = true;
-      startX = e.clientX - panX;
-      startY = e.clientY - panY;
-      viewport.style.cursor = 'grabbing';
+      eyeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.body.classList.toggle('world-map-clean-view');
+        const active = document.body.classList.contains('world-map-clean-view');
+        eyeBtn.innerHTML = active ? '👁️‍🗨️' : '👁️';
+        eyeBtn.style.color = active ? '#38bdf8' : '#94a3b8';
+        eyeBtn.style.borderColor = active ? '#38bdf8' : '#334155';
+        eyeBtn.style.background = active ? '#1e293b' : '#141a24';
+      });
+    }
+
+    // Zoom Buttons
+    mapContainer.querySelector('#mapZoomInBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoom = Math.min(MAX_ZOOM, zoom * 1.25);
+      updateTransform(true);
     });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      panX = e.clientX - startX;
-      panY = e.clientY - startY;
-      updateTransform();
+    mapContainer.querySelector('#mapZoomOutBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoom = Math.max(MIN_ZOOM, zoom / 1.25);
+      updateTransform(true);
     });
 
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-      if (viewport) viewport.style.cursor = 'grab';
+    mapContainer.querySelector('#mapZoomResetBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      zoom = 0.85;
+      panX = 40;
+      panY = 0;
+      updateTransform(true);
     });
 
-    // Touch events for mobile
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.touches.length === 1) {
-        isDragging = true;
-        startX = e.touches[0].clientX - panX;
-        startY = e.touches[0].clientY - panY;
-      } else if (e.touches.length === 2) {
-        isDragging = false;
-        touchStartDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
+    mapContainer.querySelector('#mapCenterBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const currentStage = state?.stageState?.stage || 1;
+      const stageEl = mapContainer.querySelector(`.stage-horizontal-row[data-stage="${currentStage}"]`);
+      if (stageEl && grid) {
+        const sRect = stageEl.getBoundingClientRect();
+        const gRect = grid.getBoundingClientRect();
+        const vRect = viewport.getBoundingClientRect();
+        panX = vRect.width / 2 - (sRect.left + sRect.width / 2 - gRect.left) / zoom;
+        panY = 0;
+        updateTransform(true);
       }
     });
 
-    viewport.addEventListener('touchmove', (e) => {
-      if (isDragging && e.touches.length === 1) {
-        panX = e.touches[0].clientX - startX;
-        panY = e.touches[0].clientY - startY;
-        updateTransform();
-      } else if (e.touches.length === 2) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const factor = dist / (touchStartDist || dist);
-        scale = Math.max(0.35, Math.min(2.0, scale * factor));
-        touchStartDist = dist;
-        updateTransform();
-      }
-    });
-
-    viewport.addEventListener('touchend', () => { isDragging = false; });
-
-    mapContainer.querySelector('#mapTabDailies')?.addEventListener('click', () => { 
-      if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') UIManager.toggleTaskPanel('dailies'); 
-    });
-    mapContainer.querySelector('#mapTabTodos')?.addEventListener('click', () => { 
-      if (typeof UIManager !== 'undefined' && typeof UIManager.toggleTaskPanel === 'function') UIManager.toggleTaskPanel('todos'); 
-    });
-    mapContainer.querySelector('#mapTabInventory')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showSatchel === 'function') PopupsManager.showSatchel(); 
-    });
-    mapContainer.querySelector('#mapTabShop')?.addEventListener('click', () => { 
-      if (typeof PopupsManager !== 'undefined' && typeof PopupsManager.showShop === 'function') PopupsManager.showShop(); 
-    });
-
-    // Attach click events to circular node buttons
+    // Attach click listeners to all nodes (only if not dragged)
     mapContainer.querySelectorAll('.stage-node-circle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (btn.dataset.isLocked === 'true') {
-          if (typeof FloatingDamageNumber !== 'undefined') {
-            FloatingDamageNumber.show(e.clientX || (window.innerWidth / 2), e.clientY || (window.innerHeight / 2), 'BRANCH LOCKED! Clear preceding levels first 🔒', { color: '#ff4444' });
-          }
-          return;
-        }
+        if (totalDragDistance > 8) return; // Prevent click on drag release
+
         const nodeData = {
           stage: Number(btn.dataset.stage),
           variant: btn.dataset.variant,
@@ -11633,45 +11809,112 @@ class UIManager {
       });
     });
 
-    // Draw SVG connections
+    // Draw SVG track connectors
     setTimeout(() => {
-      this.drawWorldTreeLines(mapContainer, mapData);
-    }, 50);
+      this.drawWorldTreeLines(mapContainer, mapData, zoom);
+    }, 40);
   }
 
-  static drawWorldTreeLines(container, mapData) {
-    const svg = container.querySelector('.world-tree-svg');
-    if (!svg || !mapData) return;
-
-    svg.setAttribute('width', 5600);
-    svg.setAttribute('height', 1200);
-    svg.innerHTML = '';
+  static drawWorldTreeLines(container, mapData, currentZoom = 1.0) {
+    if (!container || !mapData) return;
 
     const nodesById = {};
     mapData.nodes.forEach(n => { nodesById[n.id] = n; });
 
-    let svgLines = '';
+    // 1. Intra-stage SVG paths
+    const intraLinesByStage = {};
+    const crossLines = [];
     mapData.lines.forEach(line => {
-      const src = nodesById[line.from];
-      const tgt = nodesById[line.to];
-      if (src && tgt) {
-        const color = src.color || '#38bdf8';
-        const srcX = src.x;
-        const srcY = src.y;
-        const tgtX = tgt.x;
-        const tgtY = tgt.y;
-
-        const midY = (srcY + tgtY) / 2;
-        const d = `M ${srcX} ${srcY} C ${srcX} ${midY}, ${tgtX} ${midY}, ${tgtX} ${tgtY}`;
-        const dash = line.isMain ? 'none' : '6,3';
-        const strokeWidth = line.isMain ? 4 : 2.5;
-
-        svgLines += `<path d="${d}" stroke="${color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash}" fill="none" opacity="0.8" style="filter: drop-shadow(0 0 6px ${color});" />`;
-        svgLines += `<circle cx="${tgtX}" cy="${tgtY}" r="5" fill="${color}" />`;
+      if (line.isCrossStage) {
+        crossLines.push(line);
+      } else {
+        if (!intraLinesByStage[line.stage]) intraLinesByStage[line.stage] = [];
+        intraLinesByStage[line.stage].push(line);
       }
     });
 
-    svg.innerHTML = svgLines;
+    container.querySelectorAll('.stage-track-svg').forEach(svg => {
+      const stageNum = Number(svg.dataset.stage);
+      const lines = intraLinesByStage[stageNum] || [];
+      const w = svg.clientWidth || 160;
+      const h = svg.clientHeight || 56;
+
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      let svgHtml = '';
+
+      lines.forEach(line => {
+        const src = nodesById[line.from];
+        const tgt = nodesById[line.to];
+        if (src && tgt) {
+          const color = src.color || '#38bdf8';
+          const sx = (src.xPct / 100) * w;
+          const sy = (src.yPct / 100) * h;
+          const tx = (tgt.xPct / 100) * w;
+          const ty = (tgt.yPct / 100) * h;
+
+          const midX = (sx + tx) / 2;
+          const d = `M ${sx} ${sy} C ${midX} ${sy}, ${midX} ${ty}, ${tx} ${ty}`;
+          const dash = line.isMain ? 'none' : '3,2';
+          const strokeWidth = line.isMain ? 2 : 1.5;
+
+          svgHtml += `<path d="${d}" stroke="${color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash}" fill="none" opacity="0.8" />`;
+          svgHtml += `<circle cx="${tx}" cy="${ty}" r="2" fill="${color}" />`;
+        }
+      });
+
+      svg.innerHTML = svgHtml;
+    });
+
+    // 2. Global cross-stage inter-tier connectors
+    const globalSvg = container.querySelector('.world-map-global-connectors');
+    const grid = container.querySelector('.world-map-horizontal-grid');
+    if (globalSvg && grid && crossLines.length) {
+      const gw = grid.offsetWidth;
+      const gh = grid.offsetHeight;
+      globalSvg.setAttribute('viewBox', `0 0 ${gw} ${gh}`);
+      globalSvg.style.width = '100%';
+      globalSvg.style.height = '100%';
+
+      const gridRect = grid.getBoundingClientRect();
+      const z = (gridRect.width > 0 && gw > 0) ? (gridRect.width / gw) : (currentZoom || 1.0);
+
+      const state = typeof getGameState === 'function' ? getGameState() : null;
+      const stageProgress = state?.stageState?.stageProgress || {};
+
+      let globalHtml = '';
+      crossLines.forEach(line => {
+        const fromEl = container.querySelector(`[data-node-id="${line.from}"]`);
+        const toEl = container.querySelector(`[data-node-id="${line.to}"]`);
+        if (fromEl && toEl) {
+          const fRect = fromEl.getBoundingClientRect();
+          const tRect = toEl.getBoundingClientRect();
+
+          const sx = (fRect.left + fRect.width / 2 - gridRect.left) / z;
+          const sy = (fRect.top + fRect.height / 2 - gridRect.top) / z;
+          const tx = (tRect.left + tRect.width / 2 - gridRect.left) / z;
+          const ty = (tRect.top + tRect.height / 2 - gridRect.top) / z;
+
+          const fromNode = nodesById[line.from];
+          const color = fromNode?.color || '#38bdf8';
+          const isFromCleared = fromNode && (stageProgress[fromNode.key]?.isCleared || (fromNode.level <= (stageProgress[fromNode.key]?.maxCleared || 0)));
+
+          const dx = tx - sx;
+          const c1x = sx + dx * 0.5;
+          const c1y = sy;
+          const c2x = sx + dx * 0.5;
+          const c2y = ty;
+          const d = `M ${sx} ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`;
+
+          if (isFromCleared) {
+            globalHtml += `<path d="${d}" stroke="${color}" stroke-width="2.5" fill="none" opacity="0.85" />`;
+            globalHtml += `<circle cx="${tx}" cy="${ty}" r="3" fill="${color}" opacity="0.9" />`;
+          } else {
+            globalHtml += `<path d="${d}" stroke="#334155" stroke-width="1.5" stroke-dasharray="4,4" fill="none" opacity="0.65" />`;
+          }
+        }
+      });
+      globalSvg.innerHTML = globalHtml;
+    }
   }
 
   static _doRenderEnemies() {
@@ -11684,6 +11927,9 @@ class UIManager {
         PopupsManager.showLimboScreen();
       }
       return;
+    } else {
+      const limboOverlay = document.querySelector('.limbo-overlay');
+      if (limboOverlay) limboOverlay.remove();
     }
 
     // If player is on World Map (not in active level), render full-screen node-map view
@@ -11694,7 +11940,10 @@ class UIManager {
 
     // Remove world map container if present when inside active level
     const mapContainer = document.querySelector('.world-map-container');
-    if (mapContainer) mapContainer.remove();
+    if (mapContainer) {
+      mapContainer.remove();
+      document.body.classList.remove('world-map-clean-view');
+    }
 
     const layer = document.getElementById('enemyLayer');
     if (!layer) return;
@@ -12720,13 +12969,13 @@ class UIManager {
       position: absolute;
       width: 24px;
       height: 24px;
-      border: 3px solid #a15cff;
+      border: 3px solid #1B4332;
       background: rgba(161, 92, 255, 0.45);
       border-radius: 50%;
       pointer-events: none;
       z-index: 100000;
       transform: translate(-50%, -50%);
-      box-shadow: 0 0 15px #a15cff, inset 0 0 8px #a15cff;
+      box-shadow: 0 0 15px #1B4332, inset 0 0 8px #1B4332;
       left: ${start.x}px;
       top: ${start.y}px;
     `;
@@ -12975,7 +13224,7 @@ class UIManager {
           return `<div style="margin-bottom:3px;">
             <div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;font-family:monospace;margin-bottom:1px;">
               <span style="color:${color};font-weight:bold;">${attr}</span>
-              <span style="font-size:7px;"><span style="color:#a15cff;font-weight:bold;">${Math.round(pPts)}</span><span style="color:#555;">/</span><span style="color:#ff4444;font-weight:bold;">${Math.round(nPts)}</span></span>
+              <span style="font-size:7px;"><span style="color:#1B4332;font-weight:bold;">${Math.round(pPts)}</span><span style="color:#555;">/</span><span style="color:#ff4444;font-weight:bold;">${Math.round(nPts)}</span></span>
             </div>
             <div class="attr-bar-container" style="height:4px;border-radius:2px;">
               <div class="attr-bar-player" style="width:${playerPercent}%;border-radius:2px;"></div>
@@ -12999,12 +13248,12 @@ class UIManager {
         } else {
           rewardsContainer.innerHTML = customRewards.map(r => {
             const canAfford = state.playerState.diamonds >= r.price;
-            return `<div style="margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:2px 4px; border-radius:3px; border:1px solid rgba(168,85,247,0.15);">
+            return `<div style="margin-bottom:3px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:2px 4px; border-radius:3px; border:1px solid rgba(27, 67, 50, 0.15);">
               <div style="display:flex; flex-direction:column; text-align:left; max-width:100px;">
                 <span style="font-size:7px; color:#fff; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${r.name}">${r.name}</span>
-                <span style="font-size:6px; color:#a855f7;">${r.price} 💎</span>
+                <span style="font-size:6px; color:#1B4332;">${r.price} 💎</span>
               </div>
-              <button class="buy-custom-reward-btn" data-id="${r.id}" ${canAfford ? '' : 'disabled'} style="font-size:6px; font-family:inherit; padding:2px 4px; border-radius:2px; background:${canAfford ? '#a855f7' : 'rgba(255,255,255,0.05)'}; color:${canAfford ? '#fff' : '#666'}; border:none; cursor:${canAfford ? 'pointer' : 'not-allowed'}; font-weight:bold;">BUY</button>
+              <button class="buy-custom-reward-btn" data-id="${r.id}" ${canAfford ? '' : 'disabled'} style="font-size:6px; font-family:inherit; padding:2px 4px; border-radius:2px; background:${canAfford ? '#1B4332' : 'rgba(255,255,255,0.05)'}; color:${canAfford ? '#fff' : '#666'}; border:none; cursor:${canAfford ? 'pointer' : 'not-allowed'}; font-weight:bold;">BUY</button>
             </div>`;
           }).join('');
 
@@ -13071,9 +13320,53 @@ class UIManager {
     rateEl.textContent = `${Math.round(lastPct * 100)}%`;
   }
 
+  static heatmapSelectedMonthOffset = 0;
+  static _heatmapEventsBound = false;
+
+  static ensureHeatmapEvents() {
+    if (this._heatmapEventsBound) return;
+    const panel = document.getElementById('weeklyHeatmapPanel');
+    if (!panel) return;
+    this._heatmapEventsBound = true;
+    panel.addEventListener('click', (e) => {
+      const prevBtn = e.target.closest('#heatmapPrevMonthBtn');
+      if (prevBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        UIManager.shiftHeatmapMonth(-1);
+        return;
+      }
+      const nextBtn = e.target.closest('#heatmapNextMonthBtn');
+      if (nextBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        UIManager.shiftHeatmapMonth(1);
+        return;
+      }
+      const titleBtn = e.target.closest('#heatmapMonthTitle');
+      if (titleBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        UIManager.resetHeatmapMonth();
+        return;
+      }
+    });
+  }
+
+  static shiftHeatmapMonth(delta) {
+    this.heatmapSelectedMonthOffset = (this.heatmapSelectedMonthOffset || 0) + delta;
+    this.updateWeeklyHeatmap();
+  }
+
+  static resetHeatmapMonth() {
+    this.heatmapSelectedMonthOffset = 0;
+    this.updateWeeklyHeatmap();
+  }
+
   static updateWeeklyHeatmap() {
     const container = document.getElementById('weeklyHeatmapBody');
     if (!container) return;
+    this.ensureHeatmapEvents();
 
     const state = getGameState();
     const history = Array.isArray(state.dailiesState?.history) ? state.dailiesState.history : [];
@@ -13082,89 +13375,127 @@ class UIManager {
       ? TaskManager.getCurrentGameDateKey()
       : new Date().toISOString().split('T')[0];
 
-    const parts = today.split('-');
-    const todayDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    const [todayY, todayM, todayD] = today.split('-').map(Number);
 
-    // Dynamically calculate columns & rows based on container dimensions
-    const panel = document.getElementById('weeklyHeatmapPanel');
-    let cols = 4;
-    let rows = 7;
-    if (panel) {
-      const w = panel.clientWidth || 90;
-      const h = panel.clientHeight || 85;
-      cols = Math.max(2, Math.floor((w - 10 + 2) / 11));
-      rows = Math.max(2, Math.floor((h - 22 + 2) / 11));
-    }
-    container.style.setProperty('--rows', rows);
-    container.style.setProperty('--cols', cols);
-    const totalCells = cols * rows;
+    const offset = this.heatmapSelectedMonthOffset || 0;
+    const viewDate = new Date(todayY, todayM - 1 + offset, 1);
+    const viewYear = viewDate.getFullYear();
+    const viewMonth = viewDate.getMonth(); // 0-indexed
 
-    const cells = [];
-    for (let i = totalCells - 1; i >= 0; i--) {
-      const d = new Date(todayDate);
-      d.setDate(todayDate.getDate() - i);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const dateVal = String(d.getDate()).padStart(2, '0');
-      const dateStr = `${y}-${m}-${dateVal}`;
-      cells.push({ date: dateStr, isToday: i === 0 });
+    const monthShortNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const monthTitleText = `${monthShortNames[viewMonth]} ${viewYear}`;
+
+    const titleEl = document.getElementById('heatmapMonthTitle');
+    if (titleEl) {
+      titleEl.textContent = monthTitleText;
+      titleEl.title = offset === 0 ? 'Current Month (Click to reset)' : 'Click to jump to current month';
     }
 
-    container.innerHTML = cells.map((cell) => {
-      const entry = history.find(e => e.date === cell.date);
+    const nextBtn = document.getElementById('heatmapNextMonthBtn');
+    if (nextBtn) {
+      const isCurrentOrFuture = (viewYear > todayY) || (viewYear === todayY && viewMonth >= todayM - 1);
+      nextBtn.disabled = isCurrentOrFuture;
+      nextBtn.style.opacity = isCurrentOrFuture ? '0.35' : '1';
+      nextBtn.style.cursor = isCurrentOrFuture ? 'default' : 'pointer';
+    }
+
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const firstDayWeekday = new Date(viewYear, viewMonth, 1).getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+
+    const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const weekdaysHtml = `<div class="heatmap-weekdays-row">` +
+      dayHeaders.map(d => `<span class="heatmap-weekday-label">${d}</span>`).join('') +
+      `</div>`;
+
+    let totalMonthRate = 0;
+    let evaluatedDaysCount = 0;
+    const dayCells = [];
+
+    // Leading padding slots for week alignment
+    for (let p = 0; p < firstDayWeekday; p++) {
+      dayCells.push(`<div class="heatmap-cell heatmap-cell-pad" aria-hidden="true"></div>`);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const isToday = (dateKey === today);
+      const isFuture = (dateKey > today);
+      const isPast = (dateKey < today);
+
+      let cellClass = 'heatmap-cell';
+      let tooltip = '';
+      let rate = null;
+
+      const entry = history.find(e => e.date === dateKey);
 
       if (entry) {
-        let rate = 0;
         const compDailies = Array.isArray(entry.completedDailies) ? entry.completedDailies : [];
         const missedDailies = Array.isArray(entry.missedDailies) ? entry.missedDailies : [];
         const savedDailies = Array.isArray(entry.savedDailies) ? entry.savedDailies : [];
         const allDailies = compDailies.concat(missedDailies).concat(savedDailies);
-        
+
         if (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedCompletionRate === 'function') {
           rate = TaskManager.getWeightedCompletionRate(compDailies, allDailies);
         } else {
           rate = allDailies.length > 0 ? (compDailies.length / allDailies.length) : (entry.allDailiesComplete ? 1.0 : 0.0);
         }
+        totalMonthRate += rate;
+        evaluatedDaysCount++;
 
         const compCount = compDailies.length;
         const totalCount = allDailies.length;
+        tooltip = `${dateKey}: ${Math.round(rate * 100)}% completed (${compCount}/${totalCount} dailies)`;
 
-        const opacity = 0.15 + (rate * 0.8);
-        const color = `rgba(255, 51, 51, ${opacity})`;
-        const borderColor = `rgba(255, 51, 51, ${0.1 + rate * 0.45})`;
-        const shadowColor = `rgba(255, 51, 51, ${rate * 0.45})`;
-        const tooltip = `${cell.date}: ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
-
-        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: ${borderColor};" title="${tooltip}"></div>`;
-      } else if (cell.isToday) {
-        // Today's pending check-in progress
+        if (rate >= 1.0) cellClass += ' level-perfect';
+        else if (rate >= 0.70) cellClass += ' level-high';
+        else if (rate >= 0.40) cellClass += ' level-med';
+        else if (rate > 0) cellClass += ' level-low';
+        else cellClass += ' level-missed';
+      } else if (isToday) {
         const dailies = state.dailiesState?.dailies || [];
         const scheduledDailies = typeof TaskManager !== 'undefined' && typeof TaskManager.isDailyScheduled === 'function'
           ? dailies.filter(d => TaskManager.isDailyScheduled(d, today))
           : dailies;
         const compDailies = scheduledDailies.filter(d => d.completed);
-        
-        let rate = 1.0;
+
         if (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedCompletionRate === 'function') {
           rate = TaskManager.getWeightedCompletionRate(compDailies, scheduledDailies);
         } else {
           rate = scheduledDailies.length > 0 ? (compDailies.length / scheduledDailies.length) : 1.0;
         }
+        totalMonthRate += rate;
+        evaluatedDaysCount++;
 
         const compCount = compDailies.length;
         const totalCount = scheduledDailies.length;
+        tooltip = `${dateKey} (Today): ${Math.round(rate * 100)}% in progress (${compCount}/${totalCount} dailies)`;
 
-        const opacity = 0.15 + (rate * 0.8);
-        const color = `rgba(255, 51, 51, ${opacity})`;
-        const borderColor = `rgba(255, 51, 51, ${0.1 + rate * 0.45})`;
-        const shadowColor = `rgba(255, 51, 51, ${rate * 0.45})`;
-        const tooltip = `${cell.date} (Today - Pending): ${Math.round(rate * 100)}% completed (${compCount}/${totalCount})`;
-
-        return `<div class="heatmap-cell" style="background: ${color}; box-shadow: 0 0 3px ${shadowColor}; border-color: ${borderColor};" title="${tooltip}"></div>`;
+        cellClass += ' is-today';
+        if (rate >= 1.0) cellClass += ' level-perfect';
+        else if (rate >= 0.70) cellClass += ' level-high';
+        else if (rate >= 0.40) cellClass += ' level-med';
+        else if (rate > 0) cellClass += ' level-low';
+        else cellClass += ' level-0';
+      } else if (isPast) {
+        evaluatedDaysCount++;
+        cellClass += ' level-missed';
+        tooltip = `${dateKey}: No check-in recorded`;
       } else {
-        return `<div class="heatmap-cell level-0" title="${cell.date}: No check-in"></div>`;
+        cellClass += ' level-future';
+        tooltip = `${dateKey}`;
       }
-    }).join('');
+
+      dayCells.push(`<div class="${cellClass}" title="${tooltip}" data-date="${dateKey}"><span class="heatmap-day-num">${day}</span></div>`);
+    }
+
+    const monthPct = evaluatedDaysCount > 0 ? Math.round((totalMonthRate / evaluatedDaysCount) * 100) : 0;
+    const statBadge = document.getElementById('heatmapMonthStat');
+    if (statBadge) {
+      statBadge.textContent = evaluatedDaysCount > 0 ? `${monthPct}%` : '--';
+      statBadge.title = `Month consistency: ${monthPct}% (${evaluatedDaysCount} days)`;
+    }
+
+    container.innerHTML = weekdaysHtml + `<div class="heatmap-month-grid">` + dayCells.join('') + `</div>`;
   }
 
   static showFloatingText(enemyId, text, options = {}) {
@@ -13846,7 +14177,7 @@ class UIManager {
 
     } else if (equippedAnim === 'Spectral Pulse') {
       // Glow and expand 4 rings
-      const colors = ['#00ffff', '#a855f7', '#ec4899', '#f59e0b'];
+      const colors = ['#00ffff', '#1B4332', '#ec4899', '#f59e0b'];
       for (let r = 0; r < 4; r++) {
         setTimeout(() => {
           const pulseRing = document.createElement('div');
@@ -13890,7 +14221,7 @@ class UIManager {
       const flash = document.createElement('div');
       flash.style.position = 'fixed';
       flash.style.inset = '0';
-      flash.style.background = 'rgba(168, 85, 247, 0.25)';
+      flash.style.background = 'rgba(27, 67, 50, 0.25)';
       flash.style.zIndex = '11100';
       flash.style.pointerEvents = 'none';
       flash.style.transition = 'opacity 800ms ease-out';
@@ -14525,7 +14856,7 @@ class StatsHUD {
         const y = C_Y + radius * Math.sin(angle);
         playerPts.push(`${x},${y}`);
       }
-      const playerPolygon = `<polygon points="${playerPts.join(' ')}" fill="rgba(139, 92, 246, 0.25)" stroke="#8b5cf6" stroke-width="0.8"/>`;
+      const playerPolygon = `<polygon points="${playerPts.join(' ')}" fill="rgba(27, 67, 50, 0.25)" stroke="#1B4332" stroke-width="0.8"/>`;
 
       const nemesisPts = [];
       for (let i = 0; i < numPoints; i++) {
@@ -14577,7 +14908,7 @@ class StatsHUD {
           <text x="${C_X}" y="${C_Y}" font-size="5.5" fill="#ffd700" font-weight="bold" text-anchor="middle" dominant-baseline="central" opacity="0.9" style="text-shadow: 0 0 4px rgba(0,0,0,0.9);">${avgStreakVal}</text>
           ${labelsHtml}
           <g transform="translate(5, 90)" font-size="4.2" font-weight="bold">
-            <circle cx="2" cy="-1.5" r="1" fill="#8b5cf6"/>
+            <circle cx="2" cy="-1.5" r="1" fill="#1B4332"/>
             <text x="5" y="0" fill="#a78bfa">Player</text>
             <circle cx="35" cy="-1.5" r="1" fill="#ef4444"/>
             <text x="38" y="0" fill="#ef4444">Nemesis</text>

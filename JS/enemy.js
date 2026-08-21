@@ -225,7 +225,11 @@ class EnemyManager {
     const state = (typeof getGameState === 'function') ? getGameState() : null;
     const cfg = state?.config || DEFAULT_GAME_CONFIG;
     
-    const budgets = cfg.stageLevelBudgets || [100, 150, 200, 250];
+    const stageNum = Number(stage) || 1;
+    const maxLvl = cfg.stageMaxLevels?.[stageNum] || cfg.stageMaxLevels?.default || 5;
+    const budgets = (maxLvl === 3)
+      ? (cfg.stageLevelBudgets3Level || [120, 160])
+      : (cfg.stageLevelBudgets || [80, 105, 130, 160]);
     const lvlIdx = Math.max(0, Math.min((level || 1) - 1, budgets.length - 1));
     let totalBudget = budgets[lvlIdx];
 

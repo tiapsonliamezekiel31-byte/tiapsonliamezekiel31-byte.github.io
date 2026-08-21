@@ -1266,6 +1266,14 @@ class PopupsManager {
       state.stageState.inActiveLevel = false;
     }
 
+    const dateKey = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
+      ? TaskManager.getCurrentGameDateKey()
+      : new Date().toISOString().slice(0, 10);
+    const scheduled = typeof TaskManager !== 'undefined' && typeof TaskManager.getAllDailies === 'function'
+      ? TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, dateKey))
+      : (state?.dailiesState?.dailies || []);
+    const is100Pct = scheduled.length > 0 && scheduled.every(d => d.completed);
+
     let overlay = document.querySelector('.limbo-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
@@ -1275,19 +1283,24 @@ class PopupsManager {
       document.body.appendChild(overlay);
     }
 
+    const respawnBtnHtml = is100Pct
+      ? `<button id="limboRespawnBtn" style="flex:1; background:#22c55e; color:#fff; border:none; padding:10px 14px; border-radius:6px; font-family:inherit; font-weight:bold; cursor:pointer; animation:pulse 1.5s infinite;">✨ Respawn Now (100%)</button>`
+      : `<button id="limboOpenDailiesBtn" style="flex:1; background:#4338ca; color:#fff; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; font-weight:bold; cursor:pointer;">📋 Open Tasks</button>`;
+
     const html = `
       <div class="popup limbo-popup" style="text-align:center; max-width:440px; background:#0b0f19; border:2px solid #6366f1; border-radius:12px; padding:28px 20px; pointer-events:auto;">
         <div style="font-size: 3rem; margin-bottom: 8px;">👻</div>
-        <h2 style="color:#a855f7; margin:0 0 8px 0; font-size:1.6rem; text-shadow:0 0 12px rgba(168,85,247,0.5);">YOU ARE IN LIMBO</h2>
+        <h2 style="color:#1B4332; margin:0 0 8px 0; font-size:1.6rem; text-shadow:0 0 12px rgba(27, 67, 50, 0.5);">YOU ARE IN LIMBO</h2>
         <p style="color:#cbd5e1; font-size:0.9rem; margin-bottom:16px;">
           You were defeated in combat. The level remains uncleared.
         </p>
         <div style="background:#1e1b4b; border:1px solid #4338ca; border-radius:8px; padding:14px; margin-bottom:20px; font-size:0.85rem; color:#e0e7ff; text-align:left;">
           🌟 <strong>HOW TO RESPAWN:</strong><br>
-          Log a <strong>100% Perfect Day</strong> check-in to break free from Limbo and respawn with 50% HP!
+          ${is100Pct ? '<span style="color:#22c55e; font-weight:bold;">🎉 100% Tasks Complete! Click Respawn below!</span>' : 'Complete <strong>100%</strong> of today\'s tasks or check in with a Perfect Day to respawn with 50% HP!'}
         </div>
-        <div style="display:flex; gap:10px; justify-center; margin-top:14px;">
-          <button id="limboOpenDailiesBtn" style="flex:1; background:#4338ca; color:#fff; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; font-weight:bold; cursor:pointer;">📋 Open Tasks</button>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:14px;">
+          ${respawnBtnHtml}
+          ${is100Pct ? '<button id="limboOpenDailiesBtn" style="background:#4338ca; color:#fff; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; cursor:pointer;">📋 Tasks</button>' : ''}
           <button id="limboMinimizeBtn" style="background:rgba(255,255,255,0.1); color:#ccc; border:none; padding:8px 12px; border-radius:6px; font-family:inherit; cursor:pointer;">Minimize</button>
         </div>
       </div>
@@ -1295,11 +1308,32 @@ class PopupsManager {
 
     overlay.innerHTML = html;
 
+    const respawnBtn = overlay.querySelector('#limboRespawnBtn');
+    if (respawnBtn) {
+      respawnBtn.addEventListener('click', () => {
+        if (state && state.playerState) {
+          state.playerState.inLimbo = false;
+          state.playerState.hp = Math.max(state.playerState.hp || 0, Math.round((state.playerState.maxHp || 100) * 0.5));
+          overlay.remove();
+          if (typeof UIManager !== 'undefined') {
+            UIManager.refreshGameUI();
+          }
+          try {
+            state.eventBus.emit(EVENTS.NOTIFICATION, { message: '✨ Resurrected from Limbo with 50% HP!', type: 'success' });
+          } catch (e) {}
+        }
+      });
+    }
+
     const openBtn = overlay.querySelector('#limboOpenDailiesBtn');
     if (openBtn) {
       openBtn.addEventListener('click', () => {
-        if (typeof UIManager !== 'undefined' && typeof UIManager.openDailyTasksTab === 'function') {
-          UIManager.openDailyTasksTab();
+        if (typeof UIManager !== 'undefined') {
+          if (typeof UIManager.toggleTaskPanel === 'function') {
+            UIManager.toggleTaskPanel('dailies');
+          } else if (typeof UIManager.openDailyTasksTab === 'function') {
+            UIManager.openDailyTasksTab();
+          }
         }
       });
     }
@@ -1336,16 +1370,21 @@ class PopupsManager {
     const stageNum = data.stage || 1;
     const variant = data.variant || 'A';
     const level = data.level || 1;
-    const nextLvl = (level < 5) ? level + 1 : 1;
+    const maxLvl = (typeof StageManager !== 'undefined' && StageManager.getMaxLevelsForStage) ? StageManager.getMaxLevelsForStage(stageNum) : 5;
+    const isStageCleared = level >= maxLvl;
+    const nextLvl = isStageCleared ? 1 : level + 1;
+
+    const nextBtnHtml = !isStageCleared ? `
+        <button class="btn-primary btn-next-level" style="padding:12px 20px; font-weight:bold; cursor:pointer;">
+          👉 PROCEED TO LEVEL ${nextLvl}
+        </button>` : '';
 
     const html = `
       <div style="font-size: 2.2rem; margin-bottom: 8px;">⚔️</div>
-      <h2 style="color:#22c55e; margin:0 0 10px 0;">LEVEL ${level} CLEARED!</h2>
+      <h2 style="color:#22c55e; margin:0 0 10px 0;">${isStageCleared ? 'STAGE' : 'LEVEL ' + level} CLEARED!</h2>
       <p style="color:#e2e8f0; margin-bottom: 20px;">Stage ${stageNum}${variant} — Victory Achieved!</p>
       <div class="button-group" style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn-primary btn-next-level" style="padding:12px 20px; font-weight:bold; cursor:pointer;">
-          👉 PROCEED TO LEVEL ${nextLvl}
-        </button>
+        ${nextBtnHtml}
         <button class="btn-secondary btn-world-map" style="padding:12px 20px; font-weight:bold; cursor:pointer;">
           🗺️ WORLD MAP
         </button>
@@ -2291,7 +2330,7 @@ class PopupsManager {
         <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 6px 8px; font-size: 8px;">
           <span style="color: #fff;">${r.name}</span>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <span style="color: #a855f7; font-weight: bold;">${r.price} 💎</span>
+            <span style="color: #1B4332; font-weight: bold;">${r.price} 💎</span>
             <button class="btn-remove-reward" data-id="${r.id}" style="background: rgba(220,53,69,0.2); border: 1px solid #ff4444; color: #ff4444; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 7px; font-family: inherit;">✕</button>
           </div>
         </div>
@@ -3003,8 +3042,8 @@ class PopupsManager {
         <input id="editDeadline" type="time" value="${daily.deadline || ''}" style="margin-bottom: 8px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 6px; font-family: inherit; font-size: 11px; border-radius: 4px;" />
         <label>Daily Surplus</label>
         <div class="surplus-row" style="margin-bottom: 12px; display: block;">
-          <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #a855f7; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
-            <div id="surplusStreakInfo" style="font-size: 11px; color: #a855f7; margin-bottom: 8px; font-family: monospace;"></div>
+          <div id="milestonesSection" style="margin-top: 4px; border-left: 2px solid #1B4332; padding-left: 10px; display: block; width: 100%; box-sizing: border-box;">
+            <div id="surplusStreakInfo" style="font-size: 11px; color: #1B4332; margin-bottom: 8px; font-family: monospace;"></div>
             <div id="surplusMilestonesContainer"></div>
           </div>
         </div>
@@ -3084,7 +3123,7 @@ class PopupsManager {
         <div class="add-milestone-form" style="margin-top: 10px; display: flex; gap: 6px; align-items: center;">
           <input id="newMilestoneStreak" type="number" min="1" placeholder="Streak" style="width: 70px; font-size: 11px; padding: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
           <input id="newMilestoneName" type="text" placeholder="Task name when reached" style="flex: 1; font-size: 11px; padding: 4px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
-          <button type="button" id="btnAddMilestone" style="padding: 4px 8px; font-size: 10px; background: rgba(168,85,247,0.2); border: 1px solid #a855f7; color: #fff; cursor: pointer;">ADD</button>
+          <button type="button" id="btnAddMilestone" style="padding: 4px 8px; font-size: 10px; background: rgba(27, 67, 50, 0.2); border: 1px solid #1B4332; color: #fff; cursor: pointer;">ADD</button>
         </div>
       `;
 
@@ -3626,7 +3665,7 @@ class PopupsManager {
           slices: [
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
-            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#1B4332', weight: 8 },
             { type: 'gold', value: 15, label: '15 Gold', icon: '🪙', color: '#10b981', weight: 20 },
             { type: 'gold', value: 30, label: '30 Gold', icon: '🪙', color: '#10b981', weight: 20 },
             { type: 'gold', value: 60, label: '60 Gold', icon: '🪙', color: '#10b981', weight: 15 },
@@ -3648,20 +3687,20 @@ class PopupsManager {
           slices: [
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
-            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#1B4332', weight: 8 },
             { type: 'gold', value: 30, label: '30 Gold', icon: '🪙', color: '#10b981', weight: 20 },
             { type: 'gold', value: 75, label: '75 Gold', icon: '🪙', color: '#10b981', weight: 20 },
             { type: 'gold', value: 120, label: '120 Gold', icon: '🪙', color: '#3b82f6', weight: 15 },
             { type: 'gold', value: 200, label: '200 Gold', icon: '🪙', color: '#3b82f6', weight: 12 },
-            { type: 'gold', value: 300, label: '300 Gold', icon: '🪙', color: '#8b5cf6', weight: 10 },
+            { type: 'gold', value: 300, label: '300 Gold', icon: '🪙', color: '#1B4332', weight: 10 },
             { type: 'ap', value: 10, label: '10 AP', icon: '⚡', color: '#10b981', weight: 20 },
             { type: 'ap', value: 20, label: '20 AP', icon: '⚡', color: '#10b981', weight: 20 },
             { type: 'ap', value: 35, label: '35 AP', icon: '⚡', color: '#3b82f6', weight: 15 },
             { type: 'ap', value: 50, label: '50 AP', icon: '⚡', color: '#3b82f6', weight: 12 },
-            { type: 'ap', value: 66, label: '66 AP', icon: '⚡', color: '#8b5cf6', weight: 10 },
+            { type: 'ap', value: 66, label: '66 AP', icon: '⚡', color: '#1B4332', weight: 10 },
             { type: 'diamonds', value: 2, label: '2 Dia', icon: '💎', color: '#10b981', weight: 15 },
             { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#3b82f6', weight: 10 },
-            { type: 'diamonds', value: 15, label: '15 Dia', icon: '💎', color: '#8b5cf6', weight: 8 },
+            { type: 'diamonds', value: 15, label: '15 Dia', icon: '💎', color: '#1B4332', weight: 8 },
             { type: 'grand_jackpot', value: 'rare_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 2 }
           ]
         },
@@ -3670,19 +3709,19 @@ class PopupsManager {
           slices: [
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
-            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#1B4332', weight: 8 },
             { type: 'gold', value: 50, label: '50 Gold', icon: '🪙', color: '#3b82f6', weight: 20 },
             { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#3b82f6', weight: 18 },
-            { type: 'gold', value: 200, label: '200 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
-            { type: 'gold', value: 350, label: '350 Gold', icon: '🪙', color: '#8b5cf6', weight: 12 },
+            { type: 'gold', value: 200, label: '200 Gold', icon: '🪙', color: '#1B4332', weight: 15 },
+            { type: 'gold', value: 350, label: '350 Gold', icon: '🪙', color: '#1B4332', weight: 12 },
             { type: 'gold', value: 450, label: '450 Gold', icon: '🪙', color: '#f97316', weight: 10 },
             { type: 'ap', value: 15, label: '15 AP', icon: '⚡', color: '#3b82f6', weight: 20 },
             { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#3b82f6', weight: 18 },
-            { type: 'ap', value: 55, label: '55 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
-            { type: 'ap', value: 80, label: '80 AP', icon: '⚡', color: '#8b5cf6', weight: 12 },
+            { type: 'ap', value: 55, label: '55 AP', icon: '⚡', color: '#1B4332', weight: 15 },
+            { type: 'ap', value: 80, label: '80 AP', icon: '⚡', color: '#1B4332', weight: 12 },
             { type: 'ap', value: 99, label: '99 AP', icon: '⚡', color: '#f97316', weight: 10 },
             { type: 'diamonds', value: 4, label: '4 Dia', icon: '💎', color: '#3b82f6', weight: 15 },
-            { type: 'diamonds', value: 12, label: '12 Dia', icon: '💎', color: '#8b5cf6', weight: 10 },
+            { type: 'diamonds', value: 12, label: '12 Dia', icon: '💎', color: '#1B4332', weight: 10 },
             { type: 'diamonds', value: 24, label: '24 Dia', icon: '💎', color: '#f97316', weight: 8 },
             { type: 'grand_jackpot', value: 'epic_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 5 }
           ]
@@ -3692,18 +3731,18 @@ class PopupsManager {
           slices: [
             { type: 'consumable', value: 'Health Potion', label: 'HP Pot', icon: '🧪', color: '#ef4444', weight: 8 },
             { type: 'consumable', value: 'Mana Potion', label: 'MP Pot', icon: '🧪', color: '#3b82f6', weight: 8 },
-            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#8b5cf6', weight: 8 },
-            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
-            { type: 'gold', value: 250, label: '250 Gold', icon: '🪙', color: '#8b5cf6', weight: 15 },
+            { type: 'random_consumable', label: 'Rand Pot', icon: '🧪', color: '#1B4332', weight: 8 },
+            { type: 'gold', value: 100, label: '100 Gold', icon: '🪙', color: '#1B4332', weight: 15 },
+            { type: 'gold', value: 250, label: '250 Gold', icon: '🪙', color: '#1B4332', weight: 15 },
             { type: 'gold', value: 400, label: '400 Gold', icon: '🪙', color: '#f97316', weight: 12 },
             { type: 'gold', value: 600, label: '600 Gold', icon: '🪙', color: '#f97316', weight: 12 },
             { type: 'gold', value: 750, label: '750 Gold', icon: '🪙', color: '#ec4899', weight: 10 },
-            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
-            { type: 'ap', value: 60, label: '60 AP', icon: '⚡', color: '#8b5cf6', weight: 15 },
+            { type: 'ap', value: 30, label: '30 AP', icon: '⚡', color: '#1B4332', weight: 15 },
+            { type: 'ap', value: 60, label: '60 AP', icon: '⚡', color: '#1B4332', weight: 15 },
             { type: 'ap', value: 90, label: '90 AP', icon: '⚡', color: '#f97316', weight: 12 },
             { type: 'ap', value: 130, label: '130 AP', icon: '⚡', color: '#f97316', weight: 12 },
             { type: 'ap', value: 165, label: '165 AP', icon: '⚡', color: '#ec4899', weight: 10 },
-            { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#8b5cf6', weight: 12 },
+            { type: 'diamonds', value: 6, label: '6 Dia', icon: '💎', color: '#1B4332', weight: 12 },
             { type: 'diamonds', value: 18, label: '18 Dia', icon: '💎', color: '#f97316', weight: 10 },
             { type: 'diamonds', value: 36, label: '36 Dia', icon: '💎', color: '#ec4899', weight: 8 },
             { type: 'grand_jackpot', value: 'legendary_grand', label: 'Jackpot', icon: '👑', color: '#eab308', weight: 5 }
@@ -3813,7 +3852,7 @@ class PopupsManager {
           outlineColor = '#00ffff';
         } else if (seg.slice.color === '#3b82f6') {
           outlineColor = '#ff9f00';
-        } else if (seg.slice.color === '#8b5cf6') {
+        } else if (seg.slice.color === '#1B4332') {
           outlineColor = '#39ff14';
         } else if (seg.slice.color === '#10b981') {
           outlineColor = '#ff00ff';
@@ -4145,7 +4184,7 @@ class PopupsManager {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    const colors = ['#ffd700', '#ffb33f', '#00e5ff', '#ff3366', '#a15cff'];
+    const colors = ['#ffd700', '#ffb33f', '#00e5ff', '#ff3366', '#1B4332'];
     const count = 30;
 
     for (let i = 0; i < count; i++) {
@@ -4201,8 +4240,8 @@ class PopupsManager {
 
     const colors = {
       1: ['#cbd5e1', '#94a3b8', '#10b981', '#3b82f6'],
-      2: ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#00ffff'],
-      3: ['#8b5cf6', '#ec4899', '#f97316', '#00ffff', '#ff007f', '#ffd700'],
+      2: ['#3b82f6', '#1B4332', '#10b981', '#f59e0b', '#00ffff'],
+      3: ['#1B4332', '#ec4899', '#f97316', '#00ffff', '#ff007f', '#ffd700'],
       4: ['#ffd700', '#ff007f', '#00e5ff', '#39ff14', '#ff00ff', '#ff9f00']
     }[intensity] || ['#fff'];
 
@@ -4973,7 +5012,7 @@ class PopupsManager {
       <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center;">
         <span style="color: var(--text-muted);">ACTIVE DAY:</span>
         <span style="color: var(--accent-gold); font-weight: bold; font-size: 0.9rem; padding: 2px 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1);">DAY ${activeSetId}</span>
-        <button id="switchActiveDayBtn" class="btn-toggle-pill" style="font-size: 0.75rem; padding: 4px 10px; background: rgba(168, 85, 247, 0.2); border: 1px solid #a855f7; color: #fff; cursor: pointer; border-radius: 4px;">
+        <button id="switchActiveDayBtn" class="btn-toggle-pill" style="font-size: 0.75rem; padding: 4px 10px; background: rgba(27, 67, 50, 0.2); border: 1px solid #1B4332; color: #fff; cursor: pointer; border-radius: 4px;">
           Switch to DAY ${activeSetId === 'A' ? 'B' : 'A'}
         </button>
       </div>
@@ -4981,7 +5020,7 @@ class PopupsManager {
       <!-- Global Size Slider -->
       <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; font-family: 'Orbitron', monospace; font-size: 0.8rem; justify-content: center; background: rgba(0,0,0,0.3); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
         <span style="color: var(--text-muted);">GLOBAL DAILIES SIZE:</span>
-        <input type="range" id="globalDailiesSizeSlider" min="0.5" max="2.0" step="0.05" value="${state.dailiesState.globalSizeModifier ?? 1.0}" style="cursor: pointer; accent-color: #a855f7;" />
+        <input type="range" id="globalDailiesSizeSlider" min="0.5" max="2.0" step="0.05" value="${state.dailiesState.globalSizeModifier ?? 1.0}" style="cursor: pointer; accent-color: #1B4332;" />
         <span id="globalDailiesSizeVal" style="color: var(--accent-gold); font-weight: bold; width: 40px; text-align: left;">${Math.round((state.dailiesState.globalSizeModifier ?? 1.0) * 100)}%</span>
       </div>
 
@@ -5095,7 +5134,7 @@ class PopupsManager {
                 <div style="display: flex; gap: 4px; margin-top: 4px; align-items: center;">
                   <input type="number" min="1" placeholder="Days" class="new-ms-streak" style="width: 32px; font-size: 0.65rem; padding: 2px;" />
                   <input type="text" placeholder="New Name" class="new-ms-name" style="flex: 1; font-size: 0.65rem; padding: 2px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.15); color:#fff;" />
-                  <button type="button" class="btn-add-row-milestone" style="font-size: 0.65rem; padding: 2px 4px; background: rgba(168,85,247,0.2); border: 1px solid #a855f7; color:#fff; cursor:pointer;">＋</button>
+                  <button type="button" class="btn-add-row-milestone" style="font-size: 0.65rem; padding: 2px 4px; background: rgba(27, 67, 50, 0.2); border: 1px solid #1B4332; color:#fff; cursor:pointer;">＋</button>
                 </div>
               </div>
             </div>

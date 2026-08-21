@@ -1625,7 +1625,7 @@
               ${farmer.customSprite ? `<img src="${farmer.customSprite}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />` : `<span style="font-size: 18px;">${farmer.emoji}</span>`}
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
-              <button class="tycoon-btn" id="farmer-upload-sprite-btn" style="padding: 4px 8px; font-size: 10px; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.4);">Upload Image</button>
+              <button class="tycoon-btn" id="farmer-upload-sprite-btn" style="padding: 4px 8px; font-size: 10px; background: rgba(27, 67, 50, 0.2); border-color: rgba(27, 67, 50, 0.4);">Upload Image</button>
               ${farmer.customSprite ? `<button class="tycoon-btn exit-btn" id="farmer-reset-sprite-btn" style="padding: 4px 8px; font-size: 8px;">Reset Sprite</button>` : ''}
             </div>
             <input type="file" id="farmer-sprite-file-input" accept="image/*" style="display: none;" />
@@ -2438,7 +2438,7 @@
         const ratio = elapsed / 4;
         return {
           phase: 'dusk',
-          ambientColor: `rgba(139, 92, 246, ${0.22 * ratio})`,
+          ambientColor: `rgba(27, 45, 60, ${0.22 * ratio})`,
           isDark: true,
           darknessIntensity: 0.22 * ratio
         };
@@ -2765,7 +2765,7 @@
             if ((type === TILE_TYPES.PRODUCER || type === TILE_TYPES.MAINTENANCE || type === TILE_TYPES.INCREASER) && Math.random() < 0.006) {
               let pColor = "rgba(251, 191, 36, 0.8)";
               if (type === TILE_TYPES.MAINTENANCE) pColor = "rgba(56, 189, 248, 0.8)";
-              if (type === TILE_TYPES.INCREASER) pColor = "rgba(168, 85, 247, 0.8)";
+              if (type === TILE_TYPES.INCREASER) pColor = "rgba(27, 67, 50, 0.8)";
               
               this.particles.push({
                 x: tx * tw + tw / 2 + (Math.random() * tw * 2 - tw),
@@ -2928,7 +2928,7 @@
       // Soft shoreline/boundary blending (water foam or sandy shoreline) or purple terrain borders
       if (this.config.terrainBorders === true) {
         if (currentBase !== TILE_TYPES.WATER) {
-          ctx.fillStyle = "#A168F9"; // Vibrant purple
+          ctx.fillStyle = "#1B4332"; // Vibrant purple
           const borderThickness = 4;
           if (upBase === TILE_TYPES.WATER) {
             ctx.fillRect(x, y, tw, borderThickness);
@@ -2986,7 +2986,7 @@
       if (lighting.isDark) {
         let glowColor = "rgba(251, 191, 36, 0.15)";
         if (type === TILE_TYPES.MAINTENANCE) glowColor = "rgba(56, 189, 248, 0.15)";
-        if (type === TILE_TYPES.INCREASER) glowColor = "rgba(168, 85, 247, 0.15)";
+        if (type === TILE_TYPES.INCREASER) glowColor = "rgba(27, 67, 50, 0.15)";
         
         const glowGrad = ctx.createRadialGradient(x + tw / 2, y + tw / 2, 2, x + tw / 2, y + tw / 2, tw * 2);
         glowGrad.addColorStop(0, glowColor);
@@ -3054,7 +3054,7 @@
 
           // Thin purple dashed radius circle
           ctx.save();
-          ctx.strokeStyle = "rgba(168, 85, 247, 0.4)";
+          ctx.strokeStyle = "rgba(27, 67, 50, 0.4)";
           ctx.lineWidth = 1;
           ctx.setLineDash([4, 4]);
           ctx.beginPath();

@@ -1684,7 +1684,9 @@ function performCheckIn() {
 
   state.eventBus.emit(EVENTS.CHECK_IN, { time: nowMs });
 
-  const checkInDateKey = getLocalDateKey();
+  const checkInDateKey = typeof TaskManager !== 'undefined' && typeof TaskManager.getCurrentGameDateKey === 'function'
+    ? TaskManager.getCurrentGameDateKey()
+    : getLocalDateKey();
   const completedDailies = TaskManager.getCompletedDailies(checkInDateKey);
   const rawMissedDailies = TaskManager.getMissedDailies(checkInDateKey);
 
@@ -1715,15 +1717,22 @@ function performCheckIn() {
     state.systemState.lastChallengeMessage = challengePenaltyMessage;
   }
 
-  const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, completedDailies.concat(rawMissedDailies));
+  const scheduledDailies = (typeof TaskManager !== 'undefined' && typeof TaskManager.getAllDailies === 'function')
+    ? TaskManager.getAllDailies().filter(d => TaskManager.isDailyScheduled(d, checkInDateKey))
+    : (state.dailiesState?.dailies || []);
+  const allScheduledCompleted = scheduledDailies.length === 0 || scheduledDailies.every(d => d.completed);
+  const completionRate = TaskManager.getWeightedCompletionRate(completedDailies, scheduledDailies.length > 0 ? scheduledDailies : completedDailies.concat(rawMissedDailies));
   
   // Limbo revival check: 100% Perfect Day check-in revives player with 50% HP
   if (state.playerState?.inLimbo) {
-    if (completionRate >= 0.999) {
+    if (allScheduledCompleted || completionRate >= 0.999) {
       state.playerState.inLimbo = false;
-      state.playerState.hp = Math.round(state.playerState.maxHp * 0.5);
+      state.playerState.hp = Math.max(state.playerState.hp || 0, Math.round(state.playerState.maxHp * 0.5));
       const limboOverlay = document.querySelector('.limbo-overlay');
       if (limboOverlay) limboOverlay.remove();
+      if (typeof UIManager !== 'undefined') {
+        UIManager.refreshGameUI();
+      }
       try {
         state.eventBus.emit(EVENTS.NOTIFICATION, { message: '✨ PERFECT DAY! You have broken free from Limbo with 50% HP!', type: 'success' });
       } catch (e) {}
@@ -1749,11 +1758,28 @@ function performCheckIn() {
   if (typeof state.systemState.consistencyScore !== 'number') {
     state.systemState.consistencyScore = 0;
   }
-  if (completionRate >= runCompletionRate) {
-    state.systemState.consistencyScore += 1;
+
+  let scoreDelta = 0;
+  if (completionRate >= 1.0) {
+    scoreDelta = 2;
+  } else if (completionRate >= 0.75) {
+    scoreDelta = 1;
+  } else if (completionRate >= 0.50) {
+    scoreDelta = 0;
+  } else if (completionRate >= 0.25) {
+    scoreDelta = -1;
   } else {
-    state.systemState.consistencyScore = Math.max(-20, state.systemState.consistencyScore - 2);
+    scoreDelta = -2;
   }
+
+  const currentAvgStreak = (typeof TaskManager !== 'undefined' && typeof TaskManager.getWeightedAverageStreak === 'function')
+    ? Math.round(TaskManager.getWeightedAverageStreak())
+    : 0;
+  if (completionRate >= 1.0 && currentAvgStreak >= 3) {
+    scoreDelta += 1;
+  }
+
+  state.systemState.consistencyScore = Math.max(-20, state.systemState.consistencyScore + scoreDelta);
 
   const history = state.dailiesState.history || [];
 
@@ -2691,8 +2717,8 @@ function performCheckIn() {
     }
   }
 
-  // 7) If all enemies dead after resolution, advance level / stage
-  if (state.playerState.hp > 0 && StageManager.allEnemiesDead()) {
+  // 7) If all enemies dead after resolution (and currently in active level), advance level / stage
+  if (state.stageState?.inActiveLevel && state.playerState.hp > 0 && StageManager.allEnemiesDead()) {
     state.systemState.runStats.enemiesDefeated += (state.stageState.enemies || []).length;
     PlayerManager.levelUp();
     // Advance to next level / stage

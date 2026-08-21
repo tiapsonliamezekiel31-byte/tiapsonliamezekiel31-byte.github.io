@@ -1146,7 +1146,7 @@ class EnemyDeathAnimation {
       }
     } else if (effect === 'Void Slime') {
       const count = Math.max(16, Math.round((isElite ? 60 : 32) * AnimationRuntime.particleScale));
-      const colors = ['#4a0e4e', '#8a2be2', '#a855f7', '#d500f9', '#2d142c'];
+      const colors = ['#4a0e4e', '#1B4332', '#1B4332', '#C89B3C', '#2d142c'];
       for (let i = 0; i < count; i++) {
         const color = colors[i % colors.length];
         const angle = Math.random() * Math.PI * 2;
@@ -1246,7 +1246,7 @@ class EnemyDeathAnimation {
         UIManager.themeColor('--ap-gold', '#FFB33F'),
         UIManager.themeColor('--mana-blue', '#134E8E'),
         UIManager.themeColor('--text-white', '#ffffff'),
-        UIManager.themeColor('--accent-purple', '#A15CFF')
+        UIManager.themeColor('--accent-purple', '#1B4332')
       ] : ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0088ff', '#ff00ff'];
 
       for (let i = 0; i < count; i++) {
@@ -3304,7 +3304,7 @@ class RetroSandstormAnimation {
 }
 
 class RetroMagicCircleAnimation {
-  static play(cardElement, color = '#8a2be2', intensity = 1) {
+  static play(cardElement, color = '#1B4332', intensity = 1) {
     if (!cardElement) return;
     const rect = cardElement.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
@@ -3769,7 +3769,7 @@ class RetroLavaSpitAnimation {
 }
 
 class RetroSpectralSwordsAnimation {
-  static play(cardElement, color = '#8a2be2', intensity = 1) {
+  static play(cardElement, color = '#1B4332', intensity = 1) {
     const container = document.body;
     const count = Math.round(8 * intensity);
 
@@ -4149,7 +4149,7 @@ class WeaponHitAnimation {
       // Expanding gravitational rings
       const { el: ring } = this._overlay(card);
       const ringSize = Math.max(c.w, c.h) * 1.5;
-      ring.style.cssText += `width:${ringSize}px;height:${ringSize}px;left:${c.x - ringSize / 2}px;top:${c.y - ringSize / 2}px;border-radius:50%;border:6px solid #8b5cf6;box-shadow:0 0 0 4px #bd00ff;background:transparent;`;
+      ring.style.cssText += `width:${ringSize}px;height:${ringSize}px;left:${c.x - ringSize / 2}px;top:${c.y - ringSize / 2}px;border-radius:50%;border:6px solid #1B4332;box-shadow:0 0 0 4px #bd00ff;background:transparent;`;
       this._raf(400, p => {
         ring.style.transform = `scale(${0.3 + p * 1.1})`;
         ring.style.opacity = 1 - p;
@@ -4280,7 +4280,7 @@ class WeaponHitAnimation {
       const el = document.createElement('div');
       const angle = (i / runes.length) * Math.PI * 2;
       el.textContent = r;
-      el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#c084fc;text-shadow:-2px -2px 0 #bd00ff, 2px -2px 0 #bd00ff, -2px 2px 0 #bd00ff, 2px 2px 0 #bd00ff, 0 0 0 3px #ffffff;will-change:transform,opacity;transform:translate(-50%,-50%);`;
+      el.style.cssText = `position:fixed;pointer-events:none;z-index:13110;left:${c.x}px;top:${c.y}px;font-size:${isLow ? '18px' : '30px'};color:#2D5A43;text-shadow:-2px -2px 0 #bd00ff, 2px -2px 0 #bd00ff, -2px 2px 0 #bd00ff, 2px 2px 0 #bd00ff, 0 0 0 3px #ffffff;will-change:transform,opacity;transform:translate(-50%,-50%);`;
       document.body.appendChild(el);
 
       const dist = isLow ? 44 : 90;
@@ -4589,7 +4589,7 @@ class WeaponHitAnimation {
     const isDouble = echoBowHitIndex > 0 && (echoBowHitIndex % 3 === 0);
     const c = this._cardCenter(card);
     const tw = c.w * (isDouble ? 1.35 : 0.85);
-    const col = isDouble ? '#d946ef' : '#c4b5fd';
+    const col = isDouble ? '#2D5A43' : '#c4b5fd';
 
     const lineCount = isDouble ? 3 : 1;
     for (let i = 0; i < lineCount; i++) {
@@ -4614,7 +4614,7 @@ class WeaponHitAnimation {
     if (isDouble) {
       this._tintCard(card, 'rgba(200, 100, 255, 0.45)', 250);
       const count = isLow ? 6 : 15;
-      this._cardParticles(card, count, '#d946ef', 4 * sf, 5 * sf, 350);
+      this._cardParticles(card, count, '#2D5A43', 4 * sf, 5 * sf, 350);
     }
     this._shakeCard(card, isDouble ? 8 * sf : 4 * sf, 220);
   }

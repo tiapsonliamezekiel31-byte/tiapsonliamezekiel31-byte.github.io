@@ -365,7 +365,7 @@ class TaskManager {
       if (m.type === 'attr') {
         html += `<span style="color:#60a5fa; font-weight:bold;">${m.text}</span>`;
       } else if (m.type === 'diff') {
-        html += `<span style="color:#c084fc; font-weight:bold;">${m.text}</span>`;
+        html += `<span style="color:#2D5A43; font-weight:bold;">${m.text}</span>`;
       } else if (m.type === 'deadline') {
         html += `<span style="color:#f87171; font-weight:bold;">${m.text}</span>`;
       }
@@ -681,7 +681,8 @@ class TaskManager {
       const ultraDmg = Math.round(maxAp * 0.5);
       if (typeof StageManager !== 'undefined' && StageManager.getAliveEnemies) {
         const enemies = StageManager.getAliveEnemies();
-        const isBossOrMinibossLevel = enemies.some(e => e.isBoss || e.isMiniboss) || (state.stageState?.level % 5 === 0);
+        const maxLvl = (typeof StageManager !== 'undefined' && StageManager.getMaxLevelsForStage) ? StageManager.getMaxLevelsForStage(state.stageState?.stage) : 5;
+        const isBossOrMinibossLevel = enemies.some(e => e.isBoss || e.isMiniboss) || (state.stageState?.level >= maxLvl);
         if (enemies.length > 0 && isBossOrMinibossLevel) {
           enemies[0].takeDamage(ultraDmg);
           if (typeof FloatingDamageNumber !== 'undefined') {
@@ -1202,11 +1203,11 @@ class TaskManager {
   }
 
   static getCurrentGameDateKey() {
-    if (typeof getLocalDateKey === 'function') {
-      return getLocalDateKey();
-    }
-
-    return new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
 
   static isDailyScheduled(daily, dateKey) {
@@ -1228,26 +1229,16 @@ class TaskManager {
     if (daily.repeatMode === 'interval') {
       const startKey = daily.createdAtDateKey || dateKey;
       const startParts = startKey.split('-');
-      const currentParts = dateKey.split('-');
-      
-      if (startParts.length === 3 && currentParts.length === 3) {
+      const targetParts = dateKey.split('-');
+      if (startParts.length === 3 && targetParts.length === 3) {
         const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-        const currentDate = new Date(currentParts[0], currentParts[1] - 1, currentParts[2]);
-        
-        // Calculate difference in days, ignoring DST issues by using UTC time of those local dates
-        const utcStart = Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-        const utcCurrent = Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-        
-        const diffMs = utcCurrent - utcStart;
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-        
-        const interval = Math.max(1, daily.intervalDays || 1);
-        
-        // If current date is before start date, we could technically still modulo if we wanted, 
-        // but normally diffDays >= 0.
-        return Math.abs(diffDays) % interval === 0;
+        const targetDate = new Date(targetParts[0], targetParts[1] - 1, targetParts[2]);
+        const diffTime = targetDate - startDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        const interval = Math.max(1, daily.repeatInterval || 1);
+        return diffDays >= 0 && (diffDays % interval === 0);
       }
-      return true; // Fallback
+      return true;
     }
     
     return true;
@@ -1331,6 +1322,20 @@ class TaskManager {
 
     // Award +5 Pet Points bonus
     state.playerState.petPoints = (state.playerState.petPoints || 0) + 5;
+
+    // Limbo revival on 100% complete day
+    if (state.playerState?.inLimbo) {
+      const allDone = scheduledDailies.length === 0 || scheduledDailies.every(d => d.completed);
+      if (allDone) {
+        state.playerState.inLimbo = false;
+        state.playerState.hp = Math.max(state.playerState.hp || 0, Math.round(state.playerState.maxHp * 0.5));
+        const limboOverlay = document.querySelector('.limbo-overlay');
+        if (limboOverlay) limboOverlay.remove();
+        try {
+          state.eventBus.emit(EVENTS.NOTIFICATION, { message: '✨ PERFECT DAY! You have broken free from Limbo with 50% HP!', type: 'success' });
+        } catch (e) {}
+      }
+    }
 
     return {
       success: true,
