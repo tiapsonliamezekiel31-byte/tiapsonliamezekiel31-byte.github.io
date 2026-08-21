@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>/ — graphify tree viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin: 20px 0 0 24px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #1e3a56;
+    }
+    .controls {
+      margin: 20px 0 15px 24px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 18px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:active {
+      background: #004085;
+    }
+    #tree-container {
+      width: calc(100vw - 48px); /* Adjust for body margin/padding */
+      height: 85vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      margin-left: 24px;
+      margin-right: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+    }
+    svg {
+      background: #fff;
+      border-radius: 8px;
+      display: block; /* Important for D3 */
+    }
+    .node circle {
+      stroke-width: 2.5px;
+    }
+    .node text { /* Base style for the <text> container */
+      font: 13px 'Segoe UI', sans-serif;
+      paint-order: stroke fill; /* Ensures text is readable over lines */
+      stroke: #fff; /* White halo */
+      stroke-width: 3px; /* Halo thickness */
+      stroke-linejoin: round;
+      stroke-opacity: 0.85; /* Halo opacity */
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>/ — Knowledge Graph</h1>
+  <div class="controls">
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  <div id="tree-container">
+    <svg id="tree-svg" width="6000" height="8000"></svg>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const initialJsonData = {"name":"/","total_count":718,"children":[{"name":"deploy.ps1","total_count":2,"children":[{"name":"Get-CacheTag()","total_count":1,"children":[]},{"name":"Get-RepoInfo()","total_count":1,"children":[]}]},{"name":"JS","total_count":699,"children":[{"name":"animations.js","total_count":128,"children":[{"name":"._aegisWard()","total_count":1,"children":[]},{"name":"._anvilDrop()","total_count":1,"children":[]},{"name":"._arcaneRuneBurst()","total_count":1,"children":[]},{"name":"._arrowTrail()","total_count":1,"children":[]},{"name":"._beamPierce()","total_count":1,"children":[]},{"name":"._bloodVeinCrack()","total_count":1,"children":[]},{"name":"._bulletHail()","total_count":1,"children":[]},{"name":"._cardCenter()","total_count":1,"children":[]},{"name":"._cardParticles()","total_count":1,"children":[]},{"name":"._explosionBloom()","total_count":1,"children":[]},{"name":"._gravityCrush()","total_count":1,"children":[]},{"name":"._lightningStrike()","total_count":1,"children":[]},{"name":"._overlay()","total_count":1,"children":[]},{"name":"._raf()","total_count":1,"children":[]},{"name":"._rapidJabFlash()","total_count":1,"children":[]},{"name":"._reaperArc()","total_count":1,"children":[]},{"name":"._rustBurst()","total_count":1,"children":[]},{"name":"._shakeCard()","total_count":1,"children":[]},{"name":"._shieldRing()","total_count":1,"children":[]},{"name":"._smokeCloud()","total_count":1,"children":[]},{"name":"._squishCard()","total_count":1,"children":[]},{"name":"._tick()","total_count":1,"children":[]},{"name":"._tintCard()","total_count":1,"children":[]},{"name":"._vineWrap()","total_count":1,"children":[]},{"name":".animateChange()","total_count":1,"children":[]},{"name":".burst()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".crackle()","total_count":1,"children":[]},{"name":".drop()","total_count":1,"children":[]},{"name":".emit()","total_count":1,"children":[]},{"name":".fadeToBlack()","total_count":1,"children":[]},{"name":".fadeToWhite()","total_count":1,"children":[]},{"name":".flash()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".playTick()","total_count":1,"children":[]},{"name":".pulse()","total_count":1,"children":[]},{"name":".scale()","total_count":1,"children":[]},{"name":".scaleCentered()","total_count":1,"children":[]},{"name":".shake()","total_count":1,"children":[]},{"name":".shatter()","total_count":1,"children":[]},{"name":".shimmer()","total_count":1,"children":[]},{"name":".show()","total_count":1,"children":[]},{"name":".show()","total_count":1,"children":[]},{"name":".showBurst()","total_count":1,"children":[]},{"name":".type()","total_count":1,"children":[]},{"name":"_colorCache","total_count":1,"children":[]},{"name":"AnimationRuntime","total_count":1,"children":[]},{"name":"ComboAnimation","total_count":1,"children":[]},{"name":"ConsumableDropAnimation","total_count":1,"children":[]},{"name":"DodgeTetherAnimation","total_count":1,"children":[]},{"name":"EnemyDeathAnimation","total_count":1,"children":[]},{"name":"ensureAnimationStyles()","total_count":1,"children":[]},{"name":"FloatingDamageNumber","total_count":1,"children":[]},{"name":"HpBarAnimation","total_count":1,"children":[]},{"name":"hslToCss()","total_count":1,"children":[]},{"name":"MeterAnimation","total_count":1,"children":[]},{"name":"ParticleSystem","total_count":1,"children":[]},{"name":"PopupAnimation","total_count":1,"children":[]},{"name":"resolveCssColorToRgb()","total_count":1,"children":[]},{"name":"restartAnimationClass()","total_count":1,"children":[]},{"name":"RetroAcidSplashAnimation","total_count":1,"children":[]},{"name":"RetroBloodTideAnimation","total_count":1,"children":[]},{"name":"RetroBossEntranceAnimation","total_count":1,"children":[]},{"name":"RetroComboFinisherAnimation","total_count":1,"children":[]},{"name":"RetroCritSlashAnimation","total_count":1,"children":[]},{"name":"RetroDodgeAnimation","total_count":1,"children":[]},{"name":"RetroEarthShatterAnimation","total_count":1,"children":[]},{"name":"RetroEnergyBeamAnimation","total_count":1,"children":[]},{"name":"RetroGlitchInvertAnimation","total_count":1,"children":[]},{"name":"RetroHealAnimation","total_count":1,"children":[]},{"name":"RetroHellfireAnimation","total_count":1,"children":[]},{"name":"RetroHitAnimation","total_count":1,"children":[]},{"name":"RetroHolyBeamAnimation","total_count":1,"children":[]},{"name":"RetroLavaSpitAnimation","total_count":1,"children":[]},{"name":"RetroLevelUpAnimation","total_count":1,"children":[]},{"name":"RetroMagicCircleAnimation","total_count":1,"children":[]},{"name":"RetroMatrixRainAnimation","total_count":1,"children":[]},{"name":"RetroOrbBurstAnimation","total_count":1,"children":[]},{"name":"RetroPixelRainAnimation","total_count":1,"children":[]},{"name":"RetroRagePulseAnimation","total_count":1,"children":[]},{"name":"RetroResistanceAnimation","total_count":1,"children":[]},{"name":"RetroRoyalCrownBurstAnimation","total_count":1,"children":[]},{"name":"RetroSandstormAnimation","total_count":1,"children":[]},{"name":"RetroSlamWaveAnimation","total_count":1,"children":[]},{"name":"RetroSolarFlareAnimation","total_count":1,"children":[]},{"name":"RetroSpectralSwordsAnimation","total_count":1,"children":[]},{"name":"RetroTaskCompleteAnimation","total_count":1,"children":[]},{"name":"RetroVoidBlackHoleAnimation","total_count":1,"children":[]},{"name":"RetroWarpAnimation","total_count":1,"children":[]},{"name":"RetroWeaknessAnimation","total_count":1,"children":[]},{"name":"rgbToHsl()","total_count":1,"children":[]},{"name":"ScreenEffects","total_count":1,"children":[]},{"name":"TypewriterEffect","total_count":1,"children":[]},{"name":"variantForStack()","total_count":1,"children":[]},{"name":"WeaponHitAnimation","total_count":1,"children":[]},{"name":"WebAudioTickSynth","total_count":1,"children":[]}]},{"name":"check_braces.js","total_count":4,"children":[{"name":"content","total_count":1,"children":[]},{"name":"fs","total_count":1,"children":[]},{"name":"lines","total_count":1,"children":[]},{"name":"stack","total_count":1,"children":[]}]},{"name":"combat.js","total_count":23,"children":[{"name":".applyLifesteal()","total_count":1,"children":[]},{"name":".attemptAttack()","total_count":1,"children":[]},{"name":".attemptDodge()","total_count":1,"children":[]},{"name":".attemptParry()","total_count":1,"children":[]},{"name":".calculateAttackImpactDelay()","total_count":1,"children":[]},{"name":".calculateDamage()","total_count":1,"children":[]},{"name":".completeDodge()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".getCurrentTarget()","total_count":1,"children":[]},{"name":".getDodgeCost()","total_count":1,"children":[]},{"name":".getScaledApCost()","total_count":1,"children":[]},{"name":".getTargetIndex()","total_count":1,"children":[]},{"name":".isWithinComboWindow()","total_count":1,"children":[]},{"name":".previewAttackImpact()","total_count":1,"children":[]},{"name":".recordDodge()","total_count":1,"children":[]},{"name":".rotate()","total_count":1,"children":[]},{"name":".useSkill()","total_count":1,"children":[]},{"name":"CombatManager","total_count":1,"children":[]},{"name":"resolveWeaponResistanceMultiplier()","total_count":1,"children":[]},{"name":"resolveWeaponWeaknessMultiplier()","total_count":1,"children":[]},{"name":"TargetingSystem","total_count":1,"children":[]},{"name":"WeaponAttack","total_count":1,"children":[]}]},{"name":"config.js","total_count":2,"children":[{"name":"deepMerge()","total_count":1,"children":[]},{"name":"DEFAULT_GAME_CONFIG","total_count":1,"children":[]}]},{"name":"core.js","total_count":72,"children":[{"name":".addAp()","total_count":1,"children":[]},{"name":".addAttributePoints()","total_count":1,"children":[]},{"name":".addBuff()","total_count":1,"children":[]},{"name":".addDailyNote()","total_count":1,"children":[]},{"name":".addDiamonds()","total_count":1,"children":[]},{"name":".addGold()","total_count":1,"children":[]},{"name":".addHp()","total_count":1,"children":[]},{"name":".addLootboxKeys()","total_count":1,"children":[]},{"name":".addMana()","total_count":1,"children":[]},{"name":".addNemesisAttributePoints()","total_count":1,"children":[]},{"name":".addTodoNote()","total_count":1,"children":[]},{"name":".buildUserDataSnapshot()","total_count":1,"children":[]},{"name":".calculateExactPendingDamage()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".drainMana()","total_count":1,"children":[]},{"name":".emit()","total_count":1,"children":[]},{"name":".equipCompletionAnimation()","total_count":1,"children":[]},{"name":".equipDeathEffect()","total_count":1,"children":[]},{"name":".exportUserData()","total_count":1,"children":[]},{"name":".getBossRolledAttacks()","total_count":1,"children":[]},{"name":".getDailyNote()","total_count":1,"children":[]},{"name":".getDailyNotes()","total_count":1,"children":[]},{"name":".getTodoNotes()","total_count":1,"children":[]},{"name":".hasBuff()","total_count":1,"children":[]},{"name":".importUserData()","total_count":1,"children":[]},{"name":".incrementCombo()","total_count":1,"children":[]},{"name":".load()","total_count":1,"children":[]},{"name":".moveDailyNote()","total_count":1,"children":[]},{"name":".moveTodoNote()","total_count":1,"children":[]},{"name":".off()","total_count":1,"children":[]},{"name":".on()","total_count":1,"children":[]},{"name":".once()","total_count":1,"children":[]},{"name":".pause()","total_count":1,"children":[]},{"name":".removeDailyNote()","total_count":1,"children":[]},{"name":".removeTodoNote()","total_count":1,"children":[]},{"name":".reset()","total_count":1,"children":[]},{"name":".resetCombo()","total_count":1,"children":[]},{"name":".resetRunState()","total_count":1,"children":[]},{"name":".resume()","total_count":1,"children":[]},{"name":".rollSpecialEvent()","total_count":1,"children":[]},{"name":".save()","total_count":1,"children":[]},{"name":".setAp()","total_count":1,"children":[]},{"name":".setDailyNote()","total_count":1,"children":[]},{"name":".setDiamonds()","total_count":1,"children":[]},{"name":".setGold()","total_count":1,"children":[]},{"name":".setHp()","total_count":1,"children":[]},{"name":".setLootboxKeys()","total_count":1,"children":[]},{"name":".setMana()","total_count":1,"children":[]},{"name":".spendAp()","total_count":1,"children":[]},{"name":".spendDiamonds()","total_count":1,"children":[]},{"name":".spendLootboxKeys()","total_count":1,"children":[]},{"name":".takeDamage()","total_count":1,"children":[]},{"name":".unlockCompletionAnimation()","total_count":1,"children":[]},{"name":".unlockDeathEffect()","total_count":1,"children":[]},{"name":".updateDailyNote()","total_count":1,"children":[]},{"name":".updateTodoNote()","total_count":1,"children":[]},{"name":"checkParryChallengeCompletion()","total_count":1,"children":[]},{"name":"createBombEnemy()","total_count":1,"children":[]},{"name":"evaluateParrySuccess()","total_count":1,"children":[]},{"name":"EventBus","total_count":1,"children":[]},{"name":"EVENTS","total_count":1,"children":[]},{"name":"GameState","total_count":1,"children":[]},{"name":"generateDailyChallenge()","total_count":1,"children":[]},{"name":"getGameState()","total_count":1,"children":[]},{"name":"getLocalDayKey()","total_count":1,"children":[]},{"name":"getRandomMinionNameForStage()","total_count":1,"children":[]},{"name":"initializeGameState()","total_count":1,"children":[]},{"name":"normalizeDailyNoteEntry()","total_count":1,"children":[]},{"name":"performCheckIn()","total_count":1,"children":[]},{"name":"rollBossAttack()","total_count":1,"children":[]},{"name":"USER_DATA_STORAGE_KEYS","total_count":1,"children":[]}]},{"name":"enemy.js","total_count":26,"children":[{"name":".applyBrutePassive()","total_count":1,"children":[]},{"name":".applyFinalStand()","total_count":1,"children":[]},{"name":".applyHealerPassive()","total_count":1,"children":[]},{"name":".applyManaDrainPassive()","total_count":1,"children":[]},{"name":".applyMutatorsOnAttack()","total_count":1,"children":[]},{"name":".applyMutatorsOnPlayerAttack()","total_count":1,"children":[]},{"name":".applyOverkill()","total_count":1,"children":[]},{"name":".applyProtectorPassive()","total_count":1,"children":[]},{"name":".calculateEnemyDamage()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".createEnemy()","total_count":1,"children":[]},{"name":".generateBudgetFormation()","total_count":1,"children":[]},{"name":".getAdjacentEnemies()","total_count":1,"children":[]},{"name":".getGoldDrop()","total_count":1,"children":[]},{"name":".getResistanceMultiplier()","total_count":1,"children":[]},{"name":".getWeaknessMultiplier()","total_count":1,"children":[]},{"name":".getWeightedMissedDailyPercentage()","total_count":1,"children":[]},{"name":".halveAllEnemiesHealth()","total_count":1,"children":[]},{"name":".heal()","total_count":1,"children":[]},{"name":".pickMutatorForEnemy()","total_count":1,"children":[]},{"name":".setEnemyCount()","total_count":1,"children":[]},{"name":".takeDamage()","total_count":1,"children":[]},{"name":"Enemy","total_count":1,"children":[]},{"name":"ENEMY_DATABASE","total_count":1,"children":[]},{"name":"EnemyManager","total_count":1,"children":[]},{"name":"LEGACY_ENEMY_DATABASE","total_count":1,"children":[]}]},{"name":"inventory.js","total_count":2,"children":[{"name":".showGridPopup()","total_count":1,"children":[]},{"name":"InventoryManager","total_count":1,"children":[]}]},{"name":"multiplayer.js","total_count":20,"children":[{"name":".addLogEntry()","total_count":1,"children":[]},{"name":".broadcastFarmerBuy()","total_count":1,"children":[]},{"name":".broadcastFarmersState()","total_count":1,"children":[]},{"name":".broadcastTileUpdate()","total_count":1,"children":[]},{"name":".buyObject()","total_count":1,"children":[]},{"name":".calculateYieldsForElapsed()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".disconnect()","total_count":1,"children":[]},{"name":".gainResources()","total_count":1,"children":[]},{"name":".hashPassword()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".joinWorld()","total_count":1,"children":[]},{"name":".promiseWithTimeout()","total_count":1,"children":[]},{"name":".renderLogsList()","total_count":1,"children":[]},{"name":".runSharedTick()","total_count":1,"children":[]},{"name":".sellObject()","total_count":1,"children":[]},{"name":".subscribeToWorldUpdates()","total_count":1,"children":[]},{"name":".updateMultiplayerUI()","total_count":1,"children":[]},{"name":"fbToInt32Array()","total_count":1,"children":[]},{"name":"MultiplayerManager","total_count":1,"children":[]}]},{"name":"player.js","total_count":32,"children":[{"name":".addBorrowedSkill()","total_count":1,"children":[]},{"name":".addConsumable()","total_count":1,"children":[]},{"name":".addWeapon()","total_count":1,"children":[]},{"name":".addWeaponUpgrade()","total_count":1,"children":[]},{"name":".applyDailyRegeneration()","total_count":1,"children":[]},{"name":".applySacredTreeBonus()","total_count":1,"children":[]},{"name":".checkDeathDefiance()","total_count":1,"children":[]},{"name":".discardTalisman()","total_count":1,"children":[]},{"name":".equipTalisman()","total_count":1,"children":[]},{"name":".failDeathDefiance()","total_count":1,"children":[]},{"name":".getActiveConsumables()","total_count":1,"children":[]},{"name":".getClassPassive()","total_count":1,"children":[]},{"name":".getConsumableCount()","total_count":1,"children":[]},{"name":".getCurrentClassData()","total_count":1,"children":[]},{"name":".getCurrentWeapon()","total_count":1,"children":[]},{"name":".getKillTags()","total_count":1,"children":[]},{"name":".getKillTagUpgradeCost()","total_count":1,"children":[]},{"name":".getLevelingProgress()","total_count":1,"children":[]},{"name":".getUpgradeGoldCost()","total_count":1,"children":[]},{"name":".getWeaponUpgrades()","total_count":1,"children":[]},{"name":".incrementKillTags()","total_count":1,"children":[]},{"name":".initializeClass()","total_count":1,"children":[]},{"name":".levelUp()","total_count":1,"children":[]},{"name":".recalculateMaxAp()","total_count":1,"children":[]},{"name":".regenHp()","total_count":1,"children":[]},{"name":".regenMana()","total_count":1,"children":[]},{"name":".replaceWeapon()","total_count":1,"children":[]},{"name":".spendKillTags()","total_count":1,"children":[]},{"name":".swapTalisman()","total_count":1,"children":[]},{"name":".switchWeapon()","total_count":1,"children":[]},{"name":".useConsumable()","total_count":1,"children":[]},{"name":"PlayerManager","total_count":1,"children":[]}]},{"name":"popups.js","total_count":51,"children":[{"name":".closeAllPopups()","total_count":1,"children":[]},{"name":".createPopupOverlay()","total_count":1,"children":[]},{"name":".hasSeenDialogue()","total_count":1,"children":[]},{"name":".markDialogueSeen()","total_count":1,"children":[]},{"name":".runCheatCommand()","total_count":1,"children":[]},{"name":".showAddDailiesPrompt()","total_count":1,"children":[]},{"name":".showAddDailyPopup()","total_count":1,"children":[]},{"name":".showAddTodoPopup()","total_count":1,"children":[]},{"name":".showAddTodoWizard()","total_count":1,"children":[]},{"name":".showAlert()","total_count":1,"children":[]},{"name":".showAttributes()","total_count":1,"children":[]},{"name":".showBestiary()","total_count":1,"children":[]},{"name":".showBestiaryDetail()","total_count":1,"children":[]},{"name":".showBreakdownAlert()","total_count":1,"children":[]},{"name":".showBuffs()","total_count":1,"children":[]},{"name":".showBuffSelection()","total_count":1,"children":[]},{"name":".showBuildCompendium()","total_count":1,"children":[]},{"name":".showBulkAddTodo()","total_count":1,"children":[]},{"name":".showClassSelection()","total_count":1,"children":[]},{"name":".showConfiguredDialogue()","total_count":1,"children":[]},{"name":".showConfirm()","total_count":1,"children":[]},{"name":".showCustomRewardsConfigPopup()","total_count":1,"children":[]},{"name":".showDailiesTable()","total_count":1,"children":[]},{"name":".showDataBackup()","total_count":1,"children":[]},{"name":".showDeathScreen()","total_count":1,"children":[]},{"name":".showDialogue()","total_count":1,"children":[]},{"name":".showDiamondRewards()","total_count":1,"children":[]},{"name":".showEditDaily()","total_count":1,"children":[]},{"name":".showEditTodo()","total_count":1,"children":[]},{"name":".showLevelClearedPopup()","total_count":1,"children":[]},{"name":".showLimboScreen()","total_count":1,"children":[]},{"name":".showLootbox()","total_count":1,"children":[]},{"name":".showPauseMenu()","total_count":1,"children":[]},{"name":".showQuickDayPicker()","total_count":1,"children":[]},{"name":".showRuneSelection()","total_count":1,"children":[]},{"name":".showSatchel()","total_count":1,"children":[]},{"name":".showSecretVaultPopup()","total_count":1,"children":[]},{"name":".showShop()","total_count":1,"children":[]},{"name":".showShopItemDetails()","total_count":1,"children":[]},{"name":".showShrineSkillChoice()","total_count":1,"children":[]},{"name":".showSpecialEventClaimPopup()","total_count":1,"children":[]},{"name":".showStatueTalismanChoice()","total_count":1,"children":[]},{"name":".showTalismanDetail()","total_count":1,"children":[]},{"name":".showTalismanDiscard()","total_count":1,"children":[]},{"name":".showVictoryScreen()","total_count":1,"children":[]},{"name":".showWeaponDiscard()","total_count":1,"children":[]},{"name":".showWeaponElementChoice()","total_count":1,"children":[]},{"name":".showWeaponUpgrade()","total_count":1,"children":[]},{"name":".spawnColorfulRewardBurst()","total_count":1,"children":[]},{"name":".spawnLootboxParticles()","total_count":1,"children":[]},{"name":"PopupsManager","total_count":1,"children":[]}]},{"name":"shop.js","total_count":1,"children":[{"name":"ShopManager","total_count":1,"children":[]}]},{"name":"sound.js","total_count":9,"children":[{"name":"._loadBuffer()","total_count":1,"children":[]},{"name":"._playFile()","total_count":1,"children":[]},{"name":"._playSequence()","total_count":1,"children":[]},{"name":"._playTone()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".play()","total_count":1,"children":[]},{"name":".playWeaponAttack()","total_count":1,"children":[]},{"name":".setVolume()","total_count":1,"children":[]},{"name":"SoundManager","total_count":1,"children":[]}]},{"name":"stage.js","total_count":22,"children":[{"name":".allEnemiesDead()","total_count":1,"children":[]},{"name":".ensureStageProgress()","total_count":1,"children":[]},{"name":".enterStageLevel()","total_count":1,"children":[]},{"name":".generateBossLevel()","total_count":1,"children":[]},{"name":".generateLevel()","total_count":1,"children":[]},{"name":".generateNormalLevel()","total_count":1,"children":[]},{"name":".getAliveEnemies()","total_count":1,"children":[]},{"name":".getAllEnemies()","total_count":1,"children":[]},{"name":".getBossHpMultiplier()","total_count":1,"children":[]},{"name":".getEnemyById()","total_count":1,"children":[]},{"name":".getStageKey()","total_count":1,"children":[]},{"name":".getStageProgress()","total_count":1,"children":[]},{"name":".initializeRun()","total_count":1,"children":[]},{"name":".leaveToWorldMap()","total_count":1,"children":[]},{"name":".nextLevel()","total_count":1,"children":[]},{"name":".nextStage()","total_count":1,"children":[]},{"name":".onLevelCleared()","total_count":1,"children":[]},{"name":".pickStageVariation()","total_count":1,"children":[]},{"name":".rehydrateLoadedEnemies()","total_count":1,"children":[]},{"name":".syncUI()","total_count":1,"children":[]},{"name":"FORMATIONS","total_count":1,"children":[]},{"name":"StageManager","total_count":1,"children":[]}]},{"name":"tasks.js","total_count":61,"children":[{"name":".addDaily()","total_count":1,"children":[]},{"name":".addSubtask()","total_count":1,"children":[]},{"name":".addTodo()","total_count":1,"children":[]},{"name":".calculateLateTodoDamage()","total_count":1,"children":[]},{"name":".calculateMissedDailyDamage()","total_count":1,"children":[]},{"name":".checkAndUpdateStreakUnlocks()","total_count":1,"children":[]},{"name":".checkDailyDeadlines()","total_count":1,"children":[]},{"name":".completeDaily()","total_count":1,"children":[]},{"name":".completeDay()","total_count":1,"children":[]},{"name":".completeStep()","total_count":1,"children":[]},{"name":".completeSubtask()","total_count":1,"children":[]},{"name":".completeTodo()","total_count":1,"children":[]},{"name":".computeDailyStreak()","total_count":1,"children":[]},{"name":".editDaily()","total_count":1,"children":[]},{"name":".editSubtask()","total_count":1,"children":[]},{"name":".editTodo()","total_count":1,"children":[]},{"name":".ensureStarterTasks()","total_count":1,"children":[]},{"name":".generateTaskId()","total_count":1,"children":[]},{"name":".getAllDailies()","total_count":1,"children":[]},{"name":".getAllTasks()","total_count":1,"children":[]},{"name":".getAllTodos()","total_count":1,"children":[]},{"name":".getCompletedDailies()","total_count":1,"children":[]},{"name":".getCompletedTodos()","total_count":1,"children":[]},{"name":".getCurrentGameDateKey()","total_count":1,"children":[]},{"name":".getDailyStreakDamageBonus()","total_count":1,"children":[]},{"name":".getDifficultyWeight()","total_count":1,"children":[]},{"name":".getMaxPotentialDiamonds()","total_count":1,"children":[]},{"name":".getMissedDailies()","total_count":1,"children":[]},{"name":".getPlannerDayData()","total_count":1,"children":[]},{"name":".getStreakBorderColor()","total_count":1,"children":[]},{"name":".getTaskById()","total_count":1,"children":[]},{"name":".getTodoContributions()","total_count":1,"children":[]},{"name":".getUncompletedTodosNearDeadline()","total_count":1,"children":[]},{"name":".getWeightedAverageStreak()","total_count":1,"children":[]},{"name":".getWeightedCompletionRate()","total_count":1,"children":[]},{"name":".highlightBulkAddLine()","total_count":1,"children":[]},{"name":".isAllDailiesComplete()","total_count":1,"children":[]},{"name":".isDailyScheduled()","total_count":1,"children":[]},{"name":".isFeatureUnlocked()","total_count":1,"children":[]},{"name":".lockDaily()","total_count":1,"children":[]},{"name":".parseBulkAddText()","total_count":1,"children":[]},{"name":".parseMetadata()","total_count":1,"children":[]},{"name":".parseNaturalLanguage()","total_count":1,"children":[]},{"name":".recalculateAchievements()","total_count":1,"children":[]},{"name":".removeDaily()","total_count":1,"children":[]},{"name":".removeSubtask()","total_count":1,"children":[]},{"name":".removeTodo()","total_count":1,"children":[]},{"name":".resetDailies()","total_count":1,"children":[]},{"name":".roundValue()","total_count":1,"children":[]},{"name":".switchDaySet()","total_count":1,"children":[]},{"name":".toggleBloodOath()","total_count":1,"children":[]},{"name":".toggleBloodOathTodo()","total_count":1,"children":[]},{"name":".toggleSubtask()","total_count":1,"children":[]},{"name":".unlockDaily()","total_count":1,"children":[]},{"name":".updateDailyLayout()","total_count":1,"children":[]},{"name":".updateDailySurplusState()","total_count":1,"children":[]},{"name":".updateStreaks()","total_count":1,"children":[]},{"name":".updateTodoLayout()","total_count":1,"children":[]},{"name":".validateDailyCount()","total_count":1,"children":[]},{"name":"IMPORTANT: streaks are based on the day that just ended,","total_count":1,"children":[]},{"name":"TaskManager","total_count":1,"children":[]}]},{"name":"tycoon.js","total_count":43,"children":[{"name":".addFloatingText()","total_count":1,"children":[]},{"name":".addNotification()","total_count":1,"children":[]},{"name":".applyFarmerInteractionBenefit()","total_count":1,"children":[]},{"name":".applyPlacementTool()","total_count":1,"children":[]},{"name":".calculateCurrentCompletionRate()","total_count":1,"children":[]},{"name":".canPlaceObjectAt()","total_count":1,"children":[]},{"name":".clearBanner()","total_count":1,"children":[]},{"name":".constructor()","total_count":1,"children":[]},{"name":".drawCanvas()","total_count":1,"children":[]},{"name":".drawTileObject()","total_count":1,"children":[]},{"name":".drawTileTexture()","total_count":1,"children":[]},{"name":".enterTycoonMode()","total_count":1,"children":[]},{"name":".exitTycoonMode()","total_count":1,"children":[]},{"name":".findFarmerAt()","total_count":1,"children":[]},{"name":".findObjectCenterAt()","total_count":1,"children":[]},{"name":".formatTime()","total_count":1,"children":[]},{"name":".getEnergyTreeCount()","total_count":1,"children":[]},{"name":".getFarmerScreenPos()","total_count":1,"children":[]},{"name":".getLightingState()","total_count":1,"children":[]},{"name":".getSerializableState()","total_count":1,"children":[]},{"name":".getTerrainBaseType()","total_count":1,"children":[]},{"name":".getTileTypeAt()","total_count":1,"children":[]},{"name":".initDOM()","total_count":1,"children":[]},{"name":".loadState()","total_count":1,"children":[]},{"name":".paintTerrainCircle()","total_count":1,"children":[]},{"name":".postTileUpdateToWorker()","total_count":1,"children":[]},{"name":".renderLoop()","total_count":1,"children":[]},{"name":".renderShopGrid()","total_count":1,"children":[]},{"name":".saveState()","total_count":1,"children":[]},{"name":".screenToWorldCoords()","total_count":1,"children":[]},{"name":".screenToWorldPreciseCoords()","total_count":1,"children":[]},{"name":".setBanner()","total_count":1,"children":[]},{"name":".setTileTypeAt()","total_count":1,"children":[]},{"name":".setupInputHandlers()","total_count":1,"children":[]},{"name":".setupUIHandlers()","total_count":1,"children":[]},{"name":".showDailySummary()","total_count":1,"children":[]},{"name":".showFarmerDetails()","total_count":1,"children":[]},{"name":".showObjectDetails()","total_count":1,"children":[]},{"name":".showOfflineSummary()","total_count":1,"children":[]},{"name":".spawnWorker()","total_count":1,"children":[]},{"name":".syncFarmersState()","total_count":1,"children":[]},{"name":".updateHUD()","total_count":1,"children":[]},{"name":"TycoonEngine","total_count":1,"children":[]}]},{"name":"ui.js","total_count":198,"children":[{"name":"._doRefreshGameUI()","total_count":1,"children":[]},{"name":"._doRenderEnemies()","total_count":1,"children":[]},{"name":".accelerateBackground()","total_count":1,"children":[]},{"name":".addDailyNote()","total_count":1,"children":[]},{"name":".addTodoNote()","total_count":1,"children":[]},{"name":".adjustLayout()","total_count":1,"children":[]},{"name":".animateStatValue()","total_count":1,"children":[]},{"name":".applyOrbitTransform()","total_count":1,"children":[]},{"name":".applyTaskChargingEffect()","total_count":1,"children":[]},{"name":".attachDblClick()","total_count":1,"children":[]},{"name":".beginAttackSpinner()","total_count":1,"children":[]},{"name":".bindDailyBoardInteractions()","total_count":1,"children":[]},{"name":".bindEnemyTargeting()","total_count":1,"children":[]},{"name":".bindEventListeners()","total_count":1,"children":[]},{"name":".bindTaskInteractions()","total_count":1,"children":[]},{"name":".bindTodoBoardInteractions()","total_count":1,"children":[]},{"name":".buildDailyHistoryBoxes()","total_count":1,"children":[]},{"name":".buildShopItems()","total_count":1,"children":[]},{"name":".clampDailyLayout()","total_count":1,"children":[]},{"name":".clampTodoLayout()","total_count":1,"children":[]},{"name":".closeShop()","total_count":1,"children":[]},{"name":".closeTaskPanel()","total_count":1,"children":[]},{"name":".createActionButtons()","total_count":1,"children":[]},{"name":".createChallengeHud()","total_count":1,"children":[]},{"name":".createEnemyCardElement()","total_count":1,"children":[]},{"name":".createFocusCircleWidget()","total_count":1,"children":[]},{"name":".createGameArea()","total_count":1,"children":[]},{"name":".createHudWidget()","total_count":1,"children":[]},{"name":".createNavigationMenu()","total_count":1,"children":[]},{"name":".createNemesisTauntHud()","total_count":1,"children":[]},{"name":".createPullTabs()","total_count":1,"children":[]},{"name":".createQuickAddHud()","total_count":1,"children":[]},{"name":".createScoreHud()","total_count":1,"children":[]},{"name":".createShopPanel()","total_count":1,"children":[]},{"name":".drawCanvasConnections()","total_count":1,"children":[]},{"name":".drawCharts()","total_count":1,"children":[]},{"name":".drawDailyConnections()","total_count":1,"children":[]},{"name":".drawWorldTreeLines()","total_count":1,"children":[]},{"name":".drawZigzagLine()","total_count":1,"children":[]},{"name":".ensureSpinnerLoop()","total_count":1,"children":[]},{"name":".enterFocusMode()","total_count":1,"children":[]},{"name":".escapeHtml()","total_count":1,"children":[]},{"name":".exitFocusMode()","total_count":1,"children":[]},{"name":".finishAttackSpinner()","total_count":1,"children":[]},{"name":".getAttributeColor()","total_count":1,"children":[]},{"name":".getCircleRect()","total_count":1,"children":[]},{"name":".getDailyBoardMetrics()","total_count":1,"children":[]},{"name":".getDailyCardSize()","total_count":1,"children":[]},{"name":".getDailyNoteDateKey()","total_count":1,"children":[]},{"name":".getDailyTopStatsCoords()","total_count":1,"children":[]},{"name":".getDeadlineDistanceText()","total_count":1,"children":[]},{"name":".getDefaultDailyLayout()","total_count":1,"children":[]},{"name":".getEnemyElementColor()","total_count":1,"children":[]},{"name":".getEnemyEmoji()","total_count":1,"children":[]},{"name":".getOrGenerateBranchingMap()","total_count":1,"children":[]},{"name":".getOverallRunCompletionRate()","total_count":1,"children":[]},{"name":".getRingInfo()","total_count":1,"children":[]},{"name":".getRunCompletionEntries()","total_count":1,"children":[]},{"name":".getScoreRank()","total_count":1,"children":[]},{"name":".getSpinnerElement()","total_count":1,"children":[]},{"name":".getSpinnerSpeedMs()","total_count":1,"children":[]},{"name":".getSpinnerTargetEnemies()","total_count":1,"children":[]},{"name":".getSpinnerTargetEnemy()","total_count":1,"children":[]},{"name":".getStageBackdropConfig()","total_count":1,"children":[]},{"name":".getTextColorForHex()","total_count":1,"children":[]},{"name":".getTodoBoardMetrics()","total_count":1,"children":[]},{"name":".getTodoCardSize()","total_count":1,"children":[]},{"name":".getWeaponIconHtml()","total_count":1,"children":[]},{"name":".handleAttackClick()","total_count":1,"children":[]},{"name":".handleAttackEvent()","total_count":1,"children":[]},{"name":".handleCheckInClick()","total_count":1,"children":[]},{"name":".handleCompleteDayClick()","total_count":1,"children":[]},{"name":".handleDodgeClick()","total_count":1,"children":[]},{"name":".handlePauseClick()","total_count":1,"children":[]},{"name":".handleSatchelClick()","total_count":1,"children":[]},{"name":".handleSkillClick()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".init()","total_count":1,"children":[]},{"name":".initializeUI()","total_count":1,"children":[]},{"name":".invalidateThemeCache()","total_count":1,"children":[]},{"name":".isMinimized()","total_count":1,"children":[]},{"name":".loadTodoHudStates()","total_count":1,"children":[]},{"name":".minimize()","total_count":1,"children":[]},{"name":".onBuffGained()","total_count":1,"children":[]},{"name":".openFullscreenTimer()","total_count":1,"children":[]},{"name":".openShop()","total_count":1,"children":[]},{"name":".parseEnemyElementEntry()","total_count":1,"children":[]},{"name":".patchEnemyCardElement()","total_count":1,"children":[]},{"name":".playBossAttackAnimation()","total_count":1,"children":[]},{"name":".playChainMutationAnimation()","total_count":1,"children":[]},{"name":".playCheckInSequence()","total_count":1,"children":[]},{"name":".playMutatorSound()","total_count":1,"children":[]},{"name":".positionActionButtons()","total_count":1,"children":[]},{"name":".positionDailyCards()","total_count":1,"children":[]},{"name":".positionSatchelPanel()","total_count":1,"children":[]},{"name":".positionTodoCards()","total_count":1,"children":[]},{"name":".positionWeaponStrip()","total_count":1,"children":[]},{"name":".refreshEventBanner()","total_count":1,"children":[]},{"name":".refreshGameUI()","total_count":1,"children":[]},{"name":".releaseAttackSpinnerPress()","total_count":1,"children":[]},{"name":".renderBossOrbit()","total_count":1,"children":[]},{"name":".renderBuffPanel()","total_count":1,"children":[]},{"name":".renderDailyNotes()","total_count":1,"children":[]},{"name":".renderDock()","total_count":1,"children":[]},{"name":".renderEnemies()","total_count":1,"children":[]},{"name":".renderMutatorBadges()","total_count":1,"children":[]},{"name":".renderShop()","total_count":1,"children":[]},{"name":".renderTodoNotes()","total_count":1,"children":[]},{"name":".renderWorldMapNodeView()","total_count":1,"children":[]},{"name":".resolveAttackTarget()","total_count":1,"children":[]},{"name":".saveTodoHudStates()","total_count":1,"children":[]},{"name":".scheduleUpdateDailiesList()","total_count":1,"children":[]},{"name":".setEnemyCheckInHighlight()","total_count":1,"children":[]},{"name":".setHoveredEnemyId()","total_count":1,"children":[]},{"name":".setSpinnerDuration()","total_count":1,"children":[]},{"name":".setupConsistencyChallenge()","total_count":1,"children":[]},{"name":".setupDockInteractions()","total_count":1,"children":[]},{"name":".setupDragTargeting()","total_count":1,"children":[]},{"name":".setupFocusTimer()","total_count":1,"children":[]},{"name":".setupJoystickModeToggle()","total_count":1,"children":[]},{"name":".setupPresetHuds()","total_count":1,"children":[]},{"name":".setupTodoJoystickModeToggle()","total_count":1,"children":[]},{"name":".setupTodoOrbitPanZoom()","total_count":1,"children":[]},{"name":".shadeColor()","total_count":1,"children":[]},{"name":".shapeClassForDifficulty()","total_count":1,"children":[]},{"name":".showDailyApReward()","total_count":1,"children":[]},{"name":".showDailyKeysReward()","total_count":1,"children":[]},{"name":".showDeductionPopup()","total_count":1,"children":[]},{"name":".showDiamondRewards()","total_count":1,"children":[]},{"name":".showEnemyTooltip()","total_count":1,"children":[]},{"name":".showFloatingText()","total_count":1,"children":[]},{"name":".showMapNodePopup()","total_count":1,"children":[]},{"name":".showMutatorPopup()","total_count":1,"children":[]},{"name":".showMutatorToast()","total_count":1,"children":[]},{"name":".showPetIcon()","total_count":1,"children":[]},{"name":".showQuickAddCalendarPicker()","total_count":1,"children":[]},{"name":".showTodoUndoSnackbar()","total_count":1,"children":[]},{"name":".spawnDiamondFloatingPopup()","total_count":1,"children":[]},{"name":".startDailyHeartbeat()","total_count":1,"children":[]},{"name":".startUltraSkullEmitters()","total_count":1,"children":[]},{"name":".stopDailyHeartbeat()","total_count":1,"children":[]},{"name":".stopUltraSkullEmitters()","total_count":1,"children":[]},{"name":".syncSpinnerSpeed()","total_count":1,"children":[]},{"name":".themeColor()","total_count":1,"children":[]},{"name":".toggle()","total_count":1,"children":[]},{"name":".toggleDailyConnections()","total_count":1,"children":[]},{"name":".toggleDailyFocus()","total_count":1,"children":[]},{"name":".toggleEditMode()","total_count":1,"children":[]},{"name":".toggleLockMode()","total_count":1,"children":[]},{"name":".toggleShopPanel()","total_count":1,"children":[]},{"name":".toggleShowCompleted()","total_count":1,"children":[]},{"name":".toggleTaskPanel()","total_count":1,"children":[]},{"name":".triggerDonutRipple()","total_count":1,"children":[]},{"name":".triggerDonutRippleForEnemy()","total_count":1,"children":[]},{"name":".triggerJackpotRainbowGlow()","total_count":1,"children":[]},{"name":".unminimize()","total_count":1,"children":[]},{"name":".update()","total_count":1,"children":[]},{"name":".updateAchievementsList()","total_count":1,"children":[]},{"name":".updateActionButtons()","total_count":1,"children":[]},{"name":".updateActionCosts()","total_count":1,"children":[]},{"name":".updateApBar()","total_count":1,"children":[]},{"name":".updateChallengeHud()","total_count":1,"children":[]},{"name":".updateComboDisplay()","total_count":1,"children":[]},{"name":".updateConsistencyBtn()","total_count":1,"children":[]},{"name":".updateConsumableStrip()","total_count":1,"children":[]},{"name":".updateCosmeticsList()","total_count":1,"children":[]},{"name":".updateDailiesList()","total_count":1,"children":[]},{"name":".updateDailyTopStats()","total_count":1,"children":[]},{"name":".updateDateDisplay()","total_count":1,"children":[]},{"name":".updateDeathDefianceBadge()","total_count":1,"children":[]},{"name":".updateDiamondDisplay()","total_count":1,"children":[]},{"name":".updateGoldDisplay()","total_count":1,"children":[]},{"name":".updateHpBar()","total_count":1,"children":[]},{"name":".updateJoystickUI()","total_count":1,"children":[]},{"name":".updateLootboxKeysDisplay()","total_count":1,"children":[]},{"name":".updateManaBar()","total_count":1,"children":[]},{"name":".updateNemesisAggressionRings()","total_count":1,"children":[]},{"name":".updateNemesisTauntHud()","total_count":1,"children":[]},{"name":".updatePauseBtn()","total_count":1,"children":[]},{"name":".updatePendingDamageDisplay()","total_count":1,"children":[]},{"name":".updatePetUI()","total_count":1,"children":[]},{"name":".updateRunCompletionGraph()","total_count":1,"children":[]},{"name":".updateScoreHud()","total_count":1,"children":[]},{"name":".updateShopBtnVisibility()","total_count":1,"children":[]},{"name":".updateStageBackdrop()","total_count":1,"children":[]},{"name":".updateStageIndicator()","total_count":1,"children":[]},{"name":".updateTabIndicators()","total_count":1,"children":[]},{"name":".updateTaskVisibilityToggleLabels()","total_count":1,"children":[]},{"name":".updateTodoJoystickUI()","total_count":1,"children":[]},{"name":".updateTodosList()","total_count":1,"children":[]},{"name":".updateWeaponIcons()","total_count":1,"children":[]},{"name":".updateWeeklyHeatmap()","total_count":1,"children":[]},{"name":"createBubble()","total_count":1,"children":[]},{"name":"getAsset()","total_count":1,"children":[]},{"name":"HUDMinimizer","total_count":1,"children":[]},{"name":"StatsHUD","total_count":1,"children":[]},{"name":"TODO: Replace with actual asset system","total_count":1,"children":[]},{"name":"UIManager","total_count":1,"children":[]}]},{"name":"check_braces.ps1","total_count":1,"children":[]},{"name":"check_braces.py","total_count":1,"children":[]},{"name":"planner.js","total_count":1,"children":[]},{"name":"search_hiding.ps1","total_count":1,"children":[]},{"name":"tycoon_worker_code.js","total_count":1,"children":[]}]},{"name":"sw.js","total_count":1,"children":[{"name":"ASSETS_TO_CACHE","total_count":1,"children":[]}]},{"name":"update_enemies.js","total_count":15,"children":[{"name":"bossesObj","total_count":1,"children":[]},{"name":"configData","total_count":1,"children":[]},{"name":"configPath","total_count":1,"children":[]},{"name":"elements","total_count":1,"children":[]},{"name":"enemiesObj","total_count":1,"children":[]},{"name":"enemyNames","total_count":1,"children":[]},{"name":"formationsObj","total_count":1,"children":[]},{"name":"fs","total_count":1,"children":[]},{"name":"keysArr","total_count":1,"children":[]},{"name":"path","total_count":1,"children":[]},{"name":"stageData","total_count":1,"children":[]},{"name":"stagePath","total_count":1,"children":[]},{"name":"themes","total_count":1,"children":[]},{"name":"uiData","total_count":1,"children":[]},{"name":"uiPath","total_count":1,"children":[]}]},{"name":"update_enemies.py","total_count":1,"children":[]}]};
+
+    function transformData(jsonData) {
+        // Helper function to recursively build the children structure
+        function processNode(node, parentL1StageName) {
+            let displayName = node.name;
+            // Append total_count if it exists and is not already in the name
+            if (node.total_count !== undefined) {
+                if (!/\(Total Count: \d+\)$/.test(displayName)) {
+                    displayName += ` (Total Count: ${node.total_count})`;
+                }
+            }
+
+            const newNode = { name: displayName };
+
+            if (parentL1StageName === "Root") {
+                 newNode.originalStageName = node.name;
+            } else {
+                newNode.originalStageName = parentL1StageName;
+            }
+
+            if (node.children && node.children.length > 0) {
+                const stageNameToPass = (parentL1StageName === "Root") ? node.name : parentL1StageName;
+                newNode.children = node.children.map(child => processNode(child, stageNameToPass));
+            }
+
+            return newNode;
+        }
+
+        let rootDisplayName = jsonData.name;
+        if (jsonData.total_count !== undefined && !/\(Total Count: \d+\)$/.test(rootDisplayName)) {
+            rootDisplayName += ` (Total Count: ${jsonData.total_count})`;
+        }
+
+        return {
+            name: rootDisplayName,
+            originalStageName: "Root",
+            children: (jsonData.children || []).map(child => processNode(child, "Root"))
+        };
+    }
+
+    const treeData = transformData(initialJsonData);
+
+    // Auto-populated phaseColors: every depth-1 child of the root gets
+    // a stable colour from a bigger palette so all top-level dirs are
+    // distinguishable.
+    const PALETTE = [
+      ["#3498DB","#2980B9","#AED6F1"], ["#2ECC71","#27AE60","#A9DFBF"],
+      ["#E74C3C","#C0392B","#F5B7B1"], ["#9B59B6","#8E44AD","#D7BDE2"],
+      ["#F39C12","#D68910","#FAD7A0"], ["#1ABC9C","#117864","#A2D9CE"],
+      ["#34495E","#1B2631","#ABB2B9"], ["#E67E22","#BA4A00","#F5CBA7"],
+      ["#16A085","#0E6655","#A2D9CE"], ["#D35400","#A04000","#EDBB99"],
+      ["#7F8C8D","#566573","#D5DBDB"], ["#C0392B","#7B241C","#F5B7B1"],
+      ["#2E86C1","#1B4F72","#A9CCE3"], ["#28B463","#196F3D","#A9DFBF"],
+      ["#AF7AC5","#6C3483","#D2B4DE"],
+    ];
+    const phaseColors = { "Root": { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+                          "Default": { fill: "#BDC3C7", stroke: "#95A5A6", collapsedFill: "#ECF0F1" } };
+    (initialJsonData.children || []).forEach((c, i) => {
+      const pal = PALETTE[i % PALETTE.length];
+      phaseColors[c.name] = { fill: pal[0], stroke: pal[1], collapsedFill: pal[2] };
+    });
+
+    const levelSpecificPalettes = {
+      0: { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+      2: { fill: "#6ab04c", stroke: "#508a38", collapsedFill: "#a3d391" },
+      3: { fill: "#f0932b", stroke: "#d0730f", collapsedFill: "#f6c07e" },
+      4: { fill: "#be2edd", stroke: "#a01cb3", collapsedFill: "#e08bf2" },
+      5: { fill: "#00a8ff", stroke: "#007ac1", collapsedFill: "#74d2ff" },
+      6: { fill: "#e55039", stroke: "#c23620", collapsedFill: "#f09a8d" },
+      default: { fill: "#747d8c", stroke: "#57606f", collapsedFill: "#a4b0be" }
+    };
+
+    const svgElement = d3.select("#tree-svg");
+    const initialSvgWidth = +svgElement.attr("width");
+    const initialSvgHeight = +svgElement.attr("height");
+    const margin = { top: 40, right: 120, bottom: 80, left: 450 };
+    let width = initialSvgWidth - margin.left - margin.right;
+    let height = initialSvgHeight - margin.top - margin.bottom;
+    const duration = 500;
+    let nodeCounter = 0;
+    const g = svgElement.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const treemap = d3.tree().nodeSize([40, 0]);
+    let rootNode = d3.hierarchy(treeData, d => d.children);
+    rootNode.x0 = 0;
+    rootNode.y0 = 0;
+
+    if (rootNode.children) {
+      rootNode.children.forEach(d_child => {
+        if (d_child.children) { collapseBranch(d_child); }
+      });
+    }
+    updateTree(rootNode);
+
+    function collapseBranch(d) { if (d.children) { d._children = d.children; d._children.forEach(collapseBranch); d.children = null; } }
+    function expandBranch(d) { if (d._children) { d.children = d._children; d._children = null; } if (d.children) { d.children.forEach(expandBranch); } }
+    window.expandAll = () => { expandBranch(rootNode); updateTree(rootNode); };
+    window.collapseAll = () => { if (rootNode.children) { rootNode.children.forEach(collapseBranch); } updateTree(rootNode); };
+    window.resetView = () => { if (rootNode.children) { rootNode.children.forEach(d_child => { if (d_child.children || d_child._children) { collapseBranch(d_child); } }); } if (rootNode._children && !rootNode.children) { rootNode.children = rootNode._children; rootNode._children = null; } updateTree(rootNode); };
+
+    function updateTree(source) {
+      const treeLayoutData = treemap(rootNode);
+      let nodes = treeLayoutData.descendants();
+      let links = treeLayoutData.descendants().slice(1);
+
+      let minX = 0;
+      let maxX = 0;
+      if (nodes.length > 0) {
+        minX = d3.min(nodes, d => d.x);
+        maxX = d3.max(nodes, d => d.x);
+      }
+
+      let neededHeight = Math.max(initialSvgHeight, maxX - minX + margin.top + margin.bottom + 100);
+      svgElement.transition().duration(duration / 2).attr("height", neededHeight);
+      g.transition().duration(duration / 2).attr("transform", `translate(${margin.left},${margin.top - minX + 40})`);
+
+      nodes.forEach(d => { d.y = d.depth * 400; }); // Adjust horizontal separation if needed
+
+      const node = g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++nodeCounter));
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => "node" + (d.children || d._children ? " node--internal" : " node--leaf") + (d._children ? " _children" : ""))
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', (event, d) => { if (d.children) { d._children = d.children; d.children = null; } else if (d._children) { d.children = d._children; d._children = null; } updateTree(d); })
+        .style('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+      nodeEnter.append('circle').attr('r', 1e-6);
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -14 : 14)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style("fill-opacity", 1e-6)
+        .call(wrapText, 380);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.transition().duration(duration)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .attr('class', d => "node" + (d.children ? " node--internal" : " node--leaf") + (d._children ? " node--internal _children" : ""));
+
+      nodeUpdate.select('circle').attr('r', 8.5)
+        .style('fill', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            if (d._children) return palette.collapsedFill;
+            if (d.children) return palette.fill;
+            return "#fff";
+        })
+        .style('stroke', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            return palette.stroke;
+        });
+      nodeUpdate.select('text').style("fill-opacity", 1).call(wrapText, 380);
+
+      const nodeExit = node.exit().transition().duration(duration).attr('transform', d => `translate(${source.y},${source.x})`).remove();
+      nodeExit.select('circle').attr('r', 1e-6);
+      nodeExit.select('text').style('fill-opacity', 1e-6);
+
+      const link = g.selectAll('path.link').data(links, d => d.id);
+      const linkEnter = link.enter().insert('path', "g").attr('class', 'link').attr('d', d => { const o = { x: source.x0, y: source.y0 }; return diagonal(o, o); });
+
+      linkEnter.merge(link).transition().duration(duration).attr('d', d => diagonal(d, d.parent))
+        .style('stroke', d => {
+            const sourceNode = d.parent;
+            if (!sourceNode) return phaseColors.Default.stroke;
+            const l1AncestorName = sourceNode.data.originalStageName;
+            const colorPalette = phaseColors[l1AncestorName] || phaseColors.Default;
+            return colorPalette.stroke;
+        });
+      link.exit().transition().duration(duration).attr('d', d => { const o = { x: source.x, y: source.y }; return diagonal(o, o); }).remove();
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function diagonal(s, d) { return `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`; }
+
+    function wrapText(textElements, maxWidth) {
+        const textPartColors = {
+            name: '#343a40',
+            count: '#0056b3'
+        };
+        const countRegex = /(\s\(Total Count: \d+\))$/;
+
+        textElements.each(function () {
+            const textD3 = d3.select(this);
+            const originalNodeText = textD3.datum().data.name;
+            const x = parseFloat(textD3.attr("x") || 0);
+            const initialDy = textD3.attr("dy");
+            const textAnchor = textD3.attr("text-anchor");
+            const lineHeight = 1.1;
+
+            textD3.text(null);
+
+            let namePart = originalNodeText;
+            let countPartText = "";
+
+            const countMatch = originalNodeText.match(countRegex);
+            if (countMatch && originalNodeText.endsWith(countMatch[0])) {
+                namePart = originalNodeText.substring(0, originalNodeText.length - countMatch[0].length).trim();
+                countPartText = countMatch[0].trim();
+            }
+
+            const tokens = [];
+            namePart.split(/\s+/).filter(Boolean).forEach(word => {
+                tokens.push({ text: word, type: 'name' });
+            });
+            if (countPartText) {
+                tokens.push({ text: countPartText, type: 'count' });
+            }
+
+            if (tokens.length === 0 && originalNodeText) {
+                tokens.push({ text: originalNodeText, type: 'name' });
+            }
+
+            let currentTspan = textD3.append("tspan").attr("x", x).attr("dy", initialDy);
+            if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+
+            let lineTokens = [];
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tokenObj = tokens[i];
+
+                lineTokens.push(tokenObj);
+                currentTspan.text(lineTokens.map(t => t.text).join(" "));
+
+                if (currentTspan.node().getComputedTextLength() > maxWidth && lineTokens.length > 1) {
+                    lineTokens.pop();
+
+                    currentTspan.text(null);
+                    lineTokens.forEach((prevToken, idx) => {
+                        currentTspan.append("tspan")
+                            .text((idx > 0 ? " " : "") + prevToken.text)
+                            .style("fill", textPartColors[prevToken.type] || textPartColors.name)
+                            .style("font-weight", prevToken.type === 'count' ? "bold" : "normal");
+                    });
+
+                    lineTokens = [tokenObj];
+                    currentTspan = textD3.append("tspan").attr("x", x).attr("dy", lineHeight + "em");
+                    if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+                }
+            }
+
+            currentTspan.text(null);
+            lineTokens.forEach((token, idx) => {
+                currentTspan.append("tspan")
+                    .text((idx > 0 ? " " : "") + token.text)
+                    .style("fill", textPartColors[token.type] || textPartColors.name)
+                    .style("font-weight", token.type === 'count' ? "bold" : "normal");
+            });
+
+            if (textD3.selectAll("tspan > tspan").empty() && textD3.select("tspan").text().length === 0 && originalNodeText) {
+                let t = textD3.select("tspan");
+                let displayText = originalNodeText;
+                t.text(displayText).style("fill", textPartColors.name);
+                if (t.node() && t.node().getComputedTextLength() > maxWidth && displayText.length > 20) {
+                    let estimatedChars = Math.floor(maxWidth / (t.node().getComputedTextLength()/displayText.length) );
+                    displayText = displayText.substring(0, Math.max(0, estimatedChars - 3)) + "...";
+                    t.text(displayText);
+                }
+            }
+        });
+    }
+  </script>
+</body>
+</html>

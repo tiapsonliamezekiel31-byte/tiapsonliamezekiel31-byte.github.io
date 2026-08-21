@@ -900,15 +900,7 @@ body::before {
 }
 
 .stage-date-wrap {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 35;
-  margin-top: -25px;
-  /* Moves the date/day display higher up on the screen */
-  margin-bottom: 65px;
-  /* Pushes the enemy circle container down so the top card does not clip the date/day display */
+  display: none !important;
 }
 
 /* Mutator badge UI */
@@ -1015,14 +1007,20 @@ body::before {
 
 .enemy-circle-container {
   position: relative;
-  width: 600px;
-  height: 600px;
+  width: 530px;
+  height: 530px;
   flex-shrink: 0;
   border: 3px solid #ffd76a;
   border-radius: 50%;
   background: radial-gradient(circle, transparent 48%, #14102a 49%);
   box-shadow: none;
   transition: border-color 0.3s ease;
+  touch-action: none;
+  cursor: grab;
+}
+
+.enemy-circle-container:active {
+  cursor: grabbing;
 }
 
 .donut-ripple-overlay {
@@ -4121,8 +4119,8 @@ body::before {
   }
 
   .enemy-circle-container {
-    width: 375px;
-    height: 375px;
+    width: 340px;
+    height: 340px;
     box-shadow: none;
   }
 
@@ -6099,26 +6097,16 @@ body::before {
   padding: 0;
   overflow: hidden;
   cursor: pointer;
-  background: radial-gradient(circle at 50% 30%, rgba(26, 18, 42, 0.96), rgba(8, 6, 16, 0.98)), url('../assets/textures/Hudtexture.jpg') center/cover;
-  border: 3px solid transparent;
-  border-image: linear-gradient(180deg, #ffd700 0%, #b8860b 50%, #e8b84a 100%) 1;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(232, 184, 74, 0.35), inset 0 0 20px rgba(0, 0, 0, 0.8);
+  background: radial-gradient(circle at 50% 30%, rgba(26, 18, 42, 0.96), rgba(8, 6, 16, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.8);
   border-radius: 4px;
   position: relative;
   animation: dialogueFadeIn 0.25s ease-out;
 }
 
 .dialogue-popup.dialogue-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('../assets/textures/goldleafborders.jpg') center/cover;
-  opacity: 0.18;
-  mix-blend-mode: color-dodge;
-  pointer-events: none;
+  display: none !important;
 }
 
 .dialogue-media {
@@ -9692,15 +9680,8 @@ button:hover,
   max-height: none !important;
   resize: none !important;
   overflow: visible !important;
-  touch-action: none;
-  background-image: url('../assets/textures/Hudtexture.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.92) !important;
-  background-blend-mode: overlay !important;
-  border: 6px solid transparent !important;
-  border-image: url('../assets/textures/goldleafborders.jpg') 30 stretch !important;
+  background: rgba(14, 18, 28, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
   display: flex;
   flex-direction: column;
@@ -12475,20 +12456,22 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .preset-hud-card,
 .weapon-panel,
 .draggable-run-graph,
+.draggable-stats-hud,
+.run-completion-panel,
+.weekly-heatmap-panel,
+.event-banner-panel,
+.satchel-panel,
+.preset-hud-card,
+.weapon-panel,
+.draggable-run-graph,
 .unfolded-central-square,
 .unfolded-flap,
 .stats-hud-header {
-  background-image: url('../assets/textures/Hudtexture.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.88) !important;
-  background-blend-mode: overlay !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 3px solid transparent !important;
-  border-image: url('../assets/textures/goldleafborders.jpg') 16 stretch !important;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(0, 0, 0, 0.6) !important;
+  background: rgba(14, 18, 28, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
   font-family: 'Orbitron', monospace !important;
   color: #f3f4f6 !important;
   box-sizing: border-box !important;
@@ -12506,11 +12489,9 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .preset-hud-card.is-dragging,
 .weapon-panel.is-dragging,
 .draggable-run-graph.is-dragging {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   will-change: left, top;
-  border-image: url('../assets/textures/goldleafborders.jpg') 16 stretch !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 14px rgba(232, 184, 74, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 14px rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Header & Title Standardization */
@@ -12760,14 +12741,8 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 }
 
 .draggable-stats-hud .stats-hud-header {
-  background-image: url('../assets/textures/Hudtexture.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.88) !important;
-  background-blend-mode: overlay !important;
-  border: 3px solid transparent !important;
-  border-image: url('../assets/textures/goldleafborders.jpg') 16 stretch !important;
+  background: rgba(14, 18, 28, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 6px !important;
   padding: 4px 8px !important;
   margin-bottom: 5px !important;
@@ -12794,14 +12769,8 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 .unfolded-central-square {
   width: 145px;
   height: 135px;
-  background-image: url('../assets/textures/Hudtexture.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.88) !important;
-  background-blend-mode: overlay !important;
-  border: 3px solid transparent !important;
-  border-image: url('../assets/textures/goldleafborders.jpg') 16 stretch !important;
+  background: rgba(14, 18, 28, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 8px;
   position: relative;
   display: flex;
@@ -12835,14 +12804,8 @@ body:has(.popup-overlay) .draggable-challenge-hud {
 
 /* Separate Connected Flap Panels */
 .unfolded-flap {
-  background-image: url('../assets/textures/Hudtexture.jpg') !important;
-  background-size: cover !important;
-  background-position: center !important;
-  background-repeat: no-repeat !important;
-  background-color: rgba(14, 18, 28, 0.88) !important;
-  background-blend-mode: overlay !important;
-  border: 3px solid transparent !important;
-  border-image: url('../assets/textures/goldleafborders.jpg') 16 stretch !important;
+  background: rgba(14, 18, 28, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
   position: relative;
@@ -15573,6 +15536,220 @@ body:has(.popup-overlay[style*="display: block"]) #minimizedHudDock {
 .todo-undo-snackbar .undo-btn:hover {
   background: #1d4ed8;
 }
+
+/* ============================================================
+   SPLIT CHECKLIST PANEL (DAILIES & TO-DOS)
+   ============================================================ */
+.tab-handle-right-checklist {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  color: #a5b4fc !important;
+}
+
+.tab-handle-right-checklist:hover {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.35), rgba(79, 70, 229, 0.4)) !important;
+  border-color: rgba(129, 140, 248, 0.8) !important;
+  color: #ffffff !important;
+}
+
+#checklistPanel {
+  width: 90vw;
+  max-width: 920px;
+  background: #0f172a;
+  border-left: 2px solid #334155;
+  display: flex;
+  flex-direction: column;
+}
+
+.checklist-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 640px) {
+  #checklistPanel {
+    width: 96vw;
+    max-width: 100vw;
+  }
+  .checklist-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 10px;
+  }
+}
+
+.checklist-column {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.checklist-col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: #f1f5f9;
+}
+
+.checklist-col-count {
+  font-size: 10px;
+  color: #94a3b8;
+  background: #334155;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+
+.checklist-col-items {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 120px;
+}
+
+.checklist-item {
+  background: #090d16;
+  border: 1px solid #334155;
+  border-left-width: 4px;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  cursor: grab;
+  transition: transform 0.15s, background 0.15s, opacity 0.2s, border-color 0.15s;
+}
+
+.checklist-item:active {
+  cursor: grabbing;
+}
+
+.checklist-item.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+}
+
+.checklist-item.drag-over {
+  border-top: 2px solid #6366f1;
+}
+
+.checklist-item.completed {
+  opacity: 0.45;
+  background: #0d111a;
+  border-color: #1e293b;
+}
+
+.checklist-item.completed .checklist-item-title {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+.checklist-checkbox-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 4px;
+  border: 1.5px solid #475569;
+  background: #1e293b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.checklist-checkbox-btn:hover {
+  border-color: #94a3b8;
+  background: #334155;
+}
+
+.checklist-item.completed .checklist-checkbox-btn {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #052e16;
+}
+
+.checklist-item-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.checklist-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checklist-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checklist-attr-tag {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  font-family: 'Orbitron', monospace;
+  color: #ffffff;
+}
+
+.checklist-item-meta {
+  font-size: 10px;
+  color: #94a3b8;
+  display: flex;
+  gap: 8px;
+}
+
+.checklist-drag-handle {
+  color: #475569;
+  font-size: 13px;
+  cursor: grab;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.checklist-drag-handle:hover {
+  color: #94a3b8;
+}
+
+.checklist-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+  font-style: italic;
+}
+
 
 
 

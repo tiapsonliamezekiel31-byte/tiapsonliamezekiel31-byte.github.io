@@ -238,7 +238,7 @@ class EnemyManager {
       if (arch === 'Fodder') {
         archetypeCosts[arch] = baseCost;
       } else {
-        archetypeCosts[arch] = Math.max(3, Math.round(baseCost * discountFactor));
+        archetypeCosts[arch] = Math.max(Math.round(baseCost * 0.5), Math.round(baseCost * discountFactor));
       }
     });
 

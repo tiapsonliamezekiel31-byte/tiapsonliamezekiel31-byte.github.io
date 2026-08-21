@@ -1,0 +1,320 @@
+{
+  ".vscode/settings.json": {
+    "mtime": 1779894015.0807643,
+    "seen": 1787307903.3234763,
+    "ast_hash": "d40ac553505a3ee728b4808950ac4d65",
+    "semantic_hash": "d40ac553505a3ee728b4808950ac4d65"
+  },
+  "JS/animations.js": {
+    "mtime": 1786717946.5453365,
+    "seen": 1787307903.3234763,
+    "ast_hash": "34d902298777ba8ef790a4ca6f3e98ae",
+    "semantic_hash": "34d902298777ba8ef790a4ca6f3e98ae"
+  },
+  "JS/check_braces.js": {
+    "mtime": 1782007152.9260983,
+    "seen": 1787307903.3234763,
+    "ast_hash": "21b6013ca30f49f12c98ab07de7d5e2a",
+    "semantic_hash": "21b6013ca30f49f12c98ab07de7d5e2a"
+  },
+  "JS/check_braces.ps1": {
+    "mtime": 1782007157.1407082,
+    "seen": 1787307903.3244772,
+    "ast_hash": "c7713ee0125dda69894c4d1898d89d47",
+    "semantic_hash": "c7713ee0125dda69894c4d1898d89d47"
+  },
+  "JS/check_braces.py": {
+    "mtime": 1782007162.7710483,
+    "seen": 1787307903.3244772,
+    "ast_hash": "196b86456921ccf07caa313375b9d98c",
+    "semantic_hash": "196b86456921ccf07caa313375b9d98c"
+  },
+  "JS/combat.js": {
+    "mtime": 1786344062.0843012,
+    "seen": 1787307903.3244772,
+    "ast_hash": "2de093f970ea2ab297103822842de38e",
+    "semantic_hash": "2de093f970ea2ab297103822842de38e"
+  },
+  "JS/config.js": {
+    "mtime": 1787307325.5659847,
+    "seen": 1787307903.3244772,
+    "ast_hash": "221c06684e0981ee2542e3b4e5a70174",
+    "semantic_hash": "221c06684e0981ee2542e3b4e5a70174"
+  },
+  "JS/core.js": {
+    "mtime": 1786950540.6817882,
+    "seen": 1787307903.3244772,
+    "ast_hash": "d8e729ee664fe40ba318aae22e34d6f0",
+    "semantic_hash": "d8e729ee664fe40ba318aae22e34d6f0"
+  },
+  "JS/enemy.js": {
+    "mtime": 1786715480.24686,
+    "seen": 1787307903.3244772,
+    "ast_hash": "25a623854086f089c82db0c6e61dae96",
+    "semantic_hash": "25a623854086f089c82db0c6e61dae96"
+  },
+  "JS/inventory.js": {
+    "mtime": 1786713873.0845385,
+    "seen": 1787307903.3244772,
+    "ast_hash": "ccb61292a797a9e74b5ad794d966283c",
+    "semantic_hash": "ccb61292a797a9e74b5ad794d966283c"
+  },
+  "JS/multiplayer.js": {
+    "mtime": 1782138162.9441097,
+    "seen": 1787307903.3244772,
+    "ast_hash": "9a8af1f58e61c3abe37e4c11dac1dce9",
+    "semantic_hash": "9a8af1f58e61c3abe37e4c11dac1dce9"
+  },
+  "JS/planner.js": {
+    "mtime": 1779435258.2042806,
+    "seen": 1787307903.3244772,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "JS/player.js": {
+    "mtime": 1786714112.9124794,
+    "seen": 1787307903.3244772,
+    "ast_hash": "7b28df91eabadd7e9b705a378e9018b5",
+    "semantic_hash": "7b28df91eabadd7e9b705a378e9018b5"
+  },
+  "JS/popups.js": {
+    "mtime": 1786716462.5841243,
+    "seen": 1787307903.3244772,
+    "ast_hash": "923708edf7dd7cf862f970b4eb389396",
+    "semantic_hash": "923708edf7dd7cf862f970b4eb389396"
+  },
+  "JS/search_hiding.ps1": {
+    "mtime": 1782007167.3381803,
+    "seen": 1787307903.3244772,
+    "ast_hash": "4dba543b102090091de7cef8be16c362",
+    "semantic_hash": "4dba543b102090091de7cef8be16c362"
+  },
+  "JS/shop.js": {
+    "mtime": 1784193324.480187,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3d06e86db7a930c25fbdaef534bfe9da",
+    "semantic_hash": "3d06e86db7a930c25fbdaef534bfe9da"
+  },
+  "JS/sound.js": {
+    "mtime": 1786953107.2008107,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3a145c96994a008f0e235a5c69805aea",
+    "semantic_hash": "3a145c96994a008f0e235a5c69805aea"
+  },
+  "JS/stage.js": {
+    "mtime": 1787307331.5955083,
+    "seen": 1787307903.3244772,
+    "ast_hash": "91293e26047d6f954c24332bbd820b92",
+    "semantic_hash": "91293e26047d6f954c24332bbd820b92"
+  },
+  "JS/tasks.js": {
+    "mtime": 1786945791.0550754,
+    "seen": 1787307903.3244772,
+    "ast_hash": "373556830accf11bacca9f60fe6ad246",
+    "semantic_hash": "373556830accf11bacca9f60fe6ad246"
+  },
+  "JS/tycoon.js": {
+    "mtime": 1785158170.3415606,
+    "seen": 1787307903.3244772,
+    "ast_hash": "b8f9e042965aff193c9d8997cac57743",
+    "semantic_hash": "b8f9e042965aff193c9d8997cac57743"
+  },
+  "JS/tycoon_worker_code.js": {
+    "mtime": 1782138187.9929345,
+    "seen": 1787307903.3244772,
+    "ast_hash": "4670e30d1686e27b5de1cf39cbdd12d3",
+    "semantic_hash": "4670e30d1686e27b5de1cf39cbdd12d3"
+  },
+  "JS/ui.js": {
+    "mtime": 1787307484.8167973,
+    "seen": 1787307903.3244772,
+    "ast_hash": "e381e2e955547b306d117639eaae1820",
+    "semantic_hash": "e381e2e955547b306d117639eaae1820"
+  },
+  "deploy.ps1": {
+    "mtime": 1787307504.3810441,
+    "seen": 1787307903.3244772,
+    "ast_hash": "c64a6e800b1676271b18110d6ab62266",
+    "semantic_hash": "c64a6e800b1676271b18110d6ab62266"
+  },
+  "sw.js": {
+    "mtime": 1787307507.9938574,
+    "seen": 1787307903.3244772,
+    "ast_hash": "c15b767b67b97189ec3ac7c9e7c24f87",
+    "semantic_hash": "c15b767b67b97189ec3ac7c9e7c24f87"
+  },
+  "update_enemies.js": {
+    "mtime": 1786432280.8495095,
+    "seen": 1787307903.3244772,
+    "ast_hash": "d742f5e11ddac3ca3a37583dfcc1ee62",
+    "semantic_hash": "d742f5e11ddac3ca3a37583dfcc1ee62"
+  },
+  "update_enemies.py": {
+    "mtime": 1786435419.41257,
+    "seen": 1787307903.3244772,
+    "ast_hash": "2d96830e755a4a017444f5864921cfc7",
+    "semantic_hash": "2d96830e755a4a017444f5864921cfc7"
+  },
+  "assets/sounds/aegishsield.mp3": {
+    "mtime": 1780120889.4916587,
+    "seen": 1787307903.3244772,
+    "ast_hash": "9f865c2e4bd05bde33f132d5a3bccc4c",
+    "semantic_hash": "9f865c2e4bd05bde33f132d5a3bccc4c"
+  },
+  "assets/sounds/bazooka.mp3": {
+    "mtime": 1780120289.2591114,
+    "seen": 1787307903.3244772,
+    "ast_hash": "7db60a63c7697c42c97de356196eb569",
+    "semantic_hash": "7db60a63c7697c42c97de356196eb569"
+  },
+  "assets/sounds/bomb.mp3": {
+    "mtime": 1780120535.368883,
+    "seen": 1787307903.3244772,
+    "ast_hash": "7fd06812b70ed8f949b11bb1eafb851a",
+    "semantic_hash": "7fd06812b70ed8f949b11bb1eafb851a"
+  },
+  "assets/sounds/buckler.mp3": {
+    "mtime": 1780120853.497344,
+    "seen": 1787307903.3244772,
+    "ast_hash": "67d46fa21de0f7b2524c1de090cec827",
+    "semantic_hash": "67d46fa21de0f7b2524c1de090cec827"
+  },
+  "assets/sounds/checkin.mp3": {
+    "mtime": 1780119167.7860425,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3035aeaae7e077554883d1ba7762adf9",
+    "semantic_hash": "3035aeaae7e077554883d1ba7762adf9"
+  },
+  "assets/sounds/clearlevel.wav": {
+    "mtime": 1780119557.2767873,
+    "seen": 1787307903.3244772,
+    "ast_hash": "fd7b6f8ea5cd62ff77acf3ea8451318b",
+    "semantic_hash": "fd7b6f8ea5cd62ff77acf3ea8451318b"
+  },
+  "assets/sounds/completing task.wav": {
+    "mtime": 1780119307.895188,
+    "seen": 1787307903.3244772,
+    "ast_hash": "edef0c9f8c22e922c91a1d8c5f789039",
+    "semantic_hash": "edef0c9f8c22e922c91a1d8c5f789039"
+  },
+  "assets/sounds/crit.mp3": {
+    "mtime": 1780118667.435089,
+    "seen": 1787307903.3244772,
+    "ast_hash": "2525ebbebe115243e569e20b067bf893",
+    "semantic_hash": "2525ebbebe115243e569e20b067bf893"
+  },
+  "assets/sounds/dagger.mp3": {
+    "mtime": 1780120766.2867627,
+    "seen": 1787307903.3244772,
+    "ast_hash": "944cbe449870e772006fb4ebf3614f34",
+    "semantic_hash": "944cbe449870e772006fb4ebf3614f34"
+  },
+  "assets/sounds/death.mp3": {
+    "mtime": 1780118999.6700134,
+    "seen": 1787307903.3244772,
+    "ast_hash": "6444003298cda2a1f1e0d07c3d727dab",
+    "semantic_hash": "6444003298cda2a1f1e0d07c3d727dab"
+  },
+  "assets/sounds/deathdefy.wav": {
+    "mtime": 1780119434.6936865,
+    "seen": 1787307903.3244772,
+    "ast_hash": "e4fb02c79e61849a9a2cd207e8589bbc",
+    "semantic_hash": "e4fb02c79e61849a9a2cd207e8589bbc"
+  },
+  "assets/sounds/deathspell.mp3": {
+    "mtime": 1780120249.5221293,
+    "seen": 1787307903.3244772,
+    "ast_hash": "2fb0adb1a3c7d7bbf24e8ce687e01a5c",
+    "semantic_hash": "2fb0adb1a3c7d7bbf24e8ce687e01a5c"
+  },
+  "assets/sounds/drinkconsumable.mp3": {
+    "mtime": 1780118761.9411023,
+    "seen": 1787307903.3244772,
+    "ast_hash": "1fcd4e8d2817bbfde9e6eeb4d065f6a8",
+    "semantic_hash": "1fcd4e8d2817bbfde9e6eeb4d065f6a8"
+  },
+  "assets/sounds/echobow.mp3": {
+    "mtime": 1780120663.770707,
+    "seen": 1787307903.3244772,
+    "ast_hash": "2edf2ba0fa731a96484cdfdf3a1ee397",
+    "semantic_hash": "2edf2ba0fa731a96484cdfdf3a1ee397"
+  },
+  "assets/sounds/greathammer.mp3": {
+    "mtime": 1780120320.4883752,
+    "seen": 1787307903.3244772,
+    "ast_hash": "a4ed34e9215ef2dc39152b11ed21b70f",
+    "semantic_hash": "a4ed34e9215ef2dc39152b11ed21b70f"
+  },
+  "assets/sounds/grimoire.mp3": {
+    "mtime": 1780120699.9538643,
+    "seen": 1787307903.3244772,
+    "ast_hash": "eb462c7d666db94cb4bcd93c99b9b49b",
+    "semantic_hash": "eb462c7d666db94cb4bcd93c99b9b49b"
+  },
+  "assets/sounds/heal.wav": {
+    "mtime": 1780119255.4372277,
+    "seen": 1787307903.3244772,
+    "ast_hash": "4883df795c520507dc6237139e6e7f56",
+    "semantic_hash": "4883df795c520507dc6237139e6e7f56"
+  },
+  "assets/sounds/heavyhammer.mp3": {
+    "mtime": 1780120371.1701086,
+    "seen": 1787307903.3244772,
+    "ast_hash": "0b589d8e55af3c235cc2068e0c8b23f6",
+    "semantic_hash": "0b589d8e55af3c235cc2068e0c8b23f6"
+  },
+  "assets/sounds/kill.mp3": {
+    "mtime": 1780118616.982042,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3d10b848cc3947f0cada7380be837450",
+    "semantic_hash": "3d10b848cc3947f0cada7380be837450"
+  },
+  "assets/sounds/lazer.mp3": {
+    "mtime": 1780120084.6105337,
+    "seen": 1787307903.3244772,
+    "ast_hash": "b3a866d30f7acfd33c849dd1e6eab3a2",
+    "semantic_hash": "b3a866d30f7acfd33c849dd1e6eab3a2"
+  },
+  "assets/sounds/opening tab.wav": {
+    "mtime": 1780119411.3638647,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3126203e3699b70d382f26f344d7aa56",
+    "semantic_hash": "3126203e3699b70d382f26f344d7aa56"
+  },
+  "assets/sounds/pet (2).mp3": {
+    "mtime": 1780119473.1445518,
+    "seen": 1787307903.3244772,
+    "ast_hash": "3d0a2d8f1641e4b95789d136b98d9ed5",
+    "semantic_hash": "3d0a2d8f1641e4b95789d136b98d9ed5"
+  },
+  "assets/sounds/rustysword.mp3": {
+    "mtime": 1779621001.5590675,
+    "seen": 1787307903.3244772,
+    "ast_hash": "92120bc488b7531d3c61ef7f82353b57",
+    "semantic_hash": "92120bc488b7531d3c61ef7f82353b57"
+  },
+  "assets/sounds/thunderhammer.mp3": {
+    "mtime": 1780120783.485386,
+    "seen": 1787307903.3244772,
+    "ast_hash": "7204549f9c409a488e0e5e427d55e710",
+    "semantic_hash": "7204549f9c409a488e0e5e427d55e710"
+  },
+  "assets/sounds/uzi.mp3": {
+    "mtime": 1780120097.9458425,
+    "seen": 1787307903.3244772,
+    "ast_hash": "9cb33d6a3377b8b822a8a332f76623fc",
+    "semantic_hash": "9cb33d6a3377b8b822a8a332f76623fc"
+  },
+  "assets/sounds/vampiredagger.mp3": {
+    "mtime": 1780120729.5949512,
+    "seen": 1787307903.3244772,
+    "ast_hash": "0d35cdad7c07b1f574ccdee5179a2a1a",
+    "semantic_hash": "0d35cdad7c07b1f574ccdee5179a2a1a"
+  },
+  "assets/sounds/vinespell.mp3": {
+    "mtime": 1780120837.944316,
+    "seen": 1787307903.3244772,
+    "ast_hash": "a038f4eea9e5069024723ce250ccc74a",
+    "semantic_hash": "a038f4eea9e5069024723ce250ccc74a"
+  }
+}

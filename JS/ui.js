@@ -1820,7 +1820,7 @@ class UIManager {
       </div>
       <div id="gameCenter" class="game-center">
         <div class="center-drag-handle" id="centerDragHandle"></div>
-        <div class="stage-date-wrap">
+        <div class="stage-date-wrap" style="display: none;">
           <div id="dateDisplay" class="date-display stage-date"></div>
         </div>
         <div class="enemy-circle-container">
@@ -1965,7 +1965,8 @@ class UIManager {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
       document.removeEventListener('pointercancel', onUp);
-      handle.releasePointerCapture(e.pointerId);
+      try { handle?.releasePointerCapture(e.pointerId); } catch (err) {}
+      try { centerGroup?.releasePointerCapture(e.pointerId); } catch (err) {}
       localStorage.setItem('nemesis_center_pos', JSON.stringify({
         tx: currentTx,
         ty: currentTy
@@ -1973,12 +1974,16 @@ class UIManager {
     };
 
     const onDown = (e) => {
+      // If clicking interactive buttons, cards, or inputs inside circle, do not start drag
+      if (e.target.closest('button, .enemy-card, .btn-action-circle, input, textarea, a, select')) {
+        return;
+      }
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
       initialTx = currentTx;
       initialTy = currentTy;
-      handle.setPointerCapture(e.pointerId);
+      try { (e.currentTarget || handle).setPointerCapture(e.pointerId); } catch (err) {}
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onUp);
       document.addEventListener('pointercancel', onUp);
@@ -1986,6 +1991,10 @@ class UIManager {
 
     if (handle) {
       handle.addEventListener('pointerdown', onDown);
+    }
+    if (centerGroup) {
+      centerGroup.style.touchAction = 'none';
+      centerGroup.addEventListener('pointerdown', onDown);
     }
 
     const rcPanel = document.getElementById('runCompletionPanel');
@@ -2259,6 +2268,12 @@ class UIManager {
     cosmeticsHandle.innerHTML = `<span class="icon">✨</span><span class="label">VISUALS</span>`;
     leftDock.appendChild(cosmeticsHandle);
 
+    const checklistHandle = document.createElement('button');
+    checklistHandle.id = 'checklistTabHandle';
+    checklistHandle.className = 'tab-handle tab-handle-right tab-handle-right-checklist';
+    checklistHandle.innerHTML = `<span class="badge" id="checklistBadge"></span><span class="label">CHECKLIST</span><span class="icon">☑️</span>`;
+    rightDock.appendChild(checklistHandle);
+
     const rightHandle = document.createElement('button');
     rightHandle.id = 'todosTabHandle';
     rightHandle.className = 'tab-handle tab-handle-right';
@@ -2477,6 +2492,34 @@ class UIManager {
         UIManager.updateCosmeticsList();
       });
     });
+
+    // Right tab - Checklist (Dailies Left, Todos Right)
+    const checklistTab = document.createElement('div');
+    checklistTab.id = 'checklistPanel';
+    checklistTab.className = 'pull-tab right-tab';
+    checklistTab.innerHTML = `
+      <div class="tab-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-family: 'Orbitron', monospace; font-size: 13px; color: #a5b4fc;">☑️ CHECKLIST</h3>
+        <button class="tab-close" title="Close Panel">✕</button>
+      </div>
+      <div class="checklist-body">
+        <div class="checklist-column" id="checklistDailiesCol">
+          <div class="checklist-col-header">
+            <span>📅 DAILIES</span>
+            <span class="checklist-col-count" id="checklistDailiesCount">0</span>
+          </div>
+          <div class="checklist-col-items" id="checklistDailiesList"></div>
+        </div>
+        <div class="checklist-column" id="checklistTodosCol">
+          <div class="checklist-col-header">
+            <span>📋 TO-DOS</span>
+            <span class="checklist-col-count" id="checklistTodosCount">0</span>
+          </div>
+          <div class="checklist-col-items" id="checklistTodosList"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(checklistTab);
 
     // Right tab - To-Dos
     const rightTab = document.createElement('div');
@@ -5092,6 +5135,7 @@ class UIManager {
     });
 
     document.getElementById('dailiesTabHandle').addEventListener('click', () => this.toggleTaskPanel('dailies'));
+    document.getElementById('checklistTabHandle')?.addEventListener('click', () => this.toggleTaskPanel('checklist'));
     document.getElementById('todosTabHandle').addEventListener('click', () => this.toggleTaskPanel('todos'));
     document.getElementById('dailyToTodoPullBtn')?.addEventListener('click', () => {
       this.toggleTaskPanel('todos');
@@ -5100,6 +5144,7 @@ class UIManager {
       this.toggleTaskPanel('dailies');
     });
     document.getElementById('dailiesPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('dailies'));
+    document.getElementById('checklistPanel')?.querySelector('.tab-close')?.addEventListener('click', () => this.closeTaskPanel('checklist'));
     document.getElementById('todosPanel').querySelector('.tab-close').addEventListener('click', () => this.closeTaskPanel('todos'));
 
     // Border Touch Swipe to open Dailies & Todos (Extreme edges only: <=15px or >=winWidth-15px)
@@ -5425,7 +5470,7 @@ class UIManager {
   }
 
   static toggleTaskPanel(which) {
-    const panels = ['dailies', 'todos', 'achievements', 'pet', 'cosmetics'];
+    const panels = ['dailies', 'checklist', 'todos', 'achievements', 'pet', 'cosmetics'];
     panels.forEach(p => {
       if (p !== which) {
         this.closeTaskPanel(p);
@@ -5433,16 +5478,17 @@ class UIManager {
     });
 
     const panelId = which === 'dailies' ? 'dailiesPanel' :
-      which === 'todos' ? 'todosPanel' :
-        which === 'achievements' ? 'achievementsPanel' :
-          which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
+      which === 'checklist' ? 'checklistPanel' :
+        which === 'todos' ? 'todosPanel' :
+          which === 'achievements' ? 'achievementsPanel' :
+            which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     if (!panel) return;
     const open = panel.classList.contains('open');
     this.closeTaskPanel(which);
     if (!open) {
       panel.classList.add('open');
-      if (which === 'dailies' || which === 'todos') {
+      if (which === 'dailies' || which === 'todos' || which === 'checklist') {
         const fw = document.getElementById('focusCircleWidget');
         if (fw) fw.style.display = 'block';
       } else {
@@ -5452,7 +5498,9 @@ class UIManager {
       // After the open transition, ensure the board is rendered and positioned
       setTimeout(() => {
         try {
-          if (which === 'todos') {
+          if (which === 'checklist') {
+            this.updateChecklistPanel();
+          } else if (which === 'todos') {
             this.updateTodosList();
             this.positionTodoCards();
           } else if (which === 'dailies') {
@@ -5475,9 +5523,10 @@ class UIManager {
 
   static closeTaskPanel(which) {
     const panelId = which === 'dailies' ? 'dailiesPanel' :
-      which === 'todos' ? 'todosPanel' :
-        which === 'achievements' ? 'achievementsPanel' :
-          which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
+      which === 'checklist' ? 'checklistPanel' :
+        which === 'todos' ? 'todosPanel' :
+          which === 'achievements' ? 'achievementsPanel' :
+            which === 'cosmetics' ? 'cosmeticsPanel' : 'petPanel';
     const panel = document.getElementById(panelId);
     panel?.classList.remove('open');
     if (which === 'dailies') {
@@ -5536,6 +5585,237 @@ class UIManager {
       `;
     });
     container.innerHTML = html;
+  }
+
+  static updateChecklistPanel() {
+    const state = getGameState();
+    const dailiesListEl = document.getElementById('checklistDailiesList');
+    const todosListEl = document.getElementById('checklistTodosList');
+    const dailiesCountEl = document.getElementById('checklistDailiesCount');
+    const todosCountEl = document.getElementById('checklistTodosCount');
+
+    if (!dailiesListEl || !todosListEl) return;
+
+    const escapeHTML = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    // 1. Render Dailies
+    const dailies = state.dailiesState?.dailies || [];
+    const activeDailies = dailies.filter(d => !d.locked);
+    const completedDailiesCount = activeDailies.filter(d => d.completed).length;
+    if (dailiesCountEl) {
+      dailiesCountEl.textContent = `${completedDailiesCount}/${activeDailies.length}`;
+    }
+
+    if (activeDailies.length === 0) {
+      dailiesListEl.innerHTML = `<div class="checklist-empty">No active dailies</div>`;
+    } else {
+      dailiesListEl.innerHTML = activeDailies.map((daily, index) => {
+        const attrColor = this.getAttributeColor(daily.attribute);
+        const isCompleted = !!daily.completed;
+        const diff = daily.difficulty || 'Easy';
+        return `
+          <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
+               data-task-id="${daily.id}" 
+               data-task-type="daily" 
+               data-index="${index}" 
+               draggable="true"
+               style="border-left-color: ${attrColor};">
+            <button class="checklist-checkbox-btn" data-action="toggle-daily" data-task-id="${daily.id}" title="${isCompleted ? 'Completed' : 'Mark Done'}">
+              ${isCompleted ? '✓' : ''}
+            </button>
+            <div class="checklist-item-content">
+              <div class="checklist-item-header">
+                <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(daily.name || daily.baseName || 'Daily')}</span>
+                <span class="checklist-attr-tag" style="background: ${attrColor};">${daily.attribute || 'RESP'}</span>
+              </div>
+              <div class="checklist-item-meta">
+                <span>${diff}</span>
+                ${daily.maxCompletionsPerDay > 1 ? `<span>• ${daily.completionsToday || 0}/${daily.maxCompletionsPerDay}</span>` : ''}
+                ${daily.bloodOathActive ? `<span style="color: #ef4444;">• Oath</span>` : ''}
+              </div>
+            </div>
+            <span class="checklist-drag-handle" title="Drag to reorder">⋮⋮</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 2. Render Todos
+    const todos = state.dailiesState?.todos || [];
+    const completedTodosCount = todos.filter(t => t.completed).length;
+    if (todosCountEl) {
+      todosCountEl.textContent = `${completedTodosCount}/${todos.length}`;
+    }
+
+    if (todos.length === 0) {
+      todosListEl.innerHTML = `<div class="checklist-empty">No to-dos</div>`;
+    } else {
+      todosListEl.innerHTML = todos.map((todo, index) => {
+        const attrColor = this.getAttributeColor(todo.attribute);
+        const isCompleted = !!todo.completed;
+        const diff = todo.difficulty || 'Easy';
+        const subtasksCount = (todo.subtasks || []).length;
+        const subtasksDone = (todo.subtasks || []).filter(s => s.completed).length;
+        return `
+          <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
+               data-task-id="${todo.id}" 
+               data-task-type="todo" 
+               data-index="${index}" 
+               draggable="true"
+               style="border-left-color: ${attrColor};">
+            <button class="checklist-checkbox-btn" data-action="toggle-todo" data-task-id="${todo.id}" title="${isCompleted ? 'Completed' : 'Mark Done'}">
+              ${isCompleted ? '✓' : ''}
+            </button>
+            <div class="checklist-item-content">
+              <div class="checklist-item-header">
+                <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(todo.name || 'To-Do')}</span>
+                <span class="checklist-attr-tag" style="background: ${attrColor};">${todo.attribute || 'RESP'}</span>
+              </div>
+              <div class="checklist-item-meta">
+                <span>${diff}</span>
+                ${subtasksCount > 0 ? `<span>• Subtasks: ${subtasksDone}/${subtasksCount}</span>` : ''}
+                ${todo.bloodOathActive ? `<span style="color: #ef4444;">• Oath</span>` : ''}
+              </div>
+            </div>
+            <span class="checklist-drag-handle" title="Drag to reorder">⋮⋮</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Bind item click and checkbox handlers
+    this.bindChecklistEvents();
+  }
+
+  static bindChecklistEvents() {
+    const checklistPanel = document.getElementById('checklistPanel');
+    if (!checklistPanel || checklistPanel.dataset.eventsBound === '1') return;
+    checklistPanel.dataset.eventsBound = '1';
+
+    // Click handler for checkboxes & cards
+    checklistPanel.addEventListener('click', (e) => {
+      const state = getGameState();
+      const checkbox = e.target.closest('.checklist-checkbox-btn');
+      if (checkbox) {
+        e.stopPropagation();
+        const action = checkbox.dataset.action;
+        const taskId = checkbox.dataset.taskId;
+        if (!taskId) return;
+
+        if (action === 'toggle-daily') {
+          const daily = state.dailiesState.dailies.find(d => d.id === taskId);
+          if (!daily || daily.completed) return;
+          const res = TaskManager.completeDaily(taskId);
+          if (res && res.success) {
+            try { state.save(); } catch (err) {}
+            this.updateChecklistPanel();
+            this.scheduleUpdateDailiesList();
+            this.updateDailyTopStats(true);
+            this.renderEnemies();
+            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+              const card = checkbox.closest('.checklist-item');
+              if (card) RetroTaskCompleteAnimation.play(card);
+            }
+          }
+        } else if (action === 'toggle-todo') {
+          const todo = state.dailiesState.todos.find(t => t.id === taskId);
+          if (!todo || todo.completed) return;
+          const res = TaskManager.completeTodo(taskId);
+          if (res && res.success) {
+            try { state.save(); } catch (err) {}
+            this.updateChecklistPanel();
+            this.updateTodosList();
+            this.renderEnemies();
+            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
+              const card = checkbox.closest('.checklist-item');
+              if (card) RetroTaskCompleteAnimation.play(card);
+            }
+          }
+        }
+        return;
+      }
+    });
+
+    // Drag & Drop reordering setup for both columns
+    const setupColumnDnd = (colId, listType) => {
+      const container = document.getElementById(colId);
+      if (!container) return;
+
+      let draggedEl = null;
+
+      container.addEventListener('dragstart', (e) => {
+        const item = e.target.closest('.checklist-item');
+        if (!item) return;
+        draggedEl = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', item.dataset.taskId || '');
+      });
+
+      container.addEventListener('dragend', () => {
+        if (draggedEl) {
+          draggedEl.classList.remove('dragging');
+          draggedEl = null;
+        }
+        container.querySelectorAll('.checklist-item').forEach(el => el.classList.remove('drag-over'));
+      });
+
+      container.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const targetItem = e.target.closest('.checklist-item');
+        if (!targetItem || targetItem === draggedEl) return;
+        container.querySelectorAll('.checklist-item').forEach(el => {
+          if (el !== targetItem) el.classList.remove('drag-over');
+        });
+        targetItem.classList.add('drag-over');
+      });
+
+      container.addEventListener('dragleave', (e) => {
+        const targetItem = e.target.closest('.checklist-item');
+        if (targetItem && !targetItem.contains(e.relatedTarget)) {
+          targetItem.classList.remove('drag-over');
+        }
+      });
+
+      container.addEventListener('drop', (e) => {
+        e.preventDefault();
+        container.querySelectorAll('.checklist-item').forEach(el => el.classList.remove('drag-over'));
+        const targetItem = e.target.closest('.checklist-item');
+        if (!targetItem || !draggedEl || targetItem === draggedEl) return;
+
+        const state = getGameState();
+        const fromId = draggedEl.dataset.taskId;
+        const toId = targetItem.dataset.taskId;
+
+        if (listType === 'daily') {
+          const list = state.dailiesState.dailies;
+          const fromIdx = list.findIndex(d => d.id === fromId);
+          const toIdx = list.findIndex(d => d.id === toId);
+          if (fromIdx !== -1 && toIdx !== -1) {
+            const [moved] = list.splice(fromIdx, 1);
+            list.splice(toIdx, 0, moved);
+            try { state.save(); } catch (err) {}
+            UIManager.updateChecklistPanel();
+            UIManager.scheduleUpdateDailiesList();
+          }
+        } else if (listType === 'todo') {
+          const list = state.dailiesState.todos;
+          const fromIdx = list.findIndex(t => t.id === fromId);
+          const toIdx = list.findIndex(t => t.id === toId);
+          if (fromIdx !== -1 && toIdx !== -1) {
+            const [moved] = list.splice(fromIdx, 1);
+            list.splice(toIdx, 0, moved);
+            try { state.save(); } catch (err) {}
+            UIManager.updateChecklistPanel();
+            UIManager.updateTodosList();
+          }
+        }
+      });
+    };
+
+    setupColumnDnd('checklistDailiesList', 'daily');
+    setupColumnDnd('checklistTodosList', 'todo');
   }
 
   static updateCosmeticsList() {
@@ -7246,11 +7526,19 @@ class UIManager {
       }
     }
 
-    if (detail.combo === 0) {
-      comboEl.style.display = 'none';
-    } else {
-      comboEl.style.display = 'block';
-      ComboAnimation.show(comboEl, detail.combo);
+    if (comboEl) comboEl.style.display = 'none';
+
+    if (detail && detail.combo > 0) {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2 - 40;
+      if (typeof FloatingDamageNumber !== 'undefined' && FloatingDamageNumber.show) {
+        FloatingDamageNumber.show(centerX, centerY, `COMBO ×${detail.combo}`, {
+          color: '#22d3ee',
+          scale: 1.15,
+          duration: 900,
+          fadeDelay: 350
+        });
+      }
     }
   }
 
@@ -12392,11 +12680,7 @@ class UIManager {
   static updateDateDisplay() {
     const el = document.getElementById('dateDisplay');
     if (!el) return;
-
-    const now = new Date();
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-    const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-    el.innerHTML = `<div>${dayName}</div><div>${dateStr}</div>`;
+    el.innerHTML = '';
   }
 
   static updateStageIndicator() {

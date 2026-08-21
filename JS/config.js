@@ -268,41 +268,41 @@ const DEFAULT_GAME_CONFIG = {
     default: '#9d6bff'
   },
   weaponElementTypes: ['Air', 'Earth', 'Fire', 'Water', 'Aether'],
-  stageLevelBudgets: [100, 150, 200, 250],
-  strongArchetypeDiscountPerLevel: 0.25,
+  stageLevelBudgets: [80, 105, 130, 160],
+  strongArchetypeDiscountPerLevel: 0.12,
   enemyArchetypes: {
     Fodder: {
-      baseCost: 5,
+      baseCost: 8,
       hpMult: 0.4,
       dmgMult: 0.4,
       icon: '💀',
       description: 'Low health and damage. Attacks drain MN mana (stage + 4).'
     },
     Brute: {
-      baseCost: 12,
-      hpMult: 0.6,
-      dmgMult: 2.0,
+      baseCost: 15,
+      hpMult: 0.7,
+      dmgMult: 1.6,
       icon: '💥',
       description: 'High damage, low health. Devastating offensive threat.'
     },
     Support: {
-      baseCost: 10,
-      hpMult: 1.0,
+      baseCost: 13,
+      hpMult: 0.9,
       dmgMult: 0.0,
       icon: '💚',
       description: 'No damage, medium health. Heals lowest-HP ally for 20% max HP on attack and doubles daily mutation chance for allies.'
     },
     Protector: {
-      baseCost: 12,
-      hpMult: 1.5,
+      baseCost: 16,
+      hpMult: 1.4,
       dmgMult: 0.6,
       icon: '🛡️',
       description: 'High health. Grants 70% damage reduction (0.3x damage taken) to adjacent living enemies.'
     },
     Commander: {
-      baseCost: 20,
-      hpMult: 2.5,
-      dmgMult: 2.5,
+      baseCost: 24,
+      hpMult: 2.0,
+      dmgMult: 2.0,
       icon: '👑',
       description: 'High health and high damage apex unit.'
     }
