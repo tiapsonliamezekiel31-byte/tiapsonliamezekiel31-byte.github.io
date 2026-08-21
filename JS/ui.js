@@ -5681,14 +5681,25 @@ class UIManager {
 
         if (action === 'toggle-daily') {
           const daily = state.dailiesState.dailies.find(d => d.id === taskId);
-          if (!daily || daily.completed) return;
-          const res = TaskManager.completeDaily(taskId);
-          if (res && res.success) {
-            try { state.save(); } catch (err) {}
-            this.updateChecklistPanel();
-            this.scheduleUpdateDailiesList();
-            this.updateDailyTopStats(true);
-            this.renderEnemies();
+          if (!daily) return;
+          if (daily.completed) {
+            const res = TaskManager.uncompleteDaily(taskId);
+            if (res && res.success) {
+              try { state.save(); } catch (err) {}
+              this.updateChecklistPanel();
+              this.scheduleUpdateDailiesList();
+              this.updateDailyTopStats(true);
+              this.renderEnemies();
+            }
+          } else {
+            const res = TaskManager.completeDaily(taskId);
+            if (res && res.success) {
+              try { state.save(); } catch (err) {}
+              this.updateChecklistPanel();
+              this.scheduleUpdateDailiesList();
+              this.updateDailyTopStats(true);
+              this.renderEnemies();
+            }
           }
         } else if (action === 'toggle-todo') {
           const todo = state.dailiesState.todos.find(t => t.id === taskId);

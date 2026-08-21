@@ -762,6 +762,17 @@ class TaskManager {
     directRewards.keys = keysAwarded;
     const hasReleasedHeld = (releasedHeld.ap > 0 || releasedHeld.gold > 0 || releasedHeld.diamonds > 0);
 
+    // Track awarded rewards on daily for refund support if unchecked
+    if (!Array.isArray(daily._rewardHistory)) daily._rewardHistory = [];
+    daily._rewardHistory.push({
+      ap: totalAp,
+      gold: totalGold,
+      diamonds: totalDiamonds,
+      petPoints: petPointsAwarded,
+      keys: keysAwarded,
+      releasedHeld: hasReleasedHeld ? { ...releasedHeld } : null
+    });
+
     return {
       success: true,
       rewards: directRewards,
@@ -769,6 +780,64 @@ class TaskManager {
       releasedHeldRewards: hasReleasedHeld ? releasedHeld : null,
       completed: daily.completed,
       isJackpot
+    };
+  }
+
+  static uncompleteDaily(dailyId) {
+    const state = getGameState();
+    const daily = state.dailiesState.dailies.find(d => d.id === dailyId);
+
+    if (!daily) return false;
+    if (!daily.completed && (daily.completionsToday || 0) <= 0) return false;
+
+    // Pop the latest rewarded amount or calculate base fallback
+    let refund = null;
+    if (Array.isArray(daily._rewardHistory) && daily._rewardHistory.length > 0) {
+      refund = daily._rewardHistory.pop();
+    } else {
+      const reward = state.config.taskRewards[daily.difficulty] || { ap: 10, gold: 10, diamonds: 1 };
+      refund = {
+        ap: reward.ap,
+        gold: reward.gold,
+        diamonds: reward.diamonds,
+        petPoints: 1,
+        keys: 0,
+        releasedHeld: null
+      };
+    }
+
+    // Refund / Deduct resources from player
+    if (refund) {
+      if (refund.ap > 0) state.spendAp(refund.ap);
+      if (refund.gold > 0) state.setGold(Math.max(0, state.playerState.gold - refund.gold));
+      if (refund.diamonds > 0) state.spendDiamonds(refund.diamonds);
+      if (refund.petPoints > 0) state.playerState.petPoints = Math.max(0, (state.playerState.petPoints || 0) - refund.petPoints);
+      if (refund.keys > 0 && typeof state.spendLootboxKeys === 'function') {
+        state.spendLootboxKeys(refund.keys);
+      }
+      // Restore held rewards pool if they were released during completion
+      if (refund.releasedHeld) {
+        state.dailiesState.heldRewards = {
+          ap: this.roundValue((state.dailiesState.heldRewards?.ap || 0) + (refund.releasedHeld.ap || 0), 1),
+          gold: this.roundValue((state.dailiesState.heldRewards?.gold || 0) + (refund.releasedHeld.gold || 0), 1),
+          diamonds: this.roundValue((state.dailiesState.heldRewards?.diamonds || 0) + (refund.releasedHeld.diamonds || 0), 1),
+          attributePoints: this.roundValue((state.dailiesState.heldRewards?.attributePoints || 0) + (refund.releasedHeld.attributePoints || 0), 2)
+        };
+      }
+    }
+
+    if (state.systemState?.runStats?.tasksCompleted > 0) {
+      state.systemState.runStats.tasksCompleted--;
+    }
+
+    // Decrement completion count
+    daily.completionsToday = Math.max(0, (daily.completionsToday || 1) - 1);
+    daily.completed = false;
+
+    return {
+      success: true,
+      refunded: refund,
+      completed: false
     };
   }
 

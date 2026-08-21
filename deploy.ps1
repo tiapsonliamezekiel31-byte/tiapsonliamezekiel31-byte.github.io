@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: make checklist full width with invisible movable slots, hide done todos, grey out done dailies, zero completion animations"
+$commitMsg = "feat: make dailies uncheckable and refund rewards upon unchecking"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
