@@ -11,13 +11,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=20260821-warm-paper">
-  <link rel="stylesheet" href="css/style_tycoon.css?v=20260821-warm-paper">
+  <link rel="stylesheet" href="css/style.css?v=20260606c">
+  <link rel="stylesheet" href="css/style_tycoon.css?v=20260619c">
   <script>
     (async function () {
       try {
-        if (!localStorage.getItem('nemesis_emergency_fix_v5')) {
-          localStorage.setItem('nemesis_emergency_fix_v5', 'true');
+        if (!localStorage.getItem('nemesis_emergency_fix_v3')) {
+          localStorage.setItem('nemesis_emergency_fix_v3', 'true');
           const keys = await caches.keys();
           for (const key of keys) {
             await caches.delete(key);
@@ -26,7 +26,7 @@
           for (const r of regs) {
             await r.unregister();
           }
-          window.location.replace(window.location.href.split('?')[0] + '?forced=5');
+          window.location.replace(window.location.href.split('?')[0] + '?forced=3');
         }
       } catch (e) { }
     })();
@@ -44,30 +44,30 @@
   </div>
 
   <!-- Core Systems -->
-  <script src="JS/config.js?v=20260821-warm-paper"></script>
-  <script src="JS/core.js?v=20260821-warm-paper"></script>
-  <script src="JS/animations.js?v=20260821-warm-paper"></script>
+  <script src="JS/config.js?v=20260720a"></script>
+  <script src="JS/core.js?v=20260720a"></script>
+  <script src="JS/animations.js?v=20260720a"></script>
 
   <!-- Game Systems -->
-  <script src="JS/player.js?v=20260821-warm-paper"></script>
-  <script src="JS/tasks.js?v=20260821-warm-paper"></script>
-  <script src="JS/enemy.js?v=20260821-warm-paper"></script>
-  <script src="JS/stage.js?v=20260821-warm-paper"></script>
-  <script src="JS/combat.js?v=20260821-warm-paper"></script>
+  <script src="JS/player.js?v=20260720a"></script>
+  <script src="JS/tasks.js?v=20260720a"></script>
+  <script src="JS/enemy.js?v=20260720a"></script>
+  <script src="JS/stage.js?v=20260720a"></script>
+  <script src="JS/combat.js?v=20260720a"></script>
 
   <!-- UI Systems -->
-  <script src="JS/sound.js?v=20260821-warm-paper"></script>
-  <script src="JS/shop.js?v=20260821-warm-paper"></script>
-  <script src="JS/ui.js?v=20260821-warm-paper"></script>
-  <script src="JS/popups.js?v=20260821-warm-paper"></script>
-  <script src="JS/inventory.js?v=20260821-warm-paper"></script>
+  <script src="JS/sound.js?v=20260720a"></script>
+  <script src="JS/shop.js?v=20260720a"></script>
+  <script src="JS/ui.js?v=20260720a"></script>
+  <script src="JS/popups.js?v=20260720a"></script>
+  <script src="JS/inventory.js?v=20260720a"></script>
 
   <!-- Tycoon Mode -->
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <script defer src="JS/multiplayer.js"></script>
-  <script defer src="JS/tycoon_worker_code.js?v=20260821-warm-paper"></script>
-  <script defer src="JS/tycoon.js?v=20260821-warm-paper"></script>
+  <script defer src="JS/tycoon_worker_code.js?v=20260619c"></script>
+  <script defer src="JS/tycoon.js?v=20260619c"></script>
 
   <!-- Game Initialization -->
   <script>

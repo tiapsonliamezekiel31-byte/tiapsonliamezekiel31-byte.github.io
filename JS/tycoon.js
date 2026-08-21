@@ -2438,7 +2438,7 @@
         const ratio = elapsed / 4;
         return {
           phase: 'dusk',
-          ambientColor: `rgba(27, 45, 60, ${0.22 * ratio})`,
+          ambientColor: `rgba(139, 92, 246, ${0.22 * ratio})`,
           isDark: true,
           darknessIntensity: 0.22 * ratio
         };

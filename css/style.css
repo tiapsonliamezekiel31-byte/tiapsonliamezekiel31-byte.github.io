@@ -4,7 +4,6 @@
  */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&display=swap');
 
 /* BOTTOM BUTTONS CONTAINER & FLOATING BUTTONS */
 .bottom-buttons-container {
@@ -310,45 +309,30 @@
 }
 
 :root {
-  /* Editorial Warm Paper Design System */
-  --bg-paper: #FAF7F2;
-  --bg-surface: #FFFFFF;
-  --bg-surface-subtle: #F3EFE6;
-  --ink-primary: #1A1A1A;
-  --ink-secondary: #3A3A3A;
-  --ink-muted: #767676;
-  --accent-forest: #1B4332;
-  --accent-forest-light: #2D5A43;
-  --accent-forest-border: #132E22;
-  --border-paper: #DCD5C5;
-  --font-serif: 'Cinzel', 'Newsreader', Georgia, serif;
-  --font-mono: 'Orbitron', monospace;
-
-  /* Legacy mapped variables */
   --primary-dark: #090704;
   --primary-dark2: #120e08;
   --primary-dark3: #1c160c;
-  --accent-gold: #C89B3C;
-  --accent-gold-light: #E0BA62;
-  --accent-gold-dark: #A27B2B;
-  --accent-purple: #1B4332; /* Remapped from purple to forest green */
+  --accent-gold: #ffd700;
+  --accent-gold-light: #ffe566;
+  --accent-gold-dark: #b8860b;
+  --accent-purple: #ffd700; /* Remapped to gold theme */
   /* Warm retro accents */
-  --accent-warm-orange: #d97706;
-  --accent-copper: #b45309;
+  --accent-warm-orange: #f59e0b;
+  --accent-copper: #d97706;
   --accent-blood-red: #8b3a3a;
-  --panel-glass: rgba(26, 26, 26, 0.92);
-  --panel-glass-strong: rgba(18, 18, 18, 0.97);
-  --text-white: #FAF7F2;
-  --text-gold: #C89B3C;
+  --panel-glass: rgba(18, 14, 8, 0.88);
+  --panel-glass-strong: rgba(12, 9, 5, 0.96);
+  --text-white: #ffffff;
+  --text-gold: #ffd700;
   --text-muted: #d1d5db;
   /* Functional Visual Indicators (Preserved) */
   --hp-red: #ff4444;
   --mana-blue: #38bdf8;
-  --ap-gold: #C89B3C;
-  --success-green: #2D5A43;
+  --ap-gold: #ffd700;
+  --success-green: #34d399;
   --danger-red: #ef4444;
-  --warning-orange: #d97706;
-  --enemy-border-default: rgba(27, 67, 50, 0.55);
+  --warning-orange: #f59e0b;
+  --enemy-border-default: rgba(255, 215, 0, 0.55);
   --enemy-border-shadow: rgba(0, 0, 0, 0.4);
   --headbar-height: 100px;
 }
@@ -357,9 +341,9 @@ html,
 body {
   width: 100%;
   height: 100%;
-  background: #FAF7F2 !important;
-  color: #1A1A1A !important;
-  font-family: 'Newsreader', 'Cinzel', Georgia, serif;
+  background: radial-gradient(circle at center, #140e06 0%, #090704 100%);
+  color: var(--text-white);
+  font-family: 'Orbitron', monospace;
   font-size: 12px;
   line-height: 1.4;
   overflow: hidden;
@@ -367,7 +351,6 @@ body {
 
 body {
   position: relative;
-  background-color: #FAF7F2 !important;
 }
 
 body::after {
@@ -379,9 +362,21 @@ body::after {
   z-index: 9997;
 }
 
-/* CRT Scanlines Disabled for Editorial Clean Look */
+/* CRT Scanlines Effect */
 body::before {
-  display: none !important;
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg,
+      rgba(0, 0, 0, 0.15),
+      rgba(0, 0, 0, 0.15) 1px,
+      transparent 1px,
+      transparent 2px);
+  z-index: 9998;
 }
 
 /* ============================================================
@@ -16117,232 +16112,6 @@ body.world-map-clean-view #checklistTabHandle {
   font-size: 11px;
   font-style: italic;
 }
-
-/* ============================================================
-   EDITORIAL WARM PAPER DESIGN SYSTEM (COMPLETE HUD & WIDGETS)
-   ============================================================ */
-
-/* Top Navigation Bar */
-.hamburger-btn,
-.refresh-btn,
-#hamburgerBtn,
-#refreshBtn {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  color: #1A1A1A !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
-  border-radius: 6px !important;
-}
-
-.hamburger-btn:hover,
-.refresh-btn:hover,
-#hamburgerBtn:hover,
-#refreshBtn:hover {
-  background: #1B4332 !important;
-  color: #FAF7F2 !important;
-}
-
-.nav-menu-panel {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  color: #1A1A1A !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
-}
-
-.btn-nav-item {
-  background: #FFFFFF !important;
-  border: 1px solid #DCD5C5 !important;
-  color: #1A1A1A !important;
-  font-family: var(--font-serif, 'Newsreader', Georgia, serif) !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-}
-
-.btn-nav-item:hover {
-  background: #1B4332 !important;
-  border-color: #1B4332 !important;
-  color: #FAF7F2 !important;
-}
-
-/* Draggable Left Player HUD */
-.draggable-hud,
-#draggableHud {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
-  color: #1A1A1A !important;
-}
-
-.hud-resource label {
-  color: #1A1A1A !important;
-  font-weight: 700 !important;
-  font-family: 'Newsreader', 'Cinzel', serif !important;
-}
-
-.hud-bar {
-  background: #E8E2D5 !important;
-  border: 1px solid #C4BCAC !important;
-}
-
-/* Center Top Tasks Widget */
-.draggable-challenge-hud,
-#nemesisChallengeHud {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
-  color: #1A1A1A !important;
-  padding: 8px 12px !important;
-}
-
-.draggable-challenge-hud span,
-.draggable-challenge-hud div,
-.draggable-challenge-hud label {
-  color: #1A1A1A !important;
-}
-
-/* Right Weapon Box */
-.weapon-strip,
-#weaponStrip {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
-}
-
-.weapon-chip {
-  background: #FFFFFF !important;
-  border: 1px solid #DCD5C5 !important;
-  color: #1A1A1A !important;
-}
-
-.weapon-chip.active {
-  background: #1B4332 !important;
-  border-color: #C89B3C !important;
-  color: #FAF7F2 !important;
-}
-
-/* Bottom Quick Add HUD */
-.draggable-quickadd-hud,
-#quickAddHud {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
-  padding: 6px 10px !important;
-}
-
-.qa-hud-input {
-  background: #FFFFFF !important;
-  border: 1px solid #1B4332 !important;
-  color: #1A1A1A !important;
-  border-radius: 4px !important;
-  font-family: var(--font-serif, 'Newsreader', Georgia, serif) !important;
-  font-size: 11px !important;
-}
-
-.qa-hud-input:focus {
-  outline: 2px solid #1B4332 !important;
-  border-color: #1B4332 !important;
-}
-
-.qa-hud-select {
-  background: #1B4332 !important;
-  border: 1px solid #C89B3C !important;
-  color: #FAF7F2 !important;
-  border-radius: 4px !important;
-  font-weight: 600 !important;
-}
-
-.qa-hud-submit-btn {
-  background: #1B4332 !important;
-  border: 1px solid #C89B3C !important;
-  color: #FAF7F2 !important;
-  border-radius: 4px !important;
-  font-weight: bold !important;
-}
-
-.qa-hud-submit-btn:hover {
-  background: #2D5A43 !important;
-  border-color: #E0BA62 !important;
-}
-
-/* Bottom Floating Action Buttons */
-.floating-shop-btn,
-.floating-attr-btn,
-.floating-lootbox-btn {
-  background: #1B4332 !important;
-  border: 2px solid #C89B3C !important;
-  color: #FAF7F2 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  border-radius: 6px !important;
-  font-family: var(--font-serif, 'Newsreader', 'Cinzel', serif) !important;
-  font-weight: 700 !important;
-}
-
-.floating-shop-btn:hover,
-.floating-attr-btn:hover,
-.floating-lootbox-btn:hover {
-  background: #2D5A43 !important;
-  border-color: #E0BA62 !important;
-  color: #FFFFFF !important;
-  transform: translateY(-2px) scale(1.03) !important;
-}
-
-/* Bottom Banner / Taunt */
-.taunt-banner,
-#tauntBanner,
-#nemesisTauntContent {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  border-radius: 6px !important;
-  color: #1A1A1A !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
-}
-
-/* Side Dock Icons (Calendar, Trophy, Sparkle, Checklist, etc.) */
-.dock-item,
-.btn-dock,
-.hud-dock-btn,
-.floating-side-btn {
-  background: #FAF7F2 !important;
-  border: 2px solid #1B4332 !important;
-  color: #1A1A1A !important;
-  border-radius: 6px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-}
-
-.dock-item:hover,
-.btn-dock:hover,
-.hud-dock-btn:hover,
-.floating-side-btn:hover {
-  background: #1B4332 !important;
-  color: #FAF7F2 !important;
-}
-
-/* Enemy Circle Arena Rings */
-.enemy-circle-container {
-  border-color: #1B4332 !important;
-}
-
-.action-ring {
-  border-color: #C89B3C !important;
-}
-
-.hud-minimize-btn {
-  background: #E8E2D5 !important;
-  border: 1px solid #1B4332 !important;
-  color: #1A1A1A !important;
-  border-radius: 3px !important;
-}
-
-.hud-minimize-btn:hover {
-  background: #1B4332 !important;
-  color: #FAF7F2 !important;
-}
-
-
 
 
 
