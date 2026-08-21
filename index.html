@@ -16,8 +16,8 @@
   <script>
     (async function () {
       try {
-        if (!localStorage.getItem('nemesis_emergency_fix_v4')) {
-          localStorage.setItem('nemesis_emergency_fix_v4', 'true');
+        if (!localStorage.getItem('nemesis_emergency_fix_v5')) {
+          localStorage.setItem('nemesis_emergency_fix_v5', 'true');
           const keys = await caches.keys();
           for (const key of keys) {
             await caches.delete(key);
@@ -26,7 +26,7 @@
           for (const r of regs) {
             await r.unregister();
           }
-          window.location.replace(window.location.href.split('?')[0] + '?forced=4');
+          window.location.replace(window.location.href.split('?')[0] + '?forced=5');
         }
       } catch (e) { }
     })();

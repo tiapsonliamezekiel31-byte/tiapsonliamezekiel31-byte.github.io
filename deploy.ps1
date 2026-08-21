@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat(ui): implement Editorial Warm Paper theme and eliminate purple aesthetics"
+$commitMsg = "feat(ui): complete Editorial Warm Paper styling across all HUD widgets and background"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

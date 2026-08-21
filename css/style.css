@@ -357,9 +357,9 @@ html,
 body {
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, #140e06 0%, #090704 100%);
-  color: var(--text-white);
-  font-family: 'Orbitron', monospace;
+  background: #FAF7F2 !important;
+  color: #1A1A1A !important;
+  font-family: 'Newsreader', 'Cinzel', Georgia, serif;
   font-size: 12px;
   line-height: 1.4;
   overflow: hidden;
@@ -367,6 +367,7 @@ body {
 
 body {
   position: relative;
+  background-color: #FAF7F2 !important;
 }
 
 body::after {
@@ -378,21 +379,9 @@ body::after {
   z-index: 9997;
 }
 
-/* CRT Scanlines Effect */
+/* CRT Scanlines Disabled for Editorial Clean Look */
 body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg,
-      rgba(0, 0, 0, 0.15),
-      rgba(0, 0, 0, 0.15) 1px,
-      transparent 1px,
-      transparent 2px);
-  z-index: 9998;
+  display: none !important;
 }
 
 /* ============================================================
@@ -16130,38 +16119,166 @@ body.world-map-clean-view #checklistTabHandle {
 }
 
 /* ============================================================
-   EDITORIAL WARM PAPER DESIGN SYSTEM (GLOBAL OVERRIDES)
+   EDITORIAL WARM PAPER DESIGN SYSTEM (COMPLETE HUD & WIDGETS)
    ============================================================ */
 
-/* Typography: Serif Headers */
-h1, h2, h3, h4,
-.shop-header h3,
-.shop-column h4,
-.modal-header h2,
-.modal-header h3,
-.popup-header h2,
-.popup-header h3,
-.section-title,
-.panel-title,
-.bento-title,
-.tab-title {
-  font-family: var(--font-serif, 'Newsreader', 'Cinzel', Georgia, serif) !important;
-  letter-spacing: 0.5px !important;
-  font-weight: 700 !important;
+/* Top Navigation Bar */
+.hamburger-btn,
+.refresh-btn,
+#hamburgerBtn,
+#refreshBtn {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  color: #1A1A1A !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 6px !important;
 }
 
-/* Floating Action Buttons: Solid Forest Green & Warm Paper */
+.hamburger-btn:hover,
+.refresh-btn:hover,
+#hamburgerBtn:hover,
+#refreshBtn:hover {
+  background: #1B4332 !important;
+  color: #FAF7F2 !important;
+}
+
+.nav-menu-panel {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  color: #1A1A1A !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.btn-nav-item {
+  background: #FFFFFF !important;
+  border: 1px solid #DCD5C5 !important;
+  color: #1A1A1A !important;
+  font-family: var(--font-serif, 'Newsreader', Georgia, serif) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.btn-nav-item:hover {
+  background: #1B4332 !important;
+  border-color: #1B4332 !important;
+  color: #FAF7F2 !important;
+}
+
+/* Draggable Left Player HUD */
+.draggable-hud,
+#draggableHud {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
+  color: #1A1A1A !important;
+}
+
+.hud-resource label {
+  color: #1A1A1A !important;
+  font-weight: 700 !important;
+  font-family: 'Newsreader', 'Cinzel', serif !important;
+}
+
+.hud-bar {
+  background: #E8E2D5 !important;
+  border: 1px solid #C4BCAC !important;
+}
+
+/* Center Top Tasks Widget */
+.draggable-challenge-hud,
+#nemesisChallengeHud {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
+  color: #1A1A1A !important;
+  padding: 8px 12px !important;
+}
+
+.draggable-challenge-hud span,
+.draggable-challenge-hud div,
+.draggable-challenge-hud label {
+  color: #1A1A1A !important;
+}
+
+/* Right Weapon Box */
+.weapon-strip,
+#weaponStrip {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
+}
+
+.weapon-chip {
+  background: #FFFFFF !important;
+  border: 1px solid #DCD5C5 !important;
+  color: #1A1A1A !important;
+}
+
+.weapon-chip.active {
+  background: #1B4332 !important;
+  border-color: #C89B3C !important;
+  color: #FAF7F2 !important;
+}
+
+/* Bottom Quick Add HUD */
+.draggable-quickadd-hud,
+#quickAddHud {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18) !important;
+  padding: 6px 10px !important;
+}
+
+.qa-hud-input {
+  background: #FFFFFF !important;
+  border: 1px solid #1B4332 !important;
+  color: #1A1A1A !important;
+  border-radius: 4px !important;
+  font-family: var(--font-serif, 'Newsreader', Georgia, serif) !important;
+  font-size: 11px !important;
+}
+
+.qa-hud-input:focus {
+  outline: 2px solid #1B4332 !important;
+  border-color: #1B4332 !important;
+}
+
+.qa-hud-select {
+  background: #1B4332 !important;
+  border: 1px solid #C89B3C !important;
+  color: #FAF7F2 !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+}
+
+.qa-hud-submit-btn {
+  background: #1B4332 !important;
+  border: 1px solid #C89B3C !important;
+  color: #FAF7F2 !important;
+  border-radius: 4px !important;
+  font-weight: bold !important;
+}
+
+.qa-hud-submit-btn:hover {
+  background: #2D5A43 !important;
+  border-color: #E0BA62 !important;
+}
+
+/* Bottom Floating Action Buttons */
 .floating-shop-btn,
 .floating-attr-btn,
 .floating-lootbox-btn {
   background: #1B4332 !important;
   border: 2px solid #C89B3C !important;
   color: #FAF7F2 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   border-radius: 6px !important;
-  font-family: 'Orbitron', monospace !important;
-  text-transform: uppercase !important;
-  transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease !important;
+  font-family: var(--font-serif, 'Newsreader', 'Cinzel', serif) !important;
+  font-weight: 700 !important;
 }
 
 .floating-shop-btn:hover,
@@ -16171,137 +16288,60 @@ h1, h2, h3, h4,
   border-color: #E0BA62 !important;
   color: #FFFFFF !important;
   transform: translateY(-2px) scale(1.03) !important;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Modal Overlays & Flat Bento Panels */
-.shop-panel,
-.popup-modal,
-.custom-modal,
-.bento-panel,
-.task-manager-panel,
-.inventory-panel,
-.stats-panel,
-.attribute-modal-content {
-  background: #1A1A1A !important;
+/* Bottom Banner / Taunt */
+.taunt-banner,
+#tauntBanner,
+#nemesisTauntContent {
+  background: #FAF7F2 !important;
   border: 2px solid #1B4332 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px #C89B3C !important;
-  color: #FAF7F2 !important;
-}
-
-.shop-header,
-.modal-header,
-.popup-header {
-  background: #132E22 !important;
-  border-bottom: 2px solid #1B4332 !important;
-  color: #FAF7F2 !important;
-}
-
-.shop-header h3,
-.modal-header h2,
-.modal-header h3 {
-  color: #FAF7F2 !important;
-}
-
-.shop-column {
-  background: #141414 !important;
-  border: 1px solid #2A3830 !important;
   border-radius: 6px !important;
+  color: #1A1A1A !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
-.shop-column h4 {
-  color: #C89B3C !important;
-  border-bottom: 1px solid #2A3830 !important;
-}
-
-.shop-item {
-  background: #1E1E1E !important;
-  border: 1px solid #2E3B33 !important;
+/* Side Dock Icons (Calendar, Trophy, Sparkle, Checklist, etc.) */
+.dock-item,
+.btn-dock,
+.hud-dock-btn,
+.floating-side-btn {
+  background: #FAF7F2 !important;
+  border: 2px solid #1B4332 !important;
+  color: #1A1A1A !important;
   border-radius: 6px !important;
-  color: #FAF7F2 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
-.shop-item:hover {
-  background: #24332B !important;
-  border-color: #C89B3C !important;
-}
-
-.shop-balance {
+.dock-item:hover,
+.btn-dock:hover,
+.hud-dock-btn:hover,
+.floating-side-btn:hover {
   background: #1B4332 !important;
-  border: 1px solid #C89B3C !important;
-  color: #E0BA62 !important;
+  color: #FAF7F2 !important;
 }
 
-/* Solid Flat Bento Cards */
-.bento-card,
-.task-item-card,
-.task-row,
-.card-slot,
-.inv-slot {
-  background: #1E1E1E !important;
-  border: 1px solid #2D3A32 !important;
-  border-radius: 6px !important;
-}
-
-.bento-card:hover,
-.task-item-card:hover {
+/* Enemy Circle Arena Rings */
+.enemy-circle-container {
   border-color: #1B4332 !important;
 }
 
-/* Primary Action Buttons */
-.btn-primary,
-.btn-confirm,
-.btn-action,
-.btn-pause-action,
-button.primary-action {
-  background: #1B4332 !important;
-  border: 1px solid #C89B3C !important;
-  color: #FAF7F2 !important;
-  font-weight: 700 !important;
-  border-radius: 4px !important;
-  transition: background 0.15s ease, border-color 0.15s ease !important;
+.action-ring {
+  border-color: #C89B3C !important;
 }
 
-.btn-primary:hover,
-.btn-confirm:hover,
-.btn-action:hover,
-.btn-pause-action:hover,
-button.primary-action:hover {
-  background: #2D5A43 !important;
-  border-color: #E0BA62 !important;
-}
-
-/* Close & Secondary Buttons */
-.shop-close,
-.modal-close,
-.popup-close {
-  background: #2A2A2A !important;
-  border: 1px solid #3E4A42 !important;
-  color: #FAF7F2 !important;
-  border-radius: 4px !important;
-}
-
-.shop-close:hover,
-.modal-close:hover,
-.popup-close:hover {
-  background: #8B2525 !important;
-  border-color: #B91C1C !important;
-  color: #FFFFFF !important;
-}
-
-/* Badges & Highlights */
-.badge-forest {
-  background: #1B4332 !important;
-  color: #FAF7F2 !important;
-  border: 1px solid #C89B3C !important;
-}
-
-.badge-gold {
-  background: #C89B3C !important;
+.hud-minimize-btn {
+  background: #E8E2D5 !important;
+  border: 1px solid #1B4332 !important;
   color: #1A1A1A !important;
-  font-weight: 700 !important;
+  border-radius: 3px !important;
 }
+
+.hud-minimize-btn:hover {
+  background: #1B4332 !important;
+  color: #FAF7F2 !important;
+}
+
 
 
 
