@@ -5617,8 +5617,7 @@ class UIManager {
                data-task-id="${daily.id}" 
                data-task-type="daily" 
                data-index="${index}" 
-               draggable="true"
-               style="border-left-color: ${attrColor};">
+               draggable="true">
             <button class="checklist-checkbox-btn" data-action="toggle-daily" data-task-id="${daily.id}" title="${isCompleted ? 'Completed' : 'Mark Done'}">
               ${isCompleted ? '✓' : ''}
             </button>
@@ -5631,28 +5630,26 @@ class UIManager {
       }).join('');
     }
 
-    // 2. Render Todos
+    // 2. Render Todos (hide completed todos in checklist view)
     const todos = state.dailiesState?.todos || [];
+    const activeTodos = todos.filter(t => !t.completed);
     const completedTodosCount = todos.filter(t => t.completed).length;
     if (todosCountEl) {
-      todosCountEl.textContent = `${completedTodosCount}/${todos.length}`;
+      todosCountEl.textContent = `${activeTodos.length}`;
     }
 
-    if (todos.length === 0) {
-      todosListEl.innerHTML = `<div class="checklist-empty">No to-dos</div>`;
+    if (activeTodos.length === 0) {
+      todosListEl.innerHTML = `<div class="checklist-empty">No active to-dos</div>`;
     } else {
-      todosListEl.innerHTML = todos.map((todo, index) => {
+      todosListEl.innerHTML = activeTodos.map((todo, index) => {
         const attrColor = this.getAttributeColor(todo.attribute);
-        const isCompleted = !!todo.completed;
         return `
-          <div class="checklist-item ${isCompleted ? 'completed' : ''}" 
+          <div class="checklist-item" 
                data-task-id="${todo.id}" 
                data-task-type="todo" 
                data-index="${index}" 
-               draggable="true"
-               style="border-left-color: ${attrColor};">
-            <button class="checklist-checkbox-btn" data-action="toggle-todo" data-task-id="${todo.id}" title="${isCompleted ? 'Completed' : 'Mark Done'}">
-              ${isCompleted ? '✓' : ''}
+               draggable="true">
+            <button class="checklist-checkbox-btn" data-action="toggle-todo" data-task-id="${todo.id}" title="Mark Done">
             </button>
             <div class="checklist-item-content">
               <span class="checklist-item-title" style="color: ${attrColor};">${escapeHTML(todo.name || 'To-Do')}</span>
@@ -5672,7 +5669,7 @@ class UIManager {
     if (!checklistPanel || checklistPanel.dataset.eventsBound === '1') return;
     checklistPanel.dataset.eventsBound = '1';
 
-    // Click handler for checkboxes & cards
+    // Click handler for checkboxes & cards (Instant silent reward execution, zero animations)
     checklistPanel.addEventListener('click', (e) => {
       const state = getGameState();
       const checkbox = e.target.closest('.checklist-checkbox-btn');
@@ -5692,10 +5689,6 @@ class UIManager {
             this.scheduleUpdateDailiesList();
             this.updateDailyTopStats(true);
             this.renderEnemies();
-            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-              const card = checkbox.closest('.checklist-item');
-              if (card) RetroTaskCompleteAnimation.play(card);
-            }
           }
         } else if (action === 'toggle-todo') {
           const todo = state.dailiesState.todos.find(t => t.id === taskId);
@@ -5706,10 +5699,6 @@ class UIManager {
             this.updateChecklistPanel();
             this.updateTodosList();
             this.renderEnemies();
-            if (typeof RetroTaskCompleteAnimation !== 'undefined') {
-              const card = checkbox.closest('.checklist-item');
-              if (card) RetroTaskCompleteAnimation.play(card);
-            }
           }
         }
         return;

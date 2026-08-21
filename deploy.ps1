@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: force 2-column left/right on mobile and simplify checklist to pure colored text"
+$commitMsg = "fix: make checklist full width with invisible movable slots, hide done todos, grey out done dailies, zero completion animations"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
