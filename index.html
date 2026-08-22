@@ -700,6 +700,14 @@
       min-height: 28px;
     }
 
+    .matrix-input-spacer {
+      height: 28px;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      padding: 0 0.45rem;
+    }
+
     .ten-cells-grid {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
@@ -709,34 +717,14 @@
     }
 
     .history-cell {
-      height: 20px;
+      height: 100%;
+      min-height: 20px;
       border-radius: 3px;
       display: grid;
       place-items: center;
       font-size: 0.62rem;
       font-weight: 800;
       background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      transition: transform 0.1s ease;
-    }
-
-    .history-cell.done {
-      background: var(--color-green);
-      border-color: var(--color-green);
-      color: #fdf6e3;
-    }
-
-    .history-cell.missed {
-      background: #fdf0ee;
-      border-color: var(--color-red);
-      color: var(--color-red);
-    }
-
-    .history-cell.empty {
-      background: var(--card-subtle);
-      color: var(--text-dim);
-    }
       border: 1px solid var(--border);
       color: var(--text-dim);
       transition: transform 0.1s ease;
@@ -1101,6 +1089,11 @@
         <div class="column-title">
           <span>10-CHECKIN HISTORY</span>
           <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇ TODOS</button>
+        </div>
+      </div>
+      <div class="matrix-input-spacer">
+        <div class="ten-cells-grid" style="opacity: 0.7; font-size: 0.55rem; text-align: center;">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
         </div>
       </div>
       <ul class="history-matrix-list" id="historyMatrixList"></ul>
@@ -1647,6 +1640,22 @@
 
         row.appendChild(grid);
         list.appendChild(row);
+      });
+
+      // Synchronize exact heights with left habit cards
+      requestAnimationFrame(() => {
+        const dCards = document.querySelectorAll('#dailiesList .task-card');
+        const mRows = document.querySelectorAll('#historyMatrixList .matrix-row-card');
+        dCards.forEach((card, i) => {
+          if (mRows[i]) {
+            const h = card.getBoundingClientRect().height;
+            if (h > 0) {
+              mRows[i].style.height = `${h}px`;
+              mRows[i].style.minHeight = `${h}px`;
+              mRows[i].style.maxHeight = `${h}px`;
+            }
+          }
+        });
       });
     }
 
