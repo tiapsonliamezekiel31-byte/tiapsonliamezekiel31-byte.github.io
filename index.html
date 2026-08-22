@@ -1379,8 +1379,24 @@
         }
       };
 
-      // Double click to open edit popup
-      card.ondblclick = () => openEditModal(item, type);
+      // Double click / double tap to open edit popup
+      let lastTap = 0;
+      card.ondblclick = (e) => {
+        e.stopPropagation();
+        openEditModal(item, type);
+      };
+
+      card.ontouchend = (e) => {
+        if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
+        const now = Date.now();
+        if (now - lastTap < 350) {
+          e.preventDefault();
+          openEditModal(item, type);
+          lastTap = 0;
+        } else {
+          lastTap = now;
+        }
+      };
 
       // Top main row
       const mainRow = document.createElement('div');
@@ -1399,6 +1415,10 @@
       const textSpan = document.createElement('span');
       textSpan.className = 'task-text';
       textSpan.textContent = item.text;
+      textSpan.ondblclick = (e) => {
+        e.stopPropagation();
+        openEditModal(item, type);
+      };
 
       // Subtle streak text for dailies
       if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
