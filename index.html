@@ -2150,6 +2150,21 @@
     updateDateDisplay();
     setupEventListeners();
     render();
+
+    // Register ServiceWorker and auto-update stale cache
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        reg.update();
+      }).catch(() => {});
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
+      });
+    }
   </script>
 </body>
 </html>

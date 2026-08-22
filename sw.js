@@ -3,13 +3,7 @@ const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon.svg',
-  './css/defense.css',
-  './JS/config.js',
-  './JS/core.js',
-  './JS/player.js',
-  './JS/tasks.js',
-  './JS/defense_game.js'
+  './icon.svg'
 ];
 
 // Install: cache all core assets
@@ -20,7 +14,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: remove old caches
+// Activate: remove old caches and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
