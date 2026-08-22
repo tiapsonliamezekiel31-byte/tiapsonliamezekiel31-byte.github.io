@@ -697,37 +697,46 @@
       padding: 0.35rem 0.45rem;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.3rem;
-      min-height: 38px;
-    }
-
-    .matrix-habit-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 35%;
+      min-height: 28px;
     }
 
     .ten-cells-grid {
       display: grid;
       grid-template-columns: repeat(10, 1fr);
-      gap: 3px;
-      flex: 1;
-      max-width: 62%;
+      gap: 4px;
+      width: 100%;
+      height: 100%;
     }
 
     .history-cell {
-      aspect-ratio: 1;
+      height: 20px;
       border-radius: 3px;
       display: grid;
       place-items: center;
-      font-size: 0.58rem;
+      font-size: 0.62rem;
       font-weight: 800;
       background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      transition: transform 0.1s ease;
+    }
+
+    .history-cell.done {
+      background: var(--color-green);
+      border-color: var(--color-green);
+      color: #fdf6e3;
+    }
+
+    .history-cell.missed {
+      background: #fdf0ee;
+      border-color: var(--color-red);
+      color: var(--color-red);
+    }
+
+    .history-cell.empty {
+      background: var(--card-subtle);
+      color: var(--text-dim);
+    }
       border: 1px solid var(--border);
       color: var(--text-dim);
       transition: transform 0.1s ease;
@@ -1297,11 +1306,10 @@
 
     function checkDailyReset() {
       const today = new Date().toISOString().split('T')[0];
-      if (state.lastActiveDate && state.lastActiveDate !== today) {
-        performReset(false);
+      if (!state.lastActiveDate) {
+        state.lastActiveDate = today;
+        saveState();
       }
-      state.lastActiveDate = today;
-      saveState();
     }
 
     function updateDateDisplay() {
@@ -1608,11 +1616,6 @@
         row.className = 'matrix-row-card';
         row.style.borderLeftColor = d.color || SOLAR_COLORS[0].hex;
 
-        const title = document.createElement('div');
-        title.className = 'matrix-habit-title';
-        title.textContent = d.text;
-        title.title = d.text;
-
         const grid = document.createElement('div');
         grid.className = 'ten-cells-grid';
 
@@ -1629,20 +1632,19 @@
           if (entry === null) {
             cell.className = 'history-cell empty';
             cell.textContent = '•';
-            cell.title = `Check-In #${idx + 1}: No data`;
+            cell.title = `${d.text} - Check-In #${idx + 1}: No data`;
           } else if (entry.completed) {
             cell.className = 'history-cell done';
             cell.textContent = '✓';
-            cell.title = `${entry.date}: Done (+1)`;
+            cell.title = `${d.text} - ${entry.date}: Done`;
           } else {
             cell.className = 'history-cell missed';
             cell.textContent = '✕';
-            cell.title = `${entry.date}: Missed`;
+            cell.title = `${d.text} - ${entry.date}: Missed`;
           }
           grid.appendChild(cell);
         });
 
-        row.appendChild(title);
         row.appendChild(grid);
         list.appendChild(row);
       });
