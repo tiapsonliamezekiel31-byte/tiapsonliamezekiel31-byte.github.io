@@ -298,7 +298,7 @@
       width: 100%;
       margin: 0 auto;
       display: flex;
-      gap: 0.3rem;
+      gap: 0.35rem;
       flex: 1;
       height: calc(100vh - 120px);
       position: relative;
@@ -315,12 +315,11 @@
       min-width: 0;
       height: 100%;
       flex: 1;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* Draggable Middle Divider */
     .middle-divider {
-      width: 14px;
+      width: 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -331,11 +330,12 @@
       touch-action: none;
       z-index: 10;
       flex-shrink: 0;
+      align-self: stretch;
     }
 
     .divider-handle {
-      width: 14px;
-      height: 48px;
+      width: 16px;
+      height: 60px;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -343,7 +343,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 3px;
       color: var(--text-muted);
       cursor: pointer;
       transition: all 0.15s ease;
@@ -356,18 +356,22 @@
     }
 
     .divider-arrow {
-      font-size: 0.55rem;
+      font-size: 0.65rem;
       font-weight: 800;
       line-height: 1;
     }
 
+    /* Column Header - exact height across all 3 panels */
     .column-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      height: 24px;
+      min-height: 24px;
       padding-bottom: 0.3rem;
       border-bottom: 1px solid var(--border);
       margin-bottom: 0.35rem;
+      box-sizing: border-box;
     }
 
     .column-title {
@@ -391,16 +395,22 @@
       font-weight: 700;
     }
 
-    /* Input with plus button */
-    .input-row {
+    /* Top Input Row and Top Matrix Spacer - Identical Metrics */
+    .input-row,
+    .matrix-input-spacer {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.25rem;
+      height: 30px;
+      min-height: 30px;
+      max-height: 30px;
       margin-bottom: 0.4rem;
+      box-sizing: border-box;
     }
 
     .compact-textarea {
       flex: 1;
+      height: 30px;
       background: var(--card-subtle);
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -410,11 +420,9 @@
       font-family: inherit;
       outline: none;
       min-width: 0;
-      min-height: 28px;
-      max-height: 80px;
       resize: none;
       line-height: 1.35;
-      overflow-y: auto;
+      overflow: hidden;
       transition: border-color 0.15s ease, background 0.15s ease;
     }
 
@@ -435,8 +443,8 @@
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 700;
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 4px;
       cursor: pointer;
       display: grid;
@@ -449,7 +457,9 @@
       background: var(--color-blue);
     }
 
-    .task-list {
+    /* Task lists and History Matrix lists - identical container metrics */
+    .task-list,
+    .history-matrix-list {
       list-style: none;
       overflow-y: auto;
       flex: 1;
@@ -457,12 +467,15 @@
       flex-direction: column;
       gap: 0.35rem;
       padding-right: 0.1rem;
+      margin: 0;
     }
 
-    .task-list::-webkit-scrollbar {
+    .task-list::-webkit-scrollbar,
+    .history-matrix-list::-webkit-scrollbar {
       width: 4px;
     }
-    .task-list::-webkit-scrollbar-thumb {
+    .task-list::-webkit-scrollbar-thumb,
+    .history-matrix-list::-webkit-scrollbar-thumb {
       background: var(--border);
       border-radius: 2px;
     }
@@ -496,18 +509,35 @@
       background: var(--border);
     }
 
-    .task-card {
+    /* Task Card & Matrix Row Card - identical border and padding */
+    .task-card,
+    .matrix-row-card {
       background: var(--card-subtle);
       border: 1px solid var(--border);
       border-left-width: 3.5px;
       border-radius: 4px;
       padding: 0.35rem 0.45rem;
       min-width: 0;
-      cursor: pointer;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      justify-content: center;
       gap: 0.2rem;
       transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    .task-card {
+      cursor: grab;
+    }
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card.dragging {
+      opacity: 0.35;
+    }
+    .task-card.drag-over {
+      border-top: 2px solid var(--border-focus);
     }
 
     .task-card:hover {
@@ -678,34 +708,10 @@
       word-break: break-word;
     }
 
-    /* 10-Cell Daily History Matrix Column */
-    .history-matrix-list {
-      list-style: none;
-      overflow-y: auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      padding-right: 0.1rem;
-    }
-
+    /* Pure 10-Cell Matrix Row */
     .matrix-row-card {
-      background: var(--card-subtle);
-      border: 1px solid var(--border);
-      border-left-width: 3.5px;
-      border-radius: 4px;
-      padding: 0.35rem 0.45rem;
-      display: flex;
-      align-items: center;
-      min-height: 28px;
-    }
-
-    .matrix-input-spacer {
-      height: 28px;
-      margin-bottom: 0.4rem;
-      display: flex;
-      align-items: center;
       padding: 0 0.45rem;
+      justify-content: center;
     }
 
     .ten-cells-grid {
@@ -713,12 +719,12 @@
       grid-template-columns: repeat(10, 1fr);
       gap: 4px;
       width: 100%;
-      height: 100%;
+      height: 22px;
+      align-items: center;
     }
 
     .history-cell {
-      height: 100%;
-      min-height: 20px;
+      height: 20px;
       border-radius: 3px;
       display: grid;
       place-items: center;
@@ -1088,8 +1094,8 @@
       <div class="column-header">
         <div class="column-title">
           <span>10-CHECKIN HISTORY</span>
-          <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇ TODOS</button>
         </div>
+        <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇ TODOS</button>
       </div>
       <div class="matrix-input-spacer">
         <div class="ten-cells-grid" style="opacity: 0.7; font-size: 0.55rem; text-align: center;">
@@ -1288,6 +1294,8 @@
     };
 
     let activeEditing = null; // { id, type, color, difficulty, subtasks, days }
+    let draggedId = null;
+    let draggedType = null;
 
     function saveState() {
       localStorage.setItem('nemesis_big_score', state.score.toString());
@@ -1483,8 +1491,44 @@
         card.style.backgroundColor = getStreakBg(item);
       }
       card.dataset.id = item.id;
+      card.draggable = true;
 
-      // High-reliability Double-Click and Double-Tap detector
+      // Drag and drop task reordering
+      card.ondragstart = (e) => {
+        draggedId = item.id;
+        draggedType = type;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      };
+      card.ondragend = () => {
+        draggedId = null;
+        draggedType = null;
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+      };
+      card.ondragover = (e) => {
+        e.preventDefault();
+        if (draggedType === type) card.classList.add('drag-over');
+      };
+      card.ondragleave = () => {
+        card.classList.remove('drag-over');
+      };
+      card.ondrop = (e) => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (draggedId && draggedType === type && draggedId !== item.id) {
+          const list = state[type];
+          const fromIdx = list.findIndex(t => t.id === draggedId);
+          const toIdx = list.findIndex(t => t.id === item.id);
+          if (fromIdx >= 0 && toIdx >= 0) {
+            const [moved] = list.splice(fromIdx, 1);
+            list.splice(toIdx, 0, moved);
+            saveState();
+            render();
+          }
+        }
+      };
+
+      // Double-Click & Double-Tap detection
       let clickCount = 0;
       let clickTimer = null;
       card.addEventListener('click', (e) => {
@@ -1604,7 +1648,9 @@
         return;
       }
 
-      state.dailies.forEach(d => {
+      const dCards = document.querySelectorAll('#dailiesList .task-card');
+
+      state.dailies.forEach((d, i) => {
         const row = document.createElement('li');
         row.className = 'matrix-row-card';
         row.style.borderLeftColor = d.color || SOLAR_COLORS[0].hex;
@@ -1615,8 +1661,8 @@
         // Retrieve last 10 entries of daily history
         const hist = d.history || [];
         const cellsData = [];
-        for (let i = 9; i >= 0; i--) {
-          const entry = hist[hist.length - 1 - i];
+        for (let j = 9; j >= 0; j--) {
+          const entry = hist[hist.length - 1 - j];
           cellsData.push(entry || null);
         }
 
@@ -1642,17 +1688,17 @@
         list.appendChild(row);
       });
 
-      // Synchronize exact heights with left habit cards
+      // Synchronize exact pixel heights with left habit cards
       requestAnimationFrame(() => {
-        const dCards = document.querySelectorAll('#dailiesList .task-card');
-        const mRows = document.querySelectorAll('#historyMatrixList .matrix-row-card');
-        dCards.forEach((card, i) => {
-          if (mRows[i]) {
+        const leftCards = document.querySelectorAll('#dailiesList .task-card');
+        const rightRows = document.querySelectorAll('#historyMatrixList .matrix-row-card');
+        leftCards.forEach((card, idx) => {
+          if (rightRows[idx]) {
             const h = card.getBoundingClientRect().height;
             if (h > 0) {
-              mRows[i].style.height = `${h}px`;
-              mRows[i].style.minHeight = `${h}px`;
-              mRows[i].style.maxHeight = `${h}px`;
+              rightRows[idx].style.height = `${h}px`;
+              rightRows[idx].style.minHeight = `${h}px`;
+              rightRows[idx].style.maxHeight = `${h}px`;
             }
           }
         });
@@ -2325,7 +2371,8 @@
       const dividerHandle = document.getElementById('dividerHandle');
       const closeHistBtn = document.getElementById('closeHistoryBtn');
 
-      dividerHandle.onclick = () => {
+      dividerHandle.onclick = (e) => {
+        e.stopPropagation();
         setRightView(state.rightView === 'history' ? 'todos' : 'history');
       };
 
@@ -2334,42 +2381,59 @@
       };
 
       let startX = 0;
-      let isDragging = false;
+      let isDividerDragging = false;
 
       function onDragStart(clientX) {
         startX = clientX;
-        isDragging = true;
+        isDividerDragging = true;
       }
 
       function onDragMove(clientX) {
-        if (!isDragging) return;
+        if (!isDividerDragging) return;
         const diffX = clientX - startX;
-        if (diffX > 45 && state.rightView !== 'history') {
+        if (diffX > 35 && state.rightView !== 'history') {
           setRightView('history');
-          isDragging = false;
-        } else if (diffX < -45 && state.rightView !== 'todos') {
+          isDividerDragging = false;
+        } else if (diffX < -35 && state.rightView !== 'todos') {
           setRightView('todos');
-          isDragging = false;
+          isDividerDragging = false;
         }
       }
 
       function onDragEnd() {
-        isDragging = false;
+        isDividerDragging = false;
       }
 
-      // Pointer / Mouse events
+      // Pointer / Mouse events on divider
       divider.onpointerdown = (e) => {
         onDragStart(e.clientX);
-        divider.setPointerCapture(e.pointerId);
+        try { divider.setPointerCapture(e.pointerId); } catch(err){}
       };
       divider.onpointermove = (e) => onDragMove(e.clientX);
-      divider.onpointerup = (e) => onDragEnd();
-      divider.onpointercancel = (e) => onDragEnd();
+      divider.onpointerup = () => onDragEnd();
+      divider.onpointercancel = () => onDragEnd();
 
-      // Touch events
+      // Touch events on divider
       divider.ontouchstart = (e) => onDragStart(e.touches[0].clientX);
       divider.ontouchmove = (e) => onDragMove(e.touches[0].clientX);
       divider.ontouchend = () => onDragEnd();
+
+      // Swipe on right panel container
+      const appCont = document.getElementById('appContainer');
+      let touchStartX = 0;
+      appCont.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+      }, { passive: true });
+
+      appCont.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].clientX;
+        const diffX = touchEndX - touchStartX;
+        if (diffX > 60 && state.rightView !== 'history') {
+          setRightView('history');
+        } else if (diffX < -60 && state.rightView !== 'todos') {
+          setRightView('todos');
+        }
+      }, { passive: true });
 
       // Modal Subtasks Add
       document.getElementById('modalAddSubtaskBtn').onclick = () => {
@@ -2396,6 +2460,13 @@
       document.getElementById('editModal').onclick = (e) => {
         if (e.target === document.getElementById('editModal')) closeEditModal();
       };
+
+      // Window resize re-aligns matrix heights
+      window.addEventListener('resize', () => {
+        if (state.rightView === 'history') {
+          renderHistoryMatrix();
+        }
+      });
     }
 
     checkDailyReset();
