@@ -63,6 +63,7 @@
       flex-direction: column;
       padding: 0.5rem 0.35rem;
       user-select: none;
+      touch-action: pan-y;
     }
 
     header {
@@ -291,15 +292,17 @@
     .day-cell.rate-3 { background: #9dbf37; }
     .day-cell.rate-4 { background: #859900; }
 
+    /* App Layout Container with Draggable Split */
     .app-container {
       max-width: 1100px;
       width: 100%;
       margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.45rem;
+      display: flex;
+      gap: 0.3rem;
       flex: 1;
       height: calc(100vh - 120px);
+      position: relative;
+      overflow: hidden;
     }
 
     .column {
@@ -311,6 +314,51 @@
       padding: 0.5rem;
       min-width: 0;
       height: 100%;
+      flex: 1;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Draggable Middle Divider */
+    .middle-divider {
+      width: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: col-resize;
+      background: transparent;
+      user-select: none;
+      touch-action: none;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    .divider-handle {
+      width: 14px;
+      height: 48px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .divider-handle:hover {
+      border-color: var(--border-focus);
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .divider-arrow {
+      font-size: 0.55rem;
+      font-weight: 800;
+      line-height: 1;
     }
 
     .column-header {
@@ -419,14 +467,6 @@
       border-radius: 2px;
     }
 
-    /* Drag over style */
-    .task-card.drag-over {
-      border-top: 2px solid var(--border-focus);
-    }
-    .task-card.dragging {
-      opacity: 0.4;
-    }
-
     /* Section divider line */
     .section-divider {
       display: flex;
@@ -463,15 +503,11 @@
       border-radius: 4px;
       padding: 0.35rem 0.45rem;
       min-width: 0;
-      cursor: grab;
+      cursor: pointer;
       display: flex;
       flex-direction: column;
       gap: 0.2rem;
       transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
-    }
-
-    .task-card:active {
-      cursor: grabbing;
     }
 
     .task-card:hover {
@@ -640,6 +676,78 @@
       flex: 1;
       min-width: 0;
       word-break: break-word;
+    }
+
+    /* 10-Cell Daily History Matrix Column */
+    .history-matrix-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding-right: 0.1rem;
+    }
+
+    .matrix-row-card {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-left-width: 3.5px;
+      border-radius: 4px;
+      padding: 0.35rem 0.45rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.3rem;
+      min-height: 38px;
+    }
+
+    .matrix-habit-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 35%;
+    }
+
+    .ten-cells-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 3px;
+      flex: 1;
+      max-width: 62%;
+    }
+
+    .history-cell {
+      aspect-ratio: 1;
+      border-radius: 3px;
+      display: grid;
+      place-items: center;
+      font-size: 0.58rem;
+      font-weight: 800;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      transition: transform 0.1s ease;
+    }
+
+    .history-cell.done {
+      background: var(--color-green);
+      border-color: var(--color-green);
+      color: #fdf6e3;
+    }
+
+    .history-cell.missed {
+      background: #fdf0ee;
+      border-color: var(--color-red);
+      color: var(--color-red);
+    }
+
+    .history-cell.empty {
+      background: var(--card-subtle);
+      color: var(--text-dim);
     }
 
     .empty-state {
@@ -928,7 +1036,7 @@
     </div>
   </header>
 
-  <div class="app-container">
+  <div class="app-container" id="appContainer">
     <!-- Dailies Section (Left) -->
     <div class="column" id="dailiesColumn">
       <div class="column-header">
@@ -950,7 +1058,14 @@
       <ul class="task-list" id="dailiesList"></ul>
     </div>
 
-    <!-- Todos Section (Right) -->
+    <!-- Draggable Middle Split Bar -->
+    <div class="middle-divider" id="middleDivider" title="Drag right to view 10-day history, drag left to view To-Dos">
+      <div class="divider-handle" id="dividerHandle">
+        <span class="divider-arrow" id="dividerArrow">⯈</span>
+      </div>
+    </div>
+
+    <!-- Todos Section (Right, default) -->
     <div class="column" id="todosColumn">
       <div class="column-header">
         <div class="column-title">
@@ -969,6 +1084,17 @@
         <button type="button" class="plus-add-btn" id="addTodoBtn" title="Add To-Do Task">+</button>
       </div>
       <ul class="task-list" id="todosList"></ul>
+    </div>
+
+    <!-- 10-Cell Daily History Matrix (Hidden by default, shown when middle bar is dragged right) -->
+    <div class="column" id="historyColumn" style="display: none;">
+      <div class="column-header">
+        <div class="column-title">
+          <span>10-CHECKIN HISTORY</span>
+          <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇ TODOS</button>
+        </div>
+      </div>
+      <ul class="history-matrix-list" id="historyMatrixList"></ul>
     </div>
   </div>
 
@@ -1155,12 +1281,11 @@
       dailies: JSON.parse(localStorage.getItem('nemesis_dailies') || '[]'),
       todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
       history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
-      lastActiveDate: localStorage.getItem('nemesis_last_date') || ''
+      lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
+      rightView: 'todos' // 'todos' or 'history'
     };
 
     let activeEditing = null; // { id, type, color, difficulty, subtasks, days }
-    let draggedId = null;
-    let draggedType = null;
 
     function saveState() {
       localStorage.setItem('nemesis_big_score', state.score.toString());
@@ -1330,7 +1455,7 @@
       let finalTitle = fullText.replace(/[*]/g, '').replace(/\s+/g, ' ').trim();
       if (!finalTitle) finalTitle = `Task (${difficulty.toUpperCase()})`;
 
-      return { text: finalTitle, difficulty, deadline, color, subtasks, streak: 0, days: [0, 1, 2, 3, 4, 5, 6] };
+      return { text: finalTitle, difficulty, deadline, color, subtasks, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
     }
 
     function getStreakBg(item) {
@@ -1357,42 +1482,6 @@
         card.style.backgroundColor = getStreakBg(item);
       }
       card.dataset.id = item.id;
-      card.draggable = true;
-
-      // Drag and drop handlers
-      card.ondragstart = (e) => {
-        draggedId = item.id;
-        draggedType = type;
-        card.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-      };
-      card.ondragend = () => {
-        draggedId = null;
-        draggedType = null;
-        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
-      };
-      card.ondragover = (e) => {
-        e.preventDefault();
-        if (draggedType === type) card.classList.add('drag-over');
-      };
-      card.ondragleave = () => {
-        card.classList.remove('drag-over');
-      };
-      card.ondrop = (e) => {
-        e.preventDefault();
-        card.classList.remove('drag-over');
-        if (draggedId && draggedType === type && draggedId !== item.id) {
-          const list = state[type];
-          const fromIdx = list.findIndex(t => t.id === draggedId);
-          const toIdx = list.findIndex(t => t.id === item.id);
-          if (fromIdx >= 0 && toIdx >= 0) {
-            const [moved] = list.splice(fromIdx, 1);
-            list.splice(toIdx, 0, moved);
-            saveState();
-            render();
-          }
-        }
-      };
 
       // High-reliability Double-Click and Double-Tap detector
       let clickCount = 0;
@@ -1505,6 +1594,78 @@
       return card;
     }
 
+    function renderHistoryMatrix() {
+      const list = document.getElementById('historyMatrixList');
+      list.innerHTML = '';
+
+      if (state.dailies.length === 0) {
+        list.innerHTML = '<div class="empty-state">[ No habits ]</div>';
+        return;
+      }
+
+      state.dailies.forEach(d => {
+        const row = document.createElement('li');
+        row.className = 'matrix-row-card';
+        row.style.borderLeftColor = d.color || SOLAR_COLORS[0].hex;
+
+        const title = document.createElement('div');
+        title.className = 'matrix-habit-title';
+        title.textContent = d.text;
+        title.title = d.text;
+
+        const grid = document.createElement('div');
+        grid.className = 'ten-cells-grid';
+
+        // Retrieve last 10 entries of daily history
+        const hist = d.history || [];
+        const cellsData = [];
+        for (let i = 9; i >= 0; i--) {
+          const entry = hist[hist.length - 1 - i];
+          cellsData.push(entry || null);
+        }
+
+        cellsData.forEach((entry, idx) => {
+          const cell = document.createElement('div');
+          if (entry === null) {
+            cell.className = 'history-cell empty';
+            cell.textContent = '•';
+            cell.title = `Check-In #${idx + 1}: No data`;
+          } else if (entry.completed) {
+            cell.className = 'history-cell done';
+            cell.textContent = '✓';
+            cell.title = `${entry.date}: Done (+1)`;
+          } else {
+            cell.className = 'history-cell missed';
+            cell.textContent = '✕';
+            cell.title = `${entry.date}: Missed`;
+          }
+          grid.appendChild(cell);
+        });
+
+        row.appendChild(title);
+        row.appendChild(grid);
+        list.appendChild(row);
+      });
+    }
+
+    function setRightView(view) {
+      state.rightView = view;
+      const todosCol = document.getElementById('todosColumn');
+      const histCol = document.getElementById('historyColumn');
+      const arrow = document.getElementById('dividerArrow');
+
+      if (view === 'history') {
+        todosCol.style.display = 'none';
+        histCol.style.display = 'flex';
+        arrow.textContent = '⯇';
+        renderHistoryMatrix();
+      } else {
+        histCol.style.display = 'none';
+        todosCol.style.display = 'flex';
+        arrow.textContent = '⯈';
+      }
+    }
+
     function render() {
       // Calculate Dailies Weight
       let dTotalPts = 0;
@@ -1599,6 +1760,10 @@
         addGroup('NO DEADLINE', noDeadlineTasks);
       }
       document.getElementById('todosCount').textContent = `${tDonePts}/${tTotalPts} PTS`;
+
+      if (state.rightView === 'history') {
+        renderHistoryMatrix();
+      }
     }
 
     function toggleTask(id, type) {
@@ -1651,20 +1816,27 @@
       const today = state.lastActiveDate || new Date().toISOString().split('T')[0];
       state.history[today] = totalPts > 0 ? donePts / totalPts : 1.0;
 
-      // Update streaks & uncheck habits
+      // Update streaks, record 10-checkin history & uncheck habits
       state.dailies.forEach(d => {
+        if (!d.history) d.history = [];
+        d.history.push({
+          date: today,
+          completed: !!d.completed
+        });
+        if (d.history.length > 20) d.history.shift();
+
         const current = d.streak || 0;
         if (d.completed) {
           if (current < 0) {
-            d.streak = 0; // broke negative streak, reset to 0
+            d.streak = 0;
           } else {
             d.streak = current + 1;
           }
         } else {
           if (current > 0) {
-            d.streak = 0; // broke positive streak, reset to 0
+            d.streak = 0;
           } else {
-            d.streak = current - 1; // goes negative
+            d.streak = current - 1;
           }
         }
         d.completed = false;
@@ -1777,18 +1949,20 @@
 
       // Color Grid
       const grid = document.getElementById('modalColorGrid');
-      grid.innerHTML = '';
-      SOLAR_COLORS.forEach(c => {
-        const opt = document.createElement('div');
-        opt.className = `modal-color-option ${activeEditing.color === c.hex ? 'selected' : ''}`;
-        opt.style.background = c.hex;
-        opt.onclick = () => {
-          activeEditing.color = c.hex;
-          document.querySelectorAll('.modal-color-option').forEach(el => el.classList.remove('selected'));
-          opt.classList.add('selected');
-        };
-        grid.appendChild(opt);
-      });
+      if (grid) {
+        grid.innerHTML = '';
+        SOLAR_COLORS.forEach(c => {
+          const opt = document.createElement('div');
+          opt.className = `modal-color-option ${activeEditing.color === c.hex ? 'selected' : ''}`;
+          opt.style.background = c.hex;
+          opt.onclick = () => {
+            activeEditing.color = c.hex;
+            document.querySelectorAll('.modal-color-option').forEach(el => el.classList.remove('selected'));
+            opt.classList.add('selected');
+          };
+          grid.appendChild(opt);
+        });
+      }
 
       modal.classList.add('active');
       input.focus();
@@ -1875,6 +2049,7 @@
           color: parsed.color,
           subtasks: parsed.subtasks,
           streak: 0,
+          history: [],
           days: [0, 1, 2, 3, 4, 5, 6]
         });
         dInput.value = '';
@@ -1912,7 +2087,6 @@
           const parsed = JSON.parse(rawNemesis);
           const ds = parsed.dailiesState;
           if (ds) {
-            // Check sets
             if (ds.sets) {
               Object.keys(ds.sets).forEach(k => {
                 const s = ds.sets[k];
@@ -1928,6 +2102,7 @@
                         deadline: d.deadline ? String(d.deadline) : '',
                         color: d.color || '#268bd2',
                         streak: d.streak || 0,
+                        history: [],
                         subtasks: Array.isArray(d.subtasks) ? d.subtasks.map(st => ({
                           id: 'st_' + Math.random().toString(36).substr(2, 6),
                           text: typeof st === 'string' ? st : (st.text || st.name || ''),
@@ -1939,7 +2114,6 @@
                 }
               });
             }
-            // Check dailies array
             if (Array.isArray(ds.dailies)) {
               ds.dailies.forEach(d => {
                 const text = d.name || d.text || d.description || d.title;
@@ -1952,6 +2126,7 @@
                     deadline: d.deadline ? String(d.deadline) : '',
                     color: d.color || '#268bd2',
                     streak: d.streak || 0,
+                    history: [],
                     subtasks: Array.isArray(d.subtasks) ? d.subtasks.map(st => ({
                       id: 'st_' + Math.random().toString(36).substr(2, 6),
                       text: typeof st === 'string' ? st : (st.text || st.name || ''),
@@ -1961,7 +2136,6 @@
                 }
               });
             }
-            // Check todos array
             if (Array.isArray(ds.todos)) {
               ds.todos.forEach(t => {
                 const text = t.name || t.text || t.description || t.title;
@@ -1992,7 +2166,6 @@
         } catch (e) {}
       }
 
-      // Check all other keys in localStorage for any stray task lists
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         if (k && k !== 'nemesis_data' && (k.includes('task') || k.includes('daily') || k.includes('todo') || k.includes('habit'))) {
@@ -2011,6 +2184,7 @@
                       difficulty: (item.difficulty || 'easy').toLowerCase(),
                       deadline: item.deadline ? String(item.deadline) : '',
                       color: item.color || '#268bd2',
+                      history: [],
                       subtasks: []
                     });
                   }
@@ -2134,6 +2308,57 @@
           document.getElementById('heatmapOverlay').classList.remove('active');
         }
       };
+
+      // Middle Divider Drag & Click Handlers
+      const divider = document.getElementById('middleDivider');
+      const dividerHandle = document.getElementById('dividerHandle');
+      const closeHistBtn = document.getElementById('closeHistoryBtn');
+
+      dividerHandle.onclick = () => {
+        setRightView(state.rightView === 'history' ? 'todos' : 'history');
+      };
+
+      closeHistBtn.onclick = () => {
+        setRightView('todos');
+      };
+
+      let startX = 0;
+      let isDragging = false;
+
+      function onDragStart(clientX) {
+        startX = clientX;
+        isDragging = true;
+      }
+
+      function onDragMove(clientX) {
+        if (!isDragging) return;
+        const diffX = clientX - startX;
+        if (diffX > 45 && state.rightView !== 'history') {
+          setRightView('history');
+          isDragging = false;
+        } else if (diffX < -45 && state.rightView !== 'todos') {
+          setRightView('todos');
+          isDragging = false;
+        }
+      }
+
+      function onDragEnd() {
+        isDragging = false;
+      }
+
+      // Pointer / Mouse events
+      divider.onpointerdown = (e) => {
+        onDragStart(e.clientX);
+        divider.setPointerCapture(e.pointerId);
+      };
+      divider.onpointermove = (e) => onDragMove(e.clientX);
+      divider.onpointerup = (e) => onDragEnd();
+      divider.onpointercancel = (e) => onDragEnd();
+
+      // Touch events
+      divider.ontouchstart = (e) => onDragStart(e.touches[0].clientX);
+      divider.ontouchmove = (e) => onDragMove(e.touches[0].clientX);
+      divider.ontouchend = () => onDragEnd();
 
       // Modal Subtasks Add
       document.getElementById('modalAddSubtaskBtn').onclick = () => {
