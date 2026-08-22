@@ -1391,24 +1391,29 @@
         }
       };
 
-      // Double click / double tap to open edit popup
-      let lastTap = 0;
-      card.ondblclick = (e) => {
+      // High-reliability Double-Click and Double-Tap detector
+      let clickCount = 0;
+      let clickTimer = null;
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
+        clickCount++;
+        if (clickCount === 1) {
+          clickTimer = setTimeout(() => { clickCount = 0; }, 320);
+        } else if (clickCount >= 2) {
+          clearTimeout(clickTimer);
+          clickCount = 0;
+          e.preventDefault();
+          e.stopPropagation();
+          openEditModal(item, type);
+        }
+      });
+
+      card.addEventListener('dblclick', (e) => {
+        if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
+        e.preventDefault();
         e.stopPropagation();
         openEditModal(item, type);
-      };
-
-      card.ontouchend = (e) => {
-        if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
-        const now = Date.now();
-        if (now - lastTap < 350) {
-          e.preventDefault();
-          openEditModal(item, type);
-          lastTap = 0;
-        } else {
-          lastTap = now;
-        }
-      };
+      });
 
       // Top main row
       const mainRow = document.createElement('div');
@@ -1427,10 +1432,6 @@
       const textSpan = document.createElement('span');
       textSpan.className = 'task-text';
       textSpan.textContent = item.text;
-      textSpan.ondblclick = (e) => {
-        e.stopPropagation();
-        openEditModal(item, type);
-      };
 
       // Subtle streak text for dailies
       if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
