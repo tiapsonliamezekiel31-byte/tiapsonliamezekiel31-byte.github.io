@@ -1,310 +1,2127 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nemesis Ultimate Roguelike</title>
-  <meta name="theme-color" content="#111827">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="css/style.css?v=20260606c">
-  <link rel="stylesheet" href="css/style_tycoon.css?v=20260619c">
-  <script>
-    (async function () {
-      try {
-        if (!localStorage.getItem('nemesis_emergency_fix_v3')) {
-          localStorage.setItem('nemesis_emergency_fix_v3', 'true');
-          const keys = await caches.keys();
-          for (const key of keys) {
-            await caches.delete(key);
-          }
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const r of regs) {
-            await r.unregister();
-          }
-          window.location.replace(window.location.href.split('?')[0] + '?forced=3');
-        }
-      } catch (e) { }
-    })();
-  </script>
-</head>
+  <title>Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fdf6e3;
+      --card-bg: #eee8d5;
+      --card-subtle: #f7f1df;
+      --border: #dcd3b8;
+      --border-focus: #b58900;
+      --text: #073642;
+      --text-muted: #657b83;
+      --text-dim: #93a1a1;
+      
+      --color-blue: #268bd2;
+      --color-green: #859900;
+      --color-cyan: #2aa198;
+      --color-yellow: #b58900;
+      --color-orange: #cb4b16;
+      --color-red: #dc322f;
+      --color-magenta: #d33682;
+      --color-violet: #6c71c4;
+    }
 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem 0.35rem;
+      user-select: none;
+    }
+
+    header {
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto 0.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0 0.15rem;
+    }
+
+    /* Big Score Header */
+    .score-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+    }
+
+    .score-container {
+      display: flex;
+      align-items: baseline;
+      gap: 0.45rem;
+    }
+
+    .big-score {
+      font-size: 2.25rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: -0.04em;
+    }
+
+    .score-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .icon-btn {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.25rem 0.45rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: #ffffff;
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+
+    .date-badge {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.45rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .reset-btn {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      color: var(--color-orange);
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.25rem 0.55rem;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .reset-btn:hover {
+      background: #fdf0ee;
+      border-color: var(--color-orange);
+    }
+
+    /* Clickable Progress Section */
+    .progress-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.3rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .progress-section:hover {
+      background: #fdfaf0;
+      border-color: var(--border-focus);
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 5px;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--color-green);
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* Heatmap Modal */
+    .heatmap-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 54, 66, 0.45);
+      display: none;
+      place-items: center;
+      z-index: 150;
+      padding: 1rem;
+    }
+
+    .heatmap-overlay.active {
+      display: grid;
+    }
+
+    .heatmap-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+
+    .heatmap-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .heatmap-months-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 0.2rem;
+    }
+
+    .month-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .month-title {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .month-days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .day-cell {
+      aspect-ratio: 1;
+      border-radius: 1px;
+      background: var(--card-subtle);
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .day-cell.rate-1 { background: #d3dfa5; }
+    .day-cell.rate-2 { background: #b8cf6e; }
+    .day-cell.rate-3 { background: #9dbf37; }
+    .day-cell.rate-4 { background: #859900; }
+
+    .app-container {
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      flex: 1;
+      height: calc(100vh - 120px);
+    }
+
+    .column {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      padding: 0.5rem;
+      min-width: 0;
+      height: 100%;
+    }
+
+    .column-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.35rem;
+    }
+
+    .column-title {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text);
+    }
+
+    .counter {
+      font-size: 0.62rem;
+      padding: 0.05rem 0.3rem;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* Input with plus button */
+    .input-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.25rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .compact-textarea {
+      flex: 1;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.35rem 0.45rem;
+      color: var(--text);
+      font-size: 0.72rem;
+      font-family: inherit;
+      outline: none;
+      min-width: 0;
+      min-height: 28px;
+      max-height: 80px;
+      resize: none;
+      line-height: 1.35;
+      overflow-y: auto;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .compact-textarea:focus {
+      border-color: var(--border-focus);
+      background: #ffffff;
+    }
+
+    .compact-textarea::placeholder {
+      color: var(--text-dim);
+      font-size: 0.68rem;
+    }
+
+    .plus-add-btn {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: background 0.15s ease;
+    }
+
+    .plus-add-btn:hover {
+      background: var(--color-blue);
+    }
+
+    .task-list {
+      list-style: none;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding-right: 0.1rem;
+    }
+
+    .task-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .task-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    /* Drag over style */
+    .task-card.drag-over {
+      border-top: 2px solid var(--border-focus);
+    }
+    .task-card.dragging {
+      opacity: 0.4;
+    }
+
+    /* Section divider line */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0.4rem 0 0.15rem;
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .section-divider.overdue {
+      color: var(--color-red);
+    }
+
+    .section-divider.today {
+      color: var(--color-blue);
+    }
+
+    .section-divider::before,
+    .section-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .task-card {
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      border-left-width: 3.5px;
+      border-radius: 4px;
+      padding: 0.35rem 0.45rem;
+      min-width: 0;
+      cursor: grab;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card:hover {
+      border-color: var(--border-focus);
+      background: #fdfaf0;
+    }
+
+    .task-card.completed {
+      opacity: 0.55;
+    }
+
+    .task-card.completed .task-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .task-main {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      min-width: 0;
+    }
+
+    .task-checkbox {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1.5px solid var(--text-dim);
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .task-checkbox.checked {
+      background: var(--color-green);
+      border-color: var(--color-green);
+    }
+
+    .task-checkbox svg {
+      display: none;
+      stroke: #fdf6e3;
+    }
+
+    .task-checkbox.checked svg {
+      display: block;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.74rem;
+      font-weight: 600;
+      outline: none;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    /* Subtle streak text */
+    .streak-text {
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-left: 0.15rem;
+    }
+
+    .streak-text.pos {
+      color: var(--color-green);
+    }
+
+    .streak-text.neg {
+      color: var(--color-red);
+    }
+
+    /* Crisp SVG geometric difficulty badge */
+    .diff-shape-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .diff-easy { color: var(--color-green); }
+    .diff-medium { color: var(--color-blue); }
+    .diff-hard { color: var(--color-yellow); }
+    .diff-mega { color: var(--color-orange); }
+    .diff-ultra { color: var(--color-red); }
+
+    .deadline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.15rem;
+      padding: 0.05rem 0.25rem;
+      border-radius: 3px;
+      background: #eee8d5;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.6rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .deadline-badge.overdue {
+      background: #fdf0ee;
+      border-color: var(--color-red);
+      color: var(--color-red);
+    }
+
+    /* Subtasks tree */
+    .subtasks-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding-left: 0.7rem;
+      margin-top: 0.05rem;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.68rem;
+      color: var(--text);
+    }
+
+    .subtask-prefix {
+      color: var(--text-dim);
+      font-weight: 700;
+      user-select: none;
+    }
+
+    .subtask-item.done .subtask-text {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .subtask-checkbox {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      border: 1.5px solid var(--text-dim);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .subtask-checkbox.checked {
+      background: var(--color-cyan);
+      border-color: var(--color-cyan);
+    }
+
+    .subtask-checkbox svg {
+      display: none;
+      stroke: #fdf6e3;
+    }
+
+    .subtask-checkbox.checked svg {
+      display: block;
+    }
+
+    .subtask-text {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      padding: 0.75rem 0.5rem;
+    }
+
+    /* Modal Popup */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 54, 66, 0.45);
+      display: none;
+      place-items: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: grid;
+    }
+
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.85rem;
+      width: 100%;
+      max-width: 360px;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .modal-section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.4rem 0.55rem;
+      color: var(--text);
+      font-size: 0.74rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .modal-input:focus {
+      border-color: var(--border-focus);
+      background: #ffffff;
+    }
+
+    /* Days of Week Schedule Picker */
+    .schedule-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.2rem;
+    }
+
+    .day-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.25rem 0.1rem;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .day-btn.selected {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    /* Difficulty segment picker */
+    .diff-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.2rem;
+    }
+
+    .diff-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.3rem 0.1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.1s ease;
+    }
+
+    .diff-btn:hover {
+      border-color: var(--border-focus);
+      color: var(--text);
+    }
+
+    .diff-btn.selected {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    .diff-btn.selected .diff-shape-icon {
+      color: var(--bg) !important;
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.3rem;
+    }
+
+    .modal-color-option {
+      height: 20px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.1s ease;
+    }
+
+    .modal-color-option.selected {
+      border-color: var(--text);
+      transform: scale(1.05);
+    }
+
+    /* Subtasks inside Edit Modal */
+    .modal-subtask-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .modal-subtask-row {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .modal-subtask-input {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.3rem 0.45rem;
+      color: var(--text);
+      font-size: 0.7rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .del-subtask-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-red);
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0 3px;
+    }
+
+    .add-subtask-btn {
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.3rem;
+      border-radius: 3px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .add-subtask-btn:hover {
+      border-color: var(--border-focus);
+      color: var(--text);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.2rem;
+    }
+
+    .modal-delete-btn {
+      background: transparent;
+      border: 1px solid var(--color-red);
+      color: var(--color-red);
+      padding: 0.3rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .modal-save-btn {
+      background: var(--color-blue);
+      border: none;
+      color: #fdf6e3;
+      padding: 0.3rem 0.75rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+  </style>
+</head>
 <body>
-  <div id="gameContainer"></div>
-  <div id="updateBanner" class="update-banner" hidden>
-    <span>New version available.</span>
-    <div class="update-banner-actions">
-     <button id="updateNowBtn" class="btn-pause-action">UPDATE NOW</button>
-      <button id="refreshNowBtn" class="btn-pause-action">FORCE REFRESH</button>
+
+  <header>
+    <!-- Top Big Score Banner -->
+    <div class="score-banner">
+      <div class="score-container">
+        <span class="big-score" id="bigScoreVal">0</span>
+        <span class="score-label">SCORE</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="recoverOldBtn" title="Recover & export old app data">OLD DATA</button>
+        <button class="icon-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
+        <button class="icon-btn" id="importBtn" title="Import Backup JSON">IMP</button>
+        <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+        <div class="date-badge" id="currentDate"></div>
+        <button class="reset-btn" id="resetDailiesBtn" title="Check in daily progress">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          CHECK IN
+        </button>
+      </div>
+    </div>
+
+    <!-- Weighted Progress Total (Clickable for Heatmap) -->
+    <div class="progress-section" id="progressSection" title="Click to view monthly completion heatmap">
+      <div class="progress-meta">
+        <span id="progressPoints">0/0 PTS</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container">
+    <!-- Dailies Section (Left) -->
+    <div class="column" id="dailiesColumn">
+      <div class="column-header">
+        <div class="column-title">
+          <span>DAILIES</span>
+          <span class="counter" id="dailiesCount">0/0 PTS</span>
+        </div>
+      </div>
+      <div class="input-row">
+        <textarea 
+          id="dailyInput" 
+          class="compact-textarea" 
+          placeholder="+ habit (*hard, *aug 30)..."
+          rows="1"
+          autocomplete="off"
+        ></textarea>
+        <button type="button" class="plus-add-btn" id="addDailyBtn" title="Add Daily Task">+</button>
+      </div>
+      <ul class="task-list" id="dailiesList"></ul>
+    </div>
+
+    <!-- Todos Section (Right) -->
+    <div class="column" id="todosColumn">
+      <div class="column-header">
+        <div class="column-title">
+          <span>TO-DOS</span>
+          <span class="counter" id="todosCount">0/0 PTS</span>
+        </div>
+      </div>
+      <div class="input-row">
+        <textarea 
+          id="todoInput" 
+          class="compact-textarea" 
+          placeholder="+ todo (*ultra, *aug 30)..."
+          rows="1"
+          autocomplete="off"
+        ></textarea>
+        <button type="button" class="plus-add-btn" id="addTodoBtn" title="Add To-Do Task">+</button>
+      </div>
+      <ul class="task-list" id="todosList"></ul>
     </div>
   </div>
 
-  <!-- Core Systems -->
-  <script src="JS/config.js?v=20260720a"></script>
-  <script src="JS/core.js?v=20260720a"></script>
-  <script src="JS/animations.js?v=20260720a"></script>
+  <!-- Heatmap Modal Popup -->
+  <div class="heatmap-overlay" id="heatmapOverlay">
+    <div class="heatmap-card">
+      <div class="heatmap-header">
+        <span>Completion Heatmap</span>
+        <button class="modal-close" id="heatmapCloseBtn">&times;</button>
+      </div>
+      <div class="heatmap-months-grid" id="heatmapMonthsGrid"></div>
+    </div>
+  </div>
 
-  <!-- Game Systems -->
-  <script src="JS/player.js?v=20260720a"></script>
-  <script src="JS/tasks.js?v=20260720a"></script>
-  <script src="JS/enemy.js?v=20260720a"></script>
-  <script src="JS/stage.js?v=20260720a"></script>
-  <script src="JS/combat.js?v=20260720a"></script>
+  <!-- Edit Popup Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span id="modalHeaderTitle">EDIT TASK</span>
+        <button class="modal-close" id="modalCloseBtn">&times;</button>
+      </div>
+      
+      <div class="modal-section-title">Title</div>
+      <input type="text" id="modalTaskInput" class="modal-input" placeholder="Task description..." />
 
-  <!-- UI Systems -->
-  <script src="JS/sound.js?v=20260720a"></script>
-  <script src="JS/shop.js?v=20260720a"></script>
-  <script src="JS/ui.js?v=20260720a"></script>
-  <script src="JS/popups.js?v=20260720a"></script>
-  <script src="JS/inventory.js?v=20260720a"></script>
+      <!-- Schedule Days (for Dailies) -->
+      <div id="modalScheduleContainer" style="display: none; flex-direction: column; gap: 0.35rem;">
+        <div class="modal-section-title">Repeat Days</div>
+        <div class="schedule-grid" id="modalScheduleGrid">
+          <button type="button" class="day-btn" data-day="1">M</button>
+          <button type="button" class="day-btn" data-day="2">T</button>
+          <button type="button" class="day-btn" data-day="3">W</button>
+          <button type="button" class="day-btn" data-day="4">T</button>
+          <button type="button" class="day-btn" data-day="5">F</button>
+          <button type="button" class="day-btn" data-day="6">S</button>
+          <button type="button" class="day-btn" data-day="0">S</button>
+        </div>
+      </div>
 
-  <!-- Tycoon Mode -->
-  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script defer src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script defer src="JS/multiplayer.js"></script>
-  <script defer src="JS/tycoon_worker_code.js?v=20260619c"></script>
-  <script defer src="JS/tycoon.js?v=20260619c"></script>
+      <div class="modal-section-title">Difficulty</div>
+      <div class="diff-grid" id="modalDiffGrid">
+        <button type="button" class="diff-btn" data-diff="easy">
+          <span class="diff-shape-icon diff-easy"><svg width="11" height="11" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="currentColor"/></svg></span>
+          <span>1</span>
+        </button>
+        <button type="button" class="diff-btn" data-diff="medium">
+          <span class="diff-shape-icon diff-medium"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor"/></svg></span>
+          <span>2</span>
+        </button>
+        <button type="button" class="diff-btn" data-diff="hard">
+          <span class="diff-shape-icon diff-hard"><svg width="11" height="11" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/></svg></span>
+          <span>5</span>
+        </button>
+        <button type="button" class="diff-btn" data-diff="mega">
+          <span class="diff-shape-icon diff-mega"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor"/></svg></span>
+          <span>7</span>
+        </button>
+        <button type="button" class="diff-btn" data-diff="ultra">
+          <span class="diff-shape-icon diff-ultra"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3" fill="currentColor"/></svg></span>
+          <span>10</span>
+        </button>
+      </div>
 
-  <!-- Game Initialization -->
+      <div class="modal-section-title">Deadline (Optional)</div>
+      <input type="date" id="modalDeadlineInput" class="modal-input" />
+
+      <!-- Subtasks Section -->
+      <div class="modal-section-title">Subtasks</div>
+      <div class="modal-subtask-list" id="modalSubtaskList"></div>
+      <button type="button" class="add-subtask-btn" id="modalAddSubtaskBtn">+ Add Subtask</button>
+
+      <div class="modal-footer">
+        <button class="modal-delete-btn" id="modalDeleteBtn">DELETE</button>
+        <button class="modal-save-btn" id="modalSaveBtn">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recover Old Data Modal Popup -->
+  <div class="modal-overlay" id="recoverModal">
+    <div class="modal" style="max-width: 440px;">
+      <div class="modal-header">
+        <span>OLD DATA RECOVERY</span>
+        <button class="modal-close" id="recoverCloseBtn">&times;</button>
+      </div>
+
+      <div id="recoverStatus" style="font-size: 0.72rem; color: var(--text); line-height: 1.4;">
+        Scanning browser storage for old habits and to-dos...
+      </div>
+
+      <textarea id="recoverPreview" class="compact-textarea" style="max-height: 160px; font-size: 0.65rem; white-space: pre;" readonly></textarea>
+
+      <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.2rem;">
+        <button type="button" class="modal-delete-btn" id="exportRecoveredBtn" style="border-color: var(--color-blue); color: var(--color-blue);">EXPORT JSON</button>
+        <button type="button" class="modal-save-btn" id="importRecoveredBtn">MERGE INTO APP</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const updateBanner = document.getElementById('updateBanner');
-    const updateNowBtn = document.getElementById('updateNowBtn');
-    const refreshNowBtn = document.getElementById('refreshNowBtn');
+    // Audio synthesizer for crisp sound effects
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
 
-    const showUpdateBanner = () => {
-      if (updateBanner) updateBanner.hidden = false;
-    };
-
-    const hideUpdateBanner = () => {
-      if (updateBanner) updateBanner.hidden = true;
-    };
-
-    window.forceRefreshNemesisApp = async () => {
-      try {
-        const registrations = await navigator.serviceWorker?.getRegistrations?.();
-        if (Array.isArray(registrations)) {
-          await Promise.all(registrations.map((registration) => registration.unregister()));
-        }
-      } catch (error) {
-        console.warn('Service worker unregister failed', error);
+      if (type === 'check') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+        if (navigator.vibrate) navigator.vibrate(10);
+      } else if (type === 'uncheck') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.06);
+      } else if (type === 'checkin') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(330, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.08);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.16);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+        if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
       }
+    }
 
-      try {
-        const cacheKeys = await caches.keys();
-        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-      } catch (error) {
-        console.warn('Cache clear failed', error);
+    const SOLAR_COLORS = [
+      { name: 'blue', hex: '#268bd2' },
+      { name: 'green', hex: '#859900' },
+      { name: 'cyan', hex: '#2aa198' },
+      { name: 'yellow', hex: '#b58900' },
+      { name: 'orange', hex: '#cb4b16' },
+      { name: 'red', hex: '#dc322f' },
+      { name: 'magenta', hex: '#d33682' },
+      { name: 'violet', hex: '#6c71c4' }
+    ];
+
+    const DIFF_CONFIG = {
+      easy: {
+        weight: 1,
+        label: 'EASY (1)',
+        svg: `<svg width="11" height="11" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="currentColor"/></svg>`
+      },
+      medium: {
+        weight: 2,
+        label: 'MED (2)',
+        svg: `<svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor"/></svg>`
+      },
+      hard: {
+        weight: 5,
+        label: 'HARD (5)',
+        svg: `<svg width="11" height="11" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/></svg>`
+      },
+      mega: {
+        weight: 7,
+        label: 'MEGA (7)',
+        svg: `<svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor"/></svg>`
+      },
+      ultra: {
+        weight: 10,
+        label: 'ULTRA (10)',
+        svg: `<svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3" fill="currentColor"/></svg>`
       }
-
-      const nextUrl = new URL(window.location.href);
-      nextUrl.searchParams.set('forceRefresh', Date.now().toString());
-      window.location.replace(nextUrl.toString());
     };
 
-    if (updateNowBtn) {
-      updateNowBtn.addEventListener('click', async () => {
-        try {
-          const registration = await navigator.serviceWorker?.getRegistration?.();
-          if (registration?.waiting) {
-            const reloadOnControllerChange = () => {
-              navigator.serviceWorker.removeEventListener('controllerchange', reloadOnControllerChange);
-              window.location.reload();
-            };
-            navigator.serviceWorker.addEventListener('controllerchange', reloadOnControllerChange);
-            try {
-              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-            } catch (err) {
-              console.warn('postMessage to waiting worker failed', err);
-            }
-            // If the worker doesn't activate within a short time, fall back to a force refresh
-            setTimeout(() => {
-              if (navigator.serviceWorker.controller) return; // already changed
-              console.log('Update handoff timeout, forcing refresh');
-              window.forceRefreshNemesisApp();
-            }, 2500);
-            hideUpdateBanner();
-            return;
+    let state = {
+      score: parseInt(localStorage.getItem('nemesis_big_score') || '0', 10),
+      dailies: JSON.parse(localStorage.getItem('nemesis_dailies') || '[]'),
+      todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
+      history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
+      lastActiveDate: localStorage.getItem('nemesis_last_date') || ''
+    };
+
+    let activeEditing = null; // { id, type, color, difficulty, subtasks, days }
+    let draggedId = null;
+    let draggedType = null;
+
+    function saveState() {
+      localStorage.setItem('nemesis_big_score', state.score.toString());
+      localStorage.setItem('nemesis_dailies', JSON.stringify(state.dailies));
+      localStorage.setItem('nemesis_todos', JSON.stringify(state.todos));
+      localStorage.setItem('nemesis_history', JSON.stringify(state.history));
+      localStorage.setItem('nemesis_last_date', state.lastActiveDate);
+    }
+
+    function checkDailyReset() {
+      const today = new Date().toISOString().split('T')[0];
+      if (state.lastActiveDate && state.lastActiveDate !== today) {
+        performReset(false);
+      }
+      state.lastActiveDate = today;
+      saveState();
+    }
+
+    function updateDateDisplay() {
+      const now = new Date();
+      const options = { weekday: 'short', month: 'short', day: 'numeric' };
+      document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options).toUpperCase();
+      document.getElementById('bigScoreVal').textContent = (state.score >= 0 ? '+' : '') + state.score;
+    }
+
+    function isOverdue(deadlineStr) {
+      if (!deadlineStr) return false;
+      const today = new Date().toISOString().split('T')[0];
+      return deadlineStr < today;
+    }
+
+    function formatDeadline(deadlineStr) {
+      if (!deadlineStr) return '';
+      const today = new Date().toISOString().split('T')[0];
+      if (deadlineStr === today) return 'Today';
+      const parts = deadlineStr.split('-');
+      return `${parts[1]}/${parts[2]}`;
+    }
+
+    function getWeight(item) {
+      const conf = DIFF_CONFIG[item.difficulty] || DIFF_CONFIG.easy;
+      return conf.weight;
+    }
+
+    // Natural Language Multi-line Parser
+    function parseNaturalLanguage(rawInput) {
+      let rawLines = rawInput.split('\n');
+      let subtasks = [];
+      let mainLines = [];
+
+      rawLines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+          const subText = trimmed.replace(/^[-•]\s*/, '').trim();
+          if (subText) {
+            subtasks.push({
+              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              text: subText,
+              completed: false
+            });
           }
-        } catch (error) {
-          console.warn('Update handoff failed', error);
-        }
-        window.forceRefreshNemesisApp();
-      });
-    }
-
-    if (refreshNowBtn) {
-      refreshNowBtn.addEventListener('click', () => {
-        window.forceRefreshNemesisApp();
-      });
-    }
-
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        hideUpdateBanner();
-      });
-    }
-
-    // Give users a quick fallback: clicking the banner background forces refresh,
-    // and provide a small dismiss button in case they want to continue without updating.
-    if (updateBanner) {
-      updateBanner.addEventListener('click', (e) => {
-        if (e.target === updateBanner) {
-          // Clicked the banner background — force refresh
-          try { window.forceRefreshNemesisApp(); } catch (err) { location.reload(); }
+        } else if (trimmed.length > 0) {
+          mainLines.push(trimmed);
         }
       });
 
-      const dismissBtn = document.createElement('button');
-      dismissBtn.className = 'btn-pause-action diamond-rewards-btn';
-      dismissBtn.style.marginLeft = '8px';
-      dismissBtn.textContent = 'DISMISS';
-      dismissBtn.addEventListener('click', (ev) => { ev.stopPropagation(); hideUpdateBanner(); });
-      const actions = updateBanner.querySelector('.update-banner-actions');
-      if (actions) actions.appendChild(dismissBtn);
-    }
+      let fullText = mainLines.join(' ');
+      let difficulty = 'easy';
+      let deadline = '';
+      let color = SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex;
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      // Create game state
-      const state = initializeGameState();
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const todayStr = now.toISOString().split('T')[0];
 
-      // Try to load saved game
-      if (state.load()) {
-        console.log('Game loaded from save');
-        if (state.dailiesState.dailies.length === 0) {
-          TaskManager.ensureStarterTasks();
+      const months = {
+        jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
+        may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8,
+        oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
+      };
+
+      // 1. Difficulty tags (*hard, *ultra, etc)
+      const starDiffRegex = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star)\b/gi;
+      let diffMatch = starDiffRegex.exec(fullText);
+      if (diffMatch) {
+        const val = diffMatch[1].toLowerCase();
+        if (['easy', 'circle'].includes(val)) difficulty = 'easy';
+        else if (['medium', 'med', 'triangle'].includes(val)) difficulty = 'medium';
+        else if (['hard', 'square'].includes(val)) difficulty = 'hard';
+        else if (['mega', 'pentagon'].includes(val)) difficulty = 'mega';
+        else if (['ultra', 'star'].includes(val)) difficulty = 'ultra';
+        fullText = fullText.replace(diffMatch[0], ' ');
+      }
+
+      // Color tags (*blue, etc)
+      const starColorRegex = /\*\s*(blue|green|cyan|yellow|orange|red|magenta|violet)\b/gi;
+      let colMatch = starColorRegex.exec(fullText);
+      if (colMatch) {
+        const found = SOLAR_COLORS.find(c => c.name === colMatch[1].toLowerCase());
+        if (found) color = found.hex;
+        fullText = fullText.replace(colMatch[0], ' ');
+      }
+
+      // 2. Date expressions
+      const monthDayRegex = /(?:\*\s*)?\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
+      let mdMatch = monthDayRegex.exec(fullText);
+      if (mdMatch) {
+        const mIndex = months[mdMatch[1].toLowerCase()];
+        const day = parseInt(mdMatch[2], 10);
+        if (mIndex !== undefined && day >= 1 && day <= 31) {
+          const target = new Date(currentYear, mIndex, day);
+          const offset = target.getTimezoneOffset() * 60000;
+          deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
+          fullText = fullText.replace(mdMatch[0], ' ');
         }
-        if (state.playerState.className) {
-          if ((state.stageState.enemies || []).length === 0) {
-            StageManager.initializeRun(state.stageState.stage || 1);
+      }
+
+      if (!deadline) {
+        const slashRegex = /(?:\*\s*)?\b(\d{1,4})[\/\-](\d{1,2})(?:[\/\-](\d{1,4}))?\b/g;
+        let sMatch = slashRegex.exec(fullText);
+        if (sMatch) {
+          let y = currentYear, m, d;
+          if (sMatch[1].length === 4) {
+            y = parseInt(sMatch[1], 10);
+            m = parseInt(sMatch[2], 10) - 1;
+            d = parseInt(sMatch[3], 10);
           } else {
-            StageManager.rehydrateLoadedEnemies();
+            m = parseInt(sMatch[1], 10) - 1;
+            d = parseInt(sMatch[2], 10);
+            if (sMatch[3]) y = parseInt(sMatch[3], 10);
+            if (y < 100) y += 2000;
           }
-          const activeMode = localStorage.getItem('nemesis_active_mode');
-          if (activeMode === 'tycoon' && window.TycoonManager) {
-            window.TycoonManager.enterTycoonMode();
-          } else {
-            UIManager.initializeUI();
-            UIManager.refreshGameUI();
+          if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+            const target = new Date(y, m, d);
+            const offset = target.getTimezoneOffset() * 60000;
+            deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
+            fullText = fullText.replace(sMatch[0], ' ');
           }
-        } else {
-          PopupsManager.showClassSelection();
         }
-      } else {
-        console.log('Starting new game');
-        // Show class selection
-        PopupsManager.showClassSelection();
       }
-    });
 
-    // Autosave periodically
-    setInterval(() => {
-      const state = getGameState();
-      if (state.playerState.className) {
-        state.save();
+      if (!deadline) {
+        if (/(?:\*\s*)?\b(tomorrow)\b/i.test(fullText)) {
+          const tom = new Date(now);
+          tom.setDate(tom.getDate() + 1);
+          deadline = tom.toISOString().split('T')[0];
+          fullText = fullText.replace(/(?:\*\s*)?\b(tomorrow)\b/gi, ' ');
+        } else if (/(?:\*\s*)?\b(today)\b/i.test(fullText)) {
+          deadline = todayStr;
+          fullText = fullText.replace(/(?:\*\s*)?\b(today)\b/gi, ' ');
+        }
       }
-    }, 30000); // Every 30 seconds
 
-    // Missed check-in auto-kill has been removed. Check-ins are now fully handled in-game.
+      if (difficulty === 'easy') {
+        const wordDiffRegex = /\b(ultra|mega|hard|medium)\b/i;
+        let wMatch = fullText.match(wordDiffRegex);
+        if (wMatch) {
+          const val = wMatch[1].toLowerCase();
+          if (val === 'medium') difficulty = 'medium';
+          else if (val === 'hard') difficulty = 'hard';
+          else if (val === 'mega') difficulty = 'mega';
+          else if (val === 'ultra') difficulty = 'ultra';
+          fullText = fullText.replace(wMatch[0], ' ');
+        }
+      }
 
-    // Register the service worker when hosted over HTTP(S)
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then((registration) => {
-          const maybeShow = () => {
-            if (registration.waiting) {
-              showUpdateBanner();
-            }
+      let finalTitle = fullText.replace(/[*]/g, '').replace(/\s+/g, ' ').trim();
+      if (!finalTitle) finalTitle = `Task (${difficulty.toUpperCase()})`;
+
+      return { text: finalTitle, difficulty, deadline, color, subtasks, streak: 0, days: [0, 1, 2, 3, 4, 5, 6] };
+    }
+
+    function getStreakBg(item) {
+      const streak = item.streak || 0;
+      if (streak > 0) {
+        const alpha = Math.min(streak / 20, 1.0) * 0.42;
+        const hex = (item.color || '#268bd2').replace('#', '');
+        const r = parseInt(hex.substring(0,2), 16) || 0;
+        const g = parseInt(hex.substring(2,4), 16) || 0;
+        const b = parseInt(hex.substring(4,6), 16) || 0;
+        return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+      } else if (streak < 0) {
+        const alpha = Math.min(Math.abs(streak) / 20, 1.0) * 0.18;
+        return `rgba(220, 50, 47, ${alpha.toFixed(3)})`;
+      }
+      return 'var(--card-subtle)';
+    }
+
+    function renderItem(item, type) {
+      const card = document.createElement('li');
+      card.className = `task-card ${item.completed ? 'completed' : ''}`;
+      card.style.borderLeftColor = item.color || SOLAR_COLORS[0].hex;
+      if (type === 'dailies') {
+        card.style.backgroundColor = getStreakBg(item);
+      }
+      card.dataset.id = item.id;
+      card.draggable = true;
+
+      // Drag and drop handlers
+      card.ondragstart = (e) => {
+        draggedId = item.id;
+        draggedType = type;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      };
+      card.ondragend = () => {
+        draggedId = null;
+        draggedType = null;
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+      };
+      card.ondragover = (e) => {
+        e.preventDefault();
+        if (draggedType === type) card.classList.add('drag-over');
+      };
+      card.ondragleave = () => {
+        card.classList.remove('drag-over');
+      };
+      card.ondrop = (e) => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (draggedId && draggedType === type && draggedId !== item.id) {
+          const list = state[type];
+          const fromIdx = list.findIndex(t => t.id === draggedId);
+          const toIdx = list.findIndex(t => t.id === item.id);
+          if (fromIdx >= 0 && toIdx >= 0) {
+            const [moved] = list.splice(fromIdx, 1);
+            list.splice(toIdx, 0, moved);
+            saveState();
+            render();
+          }
+        }
+      };
+
+      // Double click to open edit popup
+      card.ondblclick = () => openEditModal(item, type);
+
+      // Top main row
+      const mainRow = document.createElement('div');
+      mainRow.className = 'task-main';
+
+      // Checkbox
+      const check = document.createElement('div');
+      check.className = `task-checkbox ${item.completed ? 'checked' : ''}`;
+      check.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      check.onclick = (e) => {
+        e.stopPropagation();
+        toggleTask(item.id, type);
+      };
+
+      // Text
+      const textSpan = document.createElement('span');
+      textSpan.className = 'task-text';
+      textSpan.textContent = item.text;
+
+      // Subtle streak text for dailies
+      if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
+        const sText = document.createElement('span');
+        sText.className = `streak-text ${item.streak > 0 ? 'pos' : 'neg'}`;
+        sText.textContent = `${item.streak > 0 ? '+' : ''}${item.streak}`;
+        mainRow.appendChild(sText);
+      }
+
+      // Difficulty icon
+      const diffName = item.difficulty || 'easy';
+      const conf = DIFF_CONFIG[diffName] || DIFF_CONFIG.easy;
+      const diffBadge = document.createElement('span');
+      diffBadge.className = `diff-shape-icon diff-${diffName}`;
+      diffBadge.title = conf.label;
+      diffBadge.innerHTML = conf.svg;
+
+      mainRow.appendChild(check);
+      mainRow.appendChild(textSpan);
+      mainRow.appendChild(diffBadge);
+
+      // Deadline badge if present
+      if (item.deadline && item.deadline.trim() !== '') {
+        const dl = document.createElement('span');
+        const overdue = !item.completed && isOverdue(item.deadline);
+        dl.className = `deadline-badge ${overdue ? 'overdue' : ''}`;
+        dl.innerHTML = `&#9202; ${formatDeadline(item.deadline)}`;
+        mainRow.appendChild(dl);
+      }
+
+      card.appendChild(mainRow);
+
+      // Subtasks tree
+      const subtasks = item.subtasks || [];
+      if (subtasks.length > 0) {
+        const subsContainer = document.createElement('div');
+        subsContainer.className = 'subtasks-container';
+
+        subtasks.forEach(st => {
+          const stItem = document.createElement('div');
+          stItem.className = `subtask-item ${st.completed ? 'done' : ''}`;
+
+          const prefix = document.createElement('span');
+          prefix.className = 'subtask-prefix';
+          prefix.textContent = '-';
+
+          const stCheck = document.createElement('div');
+          stCheck.className = `subtask-checkbox ${st.completed ? 'checked' : ''}`;
+          stCheck.innerHTML = `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+          stCheck.onclick = (e) => {
+            e.stopPropagation();
+            toggleSubtask(item.id, type, st.id);
           };
 
-          if (registration.waiting) {
-            showUpdateBanner();
-          }
+          const stText = document.createElement('span');
+          stText.className = 'subtask-text';
+          stText.textContent = st.text;
 
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            if (!newWorker) return;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                showUpdateBanner();
-              }
-            });
-          });
-
-          maybeShow();
-        }).catch((error) => {
-          console.warn('Service worker registration failed', error);
+          stItem.appendChild(prefix);
+          stItem.appendChild(stCheck);
+          stItem.appendChild(stText);
+          subsContainer.appendChild(stItem);
         });
-      });
+
+        card.appendChild(subsContainer);
+      }
+
+      return card;
     }
-  </script>
-  <script>
-    // Runtime UI debug helpers: log clicks and surface JS errors/promises
-    (function () {
-      window.addEventListener('error', (e) => {
-        console.error('Runtime error caught by debug helper:', e.message, e.filename, e.lineno, e.colno, e.error);
-        const marker = document.getElementById('runtimeErrorMarker') || document.createElement('div');
-        marker.id = 'runtimeErrorMarker';
-        marker.style.position = 'fixed';
-        marker.style.right = '12px';
-        marker.style.bottom = '12px';
-        marker.style.padding = '8px 10px';
-        marker.style.background = 'rgba(200,40,40,0.95)';
-        marker.style.color = 'white';
-        marker.style.zIndex = 6000;
-        marker.style.fontSize = '12px';
-        marker.style.fontFamily = 'sans-serif';
-        marker.textContent = 'JS Error: ' + (e.message || 'see console');
-        document.body.appendChild(marker);
+
+    function render() {
+      // Calculate Dailies Weight
+      let dTotalPts = 0;
+      let dDonePts = 0;
+      state.dailies.forEach(d => {
+        const w = getWeight(d);
+        dTotalPts += w;
+        if (d.completed) dDonePts += w;
       });
 
-      window.addEventListener('unhandledrejection', (ev) => {
-        console.error('Unhandled promise rejection:', ev.reason);
+      // Calculate Todos Weight
+      let tTotalPts = 0;
+      let tDonePts = 0;
+      state.todos.forEach(t => {
+        const w = getWeight(t);
+        tTotalPts += w;
+        if (t.completed) tDonePts += w;
       });
 
-      // Removed DEBUG CLICK logger for performance on mobile
+      // Overall Progress
+      const totalPts = dTotalPts + tTotalPts;
+      const donePts = dDonePts + tDonePts;
+      const pct = totalPts > 0 ? Math.round((donePts / totalPts) * 100) : 0;
 
-      // Ensure update banner buttons allow pointer events and log their clicks
-      const ub = document.getElementById('updateBanner');
-      if (ub) ub.style.pointerEvents = 'auto';
-      ['updateNowBtn', 'refreshNowBtn'].forEach((id) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.setAttribute('type', 'button');
-        el.style.pointerEvents = 'auto';
-        el.addEventListener('click', (e) => {
-          console.log('DEBUG BUTTON CLICK:', id);
-        }, { capture: true });
-      });
-    })();
-    
-    // Phase 4b: Pause intervals when hidden
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (window.deadlineCheckInterval) {
-          clearInterval(window.deadlineCheckInterval);
-          window.deadlineCheckInterval = null;
-        }
-        if (typeof AnimationRuntime !== 'undefined') AnimationRuntime.lowPower = true;
-        document.body.classList.add('low-power-mode');
+      document.getElementById('progressPoints').textContent = `${donePts}/${totalPts} PTS`;
+      document.getElementById('progressPercent').textContent = `${pct}%`;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+      document.getElementById('bigScoreVal').textContent = (state.score >= 0 ? '+' : '') + state.score;
+
+      // Dailies List
+      const dList = document.getElementById('dailiesList');
+      dList.innerHTML = '';
+      if (state.dailies.length === 0) {
+        dList.innerHTML = '<div class="empty-state">[ No habits ]</div>';
       } else {
-        if (!window.deadlineCheckInterval && typeof TaskManager !== 'undefined') {
-          window.deadlineCheckInterval = setInterval(() => {
-            try { TaskManager.checkDailyDeadlines(); } catch(e){}
-          }, 10000);
+        state.dailies.forEach(d => dList.appendChild(renderItem(d, 'dailies')));
+      }
+      document.getElementById('dailiesCount').textContent = `${dDonePts}/${dTotalPts} PTS`;
+
+      // Todos List
+      const tList = document.getElementById('todosList');
+      tList.innerHTML = '';
+      if (state.todos.length === 0) {
+        tList.innerHTML = '<div class="empty-state">[ No to-dos ]</div>';
+      } else {
+        const today = new Date().toISOString().split('T')[0];
+        const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+        const overdueTasks = [];
+        const todayTasks = [];
+        const tomorrowTasks = [];
+        const futureDateMap = {};
+        const noDeadlineTasks = [];
+
+        state.todos.forEach(t => {
+          if (!t.deadline || t.deadline.trim() === '') {
+            noDeadlineTasks.push(t);
+          } else if (t.deadline < today && !t.completed) {
+            overdueTasks.push(t);
+          } else if (t.deadline === today) {
+            todayTasks.push(t);
+          } else if (t.deadline === tomorrow) {
+            tomorrowTasks.push(t);
+          } else {
+            if (!futureDateMap[t.deadline]) futureDateMap[t.deadline] = [];
+            futureDateMap[t.deadline].push(t);
+          }
+        });
+
+        function addGroup(label, tasks, customClass = '') {
+          if (tasks.length === 0) return;
+          const div = document.createElement('div');
+          div.className = `section-divider ${customClass}`;
+          div.textContent = label;
+          tList.appendChild(div);
+          tasks.forEach(t => tList.appendChild(renderItem(t, 'todos')));
         }
-        // Only restore high-power if not strictly on mobile
-        if (window.innerWidth > 900 && typeof AnimationRuntime !== 'undefined') {
-          AnimationRuntime.lowPower = false;
-          document.body.classList.remove('low-power-mode');
+
+        addGroup('OVERDUE', overdueTasks, 'overdue');
+        addGroup('TODAY', todayTasks, 'today');
+        addGroup('TOMORROW', tomorrowTasks);
+
+        const sortedDates = Object.keys(futureDateMap).sort();
+        sortedDates.forEach(dStr => {
+          const parts = dStr.split('-');
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+          const mName = monthNames[parseInt(parts[1], 10) - 1] || parts[1];
+          const formatted = `${mName} ${parseInt(parts[2], 10)}`;
+          addGroup(formatted, futureDateMap[dStr]);
+        });
+
+        addGroup('NO DEADLINE', noDeadlineTasks);
+      }
+      document.getElementById('todosCount').textContent = `${tDonePts}/${tTotalPts} PTS`;
+    }
+
+    function toggleTask(id, type) {
+      const task = state[type].find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        playSound(task.completed ? 'check' : 'uncheck');
+        saveState();
+        render();
+      }
+    }
+
+    function toggleSubtask(taskId, type, subtaskId) {
+      const task = state[type].find(t => t.id === taskId);
+      if (task && task.subtasks) {
+        const sub = task.subtasks.find(s => s.id === subtaskId);
+        if (sub) {
+          sub.completed = !sub.completed;
+          playSound(sub.completed ? 'check' : 'uncheck');
+          saveState();
+          render();
         }
       }
-    });
+    }
+
+    function performReset(userInitiated = true) {
+      playSound('checkin');
+      let totalPts = 0;
+      let donePts = 0;
+      state.dailies.forEach(d => {
+        const w = getWeight(d);
+        totalPts += w;
+        if (d.completed) donePts += w;
+      });
+      state.todos.forEach(t => {
+        const w = getWeight(t);
+        totalPts += w;
+        if (t.completed) donePts += w;
+      });
+
+      const pct = totalPts > 0 ? (donePts / totalPts) * 100 : 100;
+      
+      if (totalPts > 0) {
+        if (pct >= 100) state.score += 2;
+        else if (pct >= 70) state.score += 1;
+        else if (pct >= 50) state.score += 0;
+        else state.score -= 1;
+      }
+
+      const today = state.lastActiveDate || new Date().toISOString().split('T')[0];
+      state.history[today] = totalPts > 0 ? donePts / totalPts : 1.0;
+
+      // Update streaks & uncheck habits
+      state.dailies.forEach(d => {
+        const current = d.streak || 0;
+        if (d.completed) {
+          if (current < 0) {
+            d.streak = 0; // broke negative streak, reset to 0
+          } else {
+            d.streak = current + 1;
+          }
+        } else {
+          if (current > 0) {
+            d.streak = 0; // broke positive streak, reset to 0
+          } else {
+            d.streak = current - 1; // goes negative
+          }
+        }
+        d.completed = false;
+        if (d.subtasks) d.subtasks.forEach(s => s.completed = false);
+      });
+
+      state.todos = state.todos.filter(t => !t.completed);
+
+      saveState();
+      render();
+    }
+
+    function renderHeatmap() {
+      const grid = document.getElementById('heatmapMonthsGrid');
+      grid.innerHTML = '';
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      for (let m = 0; m < 12; m++) {
+        const block = document.createElement('div');
+        block.className = 'month-block';
+
+        const title = document.createElement('div');
+        title.className = 'month-title';
+        title.textContent = monthNames[m];
+        block.appendChild(title);
+
+        const daysGrid = document.createElement('div');
+        daysGrid.className = 'month-days-grid';
+
+        const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+        for (let d = 1; d <= daysInMonth; d++) {
+          const cell = document.createElement('div');
+          cell.className = 'day-cell';
+
+          const dateStr = `${currentYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          const rate = state.history[dateStr];
+
+          if (rate !== undefined) {
+            if (rate >= 1.0) cell.classList.add('rate-4');
+            else if (rate >= 0.7) cell.classList.add('rate-3');
+            else if (rate >= 0.4) cell.classList.add('rate-2');
+            else if (rate > 0) cell.classList.add('rate-1');
+            cell.title = `${dateStr}: ${Math.round(rate * 100)}%`;
+          } else {
+            cell.title = dateStr;
+          }
+
+          daysGrid.appendChild(cell);
+        }
+
+        block.appendChild(daysGrid);
+        grid.appendChild(block);
+      }
+    }
+
+    function openEditModal(item, type) {
+      activeEditing = { 
+        id: item.id, 
+        type: type, 
+        color: item.color || SOLAR_COLORS[0].hex,
+        difficulty: item.difficulty || 'easy',
+        subtasks: item.subtasks ? JSON.parse(JSON.stringify(item.subtasks)) : [],
+        days: item.days ? [...item.days] : [0, 1, 2, 3, 4, 5, 6]
+      };
+
+      const modal = document.getElementById('editModal');
+      document.getElementById('modalHeaderTitle').textContent = type === 'dailies' ? 'EDIT DAILY' : 'EDIT TO-DO';
+      const input = document.getElementById('modalTaskInput');
+      input.value = item.text;
+
+      const deadlineInput = document.getElementById('modalDeadlineInput');
+      deadlineInput.value = item.deadline || '';
+
+      // Schedule container for dailies
+      const schedContainer = document.getElementById('modalScheduleContainer');
+      if (type === 'dailies') {
+        schedContainer.style.display = 'flex';
+        document.querySelectorAll('#modalScheduleGrid .day-btn').forEach(btn => {
+          const dayNum = parseInt(btn.dataset.day, 10);
+          btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
+          btn.onclick = () => {
+            if (activeEditing.days.includes(dayNum)) {
+              if (activeEditing.days.length > 1) {
+                activeEditing.days = activeEditing.days.filter(d => d !== dayNum);
+              }
+            } else {
+              activeEditing.days.push(dayNum);
+            }
+            btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
+          };
+        });
+      } else {
+        schedContainer.style.display = 'none';
+      }
+
+      renderModalSubtasks();
+
+      // Difficulty buttons
+      document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.diff === activeEditing.difficulty);
+        btn.onclick = () => {
+          activeEditing.difficulty = btn.dataset.diff;
+          document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+      });
+
+      // Color Grid
+      const grid = document.getElementById('modalColorGrid');
+      grid.innerHTML = '';
+      SOLAR_COLORS.forEach(c => {
+        const opt = document.createElement('div');
+        opt.className = `modal-color-option ${activeEditing.color === c.hex ? 'selected' : ''}`;
+        opt.style.background = c.hex;
+        opt.onclick = () => {
+          activeEditing.color = c.hex;
+          document.querySelectorAll('.modal-color-option').forEach(el => el.classList.remove('selected'));
+          opt.classList.add('selected');
+        };
+        grid.appendChild(opt);
+      });
+
+      modal.classList.add('active');
+      input.focus();
+    }
+
+    function renderModalSubtasks() {
+      const list = document.getElementById('modalSubtaskList');
+      list.innerHTML = '';
+      activeEditing.subtasks.forEach((st, idx) => {
+        const row = document.createElement('div');
+        row.className = 'modal-subtask-row';
+
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'modal-subtask-input';
+        inp.value = st.text;
+        inp.placeholder = 'Subtask description...';
+        inp.oninput = (e) => { st.text = e.target.value; };
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'del-subtask-btn';
+        del.innerHTML = '&times;';
+        del.onclick = () => {
+          activeEditing.subtasks.splice(idx, 1);
+          renderModalSubtasks();
+        };
+
+        row.appendChild(inp);
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+      activeEditing = null;
+    }
+
+    function saveModalChanges() {
+      if (!activeEditing) return;
+      const input = document.getElementById('modalTaskInput');
+      const newText = input.value.trim();
+      const deadlineVal = document.getElementById('modalDeadlineInput').value;
+      const task = state[activeEditing.type].find(t => t.id === activeEditing.id);
+      
+      if (task) {
+        if (newText.length === 0) {
+          state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+        } else {
+          task.text = newText;
+          task.color = activeEditing.color;
+          task.difficulty = activeEditing.difficulty;
+          task.deadline = deadlineVal;
+          task.subtasks = activeEditing.subtasks.filter(s => s.text.trim().length > 0);
+          if (activeEditing.type === 'dailies') {
+            task.days = activeEditing.days;
+          }
+        }
+        saveState();
+        render();
+      }
+      closeEditModal();
+    }
+
+    function deleteModalItem() {
+      if (!activeEditing) return;
+      state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+      saveState();
+      render();
+      closeEditModal();
+    }
+
+    function addDailyFromInput() {
+      const dInput = document.getElementById('dailyInput');
+      if (dInput.value.trim()) {
+        const parsed = parseNaturalLanguage(dInput.value);
+        state.dailies.unshift({
+          id: 'd_' + Date.now(),
+          text: parsed.text,
+          completed: false,
+          difficulty: parsed.difficulty,
+          deadline: parsed.deadline,
+          color: parsed.color,
+          subtasks: parsed.subtasks,
+          streak: 0,
+          days: [0, 1, 2, 3, 4, 5, 6]
+        });
+        dInput.value = '';
+        saveState();
+        render();
+      }
+    }
+
+    function addTodoFromInput() {
+      const tInput = document.getElementById('todoInput');
+      if (tInput.value.trim()) {
+        const parsed = parseNaturalLanguage(tInput.value);
+        state.todos.unshift({
+          id: 't_' + Date.now(),
+          text: parsed.text,
+          completed: false,
+          difficulty: parsed.difficulty,
+          deadline: parsed.deadline,
+          color: parsed.color,
+          subtasks: parsed.subtasks
+        });
+        tInput.value = '';
+        saveState();
+        render();
+      }
+    }
+
+    let recoveredData = { dailies: [], todos: [] };
+
+    function scanOldData() {
+      recoveredData = { dailies: [], todos: [] };
+      const rawNemesis = localStorage.getItem('nemesis_data');
+      if (rawNemesis) {
+        try {
+          const parsed = JSON.parse(rawNemesis);
+          const ds = parsed.dailiesState;
+          if (ds) {
+            // Check sets
+            if (ds.sets) {
+              Object.keys(ds.sets).forEach(k => {
+                const s = ds.sets[k];
+                if (s && Array.isArray(s.dailies)) {
+                  s.dailies.forEach(d => {
+                    const text = d.name || d.text || d.description || d.title;
+                    if (text && !recoveredData.dailies.some(x => x.text === text)) {
+                      recoveredData.dailies.push({
+                        id: 'd_old_' + (d.id || Math.random().toString(36).substr(2, 6)),
+                        text: text,
+                        completed: !!d.completed,
+                        difficulty: (d.difficulty || 'easy').toLowerCase(),
+                        deadline: d.deadline ? String(d.deadline) : '',
+                        color: d.color || '#268bd2',
+                        streak: d.streak || 0,
+                        subtasks: Array.isArray(d.subtasks) ? d.subtasks.map(st => ({
+                          id: 'st_' + Math.random().toString(36).substr(2, 6),
+                          text: typeof st === 'string' ? st : (st.text || st.name || ''),
+                          completed: !!st.completed
+                        })) : []
+                      });
+                    }
+                  });
+                }
+              });
+            }
+            // Check dailies array
+            if (Array.isArray(ds.dailies)) {
+              ds.dailies.forEach(d => {
+                const text = d.name || d.text || d.description || d.title;
+                if (text && !recoveredData.dailies.some(x => x.text === text)) {
+                  recoveredData.dailies.push({
+                    id: 'd_old_' + (d.id || Math.random().toString(36).substr(2, 6)),
+                    text: text,
+                    completed: !!d.completed,
+                    difficulty: (d.difficulty || 'easy').toLowerCase(),
+                    deadline: d.deadline ? String(d.deadline) : '',
+                    color: d.color || '#268bd2',
+                    streak: d.streak || 0,
+                    subtasks: Array.isArray(d.subtasks) ? d.subtasks.map(st => ({
+                      id: 'st_' + Math.random().toString(36).substr(2, 6),
+                      text: typeof st === 'string' ? st : (st.text || st.name || ''),
+                      completed: !!st.completed
+                    })) : []
+                  });
+                }
+              });
+            }
+            // Check todos array
+            if (Array.isArray(ds.todos)) {
+              ds.todos.forEach(t => {
+                const text = t.name || t.text || t.description || t.title;
+                if (text && !recoveredData.todos.some(x => x.text === text)) {
+                  let dlStr = '';
+                  if (t.deadline) {
+                    try {
+                      dlStr = typeof t.deadline === 'number' ? new Date(t.deadline).toISOString().split('T')[0] : String(t.deadline);
+                    } catch (e) {}
+                  }
+                  recoveredData.todos.push({
+                    id: 't_old_' + (t.id || Math.random().toString(36).substr(2, 6)),
+                    text: text,
+                    completed: !!t.completed,
+                    difficulty: (t.difficulty || 'easy').toLowerCase(),
+                    deadline: dlStr,
+                    color: t.color || '#268bd2',
+                    subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(st => ({
+                      id: 'st_' + Math.random().toString(36).substr(2, 6),
+                      text: typeof st === 'string' ? st : (st.text || st.name || ''),
+                      completed: !!st.completed
+                    })) : []
+                  });
+                }
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Check all other keys in localStorage for any stray task lists
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k !== 'nemesis_data' && (k.includes('task') || k.includes('daily') || k.includes('todo') || k.includes('habit'))) {
+          try {
+            const val = JSON.parse(localStorage.getItem(k));
+            if (Array.isArray(val)) {
+              val.forEach(item => {
+                const text = item.name || item.text || item.description || item.title;
+                if (text && typeof text === 'string') {
+                  const targetList = (k.includes('daily') || k.includes('habit')) ? recoveredData.dailies : recoveredData.todos;
+                  if (!targetList.some(x => x.text === text)) {
+                    targetList.push({
+                      id: (k.includes('daily') ? 'd_' : 't_') + 'old_' + Math.random().toString(36).substr(2, 6),
+                      text: text,
+                      completed: !!item.completed,
+                      difficulty: (item.difficulty || 'easy').toLowerCase(),
+                      deadline: item.deadline ? String(item.deadline) : '',
+                      color: item.color || '#268bd2',
+                      subtasks: []
+                    });
+                  }
+                }
+              });
+            }
+          } catch (e) {}
+        }
+      }
+
+      const statusEl = document.getElementById('recoverStatus');
+      const previewEl = document.getElementById('recoverPreview');
+      statusEl.textContent = `Found ${recoveredData.dailies.length} Old Habit(s) and ${recoveredData.todos.length} Old To-Do(s).`;
+      previewEl.value = JSON.stringify(recoveredData, null, 2);
+    }
+
+    function exportRecoveredData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(recoveredData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `recovered-old-data.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function mergeRecoveredData() {
+      let addedD = 0;
+      let addedT = 0;
+      recoveredData.dailies.forEach(d => {
+        if (!state.dailies.some(x => x.text === d.text)) {
+          state.dailies.push(d);
+          addedD++;
+        }
+      });
+      recoveredData.todos.forEach(t => {
+        if (!state.todos.some(x => x.text === t.text)) {
+          state.todos.push(t);
+          addedT++;
+        }
+      });
+      saveState();
+      render();
+      document.getElementById('recoverModal').classList.remove('active');
+    }
+
+    function exportBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `checklist-backup-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importBackup(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported && (imported.dailies || imported.todos)) {
+            state.score = imported.score || 0;
+            state.dailies = imported.dailies || [];
+            state.todos = imported.todos || [];
+            state.history = imported.history || {};
+            state.lastActiveDate = imported.lastActiveDate || '';
+            saveState();
+            render();
+          }
+        } catch (err) {
+          alert("Invalid backup JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function setupEventListeners() {
+      // Plus Add Buttons
+      document.getElementById('addDailyBtn').onclick = addDailyFromInput;
+      document.getElementById('addTodoBtn').onclick = addTodoFromInput;
+
+      // Check In Button
+      document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
+
+      // Old Data Recovery
+      document.getElementById('recoverOldBtn').onclick = () => {
+        scanOldData();
+        document.getElementById('recoverModal').classList.add('active');
+      };
+      document.getElementById('recoverCloseBtn').onclick = () => {
+        document.getElementById('recoverModal').classList.remove('active');
+      };
+      document.getElementById('exportRecoveredBtn').onclick = exportRecoveredData;
+      document.getElementById('importRecoveredBtn').onclick = mergeRecoveredData;
+      document.getElementById('recoverModal').onclick = (e) => {
+        if (e.target === document.getElementById('recoverModal')) {
+          document.getElementById('recoverModal').classList.remove('active');
+        }
+      };
+
+      // Export / Import
+      document.getElementById('exportBtn').onclick = exportBackup;
+      document.getElementById('importBtn').onclick = () => document.getElementById('importFileInput').click();
+      document.getElementById('importFileInput').onchange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+          importBackup(e.target.files[0]);
+        }
+      };
+
+      // Heatmap progress section click
+      document.getElementById('progressSection').onclick = () => {
+        renderHeatmap();
+        document.getElementById('heatmapOverlay').classList.add('active');
+      };
+      document.getElementById('heatmapCloseBtn').onclick = () => {
+        document.getElementById('heatmapOverlay').classList.remove('active');
+      };
+      document.getElementById('heatmapOverlay').onclick = (e) => {
+        if (e.target === document.getElementById('heatmapOverlay')) {
+          document.getElementById('heatmapOverlay').classList.remove('active');
+        }
+      };
+
+      // Modal Subtasks Add
+      document.getElementById('modalAddSubtaskBtn').onclick = () => {
+        if (activeEditing) {
+          activeEditing.subtasks.push({
+            id: 'st_' + Date.now(),
+            text: '',
+            completed: false
+          });
+          renderModalSubtasks();
+        }
+      };
+
+      // Modal Buttons
+      document.getElementById('modalCloseBtn').onclick = closeEditModal;
+      document.getElementById('modalSaveBtn').onclick = saveModalChanges;
+      document.getElementById('modalDeleteBtn').onclick = deleteModalItem;
+      document.getElementById('modalTaskInput').onkeydown = (e) => {
+        if (e.key === 'Enter') saveModalChanges();
+        if (e.key === 'Escape') closeEditModal();
+      };
+
+      // Close modal clicking outside
+      document.getElementById('editModal').onclick = (e) => {
+        if (e.target === document.getElementById('editModal')) closeEditModal();
+      };
+    }
+
+    checkDailyReset();
+    updateDateDisplay();
+    setupEventListeners();
+    render();
   </script>
 </body>
-
 </html>

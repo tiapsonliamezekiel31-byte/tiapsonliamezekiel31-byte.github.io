@@ -1,0 +1,1077 @@
+/*
+ * NEMESIS CENTRAL DESIGN SYSTEM
+ * Theme: Solar Cream (Light Mode / Warm Sunlit Parchment & Solar Amber)
+ * Font: Orbitron Everywhere
+ * Palette: Rich Solar Cream (#FAF7F0), Warm Sandstone (#F3ECE0, #EAE2D2), Crisp Light (#FFFFFF), Deep Ink Text (#1F2429, #4B535D), Solar Amber Accents (#D97706, #B45309)
+ */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  /* Surface Layers (Pure Black Theme) */
+  --ds-bg-canvas: #000000;
+  --ds-bg-panel: #000000;
+  --ds-bg-panel-overlay: rgba(0, 0, 0, 0.98);
+  --ds-bg-card: #000000;
+  --ds-bg-card-hover: #0d0d0d;
+  --ds-bg-card-subtle: #000000;
+  --ds-bg-input: #000000;
+
+  /* Borders */
+  --ds-border-subtle: #222222;
+  --ds-border-strong: #333333;
+  --ds-border-accent: #ffffff;
+  --ds-border-steel: #2a2a2a;
+
+  /* Typography Colors */
+  --ds-text-primary: #ffffff;
+  --ds-text-secondary: #cccccc;
+  --ds-text-muted: #888888;
+  --ds-text-dim: #444444;
+
+  /* Accents (Pure White for Testing) */
+  --ds-accent-primary: #ffffff;
+  --ds-accent-hover: #ffffff;
+  --ds-accent-dark: #ffffff;
+  --ds-accent-light: #ffffff;
+  --ds-steel-btn: #000000;
+  --ds-steel-btn-hover: #111111;
+  --ds-danger: #ffffff;
+  --ds-warning: #ffffff;
+  --ds-info: #ffffff;
+  --ds-success: #ffffff;
+
+  /* Typography (Orbitron Everywhere) */
+  --ds-font-heading: 'Orbitron', monospace, system-ui, sans-serif;
+  --ds-font-body: 'Orbitron', monospace, system-ui, sans-serif;
+  --ds-font-mono: 'Orbitron', monospace, Consolas, monospace;
+
+  /* Radii & Crisp Shadows */
+  --ds-radius-sm: 4px;
+  --ds-radius-md: 6px;
+  --ds-radius-lg: 8px;
+  --ds-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.9);
+  --ds-shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.98), 0 0 1px #333333;
+}
+
+/* ==========================================================================
+   GLOBAL RESET & ORBITRON TYPOGRAPHY ENFORCEMENT
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body, html, input, button, select, textarea, span, p, div, label {
+  font-family: var(--ds-font-body) !important;
+}
+
+body, html {
+  background-color: var(--ds-bg-canvas) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* ==========================================================================
+   STAGE CANVAS & MAIN ARENA BACKGROUNDS (PURE BLACK)
+   ========================================================================== */
+#gameArea,
+#gameContainer,
+.game-container,
+#stageBackdrop,
+.battle-arena,
+#canvas,
+#stageCanvas {
+  background: var(--ds-bg-canvas, #000000) !important;
+  background-color: var(--ds-bg-canvas, #000000) !important;
+}
+
+#gameArea::before,
+#gameArea::after {
+  display: none !important;
+}
+
+.enemy-circle-container {
+  border-color: var(--ds-border-strong) !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   ENEMY CARDS & ENEMY INFO TOOLTIPS (SOLAR CREAM LIGHT THEME)
+   ========================================================================== */
+.enemy-card-bg {
+  background: var(--ds-bg-card, #FFFFFF) !important;
+  background-color: var(--ds-bg-card, #FFFFFF) !important;
+  background-image: none !important;
+  border: 1.5px solid var(--ds-border-strong) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+}
+
+.enemy-card.targeted .enemy-card-bg {
+  border-color: var(--ds-accent-primary) !important;
+  box-shadow: 0 0 0 2px var(--ds-accent-primary) !important;
+}
+
+.enemy-name {
+  color: var(--ds-text-primary) !important;
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  padding: 1px 4px !important;
+  text-shadow: none !important;
+}
+
+.enemy-hp-text {
+  color: var(--ds-text-primary) !important;
+}
+
+.enemy-tooltip,
+.mutator-tooltip,
+#enemyTooltip {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+  box-shadow: var(--ds-shadow-modal) !important;
+  border-radius: var(--ds-radius-md) !important;
+}
+
+.mutator-tooltip-title {
+  color: var(--ds-accent-primary) !important;
+  font-family: var(--ds-font-heading) !important;
+  font-weight: 700 !important;
+}
+
+.mutator-tooltip-desc,
+.enemy-tooltip-mutators {
+  color: var(--ds-text-secondary) !important;
+}
+
+
+h1, h2, h3, h4, .panel-title, .modal-title, .shop-header h2, .section-title, .tab-header-title {
+  font-family: var(--ds-font-heading) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--ds-text-primary) !important;
+  text-shadow: none !important;
+  text-transform: uppercase !important;
+}
+
+/* ==========================================================================
+   SATCHEL PANEL & SATCHEL POPUP (FIXED & THEMED)
+   ========================================================================== */
+.satchel-panel,
+#satchelPanel,
+.satchel-popup {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: var(--ds-shadow-modal) !important;
+  color: var(--ds-text-primary) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.satchel-title {
+  color: var(--ds-accent-primary) !important;
+  font-family: var(--ds-font-heading) !important;
+}
+
+.satchel-subtitle {
+  color: var(--ds-text-muted) !important;
+}
+
+.satchel-item {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+  border-radius: var(--ds-radius-sm) !important;
+}
+
+.satchel-item:hover,
+.satchel-item:focus-visible {
+  background: var(--ds-bg-card-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+}
+
+.satchel-item-name {
+  color: var(--ds-text-primary) !important;
+  font-weight: 700 !important;
+}
+
+.satchel-item-meta {
+  color: var(--ds-text-muted) !important;
+}
+
+.satchel-item-count {
+  color: var(--ds-accent-hover) !important;
+  font-weight: 800 !important;
+}
+
+.satchel-empty {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px dashed var(--ds-border-subtle) !important;
+  color: var(--ds-text-muted) !important;
+}
+
+/* ==========================================================================
+   RUN STATS & ACHIEVEMENTS PANEL + ALL PULL TABS
+   ========================================================================== */
+#achievementsPanel,
+.pull-tab,
+.left-tab,
+.right-tab,
+.run-stats-achievements-container,
+#runStatsDashboard,
+.stats-radar-card,
+.run-completion-panel,
+.weekly-heatmap-panel,
+.stats-highlights-card,
+.expanded-stats-grid {
+  background: var(--ds-bg-panel) !important;
+  background-image: none !important;
+  border-color: var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.pull-tab {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: var(--ds-shadow-modal) !important;
+}
+
+.tab-header,
+.run-stats-top-bar {
+  background: var(--ds-bg-card-subtle) !important;
+  border-bottom: 1px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+  padding: 10px 14px !important;
+}
+
+.tab-header-title {
+  color: var(--ds-accent-primary) !important;
+  font-size: 13px !important;
+}
+
+.tab-close,
+.header-close-btn {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+  border-radius: var(--ds-radius-sm) !important;
+}
+
+.tab-close:hover,
+.header-close-btn:hover {
+  background: var(--ds-danger) !important;
+  border-color: var(--ds-danger) !important;
+  color: #FFF !important;
+}
+
+/* Highlight boxes in Run Stats */
+.highlight-stat-box {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-md) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.highlight-stat-label {
+  color: var(--ds-accent-primary) !important;
+  font-weight: 700 !important;
+}
+
+.highlight-stat-val {
+  color: var(--ds-text-primary) !important;
+  font-weight: 800 !important;
+}
+
+/* Detailed Metrics & Stat Cards */
+.stats-section-title {
+  color: var(--ds-accent-primary) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.stat-card {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.stat-card-label {
+  color: var(--ds-text-muted) !important;
+}
+
+.stat-card-val {
+  color: var(--ds-accent-hover) !important;
+  font-weight: 700 !important;
+}
+
+/* Run Completion & Heatmap */
+.run-completion-head,
+.weekly-heatmap-head {
+  border-bottom: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-accent-primary) !important;
+  font-weight: 700 !important;
+}
+
+.heatmap-month-stat-badge {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-accent-primary) !important;
+  border-radius: var(--ds-radius-sm) !important;
+}
+
+.heatmap-nav-btn {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.heatmap-nav-btn:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-primary) !important;
+}
+
+.weekly-heatmap-cell,
+.heatmap-cell,
+.day-cell {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-secondary) !important;
+}
+
+.weekly-heatmap-cell.active,
+.heatmap-cell.active,
+.day-cell.active,
+.day-cell.selected {
+  background: var(--ds-accent-light) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+/* ==========================================================================
+   TASK TABS & CHECKLIST TABS
+   ========================================================================== */
+.task-tabs-container,
+.checklist-tabs,
+.todo-tabs,
+.tab-navigation {
+  background: var(--ds-bg-card-subtle) !important;
+  border-bottom: 1px solid var(--ds-border-strong) !important;
+}
+
+.task-tab-btn,
+.checklist-tab-btn,
+.tab-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-bottom: 2px solid transparent !important;
+  color: var(--ds-text-muted) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+}
+
+.task-tab-btn.active,
+.checklist-tab-btn.active,
+.tab-btn.active {
+  color: var(--ds-accent-primary) !important;
+  border-bottom: 2px solid var(--ds-accent-primary) !important;
+  background: rgba(217, 119, 6, 0.08) !important;
+}
+
+.task-tab-btn:hover,
+.checklist-tab-btn:hover,
+.tab-btn:hover {
+  color: var(--ds-accent-hover) !important;
+}
+
+/* ==========================================================================
+   HUD PANELS, BARS & WIDGETS (SOLAR CREAM)
+   ========================================================================== */
+.draggable-hud,
+.draggable-stats-hud,
+.draggable-challenge-hud,
+#nemesisChallengeHud,
+#challengeHud,
+.active-tasks-hud,
+#taskTrackerHUD,
+.hud-resources,
+.hud-currencies,
+#topBar,
+#statsSummary,
+#stageBar,
+.top-dock,
+#worldMapBar,
+.map-controls,
+.hud-widget,
+.buffs-hud,
+.tycoon-hud-panel {
+  background: var(--ds-bg-panel) !important;
+  background-image: none !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.draggable-hud::before,
+.draggable-stats-hud::before,
+.draggable-challenge-hud::before,
+#nemesisChallengeHud::before,
+.tycoon-hud-panel::before {
+  display: none !important;
+}
+
+/* Action Circle Buttons & Parry HUD */
+.action-ring,
+.enemy-circle-container {
+  background: transparent !important;
+}
+
+.btn-action-circle,
+#dodgeBtn,
+.dodge-button,
+.parry-button,
+#attackBtn,
+#skillBtn {
+  background: var(--ds-steel-btn) !important;
+  border: 2px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+  box-shadow: 0 4px 12px rgba(70, 50, 20, 0.15) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.btn-action-circle:hover,
+#dodgeBtn:hover,
+#attackBtn:hover,
+#skillBtn:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+/* To-Do Space & To-Do Board */
+#todosPanel,
+.todo-board,
+#tasksPanel,
+.todo-column,
+.todo-card,
+.todo-list,
+.todo-body,
+.todo-orbit-viewport {
+  background: var(--ds-bg-panel) !important;
+  background-image: none !important;
+  border-color: var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.todo-board::before {
+  display: none !important;
+}
+
+/* Bottom Bar, Dock & Quick Action Container */
+.bottom-buttons-container,
+.bottom-dock,
+#quickAddInputContainer,
+.quick-action-bar {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: 0 8px 24px rgba(70, 50, 20, 0.14) !important;
+  border-radius: var(--ds-radius-md) !important;
+}
+
+/* Triangle Streak HUD */
+#dailyStreakBadge,
+.triangle-hud,
+.streak-hud {
+  background: var(--ds-bg-panel) !important;
+  border: 1.5px solid var(--ds-accent-primary) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+}
+
+/* HUD Bars & Resource Meters */
+.hud-bar {
+  background: var(--ds-bg-input) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  overflow: hidden !important;
+}
+
+.hud-bar .fill {
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   UNIVERSAL MODALS & PANELS (SOLAR CREAM)
+   ========================================================================== */
+.shop-panel,
+.modal-content,
+.popup-modal,
+.checklist-modal,
+.run-stats-modal,
+.achievements-modal,
+.inventory-panel,
+.character-panel,
+.battle-pass-modal,
+.settings-panel,
+.tasks-panel,
+#dailiesPanel,
+#pauseMenu,
+.nemesis-dialog {
+  background: var(--ds-bg-panel) !important;
+  background-image: none !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  border-radius: var(--ds-radius-lg) !important;
+  box-shadow: var(--ds-shadow-modal) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.shop-overlay,
+.modal-overlay,
+.dialog-overlay,
+.overlay-backdrop {
+  background: rgba(40, 30, 15, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* ==========================================================================
+   UNIVERSAL CARDS & BENTO TILES
+   ========================================================================== */
+.shop-item,
+.daily-card,
+.todo-card,
+.task-card,
+.stat-card,
+.achievement-card,
+.inventory-slot,
+.quest-item,
+.bento-card,
+.metrics-card {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.shop-item:hover,
+.daily-card:hover,
+.todo-card:hover,
+.task-card:hover,
+.stat-card:hover,
+.achievement-card:hover {
+  background: var(--ds-bg-card-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+}
+
+/* ==========================================================================
+   BUTTONS (TACTILE SOLAR CREAM & SOLAR AMBER CTA)
+   ========================================================================== */
+button,
+.btn,
+.btn-primary,
+.btn-action,
+.action-btn,
+.floating-shop-btn,
+.floating-attr-btn,
+.floating-lootbox-btn,
+.btn-pause-action,
+.hud-btn,
+.dock-btn,
+.quick-action-btn {
+  background: var(--ds-steel-btn) !important;
+  color: var(--ds-text-primary) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  font-family: var(--ds-font-body) !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+/* Primary CTA / Highlight Buttons */
+.btn-primary,
+.floating-shop-btn,
+#updateNowBtn {
+  background: var(--ds-accent-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--ds-accent-hover) !important;
+}
+
+button:hover,
+.btn:hover,
+.btn-primary:hover,
+.btn-action:hover,
+.action-btn:hover,
+.floating-shop-btn:hover,
+.floating-lootbox-btn:hover,
+.hud-btn:hover,
+.dock-btn:hover,
+.quick-action-btn:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+.btn-primary:hover,
+.floating-shop-btn:hover {
+  background: var(--ds-accent-hover) !important;
+  color: #FFFFFF !important;
+}
+
+button:active,
+.btn:active,
+.hud-btn:active {
+  background: var(--ds-bg-card-subtle) !important;
+}
+
+.btn-secondary,
+.btn-cancel,
+.btn-close {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-secondary) !important;
+}
+
+.btn-secondary:hover,
+.btn-cancel:hover,
+.btn-close:hover {
+  background: var(--ds-bg-card-hover) !important;
+  border-color: var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* ==========================================================================
+   INPUTS & SELECTS
+   ========================================================================== */
+input[type="text"],
+input[type="number"],
+select,
+textarea,
+#quickTaskInput {
+  background: var(--ds-bg-input) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+  padding: 8px 12px !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+#quickTaskInput:focus {
+  border-color: var(--ds-accent-primary) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 1px var(--ds-accent-primary) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ds-bg-canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ds-border-strong);
+  border-radius: var(--ds-radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ds-accent-primary);
+}
+
+/* ==========================================================================
+   WORLD MAP STYLING (SOLAR CREAM SOLID THEME)
+   ========================================================================== */
+.world-map-container {
+  background: var(--ds-bg-canvas) !important;
+  background-image: none !important;
+}
+
+.world-map-header-bar {
+  background: var(--ds-bg-panel) !important;
+  border-bottom: 1px solid var(--ds-border-strong) !important;
+  backdrop-filter: none !important;
+}
+
+.world-map-title-badge {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-accent-primary) !important;
+  box-shadow: none !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.world-map-subtitle {
+  color: var(--ds-text-muted) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.world-map-zoom-btn {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.world-map-zoom-btn:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+.world-map-tier-header {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-accent-primary) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.stage-horizontal-row {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+}
+
+.stage-horizontal-row:hover {
+  border-color: var(--ds-border-accent) !important;
+}
+
+.stage-badge-col {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+}
+
+.stage-node-circle {
+  background: var(--ds-bg-card) !important;
+  border: 1.5px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+  box-shadow: none !important;
+}
+
+.stage-node-circle.is-level-cleared {
+  border-color: var(--ds-success) !important;
+  color: var(--ds-success) !important;
+}
+
+/* ==========================================================================
+   PULL TABS & DOCK HANDLES (SOLAR CREAM)
+   ========================================================================== */
+.tab-handle,
+.tab-handle-left,
+.tab-handle-right,
+.tab-handles-dock-left .tab-handle,
+.tab-handles-dock-right .tab-handle,
+#todosTabHandle,
+#dailiesTabHandle,
+#checklistTabHandle,
+#achievementsTabHandle {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+  box-shadow: 0 4px 12px rgba(70, 50, 20, 0.12) !important;
+}
+
+.tab-handle:hover,
+#todosTabHandle:hover,
+#dailiesTabHandle:hover,
+#checklistTabHandle:hover,
+#achievementsTabHandle:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+.tab-handle .badge {
+  background: var(--ds-accent-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* ==========================================================================
+   SCORE HUD / RANK POLYGON (SOLAR CREAM)
+   ========================================================================== */
+.draggable-score-hud,
+#scoreHud,
+#scorePolygonHud {
+  background: var(--ds-bg-panel) !important;
+  border: 1.5px solid var(--ds-accent-primary) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.score-hud-rank-title {
+  color: var(--ds-accent-primary) !important;
+  font-weight: 800 !important;
+}
+
+.score-hud-number {
+  color: var(--ds-text-primary) !important;
+  font-weight: 800 !important;
+}
+
+.score-base-label {
+  color: var(--ds-text-muted) !important;
+}
+
+/* ==========================================================================
+   QUICK ADD TEXT FIELD & INLINE BAR (SOLAR CREAM)
+   ========================================================================== */
+.draggable-quickadd-hud,
+.qa-hud-input-row,
+#quickAddInputContainer {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.qa-hud-input-row:focus-within,
+#quickAddInputContainer:focus-within {
+  border-color: var(--ds-accent-primary) !important;
+  box-shadow: 0 0 0 1px var(--ds-accent-primary) !important;
+}
+
+.qa-hud-select,
+.quick-add-select {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+  border-radius: var(--ds-radius-sm) !important;
+}
+
+#quickTaskInput,
+.quick-add-input {
+  background: transparent !important;
+  border: none !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* ==========================================================================
+   DAILIES & TODOS MODE JOYSTICK (PURE BLACK & ACCENTS)
+   ========================================================================== */
+.nemesis-joystick-container,
+.nemesis-todo-joystick {
+  background: transparent !important;
+}
+
+.nemesis-joystick-track {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: none !important;
+}
+
+.nemesis-joystick-label {
+  color: var(--ds-text-muted) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.nemesis-joystick-label.active-lock,
+.nemesis-joystick-label.active-default,
+.nemesis-joystick-label.active-edit,
+.nemesis-joystick-label.active-time,
+.nemesis-joystick-label.active-oath,
+.nemesis-joystick-label.active-done,
+.nemesis-joystick-label.active-del {
+  color: var(--ds-accent-primary) !important;
+  font-weight: 800 !important;
+}
+
+.nemesis-joystick-handle,
+.nemesis-joystick-handle.state-default,
+.nemesis-joystick-handle.state-lock,
+.nemesis-joystick-handle.state-edit,
+.nemesis-joystick-handle.state-time,
+.nemesis-joystick-handle.state-oath,
+.nemesis-joystick-handle.state-done,
+.nemesis-joystick-handle.state-del {
+  background: var(--ds-accent-primary) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: none !important;
+}
+
+/* ==========================================================================
+   DAILIES HEADER PROGRESS & TOP BUTTONS (PURGED YELLOW ACCENTS)
+   ========================================================================== */
+.dailies-header,
+.daily-panel-summary,
+#dailiesSummary,
+.dailies-progress-text,
+.dailies-status-text,
+.dailies-count-display,
+.task-count,
+.section-count {
+  color: var(--ds-accent-primary) !important;
+  font-family: var(--ds-font-body) !important;
+  font-weight: 800 !important;
+}
+
+.dailies-header-actions button,
+.dailies-btn,
+.btn-daily,
+.btn-table,
+.btn-note,
+.btn-more,
+.tab-header-btn {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.dailies-header-actions button:hover,
+.btn-daily:hover,
+.btn-table:hover,
+.btn-note:hover,
+.btn-more:hover {
+  background: var(--ds-steel-btn-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+  color: var(--ds-accent-hover) !important;
+}
+
+/* ==========================================================================
+   BOTTOM HUD RESOURCE BAR & CURRENCIES (AP / STREAK / GEMS)
+   ========================================================================== */
+.hud-resources,
+.hud-currencies,
+.hud-resource,
+.hud-currency,
+.hud-ap-box,
+.hud-streak-box,
+#avgStreakHud,
+.daily-bottom-stats-banner,
+.daily-top-stats-container,
+.daily-top-stat-pill,
+.stat-streak,
+.stat-ap,
+.stat-ap-hero,
+.stat-diamonds {
+  background: var(--ds-bg-panel) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.daily-top-stat-pill.stat-ap-hero {
+  border: 1.5px solid var(--ds-accent-primary) !important;
+  background: var(--ds-bg-panel) !important;
+}
+
+.daily-top-stat-label,
+.daily-top-stat-val,
+#topApVal,
+#topAvgStreakVal,
+#topDiamondsVal,
+.hud-resource-text,
+.hud-resource-label,
+.hud-resource-val,
+.hud-currency-val,
+.hud-resource span,
+.hud-resource div {
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+/* ==========================================================================
+   COMPLETE TO-DOS BOARD MAPPING (MODAL, GROUPS, CARDS, SUBTASKS)
+   ========================================================================== */
+#todosPanel,
+.todo-board,
+#todosList,
+.todo-deadline-group,
+.todo-group-cards {
+  background: var(--ds-bg-panel) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.todo-group-header {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-strong) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  padding: 6px 10px !important;
+}
+
+.group-title,
+.todo-group-count {
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+  font-weight: 700 !important;
+}
+
+.todo-card-wrapper,
+.todo-card-v2 {
+  background: var(--ds-bg-card) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-md) !important;
+  box-shadow: var(--ds-shadow-card) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.todo-card-v2:hover {
+  background: var(--ds-bg-card-hover) !important;
+  border-color: var(--ds-accent-primary) !important;
+}
+
+.todo-title-text {
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+  font-size: 11px !important;
+}
+
+.todo-badge {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  font-family: var(--ds-font-body) !important;
+  font-size: 9px !important;
+}
+
+.todo-badge-deadline {
+  background: var(--ds-steel-btn) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.todo-card-delete-btn,
+.todo-subtask-delete-btn {
+  background: transparent !important;
+  border: none !important;
+  color: var(--ds-text-muted) !important;
+}
+
+.todo-card-delete-btn:hover,
+.todo-subtask-delete-btn:hover {
+  color: var(--ds-danger) !important;
+}
+
+.todo-subtask-item {
+  background: var(--ds-bg-card-subtle) !important;
+  border: 1px solid var(--ds-border-subtle) !important;
+  border-radius: var(--ds-radius-sm) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+.todo-subtask-text {
+  color: var(--ds-text-primary) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+.todo-empty-state,
+.todo-empty-title,
+.todo-empty-sub {
+  color: var(--ds-text-muted) !important;
+  font-family: var(--ds-font-body) !important;
+}
+
+
+

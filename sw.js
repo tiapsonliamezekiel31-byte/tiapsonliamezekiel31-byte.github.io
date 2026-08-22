@@ -1,28 +1,15 @@
-const CACHE_NAME = 'nemesis-ultimate-roguelike-20260821-2233';
+const CACHE_NAME = 'nemesis-zombie-defense-20260822-1416';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
-  './css/style.css',
-  './css/style_tycoon.css',
+  './css/defense.css',
   './JS/config.js',
   './JS/core.js',
-  './JS/animations.js',
   './JS/player.js',
   './JS/tasks.js',
-  './JS/enemy.js',
-  './JS/stage.js',
-  './JS/combat.js',
-  './JS/sound.js',
-  './JS/shop.js',
-  './JS/ui.js',
-  './JS/popups.js',
-  './JS/multiplayer.js',
-  './JS/tycoon_worker_code.js',
-  './JS/tycoon.js',
-  './trees.png',
-  './cropsstylesheet.png'
+  './JS/defense_game.js'
 ];
 
 // Install: cache all core assets
