@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <meta name="theme-color" content="#fdf6e3">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#002b36">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
   <title>Checklist</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      color-scheme: light !important;
-      --bg: #fdf6e3;
-      --card-bg: #eee8d5;
-      --card-subtle: #f7f1df;
-      --border: #dcd3b8;
-      --border-focus: #b58900;
-      --text: #073642;
-      --text-muted: #657b83;
-      --text-dim: #93a1a1;
-      
+      color-scheme: dark !important;
+      --bg: #002b36;
+      --card-bg: #073642;
+      --card-subtle: #094352;
+      --border: #0e5365;
+      --border-focus: #268bd2;
+      --text: #fdf6e3;
+      --text-muted: #93a1a1;
+      --text-dim: #586e75;
+
       --color-blue: #268bd2;
       --color-green: #859900;
       --color-cyan: #2aa198;
@@ -40,17 +42,21 @@
       padding: 0;
     }
 
-    html, body {
-      color-scheme: light !important;
-      background-color: #fdf6e3 !important;
-      color: #073642 !important;
+    html,
+    body {
+      color-scheme: dark !important;
+      background-color: #002b36 !important;
+      color: #fdf6e3 !important;
+      overflow-x: hidden;
     }
 
     @media (prefers-color-scheme: dark) {
-      html, body {
-        color-scheme: light !important;
-        background-color: #fdf6e3 !important;
-        color: #073642 !important;
+      html,
+      body {
+        color-scheme: dark !important;
+        background-color: #002b36 !important;
+        color: #fdf6e3 !important;
+        overflow-x: hidden;
       }
     }
 
@@ -61,9 +67,10 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 0.5rem 0.35rem;
+      padding: 0.5rem 0.35rem 2.5rem 0.35rem;
       user-select: none;
       touch-action: pan-y;
+      overflow-x: hidden;
     }
 
     header {
@@ -84,88 +91,125 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 0.35rem 0.65rem;
+      padding: 0.4rem 0.65rem;
+      gap: 0.5rem;
+      min-height: 48px;
     }
 
     .score-container {
       display: flex;
-      align-items: baseline;
-      gap: 0.45rem;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
 
     .big-score {
-      font-size: 2.25rem;
-      font-weight: 800;
+      font-size: 2.1rem;
+      font-weight: 900;
       line-height: 1;
-      color: var(--text);
+      color: #fdf6e3;
       letter-spacing: -0.04em;
     }
 
+    .score-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
     .score-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 0.54rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    .score-rank {
+      font-size: 0.64rem;
+      font-weight: 900;
+      color: var(--color-yellow);
+      letter-spacing: 0.04em;
+      line-height: 1;
     }
 
     .top-actions {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
+      gap: 0.3rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
-    .icon-btn {
-      background: var(--card-subtle);
+    .action-pill-btn {
+      background: #002b36;
       border: 1px solid var(--border);
       color: var(--text-muted);
       font-family: inherit;
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 0.25rem 0.45rem;
-      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0 0.45rem;
+      border-radius: 3px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.2rem;
       transition: all 0.15s ease;
+      white-space: nowrap;
+      height: 26px;
     }
 
-    .icon-btn:hover {
-      background: #ffffff;
-      color: var(--text);
+    .action-pill-btn:hover {
+      background: #073642;
+      color: #fdf6e3;
       border-color: var(--border-focus);
     }
 
+    .action-pill-btn.rebirth-btn {
+      border-color: var(--color-red);
+      color: var(--color-red);
+    }
+
+    .action-pill-btn.rebirth-btn:hover {
+      background: var(--color-red);
+      color: #ffffff;
+    }
+
     .date-badge {
-      font-size: 0.68rem;
+      font-size: 0.62rem;
       color: var(--text-muted);
-      background: var(--card-subtle);
+      background: #002b36;
       border: 1px solid var(--border);
-      padding: 0.25rem 0.45rem;
-      border-radius: 4px;
-      font-weight: 700;
+      padding: 0 0.45rem;
+      border-radius: 3px;
+      font-weight: 800;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      white-space: nowrap;
     }
 
     .reset-btn {
-      background: var(--card-subtle);
-      border: 1px solid var(--border);
-      color: var(--color-orange);
+      background: var(--color-orange);
+      border: 1px solid var(--color-orange);
+      color: #ffffff;
       font-family: inherit;
-      font-size: 0.68rem;
-      font-weight: 700;
-      padding: 0.25rem 0.55rem;
-      border-radius: 4px;
+      font-size: 0.64rem;
+      font-weight: 900;
+      padding: 0 0.55rem;
+      border-radius: 3px;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      height: 26px;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
     }
 
     .reset-btn:hover {
-      background: #fdf0ee;
-      border-color: var(--color-orange);
+      opacity: 0.9;
+      transform: scale(1.02);
     }
 
     /* Clickable Progress Section */
@@ -235,7 +279,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.65rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
 
     .heatmap-header {
@@ -284,13 +328,24 @@
       aspect-ratio: 1;
       border-radius: 1px;
       background: var(--card-subtle);
-      border: 1px solid rgba(0,0,0,0.06);
+      border: 1px solid rgba(0, 0, 0, 0.06);
     }
 
-    .day-cell.rate-1 { background: #d3dfa5; }
-    .day-cell.rate-2 { background: #b8cf6e; }
-    .day-cell.rate-3 { background: #9dbf37; }
-    .day-cell.rate-4 { background: #859900; }
+    .day-cell.rate-1 {
+      background: #d3dfa5;
+    }
+
+    .day-cell.rate-2 {
+      background: #b8cf6e;
+    }
+
+    .day-cell.rate-3 {
+      background: #9dbf37;
+    }
+
+    .day-cell.rate-4 {
+      background: #859900;
+    }
 
     /* App Layout Container with Draggable Split */
     .app-container {
@@ -457,6 +512,29 @@
       background: var(--color-blue);
     }
 
+    .expand-input-btn {
+      background: var(--card-subtle);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .expand-input-btn:hover {
+      background: #fdfaf0;
+      color: var(--text);
+      border-color: var(--border-focus);
+    }
+
     /* Task lists and History Matrix lists - identical container metrics */
     .task-list,
     .history-matrix-list {
@@ -474,6 +552,7 @@
     .history-matrix-list::-webkit-scrollbar {
       width: 4px;
     }
+
     .task-list::-webkit-scrollbar-thumb,
     .history-matrix-list::-webkit-scrollbar-thumb {
       background: var(--border);
@@ -529,6 +608,7 @@
     .task-card {
       cursor: grab;
     }
+
     .task-card:active {
       cursor: grabbing;
     }
@@ -536,17 +616,152 @@
     .task-card.dragging {
       opacity: 0.35;
     }
+
     .task-card.drag-over {
       border-top: 2px solid var(--border-focus);
     }
 
     .task-card:hover {
       border-color: var(--border-focus);
-      background: #fdfaf0;
+      background: var(--card-bg);
     }
 
     .task-card.completed {
       opacity: 0.55;
+    }
+
+    .task-card.bounty-targeted {
+      border-right: 4px solid #b58900 !important;
+      box-shadow: inset -4px 0 10px rgba(181, 137, 0, 0.22);
+    }
+
+    .bounty-target-pill {
+      font-size: 0.54rem;
+      font-weight: 900;
+      color: #b58900;
+      border: 1px solid #b58900;
+      background: rgba(181, 137, 0, 0.15);
+      padding: 0.05rem 0.25rem;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .task-card.dopamine-pop {
+      animation: dopaminePop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      box-shadow: 0 0 20px rgba(42, 161, 152, 0.6), inset 0 0 10px rgba(181, 137, 0, 0.25);
+    }
+
+    @keyframes dopaminePop {
+      0% { transform: scale(0.94); }
+      40% { transform: scale(1.04); }
+      75% { transform: scale(0.99); }
+      100% { transform: scale(1); }
+    }
+
+    /* Checkbox mega spin on check */
+    .task-checkbox.dopamine-spin {
+      animation: checkboxSpin 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    @keyframes checkboxSpin {
+      0% { transform: rotate(0deg) scale(0.8); }
+      50% { transform: rotate(180deg) scale(1.4); filter: drop-shadow(0 0 8px #2aa198); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* Concentric Expanding Shockwave Blast */
+    .dopamine-shockwave {
+      position: fixed;
+      pointer-events: none;
+      border-radius: 50%;
+      border: 3px solid #2aa198;
+      z-index: 9998;
+      animation: shockwaveExpand 0.45s cubic-bezier(0.1, 0.85, 0.25, 1) forwards;
+    }
+
+    .dopamine-shockwave.secondary {
+      border: 2px solid #b58900;
+      animation: shockwaveExpand 0.55s cubic-bezier(0.1, 0.85, 0.25, 1) 0.05s forwards;
+    }
+
+    @keyframes shockwaveExpand {
+      0% {
+        width: 8px;
+        height: 8px;
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        width: 140px;
+        height: 140px;
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* Glittering Shard & Spark Particles */
+    .dopamine-spark {
+      position: fixed;
+      pointer-events: none;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      z-index: 9999;
+      animation: particleFly 0.55s cubic-bezier(0.08, 0.82, 0.17, 1) forwards;
+    }
+
+    @keyframes particleFly {
+      0% {
+        transform: translate(0, 0) scale(1.8) rotate(0deg);
+        opacity: 1;
+        filter: drop-shadow(0 0 4px currentColor);
+      }
+      70% {
+        opacity: 0.9;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0) rotate(180deg);
+        opacity: 0;
+      }
+    }
+
+    /* Giant Floating XP Tag */
+    .dopamine-floating-tag {
+      position: fixed;
+      pointer-events: none;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      background: #002b36;
+      border: 1.5px solid #2aa198;
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      box-shadow: 0 0 18px rgba(42, 161, 152, 0.7), inset 0 0 8px rgba(181, 137, 0, 0.3);
+      z-index: 9999;
+      animation: floatTag 0.68s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      letter-spacing: 0.04em;
+    }
+
+    @keyframes floatTag {
+      0% {
+        transform: translate(-50%, 0) scale(0.5);
+        opacity: 0;
+      }
+      25% {
+        transform: translate(-50%, -12px) scale(1.3);
+        opacity: 1;
+      }
+      75% {
+        transform: translate(-50%, -24px) scale(1.05);
+        opacity: 0.95;
+      }
+      100% {
+        transform: translate(-50%, -42px) scale(0.85);
+        opacity: 0;
+      }
     }
 
     .task-card.completed .task-text {
@@ -623,11 +838,25 @@
       flex-shrink: 0;
     }
 
-    .diff-easy { color: var(--color-green); }
-    .diff-medium { color: var(--color-blue); }
-    .diff-hard { color: var(--color-yellow); }
-    .diff-mega { color: var(--color-orange); }
-    .diff-ultra { color: var(--color-red); }
+    .diff-easy {
+      color: var(--color-green);
+    }
+
+    .diff-medium {
+      color: var(--color-blue);
+    }
+
+    .diff-hard {
+      color: var(--color-yellow);
+    }
+
+    .diff-mega {
+      color: var(--color-orange);
+    }
+
+    .diff-ultra {
+      color: var(--color-red);
+    }
 
     .deadline-badge {
       display: inline-flex;
@@ -768,7 +997,7 @@
       background: rgba(7, 54, 66, 0.45);
       display: none;
       place-items: center;
-      z-index: 100;
+      z-index: 2500;
       padding: 1rem;
     }
 
@@ -973,6 +1202,7 @@
       color: var(--text);
     }
 
+    /* Modal Footer */
     .modal-footer {
       display: flex;
       justify-content: space-between;
@@ -980,48 +1210,322 @@
       margin-top: 0.2rem;
     }
 
-    .modal-delete-btn {
-      background: transparent;
-      border: 1px solid var(--color-red);
-      color: var(--color-red);
-      padding: 0.3rem 0.55rem;
-      border-radius: 4px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
+    /* Discipline Drawer - Minimal Solarized Dark */
+    .discipline-drawer {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 1100px;
+      background: #073642;
+      border: 1px solid #0e5365;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+      z-index: 990;
+      transition: height 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
     }
 
-    .modal-save-btn {
-      background: var(--color-blue);
-      border: none;
-      color: #fdf6e3;
-      padding: 0.3rem 0.75rem;
-      border-radius: 4px;
-      font-size: 0.68rem;
-      font-weight: 700;
-      font-family: inherit;
+    .discipline-drawer.fullscreen {
+      border-radius: 0;
+      height: 100vh !important;
+      max-height: 100vh;
+    }
+
+    .discipline-drawer-handle {
+      height: 40px;
+      min-height: 40px;
+      background: #002b36;
+      border-bottom: 1px solid #0e5365;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 0.85rem;
       cursor: pointer;
+      position: relative;
+    }
+
+    .discipline-drawer-handle:hover {
+      background: #073642;
+    }
+
+    .discipline-handle-pill {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 3px;
+      background: #586e75;
+      border-radius: 2px;
+      opacity: 0.7;
+    }
+
+    .discipline-handle-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #fdf6e3;
+      letter-spacing: 0.03em;
+    }
+
+    .discipline-handle-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 800;
+    }
+
+    .discipline-rate-badge {
+      background: #002b36;
+      border: 1px solid #268bd2;
+      padding: 0.12rem 0.45rem;
+      border-radius: 3px;
+      color: #268bd2;
+      font-size: 0.62rem;
+      font-weight: 800;
+    }
+
+    .discipline-rate-badge.positive {
+      border-color: #2aa198;
+      color: #2aa198;
+    }
+
+    .discipline-rate-badge.negative {
+      border-color: #dc322f;
+      color: #dc322f;
+    }
+
+    .discipline-drawer-body {
+      flex: 1;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+      background: #073642;
+    }
+
+    .discipline-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 720px) {
+      .discipline-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .discipline-panel {
+      background: #002b36;
+      border: 1px solid #0e5365;
+      border-radius: 6px;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .discipline-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #0e5365;
+      padding-bottom: 0.4rem;
+    }
+
+    .discipline-panel-title {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #93a1a1;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* Ultra-Minimal ELO Card */
+    .elo-stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .elo-big-number {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      line-height: 1;
+    }
+
+    .elo-rank-tag {
+      font-size: 0.72rem;
+      font-weight: 900;
+      color: #b58900;
+      letter-spacing: 0.04em;
+    }
+
+    .elo-progress-track {
+      width: 100%;
+      height: 4px;
+      background: #073642;
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 0.2rem 0;
+    }
+
+    .elo-progress-fill {
+      height: 100%;
+      width: 50%;
+      background: #268bd2;
+      border-radius: 2px;
+      transition: width 0.2s ease;
+    }
+
+    .elo-sub-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.58rem;
+      color: #586e75;
+      font-weight: 700;
+    }
+
+    /* Minimal Metric Grid */
+    .discipline-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+      margin-top: 0.2rem;
+    }
+
+    .discipline-metric-item {
+      background: #073642;
+      border: 1px solid #0e5365;
+      border-radius: 4px;
+      padding: 0.4rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .metric-item-label {
+      font-size: 0.54rem;
+      font-weight: 800;
+      color: #586e75;
+      text-transform: uppercase;
+    }
+
+    .metric-item-val {
+      font-size: 1rem;
+      font-weight: 900;
+      color: #fdf6e3;
+    }
+
+    /* Minimal Contracts Rows */
+    .contracts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .contract-item-row {
+      background: #073642;
+      border: 1px solid #0e5365;
+      border-radius: 4px;
+      padding: 0.45rem 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .contract-item-row.active {
+      border-color: #b58900;
+      background: #094352;
+    }
+
+    .contract-item-row.completed {
+      border-color: #859900;
+    }
+
+    .contract-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .contract-item-title {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #fdf6e3;
+    }
+
+    .contract-item-bounty {
+      font-size: 0.56rem;
+      font-weight: 800;
+      color: #2aa198;
+    }
+
+    .contract-action-btn {
+      background: #002b36;
+      border: 1px solid #268bd2;
+      color: #268bd2;
+      font-family: inherit;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 0.2rem 0.55rem;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .contract-action-btn:hover {
+      background: #268bd2;
+      color: #ffffff;
+    }
+
+    .contract-action-btn.claimed {
+      border-color: #859900;
+      color: #859900;
+      background: transparent;
+      cursor: default;
     }
   </style>
 </head>
+
 <body>
 
   <header>
     <!-- Top Big Score Banner -->
     <div class="score-banner">
       <div class="score-container">
-        <span class="big-score" id="bigScoreVal">0</span>
-        <span class="score-label">SCORE</span>
+        <span class="big-score" id="bigScoreVal">1000</span>
+        <div class="score-info">
+          <span class="score-label">DISCIPLINE ELO</span>
+          <span class="score-rank" id="headerEloRank">NOVICE</span>
+        </div>
       </div>
       <div class="top-actions">
-        <button class="icon-btn" id="recoverOldBtn" title="Recover & export old app data">OLD DATA</button>
-        <button class="icon-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
-        <button class="icon-btn" id="importBtn" title="Import Backup JSON">IMP</button>
+        <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
+        <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
+        <button type="button" class="action-pill-btn" id="importBtn" title="Import Backup JSON">IMP</button>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+        <button type="button" class="action-pill-btn" id="recoverOldBtn" title="Recover old app data" style="font-size: 0.58rem;">LEGACY</button>
         <div class="date-badge" id="currentDate"></div>
-        <button class="reset-btn" id="resetDailiesBtn" title="Check in daily progress">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <button type="button" class="reset-btn" id="resetDailiesBtn" title="Check in daily progress">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
           CHECK IN
         </button>
       </div>
@@ -1049,13 +1553,10 @@
         </div>
       </div>
       <div class="input-row">
-        <textarea 
-          id="dailyInput" 
-          class="compact-textarea" 
-          placeholder="+ habit (*hard, *aug 30)..."
-          rows="1"
-          autocomplete="off"
-        ></textarea>
+        <textarea id="dailyInput" class="compact-textarea" placeholder="+ habit (*hard, *aug 30)..." rows="1"
+          autocomplete="off"></textarea>
+        <button type="button" class="expand-input-btn" id="openAddDailyModalBtn"
+          title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addDailyBtn" title="Add Daily Task">+</button>
       </div>
       <ul class="task-list" id="dailiesList"></ul>
@@ -1077,13 +1578,10 @@
         </div>
       </div>
       <div class="input-row">
-        <textarea 
-          id="todoInput" 
-          class="compact-textarea" 
-          placeholder="+ todo (*ultra, *aug 30)..."
-          rows="1"
-          autocomplete="off"
-        ></textarea>
+        <textarea id="todoInput" class="compact-textarea" placeholder="+ todo (*ultra, *aug 30)..." rows="1"
+          autocomplete="off"></textarea>
+        <button type="button" class="expand-input-btn" id="openAddTodoModalBtn"
+          title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addTodoBtn" title="Add To-Do Task">+</button>
       </div>
       <ul class="task-list" id="todosList"></ul>
@@ -1095,7 +1593,8 @@
         <div class="column-title">
           <span>10-CHECKIN HISTORY</span>
         </div>
-        <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇ TODOS</button>
+        <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇
+          TODOS</button>
       </div>
       <div class="matrix-input-spacer">
         <div class="ten-cells-grid" style="opacity: 0.7; font-size: 0.55rem; text-align: center;">
@@ -1117,16 +1616,18 @@
     </div>
   </div>
 
-  <!-- Edit Popup Modal -->
+  <!-- Edit / Add Popup Modal -->
   <div class="modal-overlay" id="editModal">
-    <div class="modal">
+    <div class="modal" style="max-width: 420px;">
       <div class="modal-header">
         <span id="modalHeaderTitle">EDIT TASK</span>
         <button class="modal-close" id="modalCloseBtn">&times;</button>
       </div>
-      
-      <div class="modal-section-title">Title</div>
-      <input type="text" id="modalTaskInput" class="modal-input" placeholder="Task description..." />
+
+      <div class="modal-section-title">Description</div>
+      <textarea id="modalTaskInput" class="modal-input" rows="4"
+        placeholder="Task description (supports *hard, *aug 30, /subtask)..."
+        style="resize: vertical; min-height: 75px; font-family: inherit; line-height: 1.4;"></textarea>
 
       <!-- Schedule Days (for Dailies) -->
       <div id="modalScheduleContainer" style="display: none; flex-direction: column; gap: 0.35rem;">
@@ -1145,23 +1646,34 @@
       <div class="modal-section-title">Difficulty</div>
       <div class="diff-grid" id="modalDiffGrid">
         <button type="button" class="diff-btn" data-diff="easy">
-          <span class="diff-shape-icon diff-easy"><svg width="11" height="11" viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="currentColor"/></svg></span>
+          <span class="diff-shape-icon diff-easy"><svg width="11" height="11" viewBox="0 0 12 12">
+              <circle cx="6" cy="6" r="4.5" fill="currentColor" />
+            </svg></span>
           <span>1</span>
         </button>
         <button type="button" class="diff-btn" data-diff="medium">
-          <span class="diff-shape-icon diff-medium"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor"/></svg></span>
+          <span class="diff-shape-icon diff-medium"><svg width="11" height="11" viewBox="0 0 12 12">
+              <polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor" />
+            </svg></span>
           <span>2</span>
         </button>
         <button type="button" class="diff-btn" data-diff="hard">
-          <span class="diff-shape-icon diff-hard"><svg width="11" height="11" viewBox="0 0 12 12"><rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor"/></svg></span>
+          <span class="diff-shape-icon diff-hard"><svg width="11" height="11" viewBox="0 0 12 12">
+              <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor" />
+            </svg></span>
           <span>5</span>
         </button>
         <button type="button" class="diff-btn" data-diff="mega">
-          <span class="diff-shape-icon diff-mega"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor"/></svg></span>
+          <span class="diff-shape-icon diff-mega"><svg width="11" height="11" viewBox="0 0 12 12">
+              <polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor" />
+            </svg></span>
           <span>7</span>
         </button>
         <button type="button" class="diff-btn" data-diff="ultra">
-          <span class="diff-shape-icon diff-ultra"><svg width="11" height="11" viewBox="0 0 12 12"><polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3" fill="currentColor"/></svg></span>
+          <span class="diff-shape-icon diff-ultra"><svg width="11" height="11" viewBox="0 0 12 12">
+              <polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3"
+                fill="currentColor" />
+            </svg></span>
           <span>10</span>
         </button>
       </div>
@@ -1196,11 +1708,100 @@
         Scanning browser storage for old habits and to-dos...
       </div>
 
-      <textarea id="recoverPreview" class="compact-textarea" style="max-height: 160px; font-size: 0.65rem; white-space: pre;" readonly></textarea>
+      <textarea id="recoverPreview" class="compact-textarea"
+        style="max-height: 160px; font-size: 0.65rem; white-space: pre;" readonly></textarea>
 
       <div style="display: flex; gap: 0.35rem; justify-content: flex-end; margin-top: 0.2rem;">
-        <button type="button" class="modal-delete-btn" id="exportRecoveredBtn" style="border-color: var(--color-blue); color: var(--color-blue);">EXPORT JSON</button>
+        <button type="button" class="modal-delete-btn" id="exportRecoveredBtn"
+          style="border-color: var(--color-blue); color: var(--color-blue);">EXPORT JSON</button>
         <button type="button" class="modal-save-btn" id="importRecoveredBtn">MERGE INTO APP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bounty Details Modal -->
+  <div class="modal-overlay" id="bountyModal">
+    <div class="modal" style="max-width: 380px;">
+      <div class="modal-header">
+        <span id="bountyModalTitle">BOUNTY DETAILS</span>
+        <button class="modal-close" id="bountyModalCloseBtn">&times;</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.65rem; padding: 0.4rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+          <span id="bountyModalTag" style="font-size: 0.6rem; font-weight: 800; color: var(--color-yellow); letter-spacing: 0.05em; text-transform: uppercase;">HEAVYWEIGHT</span>
+          <span id="bountyModalReward" style="font-size: 0.76rem; font-weight: 900; color: var(--color-cyan);">+40 ELO</span>
+        </div>
+
+        <div id="bountyModalDesc" style="font-size: 0.72rem; color: var(--text); line-height: 1.45; font-weight: 600;">
+          Complete at least 3 Hard, Mega, or Ultra tasks during this week.
+        </div>
+
+        <div id="bountyModalStatus" style="font-size: 0.64rem; color: var(--text-muted); padding: 0.4rem 0.55rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; font-weight: 700;">
+          Progress: 0 / 3
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="modal-delete-btn" id="bountyModalCancelBtn">CLOSE</button>
+        <button type="button" class="modal-save-btn" id="bountyModalAcceptBtn">ACCEPT BOUNTY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Draggable Discipline Bottom Drawer -->
+  <div class="discipline-drawer" id="disciplineDrawer" style="height: 38px;">
+    <div class="discipline-drawer-handle" id="disciplineDrawerHandle">
+      <div class="discipline-handle-pill"></div>
+      <div class="discipline-handle-left">
+        <span id="disciplineTabEloLabel">1000 ELO · NOVICE</span>
+      </div>
+      <div class="discipline-handle-right">
+        <span class="discipline-rate-badge" id="disciplineRateBadge">+0 TODAY</span>
+        <span id="disciplineChevron">▲</span>
+      </div>
+    </div>
+
+    <div class="discipline-drawer-body" id="disciplineDrawerBody">
+      <div class="discipline-grid">
+        <!-- Standing -->
+        <div class="discipline-panel">
+          <div class="elo-stat-row">
+            <span class="elo-big-number" id="dispEloVal">1000</span>
+            <span class="elo-rank-tag" id="dispRankTitle">NOVICE</span>
+          </div>
+          <div class="elo-progress-track">
+            <div class="elo-progress-fill" id="dispTierFill"></div>
+          </div>
+          <div class="elo-sub-meta">
+            <span id="dispCurrentTierMin">900</span>
+            <span id="dispNextTierText" style="color: #2aa198;">100 TO IRON</span>
+            <span id="dispNextTierMin">1100</span>
+          </div>
+
+          <div class="discipline-metrics">
+            <div class="discipline-metric-item">
+              <span class="metric-item-label">TODAY</span>
+              <span class="metric-item-val" id="dispTodayPct" style="color: #268bd2;">0%</span>
+            </div>
+            <div class="discipline-metric-item">
+              <span class="metric-item-label">STREAK</span>
+              <span class="metric-item-val" id="dispStreakBonusVal" style="color: #cb4b16;">+0 ELO</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Contracts -->
+        <div class="discipline-panel">
+          <div class="discipline-panel-header">
+            <span class="discipline-panel-title">WEEKLY BOUNTIES</span>
+            <span style="font-size: 0.58rem; color: #586e75; font-weight: 700;" id="disciplineWeekLabel">WEEK 35</span>
+          </div>
+
+          <div class="contracts-list" id="disciplineContractList">
+            <!-- Generated via JS -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1208,40 +1809,142 @@
   <script>
     // Audio synthesizer for crisp sound effects
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
     function playSound(type) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
 
       if (type === 'check') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.08);
-        if (navigator.vibrate) navigator.vibrate(10);
+        // Multi-oscillator 5-tone ascending harmonic power chord
+        const freqs = [587.33, 739.99, 880.00, 1174.66, 1479.98]; // D Major High Arpeggio
+        freqs.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = idx === 0 ? 'triangle' : (idx === 4 ? 'sawtooth' : 'sine');
+          osc.frequency.setValueAtTime(freq, now + idx * 0.02);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.08, now + idx * 0.02 + 0.14);
+          gain.gain.setValueAtTime(0.18 - (idx * 0.025), now + idx * 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.02 + 0.2);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.02);
+          osc.stop(now + idx * 0.02 + 0.2);
+        });
+
+        // Resonant sub-kick for tactile bass punch
+        const subOsc = audioCtx.createOscillator();
+        const subGain = audioCtx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(180, now);
+        subOsc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
+        subGain.gain.setValueAtTime(0.28, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        subOsc.connect(subGain);
+        subGain.connect(audioCtx.destination);
+        subOsc.start(now);
+        subOsc.stop(now + 0.08);
+
+        if (navigator.vibrate) navigator.vibrate([25, 45, 25, 35]);
       } else if (type === 'uncheck') {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.06);
-        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.06);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.06);
-      } else if (type === 'checkin') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(330, audioCtx.currentTime);
-        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.08);
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.16);
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-        if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(220, now + 0.06);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      } else if (type === 'checkin' || type === 'rebirth') {
+        const chord = [293.66, 369.99, 440.00, 587.33, 739.99, 880.00];
+        chord.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.03);
+          gain.gain.setValueAtTime(0.14, now + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.4);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + i * 0.03);
+          osc.stop(now + i * 0.03 + 0.4);
+        });
+        if (navigator.vibrate) navigator.vibrate([30, 50, 30, 60]);
+      }
+    }
+
+    function triggerDopamineEffects(x, y, weight, cardEl, checkEl) {
+      // 1. Card Spring Pop & Checkbox Spin
+      if (cardEl) {
+        cardEl.classList.remove('dopamine-pop');
+        void cardEl.offsetWidth;
+        cardEl.classList.add('dopamine-pop');
+      }
+      if (checkEl) {
+        checkEl.classList.remove('dopamine-spin');
+        void checkEl.offsetWidth;
+        checkEl.classList.add('dopamine-spin');
+      }
+
+      // 2. Dual Concentric Shockwave Blast
+      const shock1 = document.createElement('div');
+      shock1.className = 'dopamine-shockwave';
+      shock1.style.left = `${x}px`;
+      shock1.style.top = `${y}px`;
+      document.body.appendChild(shock1);
+      setTimeout(() => shock1.remove(), 480);
+
+      const shock2 = document.createElement('div');
+      shock2.className = 'dopamine-shockwave secondary';
+      shock2.style.left = `${x}px`;
+      shock2.style.top = `${y}px`;
+      document.body.appendChild(shock2);
+      setTimeout(() => shock2.remove(), 580);
+
+      // 3. Giant Floating XP Tag
+      const tag = document.createElement('div');
+      tag.className = 'dopamine-floating-tag';
+      tag.textContent = `+${weight}`;
+      tag.style.left = `${x}px`;
+      tag.style.top = `${y - 12}px`;
+      document.body.appendChild(tag);
+      setTimeout(() => tag.remove(), 720);
+
+      // 5. 36 High-Velocity Fireworks Sparkle Particles
+      const colors = ['#2aa198', '#268bd2', '#b58900', '#859900', '#cb4b16', '#d33682', '#6c71c4', '#fdf6e3'];
+      for (let i = 0; i < 36; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'dopamine-spark';
+        spark.style.backgroundColor = colors[i % colors.length];
+        spark.style.left = `${x}px`;
+        spark.style.top = `${y}px`;
+        const size = (i % 4 === 0) ? 7 : ((i % 2 === 0) ? 5 : 4);
+        spark.style.width = `${size}px`;
+        spark.style.height = `${size}px`;
+        const angle = (Math.PI * 2 * i) / 36 + (Math.random() * 0.25 - 0.12);
+        const dist = 32 + Math.random() * 45;
+        spark.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+        spark.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+        if (i % 3 === 0) spark.style.borderRadius = '1px'; // diamond crystal shard
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 560);
+      }
+    }
+
+    function rebirthElo() {
+      if (confirm('REBIRTH: Reset Discipline ELO back to base 1000 rating?')) {
+        disciplineState.elo = 1000;
+        disciplineState.todayEloDelta = 0;
+        disciplineState.acceptedContracts = {};
+        disciplineState.completedContractsThisWeek = [];
+        state.score = 1000;
+        playSound('rebirth');
+        saveState();
+        saveDisciplineState();
+        render();
+        renderDisciplineDrawer();
       }
     }
 
@@ -1289,6 +1992,7 @@
       dailies: JSON.parse(localStorage.getItem('nemesis_dailies') || '[]'),
       todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
       history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
+      lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
       lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
       rightView: 'todos' // 'todos' or 'history'
     };
@@ -1302,6 +2006,7 @@
       localStorage.setItem('nemesis_dailies', JSON.stringify(state.dailies));
       localStorage.setItem('nemesis_todos', JSON.stringify(state.todos));
       localStorage.setItem('nemesis_history', JSON.stringify(state.history));
+      localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
       localStorage.setItem('nemesis_last_date', state.lastActiveDate);
     }
 
@@ -1472,15 +2177,39 @@
       if (streak > 0) {
         const alpha = Math.min(streak / 20, 1.0) * 0.42;
         const hex = (item.color || '#268bd2').replace('#', '');
-        const r = parseInt(hex.substring(0,2), 16) || 0;
-        const g = parseInt(hex.substring(2,4), 16) || 0;
-        const b = parseInt(hex.substring(4,6), 16) || 0;
+        const r = parseInt(hex.substring(0, 2), 16) || 0;
+        const g = parseInt(hex.substring(2, 4), 16) || 0;
+        const b = parseInt(hex.substring(4, 6), 16) || 0;
         return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
       } else if (streak < 0) {
         const alpha = Math.min(Math.abs(streak) / 20, 1.0) * 0.18;
         return `rgba(220, 50, 47, ${alpha.toFixed(3)})`;
       }
       return 'var(--card-subtle)';
+    }
+
+    function getActiveBountyMatch(item, type) {
+      if (typeof disciplineState === 'undefined' || !disciplineState.acceptedContracts) return null;
+      const contracts = disciplineState.acceptedContracts;
+      if (contracts['iron_execution'] !== undefined && ['hard', 'mega', 'ultra'].includes(item.difficulty)) {
+        return 'HEAVY';
+      }
+      if (contracts['debt_liquidation'] !== undefined && type === 'todos' && isOverdue(item.deadline)) {
+        return 'DEBT';
+      }
+      if (contracts['project_dissection'] !== undefined && item.subtasks && item.subtasks.length > 0) {
+        return 'SUBTASK';
+      }
+      if (contracts['slump_purge'] !== undefined && type === 'dailies') {
+        const sortedByRate = [...state.dailies].sort((a, b) => {
+          const rA = (a.completedDays || 0) / Math.max(1, a.totalDays || 1);
+          const rB = (b.completedDays || 0) / Math.max(1, b.totalDays || 1);
+          return rA - rB;
+        });
+        const lowest3 = sortedByRate.slice(0, 3);
+        if (lowest3.some(d => d.id === item.id)) return 'SLUMP';
+      }
+      return null;
     }
 
     function renderItem(item, type) {
@@ -1492,6 +2221,11 @@
       }
       card.dataset.id = item.id;
       card.draggable = true;
+
+      const bountyTag = getActiveBountyMatch(item, type);
+      if (bountyTag && !item.completed) {
+        card.classList.add('bounty-targeted');
+      }
 
       // Drag and drop task reordering
       card.ondragstart = (e) => {
@@ -1562,7 +2296,7 @@
       check.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
       check.onclick = (e) => {
         e.stopPropagation();
-        toggleTask(item.id, type);
+        toggleTask(item.id, type, check);
       };
 
       // Text
@@ -1599,6 +2333,14 @@
         mainRow.appendChild(dl);
       }
 
+      // Bounty target pill
+      if (bountyTag && !item.completed) {
+        const pill = document.createElement('span');
+        pill.className = 'bounty-target-pill';
+        pill.textContent = `★ ${bountyTag}`;
+        mainRow.appendChild(pill);
+      }
+
       card.appendChild(mainRow);
 
       // Subtasks tree
@@ -1620,7 +2362,7 @@
           stCheck.innerHTML = `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
           stCheck.onclick = (e) => {
             e.stopPropagation();
-            toggleSubtask(item.id, type, st.id);
+            toggleSubtask(item.id, type, st.id, stCheck);
           };
 
           const stText = document.createElement('span');
@@ -1733,24 +2475,41 @@
         if (d.completed) dDonePts += w;
       });
 
-      // Calculate Todos Weight
+      // Calculate Todos Weight (Only todos due today contribute to max potential; No deadline = bonus only)
       let tTotalPts = 0;
       let tDonePts = 0;
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+
       state.todos.forEach(t => {
         const w = getWeight(t);
-        tTotalPts += w;
-        if (t.completed) tDonePts += w;
+        const hasNoDeadline = !t.deadline || t.deadline.trim() === '';
+        const isDueToday = t.deadline === todayStr;
+
+        if (isDueToday) {
+          tTotalPts += w;
+          if (t.completed) tDonePts += w;
+        } else if (hasNoDeadline) {
+          if (t.completed) tDonePts += w; // Bonus points
+        } else if (t.completed) {
+          tDonePts += w; // Other completed todos
+        }
       });
 
       // Overall Progress
       const totalPts = dTotalPts + tTotalPts;
       const donePts = dDonePts + tDonePts;
-      const pct = totalPts > 0 ? Math.round((donePts / totalPts) * 100) : 0;
+      const pct = totalPts > 0 ? Math.round((donePts / totalPts) * 100) : (donePts > 0 ? 100 : 0);
 
       document.getElementById('progressPoints').textContent = `${donePts}/${totalPts} PTS`;
       document.getElementById('progressPercent').textContent = `${pct}%`;
-      document.getElementById('progressBar').style.width = `${pct}%`;
-      document.getElementById('bigScoreVal').textContent = (state.score >= 0 ? '+' : '') + state.score;
+      document.getElementById('progressBar').style.width = `${Math.min(pct, 100)}%`;
+      document.getElementById('bigScoreVal').textContent = (typeof disciplineState !== 'undefined' && disciplineState.elo) ? disciplineState.elo : 1000;
+      if (typeof getEloTier === 'function') {
+        const elo = (typeof disciplineState !== 'undefined' && disciplineState.elo) ? disciplineState.elo : 1000;
+        const tier = getEloTier(elo);
+        const headerRank = document.getElementById('headerEloRank');
+        if (headerRank) headerRank.textContent = tier.name;
+      }
 
       // Dailies List
       const dList = document.getElementById('dailiesList');
@@ -1821,25 +2580,39 @@
       if (state.rightView === 'history') {
         renderHistoryMatrix();
       }
+
+      if (typeof renderDisciplineDrawer === 'function') {
+        renderDisciplineDrawer();
+      }
     }
 
-    function toggleTask(id, type) {
+    function toggleTask(id, type, checkEl) {
       const task = state[type].find(t => t.id === id);
       if (task) {
         task.completed = !task.completed;
         playSound(task.completed ? 'check' : 'uncheck');
+        if (task.completed && checkEl) {
+          const rect = checkEl.getBoundingClientRect();
+          const cardEl = checkEl.closest('.task-card');
+          triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, getWeight(task), cardEl, checkEl);
+        }
         saveState();
         render();
       }
     }
 
-    function toggleSubtask(taskId, type, subtaskId) {
+    function toggleSubtask(taskId, type, subtaskId, checkEl) {
       const task = state[type].find(t => t.id === taskId);
       if (task && task.subtasks) {
         const sub = task.subtasks.find(s => s.id === subtaskId);
         if (sub) {
           sub.completed = !sub.completed;
           playSound(sub.completed ? 'check' : 'uncheck');
+          if (sub.completed && checkEl) {
+            const rect = checkEl.getBoundingClientRect();
+            const cardEl = checkEl.closest('.task-card');
+            triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, 1, cardEl, checkEl);
+          }
           saveState();
           render();
         }
@@ -1850,6 +2623,8 @@
       playSound('checkin');
       let totalPts = 0;
       let donePts = 0;
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+
       state.dailies.forEach(d => {
         const w = getWeight(d);
         totalPts += w;
@@ -1857,12 +2632,21 @@
       });
       state.todos.forEach(t => {
         const w = getWeight(t);
-        totalPts += w;
-        if (t.completed) donePts += w;
+        const hasNoDeadline = !t.deadline || t.deadline.trim() === '';
+        const isDueToday = t.deadline === todayStr;
+
+        if (isDueToday) {
+          totalPts += w;
+          if (t.completed) donePts += w;
+        } else if (hasNoDeadline) {
+          if (t.completed) donePts += w;
+        } else if (t.completed) {
+          donePts += w;
+        }
       });
 
-      const pct = totalPts > 0 ? (donePts / totalPts) * 100 : 100;
-      
+      const pct = totalPts > 0 ? (donePts / totalPts) * 100 : (donePts > 0 ? 100 : 100);
+
       if (totalPts > 0) {
         if (pct >= 100) state.score += 2;
         else if (pct >= 70) state.score += 1;
@@ -1870,14 +2654,50 @@
         else state.score -= 1;
       }
 
-      const today = state.lastActiveDate || new Date().toISOString().split('T')[0];
-      state.history[today] = totalPts > 0 ? donePts / totalPts : 1.0;
+      state.history[todayStr] = totalPts > 0 ? donePts / totalPts : 1.0;
+
+      // 1. Invisible Lifetime Stats Tracking for each daily
+      state.dailies.forEach(d => {
+        if (d.totalDays === undefined) d.totalDays = (d.history ? d.history.length : 0);
+        if (d.completedDays === undefined) d.completedDays = (d.history ? d.history.filter(h => h.completed).length : 0);
+        d.totalDays += 1;
+        if (d.completed) d.completedDays += 1;
+      });
+
+      // 2. Behavioral Condition Analysis for the 7 Core Item Archetypes
+      const negDailies = state.dailies.filter(d => (d.streak || 0) < 0);
+      const completedNegativeStreaks = negDailies.length > 0 && negDailies.every(d => d.completed);
+
+      const sortedByRate = [...state.dailies].sort((a, b) => {
+        const rA = (a.completedDays || 0) / Math.max(1, a.totalDays || 1);
+        const rB = (b.completedDays || 0) / Math.max(1, b.totalDays || 1);
+        return rA - rB;
+      });
+      const lowest3 = sortedByRate.slice(0, 3);
+      const completedLowestDailies = lowest3.length > 0 && lowest3.every(d => d.completed);
+
+      let subtasksCount = 0;
+      state.todos.forEach(t => (t.subtasks || []).forEach(st => { if (st.completed) subtasksCount++; }));
+      state.dailies.forEach(d => (d.subtasks || []).forEach(st => { if (st.completed) subtasksCount++; }));
+
+      let hardTasksCount = 0;
+      state.dailies.forEach(d => { if (d.completed && ['hard', 'mega', 'ultra'].includes(d.difficulty)) hardTasksCount++; });
+      state.todos.forEach(t => { if (t.completed && ['hard', 'mega', 'ultra'].includes(t.difficulty)) hardTasksCount++; });
+
+      const activeStreaksCount = state.dailies.filter(d => (d.streak || 0) > 0).length;
+      const streakTier = Math.floor(activeStreaksCount / 5);
+
+      const is100Pct = (pct >= 100);
+      const overdueClearedCount = state.todos.filter(t => t.completed && t.deadline && t.deadline < todayStr).length;
+      const hasZeroOverdueDebt = state.todos.filter(t => !t.completed && t.deadline && t.deadline < todayStr).length === 0;
+      const dayOfWeek = new Date().getDay();
+      const isWeekend100 = (dayOfWeek === 0 || dayOfWeek === 6) && (pct >= 100);
 
       // Update streaks, record 10-checkin history & uncheck habits
       state.dailies.forEach(d => {
         if (!d.history) d.history = [];
         d.history.push({
-          date: today,
+          date: todayStr,
           completed: !!d.completed
         });
         if (d.history.length > 20) d.history.shift();
@@ -1900,7 +2720,27 @@
         if (d.subtasks) d.subtasks.forEach(s => s.completed = false);
       });
 
+      const allStreaksAbove3 = state.dailies.length > 0 && state.dailies.every(d => (d.streak || 0) >= 3);
+
+      state.lastCheckinStats = {
+        completedNegativeStreaks,
+        completedLowestDailies,
+        subtasksCount,
+        hardTasksCount,
+        streakTier,
+        is100Pct,
+        overdueClearedCount,
+        hasZeroOverdueDebt,
+        isWeekend100,
+        allStreaksAbove3
+      };
+
       state.todos = state.todos.filter(t => !t.completed);
+
+      // Update compounding discipline rate & weekly contracts
+      if (typeof updateDisciplineOnCheckin === 'function') {
+        updateDisciplineOnCheckin(pct, donePts, state.lastCheckinStats || {});
+      }
 
       saveState();
       render();
@@ -1952,10 +2792,14 @@
       }
     }
 
-    function openEditModal(item, type) {
-      activeEditing = { 
-        id: item.id, 
-        type: type, 
+    function openEditModal(id, type) {
+      const item = state[type].find(t => t.id === id);
+      if (!item) return;
+
+      activeEditing = {
+        id: item.id,
+        isNew: false,
+        type: type,
         color: item.color || SOLAR_COLORS[0].hex,
         difficulty: item.difficulty || 'easy',
         subtasks: item.subtasks ? JSON.parse(JSON.stringify(item.subtasks)) : [],
@@ -1970,7 +2814,6 @@
       const deadlineInput = document.getElementById('modalDeadlineInput');
       deadlineInput.value = item.deadline || '';
 
-      // Schedule container for dailies
       const schedContainer = document.getElementById('modalScheduleContainer');
       if (type === 'dailies') {
         schedContainer.style.display = 'flex';
@@ -1994,7 +2837,6 @@
 
       renderModalSubtasks();
 
-      // Difficulty buttons
       document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.diff === activeEditing.difficulty);
         btn.onclick = () => {
@@ -2004,7 +2846,6 @@
         };
       });
 
-      // Color Grid
       const grid = document.getElementById('modalColorGrid');
       if (grid) {
         grid.innerHTML = '';
@@ -2021,7 +2862,91 @@
         });
       }
 
+      const delBtn = document.getElementById('modalDeleteBtn');
+      delBtn.textContent = 'DELETE';
+
       modal.classList.add('active');
+      modal.style.display = 'grid';
+      input.focus();
+    }
+
+    function openAddModal(type) {
+      const sourceInput = document.getElementById(type === 'dailies' ? 'dailyInput' : 'todoInput');
+      const initialText = sourceInput ? sourceInput.value.trim() : '';
+      const parsed = initialText ? parseNaturalLanguage(initialText) : null;
+
+      activeEditing = {
+        id: null,
+        isNew: true,
+        type: type,
+        color: parsed ? parsed.color : SOLAR_COLORS[0].hex,
+        difficulty: parsed ? parsed.difficulty : 'easy',
+        deadline: parsed ? parsed.deadline : '',
+        subtasks: parsed && parsed.subtasks.length > 0 ? parsed.subtasks.map(st => ({ id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5), text: st, completed: false })) : [],
+        days: [0, 1, 2, 3, 4, 5, 6]
+      };
+
+      const modal = document.getElementById('editModal');
+      document.getElementById('modalHeaderTitle').textContent = type === 'dailies' ? 'NEW DAILY (EXPANDED)' : 'NEW TO-DO (EXPANDED)';
+      const input = document.getElementById('modalTaskInput');
+      input.value = parsed ? parsed.text : initialText;
+
+      const deadlineInput = document.getElementById('modalDeadlineInput');
+      deadlineInput.value = activeEditing.deadline || '';
+
+      const schedContainer = document.getElementById('modalScheduleContainer');
+      if (type === 'dailies') {
+        schedContainer.style.display = 'flex';
+        document.querySelectorAll('#modalScheduleGrid .day-btn').forEach(btn => {
+          const dayNum = parseInt(btn.dataset.day, 10);
+          btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
+          btn.onclick = () => {
+            if (activeEditing.days.includes(dayNum)) {
+              if (activeEditing.days.length > 1) {
+                activeEditing.days = activeEditing.days.filter(d => d !== dayNum);
+              }
+            } else {
+              activeEditing.days.push(dayNum);
+            }
+            btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
+          };
+        });
+      } else {
+        schedContainer.style.display = 'none';
+      }
+
+      renderModalSubtasks();
+
+      document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.diff === activeEditing.difficulty);
+        btn.onclick = () => {
+          activeEditing.difficulty = btn.dataset.diff;
+          document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+      });
+
+      const grid = document.getElementById('modalColorGrid');
+      if (grid) {
+        grid.innerHTML = '';
+        SOLAR_COLORS.forEach(c => {
+          const opt = document.createElement('div');
+          opt.className = `modal-color-option ${activeEditing.color === c.hex ? 'selected' : ''}`;
+          opt.style.background = c.hex;
+          opt.onclick = () => {
+            activeEditing.color = c.hex;
+            document.querySelectorAll('.modal-color-option').forEach(el => el.classList.remove('selected'));
+            opt.classList.add('selected');
+          };
+          grid.appendChild(opt);
+        });
+      }
+
+      const delBtn = document.getElementById('modalDeleteBtn');
+      delBtn.textContent = 'CANCEL';
+
+      modal.classList.add('active');
+      modal.style.display = 'grid';
       input.focus();
     }
 
@@ -2056,6 +2981,7 @@
 
     function closeEditModal() {
       document.getElementById('editModal').classList.remove('active');
+      document.getElementById('editModal').style.display = 'none';
       activeEditing = null;
     }
 
@@ -2064,32 +2990,68 @@
       const input = document.getElementById('modalTaskInput');
       const newText = input.value.trim();
       const deadlineVal = document.getElementById('modalDeadlineInput').value;
-      const task = state[activeEditing.type].find(t => t.id === activeEditing.id);
-      
-      if (task) {
-        if (newText.length === 0) {
-          state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
-        } else {
-          task.text = newText;
-          task.color = activeEditing.color;
-          task.difficulty = activeEditing.difficulty;
-          task.deadline = deadlineVal;
-          task.subtasks = activeEditing.subtasks.filter(s => s.text.trim().length > 0);
-          if (activeEditing.type === 'dailies') {
-            task.days = activeEditing.days;
+
+      if (activeEditing.isNew) {
+        if (newText.length > 0) {
+          const parsed = parseNaturalLanguage(newText);
+          const newItem = {
+            id: (activeEditing.type === 'dailies' ? 'd_' : 't_') + Date.now(),
+            text: parsed.text,
+            completed: false,
+            difficulty: (parsed.difficulty !== 'easy' ? parsed.difficulty : activeEditing.difficulty),
+            deadline: (parsed.deadline || deadlineVal),
+            color: (parsed.color !== SOLAR_COLORS[0].hex ? parsed.color : activeEditing.color),
+            subtasks: activeEditing.subtasks.filter(s => s.text.trim().length > 0),
+            streak: 0,
+            history: []
+          };
+          if (parsed.subtasks && parsed.subtasks.length > 0) {
+            parsed.subtasks.forEach(st => {
+              newItem.subtasks.push({
+                id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                text: st,
+                completed: false
+              });
+            });
           }
+          if (activeEditing.type === 'dailies') {
+            newItem.days = activeEditing.days;
+          }
+          state[activeEditing.type].unshift(newItem);
+          const sourceInput = document.getElementById(activeEditing.type === 'dailies' ? 'dailyInput' : 'todoInput');
+          if (sourceInput) sourceInput.value = '';
+          saveState();
+          render();
         }
-        saveState();
-        render();
+      } else {
+        const task = state[activeEditing.type].find(t => t.id === activeEditing.id);
+        if (task) {
+          if (newText.length === 0) {
+            state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+          } else {
+            task.text = newText;
+            task.color = activeEditing.color;
+            task.difficulty = activeEditing.difficulty;
+            task.deadline = deadlineVal;
+            task.subtasks = activeEditing.subtasks.filter(s => s.text.trim().length > 0);
+            if (activeEditing.type === 'dailies') {
+              task.days = activeEditing.days;
+            }
+          }
+          saveState();
+          render();
+        }
       }
       closeEditModal();
     }
 
     function deleteModalItem() {
       if (!activeEditing) return;
-      state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
-      saveState();
-      render();
+      if (!activeEditing.isNew) {
+        state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+        saveState();
+        render();
+      }
       closeEditModal();
     }
 
@@ -2201,7 +3163,7 @@
                   if (t.deadline) {
                     try {
                       dlStr = typeof t.deadline === 'number' ? new Date(t.deadline).toISOString().split('T')[0] : String(t.deadline);
-                    } catch (e) {}
+                    } catch (e) { }
                   }
                   recoveredData.todos.push({
                     id: 't_old_' + (t.id || Math.random().toString(36).substr(2, 6)),
@@ -2220,7 +3182,7 @@
               });
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       for (let i = 0; i < localStorage.length; i++) {
@@ -2248,7 +3210,7 @@
                 }
               });
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
 
@@ -2320,12 +3282,18 @@
     }
 
     function setupEventListeners() {
-      // Plus Add Buttons
+      // Plus Add Buttons & Expand Add Modal Buttons
       document.getElementById('addDailyBtn').onclick = addDailyFromInput;
       document.getElementById('addTodoBtn').onclick = addTodoFromInput;
+      document.getElementById('openAddDailyModalBtn').onclick = () => openAddModal('dailies');
+      document.getElementById('openAddTodoModalBtn').onclick = () => openAddModal('todos');
 
       // Check In Button
       document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
+
+      // Rebirth Button
+      const rebirthBtn = document.getElementById('rebirthEloBtn');
+      if (rebirthBtn) rebirthBtn.onclick = rebirthElo;
 
       // Old Data Recovery
       document.getElementById('recoverOldBtn').onclick = () => {
@@ -2407,7 +3375,7 @@
       // Pointer / Mouse events on divider
       divider.onpointerdown = (e) => {
         onDragStart(e.clientX);
-        try { divider.setPointerCapture(e.pointerId); } catch(err){}
+        try { divider.setPointerCapture(e.pointerId); } catch (err) { }
       };
       divider.onpointermove = (e) => onDragMove(e.clientX);
       divider.onpointerup = () => onDragEnd();
@@ -2439,7 +3407,7 @@
       document.getElementById('modalAddSubtaskBtn').onclick = () => {
         if (activeEditing) {
           activeEditing.subtasks.push({
-            id: 'st_' + Date.now(),
+            id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
             text: '',
             completed: false
           });
@@ -2452,7 +3420,7 @@
       document.getElementById('modalSaveBtn').onclick = saveModalChanges;
       document.getElementById('modalDeleteBtn').onclick = deleteModalItem;
       document.getElementById('modalTaskInput').onkeydown = (e) => {
-        if (e.key === 'Enter') saveModalChanges();
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveModalChanges();
         if (e.key === 'Escape') closeEditModal();
       };
 
@@ -2460,25 +3428,620 @@
       document.getElementById('editModal').onclick = (e) => {
         if (e.target === document.getElementById('editModal')) closeEditModal();
       };
+    }
 
-      // Window resize re-aligns matrix heights
-      window.addEventListener('resize', () => {
-        if (state.rightView === 'history') {
-          renderHistoryMatrix();
+    // Window resize re-aligns matrix heights
+    window.addEventListener('resize', () => {
+      if (state.rightView === 'history') {
+        renderHistoryMatrix();
+      }
+    });
+
+    // --- DISCIPLINE ELO RATING & WEEKLY CONTRACTS ENGINE ---
+    let disciplineState = {
+      elo: 1000,
+      acceptedContracts: {}, // { [contractId]: progress }
+      completedContractsThisWeek: [],
+      currentWeek: null,
+      unlockedSeals: [],
+      history: {},
+      todayEloDelta: 0
+    };
+
+    try {
+      const savedDisp = localStorage.getItem('nemesis_discipline_state');
+      if (savedDisp) {
+        disciplineState = Object.assign(disciplineState, JSON.parse(savedDisp));
+        if (!disciplineState.acceptedContracts) disciplineState.acceptedContracts = {};
+        if (disciplineState.activeContractId && disciplineState.acceptedContracts[disciplineState.activeContractId] === undefined) {
+          disciplineState.acceptedContracts[disciplineState.activeContractId] = disciplineState.contractProgress || 0;
+        }
+        if (!disciplineState.completedContractsThisWeek) disciplineState.completedContractsThisWeek = [];
+      }
+    } catch (e) { }
+
+    function saveDisciplineState() {
+      try {
+        localStorage.setItem('nemesis_discipline_state', JSON.stringify(disciplineState));
+      } catch (e) { }
+    }
+
+    const ELO_TIERS = [
+      { id: 'recruit', name: 'RECRUIT', min: 0, max: 899 },
+      { id: 'novice', name: 'NOVICE', min: 900, max: 1099 },
+      { id: 'iron', name: 'IRON', min: 1100, max: 1299 },
+      { id: 'bronze', name: 'BRONZE', min: 1300, max: 1499 },
+      { id: 'silver', name: 'SILVER', min: 1500, max: 1699 },
+      { id: 'gold', name: 'GOLD', min: 1700, max: 1899 },
+      { id: 'platinum', name: 'PLATINUM', min: 1900, max: 2099 },
+      { id: 'diamond', name: 'DIAMOND', min: 2100, max: 2299 },
+      { id: 'master', name: 'MASTER', min: 2300, max: 99999 }
+    ];
+
+    function getEloTier(elo) {
+      return ELO_TIERS.find(t => elo >= t.min && elo <= t.max) || ELO_TIERS[1];
+    }
+
+    function getCurrentWeekKey() {
+      const now = new Date();
+      const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
+
+    function checkDisciplineWeekReset() {
+      const weekKey = getCurrentWeekKey();
+      if (!disciplineState.currentWeek || disciplineState.currentWeek !== weekKey) {
+        // Evaluate unfulfilled accepted contracts from previous week
+        if (disciplineState.currentWeek && disciplineState.acceptedContracts) {
+          let totalPenalty = 0;
+          Object.keys(disciplineState.acceptedContracts).forEach(cId => {
+            const contract = CONTRACTS_CATALOG.find(c => c.id === cId);
+            if (contract) {
+              const progress = disciplineState.acceptedContracts[cId] || 0;
+              if (progress < contract.target) {
+                const penalty = Math.round(contract.rewardElo * 0.5); // 50% penalty deduction
+                totalPenalty += penalty;
+              }
+            }
+          });
+          if (totalPenalty > 0) {
+            disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - totalPenalty);
+            state.score = disciplineState.elo;
+            const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            disciplineState.history[yesterdayStr + '_reset_penalty'] = {
+              pct: 0,
+              elo: disciplineState.elo,
+              delta: -totalPenalty
+            };
+          }
+        }
+
+        disciplineState.currentWeek = weekKey;
+        disciplineState.acceptedContracts = {};
+        disciplineState.completedContractsThisWeek = [];
+        saveDisciplineState();
+        saveState();
+      }
+    }
+
+    const CONTRACTS_CATALOG = [
+      {
+        id: 'iron_execution',
+        title: 'Iron Execution',
+        tag: 'HEAVYWEIGHT',
+        desc: 'Complete at least 3 Hard, Mega, or Ultra tasks during this week.',
+        target: 3,
+        sealId: 'seal_iron',
+        sealName: 'Iron Vanguard Seal',
+        sealDesc: 'Awarded for heavy task execution under weekly contract.',
+        rewardElo: 40
+      },
+      {
+        id: 'slump_purge',
+        title: 'Slump Purge Protocol',
+        tag: 'RESILIENCE',
+        desc: 'Clear your lowest lifetime completion daily on 4 separate days this week.',
+        target: 4,
+        sealId: 'seal_phoenix',
+        sealName: 'Phoenix Recovery Seal',
+        sealDesc: 'Awarded for eliminating lowest-tier habit friction.',
+        rewardElo: 50
+      },
+      {
+        id: 'flawless_stretch',
+        title: 'High Consistency Stretch',
+        tag: 'MASTERY',
+        desc: 'Achieve >= 80% daily completion on at least 5 days this week.',
+        target: 5,
+        sealId: 'seal_sovereign',
+        sealName: 'Sovereign Anchor Seal',
+        sealDesc: 'Awarded for sustained high-yield daily execution.',
+        rewardElo: 60
+      },
+      {
+        id: 'debt_liquidation',
+        title: 'Debt Liquidation',
+        tag: 'PROACTIVITY',
+        desc: 'Clear 3 overdue tasks OR maintain zero overdue debt across 3 check-ins.',
+        target: 3,
+        sealId: 'seal_purge',
+        sealName: 'Debt Purge Seal',
+        sealDesc: 'Awarded for aggressive backlog elimination and clean queue maintenance.',
+        rewardElo: 50
+      },
+      {
+        id: 'project_dissection',
+        title: 'Project Dissection',
+        tag: 'DEEP WORK',
+        desc: 'Complete at least 20 subtasks across complex multi-step tasks.',
+        target: 20,
+        sealId: 'seal_architect',
+        sealName: 'Architect Seal',
+        sealDesc: 'Awarded for granular deep work execution.',
+        rewardElo: 65
+      },
+      {
+        id: 'weekend_fortress',
+        title: 'Weekend Fortress',
+        tag: 'FORTITUDE',
+        desc: 'Achieve 100% flawless completion on both Saturday and Sunday.',
+        target: 2,
+        sealId: 'seal_bastion',
+        sealName: 'Bastion Seal',
+        sealDesc: 'Awarded for unbroken weekend discipline.',
+        rewardElo: 55
+      },
+      {
+        id: 'unbroken_baseline',
+        title: 'Unbroken Baseline (+3)',
+        tag: 'UNSTOPPABLE',
+        desc: 'Have every habit elevated to a positive streak of +3 or higher on 3 check-ins.',
+        target: 3,
+        sealId: 'seal_titan',
+        sealName: 'Titan Stride Seal',
+        sealDesc: 'Awarded for zero negative streaks and all habits above +3.',
+        rewardElo: 70
+      }
+    ];
+
+    function calculateNormalizedEloDelta(pct, activeStreaksCount) {
+      let baseDelta = 0;
+      if (pct >= 100) baseDelta = 10;
+      else if (pct >= 80) baseDelta = 6;
+      else if (pct >= 60) baseDelta = 2;
+      else if (pct >= 40) baseDelta = -6;
+      else baseDelta = -12;
+
+      const streakBonus = baseDelta >= 0 ? Math.min(3, Math.floor(Math.max(0, activeStreaksCount) / 3)) : 0;
+      const totalDelta = baseDelta + streakBonus;
+      return { baseDelta, streakBonus, totalDelta };
+    }
+
+    function updateDisciplineOnCheckin(pct, donePts, stats) {
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+      const weekKey = getCurrentWeekKey();
+      checkDisciplineWeekReset();
+
+      const activeStreaksCount = state.dailies.filter(d => (d.streak || 0) > 0).length;
+      const deltaInfo = calculateNormalizedEloDelta(pct, activeStreaksCount);
+
+      disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) + deltaInfo.totalDelta);
+      disciplineState.todayEloDelta = deltaInfo.totalDelta;
+      disciplineState.history[todayStr] = {
+        pct,
+        elo: disciplineState.elo,
+        delta: deltaInfo.totalDelta
+      };
+
+      if (!disciplineState.acceptedContracts) disciplineState.acceptedContracts = {};
+
+      if (disciplineState.acceptedContracts['iron_execution'] !== undefined) {
+        if ((stats.hardTasksCount || 0) > 0) {
+          disciplineState.acceptedContracts['iron_execution'] = Math.min(3, (disciplineState.acceptedContracts['iron_execution'] || 0) + stats.hardTasksCount);
+        }
+      }
+      if (disciplineState.acceptedContracts['slump_purge'] !== undefined) {
+        if (stats.completedLowestDailies) {
+          disciplineState.acceptedContracts['slump_purge'] = Math.min(4, (disciplineState.acceptedContracts['slump_purge'] || 0) + 1);
+        }
+      }
+      if (disciplineState.acceptedContracts['flawless_stretch'] !== undefined) {
+        if (pct >= 80) {
+          disciplineState.acceptedContracts['flawless_stretch'] = Math.min(5, (disciplineState.acceptedContracts['flawless_stretch'] || 0) + 1);
+        }
+      }
+      if (disciplineState.acceptedContracts['debt_liquidation'] !== undefined) {
+        let inc = (stats.overdueClearedCount || 0);
+        if (inc === 0 && stats.hasZeroOverdueDebt) {
+          inc = 1;
+        }
+        if (inc > 0) {
+          disciplineState.acceptedContracts['debt_liquidation'] = Math.min(3, (disciplineState.acceptedContracts['debt_liquidation'] || 0) + inc);
+        }
+      }
+      if (disciplineState.acceptedContracts['project_dissection'] !== undefined) {
+        if ((stats.subtasksCount || 0) > 0) {
+          disciplineState.acceptedContracts['project_dissection'] = Math.min(20, (disciplineState.acceptedContracts['project_dissection'] || 0) + stats.subtasksCount);
+        }
+      }
+      if (disciplineState.acceptedContracts['weekend_fortress'] !== undefined) {
+        if (stats.isWeekend100) {
+          disciplineState.acceptedContracts['weekend_fortress'] = Math.min(2, (disciplineState.acceptedContracts['weekend_fortress'] || 0) + 1);
+        }
+      }
+      if (disciplineState.acceptedContracts['unbroken_baseline'] !== undefined) {
+        if (stats.allStreaksAbove3) {
+          disciplineState.acceptedContracts['unbroken_baseline'] = Math.min(3, (disciplineState.acceptedContracts['unbroken_baseline'] || 0) + 1);
+        }
+      }
+
+      state.score = disciplineState.elo;
+      saveState();
+      saveDisciplineState();
+      render();
+      renderDisciplineDrawer();
+    }
+
+    let currentViewingBountyId = null;
+
+    function openBountyModal(contractId) {
+      const contract = CONTRACTS_CATALOG.find(c => c.id === contractId);
+      if (!contract) return;
+      currentViewingBountyId = contractId;
+      checkDisciplineWeekReset();
+
+      const modal = document.getElementById('bountyModal');
+      const titleEl = document.getElementById('bountyModalTitle');
+      const tagEl = document.getElementById('bountyModalTag');
+      const rewardEl = document.getElementById('bountyModalReward');
+      const descEl = document.getElementById('bountyModalDesc');
+      const statusEl = document.getElementById('bountyModalStatus');
+      const acceptBtn = document.getElementById('bountyModalAcceptBtn');
+
+      if (titleEl) titleEl.textContent = contract.title.toUpperCase();
+      if (tagEl) tagEl.textContent = contract.tag;
+      const penaltyVal = Math.round(contract.rewardElo * 0.5);
+      if (rewardEl) rewardEl.textContent = `+${contract.rewardElo} ELO (FAIL: -${penaltyVal})`;
+      if (descEl) descEl.textContent = contract.desc;
+
+      const isAccepted = disciplineState.acceptedContracts && disciplineState.acceptedContracts[contract.id] !== undefined;
+      const progress = isAccepted ? disciplineState.acceptedContracts[contract.id] : 0;
+      const isCompleted = isAccepted && (progress >= contract.target);
+      const isClaimedThisWeek = (disciplineState.completedContractsThisWeek || []).includes(contract.id);
+
+      if (statusEl) {
+        if (isClaimedThisWeek) {
+          statusEl.textContent = `Status: Claimed & Completed for this week`;
+          statusEl.style.borderColor = '#859900';
+          statusEl.style.color = '#859900';
+        } else if (isAccepted) {
+          statusEl.textContent = `Status: Active (${progress} / ${contract.target}) · Incomplete at week reset incurs -${penaltyVal} ELO`;
+          statusEl.style.borderColor = isCompleted ? '#859900' : '#b58900';
+          statusEl.style.color = isCompleted ? '#859900' : '#b58900';
+        } else {
+          statusEl.textContent = `Status: Available · Incurs -${penaltyVal} ELO if accepted and not finished`;
+          statusEl.style.borderColor = 'var(--border)';
+          statusEl.style.color = 'var(--text-muted)';
+        }
+      }
+
+      if (acceptBtn) {
+        if (isClaimedThisWeek) {
+          acceptBtn.textContent = 'BOUNTY CLAIMED';
+          acceptBtn.disabled = true;
+          acceptBtn.onclick = null;
+        } else if (isAccepted) {
+          if (isCompleted) {
+            acceptBtn.textContent = 'CLAIM BOUNTY';
+            acceptBtn.disabled = false;
+            acceptBtn.onclick = () => {
+              claimContractReward(contract.id);
+              closeBountyModal();
+            };
+          } else {
+            acceptBtn.textContent = `IN PROGRESS (${progress}/${contract.target})`;
+            acceptBtn.disabled = true;
+            acceptBtn.onclick = null;
+          }
+        } else {
+          acceptBtn.textContent = 'ACCEPT BOUNTY';
+          acceptBtn.disabled = false;
+          acceptBtn.onclick = () => {
+            acceptContract(contract.id);
+            closeBountyModal();
+          };
+        }
+      }
+
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeBountyModal() {
+      const modal = document.getElementById('bountyModal');
+      if (modal) modal.classList.remove('active');
+      currentViewingBountyId = null;
+    }
+
+    function acceptContract(contractId) {
+      checkDisciplineWeekReset();
+      if (!disciplineState.acceptedContracts) disciplineState.acceptedContracts = {};
+      if (disciplineState.acceptedContracts[contractId] === undefined) {
+        disciplineState.acceptedContracts[contractId] = 0;
+      }
+      playSound('check');
+      saveDisciplineState();
+      renderDisciplineDrawer();
+    }
+
+    function claimContractReward(contractId) {
+      const contract = CONTRACTS_CATALOG.find(c => c.id === contractId);
+      if (!contract) return;
+      if (!disciplineState.unlockedSeals.includes(contract.sealId)) {
+        disciplineState.unlockedSeals.push(contract.sealId);
+      }
+      if (!disciplineState.completedContractsThisWeek) disciplineState.completedContractsThisWeek = [];
+      if (!disciplineState.completedContractsThisWeek.includes(contractId)) {
+        disciplineState.completedContractsThisWeek.push(contractId);
+      }
+      disciplineState.elo = (disciplineState.elo || 1000) + contract.rewardElo;
+      state.score = disciplineState.elo;
+      if (disciplineState.acceptedContracts) {
+        delete disciplineState.acceptedContracts[contractId];
+      }
+      playSound('checkin');
+      saveState();
+      saveDisciplineState();
+      render();
+      renderDisciplineDrawer();
+    }
+
+    window.openBountyModal = openBountyModal;
+    window.closeBountyModal = closeBountyModal;
+    window.acceptContract = acceptContract;
+    window.claimContractReward = claimContractReward;
+
+    function renderDisciplineDrawer() {
+      checkDisciplineWeekReset();
+      const weekKey = getCurrentWeekKey();
+      const elo = disciplineState.elo || 1000;
+      const tier = getEloTier(elo);
+
+      const bigScore = document.getElementById('bigScoreVal');
+      if (bigScore) bigScore.textContent = elo;
+
+      const headerRank = document.getElementById('headerEloRank');
+      if (headerRank) headerRank.textContent = tier.name;
+
+      const tabElo = document.getElementById('disciplineTabEloLabel');
+      if (tabElo) tabElo.textContent = `${elo} ELO · ${tier.name}`;
+
+      let dTotalPts = 0;
+      let dDonePts = 0;
+      state.dailies.forEach(d => { dTotalPts += getWeight(d); if (d.completed) dDonePts += getWeight(d); });
+      let tTotalPts = 0;
+      let tDonePts = 0;
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+      state.todos.forEach(t => {
+        const isDueToday = t.deadline === todayStr;
+        const hasNoDeadline = !t.deadline || t.deadline.trim() === '';
+        if (isDueToday) {
+          tTotalPts += getWeight(t);
+          if (t.completed) tDonePts += getWeight(t);
+        } else if (hasNoDeadline && t.completed) {
+          tDonePts += getWeight(t);
+        } else if (t.completed) {
+          tDonePts += getWeight(t);
         }
       });
+      const totalPts = dTotalPts + tTotalPts;
+      const donePts = dDonePts + tDonePts;
+      const todayPct = totalPts > 0 ? Math.round((donePts / totalPts) * 100) : (donePts > 0 ? 100 : 0);
+
+      const activeStreaksCount = state.dailies.filter(d => (d.streak || 0) > 0).length;
+      const deltaInfo = calculateNormalizedEloDelta(todayPct, activeStreaksCount);
+
+      const rateBadge = document.getElementById('disciplineRateBadge');
+      if (rateBadge) {
+        rateBadge.textContent = `${deltaInfo.totalDelta >= 0 ? '+' : ''}${deltaInfo.totalDelta} TODAY`;
+        rateBadge.classList.toggle('positive', deltaInfo.totalDelta >= 0);
+        rateBadge.classList.toggle('negative', deltaInfo.totalDelta < 0);
+      }
+
+      const dispElo = document.getElementById('dispEloVal');
+      if (dispElo) dispElo.textContent = elo;
+
+      const dispRankTitle = document.getElementById('dispRankTitle');
+      if (dispRankTitle) dispRankTitle.textContent = tier.name;
+
+      const nextTierIdx = ELO_TIERS.findIndex(t => t.id === tier.id) + 1;
+      const nextTier = ELO_TIERS[nextTierIdx];
+      const tierFill = document.getElementById('dispTierFill');
+      const curMin = document.getElementById('dispCurrentTierMin');
+      const nextMin = document.getElementById('dispNextTierMin');
+      const nextText = document.getElementById('dispNextTierText');
+
+      if (curMin) curMin.textContent = tier.min;
+      if (nextTier) {
+        if (nextMin) nextMin.textContent = nextTier.min;
+        const progressInTier = Math.max(0, Math.min(100, Math.round(((elo - tier.min) / (nextTier.min - tier.min)) * 100)));
+        if (tierFill) tierFill.style.width = `${progressInTier}%`;
+        if (nextText) nextText.textContent = `${nextTier.min - elo} TO ${nextTier.name}`;
+      } else {
+        if (nextMin) nextMin.textContent = 'MAX';
+        if (tierFill) tierFill.style.width = '100%';
+        if (nextText) nextText.textContent = 'MAX RANK';
+      }
+
+      const todayPctEl = document.getElementById('dispTodayPct');
+      if (todayPctEl) todayPctEl.textContent = `${todayPct}%`;
+
+      const streakBonusEl = document.getElementById('dispStreakBonusVal');
+      if (streakBonusEl) streakBonusEl.textContent = `+${deltaInfo.streakBonus} ELO`;
+
+      const weekLabel = document.getElementById('disciplineWeekLabel');
+      if (weekLabel) weekLabel.textContent = weekKey;
+
+      const contractList = document.getElementById('disciplineContractList');
+      if (contractList) {
+        contractList.innerHTML = '';
+        CONTRACTS_CATALOG.forEach(catItem => {
+          const isAccepted = disciplineState.acceptedContracts && disciplineState.acceptedContracts[catItem.id] !== undefined;
+          const progress = isAccepted ? disciplineState.acceptedContracts[catItem.id] : 0;
+          const isCompleted = isAccepted && (progress >= catItem.target);
+          const isClaimedThisWeek = (disciplineState.completedContractsThisWeek || []).includes(catItem.id);
+
+          const row = document.createElement('div');
+          row.className = `contract-item-row ${isAccepted ? 'active' : ''} ${isCompleted || isClaimedThisWeek ? 'completed' : ''}`;
+          row.style.cursor = 'pointer';
+
+          let btnHtml = '';
+          if (isClaimedThisWeek) {
+            btnHtml = `<button type="button" class="contract-action-btn claimed" style="opacity: 0.7;" disabled>CLAIMED</button>`;
+          } else if (isAccepted) {
+            if (isCompleted) {
+              btnHtml = `<button type="button" class="contract-action-btn claimed" data-action="claim" data-id="${catItem.id}">CLAIM</button>`;
+            } else {
+              btnHtml = `<button type="button" class="contract-action-btn" style="border-color: #b58900; color: #b58900;" data-action="view" data-id="${catItem.id}">${progress}/${catItem.target}</button>`;
+            }
+          } else {
+            btnHtml = `<button type="button" class="contract-action-btn" data-action="accept" data-id="${catItem.id}">ACCEPT</button>`;
+          }
+
+          row.innerHTML = `
+            <div class="contract-item-main" data-action="view" data-id="${catItem.id}">
+              <span class="contract-item-title">${catItem.title}</span>
+              <span class="contract-item-bounty">+${catItem.rewardElo} ELO</span>
+            </div>
+            ${btnHtml}
+          `;
+
+          row.addEventListener('click', (e) => {
+            const targetBtn = e.target.closest('button');
+            if (targetBtn && targetBtn.dataset.action === 'accept') {
+              e.stopPropagation();
+              acceptContract(catItem.id);
+            } else if (targetBtn && targetBtn.dataset.action === 'claim') {
+              e.stopPropagation();
+              claimContractReward(catItem.id);
+            } else {
+              openBountyModal(catItem.id);
+            }
+          });
+
+          contractList.appendChild(row);
+        });
+      }
+    }
+
+    function setupDisciplineDrawer() {
+      const drawer = document.getElementById('disciplineDrawer');
+      const handle = document.getElementById('disciplineDrawerHandle');
+      const chevron = document.getElementById('disciplineChevron');
+      if (!drawer || !handle) return;
+
+      let isExpanded = false;
+      let isDragging = false;
+      let startY = 0;
+      let startHeight = 38;
+      let currentHeight = 38;
+      const COLLAPSED_HEIGHT = 38;
+
+      function getExpandedHeight() {
+        return window.innerHeight;
+      }
+
+      function setDrawerState(expand) {
+        isExpanded = expand;
+        drawer.style.transition = 'height 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.25s ease';
+        if (isExpanded) {
+          drawer.classList.add('fullscreen');
+          drawer.style.height = '100vh';
+          if (chevron) chevron.textContent = '▼';
+        } else {
+          drawer.classList.remove('fullscreen');
+          drawer.style.height = `${COLLAPSED_HEIGHT}px`;
+          if (chevron) chevron.textContent = '▲';
+        }
+      }
+
+      function handleDragStart(clientY) {
+        isDragging = true;
+        startY = clientY;
+        startHeight = drawer.getBoundingClientRect().height;
+        drawer.style.transition = 'none';
+      }
+
+      function handleDragMove(clientY) {
+        if (!isDragging) return;
+        const diffY = startY - clientY;
+        const maxH = getExpandedHeight();
+        currentHeight = Math.max(COLLAPSED_HEIGHT, Math.min(maxH, startHeight + diffY));
+        drawer.style.height = `${currentHeight}px`;
+        if (currentHeight > maxH * 0.85) {
+          drawer.classList.add('fullscreen');
+        } else {
+          drawer.classList.remove('fullscreen');
+        }
+      }
+
+      function handleDragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        const maxH = getExpandedHeight();
+        if (currentHeight > (COLLAPSED_HEIGHT + maxH) * 0.35) {
+          setDrawerState(true);
+        } else {
+          setDrawerState(false);
+        }
+      }
+
+      handle.addEventListener('pointerdown', (e) => {
+        handleDragStart(e.clientY);
+        try { handle.setPointerCapture(e.pointerId); } catch (err) { }
+      });
+      handle.addEventListener('pointermove', (e) => handleDragMove(e.clientY));
+      handle.addEventListener('pointerup', () => handleDragEnd());
+      handle.addEventListener('pointercancel', () => handleDragEnd());
+
+      handle.addEventListener('touchstart', (e) => handleDragStart(e.touches[0].clientY), { passive: true });
+      handle.addEventListener('touchmove', (e) => handleDragMove(e.touches[0].clientY), { passive: true });
+      handle.addEventListener('touchend', () => handleDragEnd());
+
+      handle.addEventListener('click', (e) => {
+        const maxH = getExpandedHeight();
+        if (Math.abs(currentHeight - (isExpanded ? maxH : COLLAPSED_HEIGHT)) < 15) {
+          setDrawerState(!isExpanded);
+        }
+      });
+
+      const bountyCloseBtn = document.getElementById('bountyModalCloseBtn');
+      if (bountyCloseBtn) bountyCloseBtn.addEventListener('click', closeBountyModal);
+      const bountyCancelBtn = document.getElementById('bountyModalCancelBtn');
+      if (bountyCancelBtn) bountyCancelBtn.addEventListener('click', closeBountyModal);
+      const bountyModalOverlay = document.getElementById('bountyModal');
+      if (bountyModalOverlay) {
+        bountyModalOverlay.addEventListener('click', (e) => {
+          if (e.target === bountyModalOverlay) closeBountyModal();
+        });
+      }
     }
 
     checkDailyReset();
     updateDateDisplay();
     setupEventListeners();
     render();
+    renderDisciplineDrawer();
+    setupDisciplineDrawer();
 
     // Register ServiceWorker and auto-update stale cache
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then((reg) => {
         reg.update();
-      }).catch(() => {});
+      }).catch(() => { });
 
       let refreshing = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -2490,4 +4053,5 @@
     }
   </script>
 </body>
+
 </html>
