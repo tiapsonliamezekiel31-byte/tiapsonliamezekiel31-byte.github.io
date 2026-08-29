@@ -631,22 +631,23 @@
     }
 
     .task-card.bounty-targeted {
-      border-right: 4px solid #b58900 !important;
-      box-shadow: inset -4px 0 10px rgba(181, 137, 0, 0.22);
+      border-right: 4.5px solid #b58900 !important;
+      background: linear-gradient(90deg, transparent 85%, rgba(181, 137, 0, 0.18) 100%), var(--card-subtle) !important;
+      box-shadow: inset -4px 0 10px rgba(181, 137, 0, 0.35);
     }
 
     .bounty-target-pill {
-      font-size: 0.54rem;
+      font-size: 0.58rem;
       font-weight: 900;
-      color: #b58900;
-      border: 1px solid #b58900;
-      background: rgba(181, 137, 0, 0.15);
-      padding: 0.05rem 0.25rem;
+      color: #002b36;
+      background: #b58900;
+      padding: 0.08rem 0.35rem;
       border-radius: 2px;
       letter-spacing: 0.04em;
       white-space: nowrap;
       margin-left: auto;
       flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(181, 137, 0, 0.6);
     }
 
     .task-card.dopamine-pop {
@@ -1996,6 +1997,35 @@
       lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
       rightView: 'todos' // 'todos' or 'history'
     };
+
+    // --- DISCIPLINE ELO RATING & WEEKLY CONTRACTS ENGINE ---
+    let disciplineState = {
+      elo: 1000,
+      acceptedContracts: {}, // { [contractId]: progress }
+      completedContractsThisWeek: [],
+      currentWeek: null,
+      unlockedSeals: [],
+      history: {},
+      todayEloDelta: 0
+    };
+
+    try {
+      const savedDisp = localStorage.getItem('nemesis_discipline_state');
+      if (savedDisp) {
+        disciplineState = Object.assign(disciplineState, JSON.parse(savedDisp));
+        if (!disciplineState.acceptedContracts) disciplineState.acceptedContracts = {};
+        if (disciplineState.activeContractId && disciplineState.acceptedContracts[disciplineState.activeContractId] === undefined) {
+          disciplineState.acceptedContracts[disciplineState.activeContractId] = disciplineState.contractProgress || 0;
+        }
+        if (!disciplineState.completedContractsThisWeek) disciplineState.completedContractsThisWeek = [];
+      }
+    } catch (e) { }
+
+    function saveDisciplineState() {
+      try {
+        localStorage.setItem('nemesis_discipline_state', JSON.stringify(disciplineState));
+      } catch (e) { }
+    }
 
     let activeEditing = null; // { id, type, color, difficulty, subtasks, days }
     let draggedId = null;
@@ -3437,35 +3467,7 @@
       }
     });
 
-    // --- DISCIPLINE ELO RATING & WEEKLY CONTRACTS ENGINE ---
-    let disciplineState = {
-      elo: 1000,
-      acceptedContracts: {}, // { [contractId]: progress }
-      completedContractsThisWeek: [],
-      currentWeek: null,
-      unlockedSeals: [],
-      history: {},
-      todayEloDelta: 0
-    };
-
-    try {
-      const savedDisp = localStorage.getItem('nemesis_discipline_state');
-      if (savedDisp) {
-        disciplineState = Object.assign(disciplineState, JSON.parse(savedDisp));
-        if (!disciplineState.acceptedContracts) disciplineState.acceptedContracts = {};
-        if (disciplineState.activeContractId && disciplineState.acceptedContracts[disciplineState.activeContractId] === undefined) {
-          disciplineState.acceptedContracts[disciplineState.activeContractId] = disciplineState.contractProgress || 0;
-        }
-        if (!disciplineState.completedContractsThisWeek) disciplineState.completedContractsThisWeek = [];
-      }
-    } catch (e) { }
-
-    function saveDisciplineState() {
-      try {
-        localStorage.setItem('nemesis_discipline_state', JSON.stringify(disciplineState));
-      } catch (e) { }
-    }
-
+    // --- DISCIPLINE ELO TIERS & CATALOG ---
     const ELO_TIERS = [
       { id: 'recruit', name: 'RECRUIT', min: 0, max: 899 },
       { id: 'novice', name: 'NOVICE', min: 900, max: 1099 },
