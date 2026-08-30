@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: add draggable shapes canvas view for dailies with centered names and borderless styling"
+$commitMsg = "feat: scale shape sizes and typography from easy (smaller) to ultra (bigger)"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
