@@ -1008,24 +1008,25 @@
 
     .modal {
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.85rem;
-      width: 100%;
-      max-width: 360px;
-      max-height: 90vh;
+      border: 1px solid var(--border-focus);
+      border-radius: 8px;
+      padding: 1.1rem;
+      width: 94vw;
+      max-width: 580px;
+      max-height: 88vh;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.55rem;
+      gap: 0.65rem;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.82rem;
+      font-weight: 800;
       color: var(--text);
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -1036,33 +1037,39 @@
       border: none;
       color: var(--text-muted);
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       line-height: 1;
+      padding: 0.2rem;
     }
 
     .modal-section-title {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: var(--text-muted);
+      font-size: 0.64rem;
+      font-weight: 800;
+      color: var(--text-dim);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
     }
 
     .modal-input {
       width: 100%;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.4rem 0.55rem;
-      color: var(--text);
-      font-size: 0.74rem;
+      background: var(--card-subtle);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 0.85rem;
+      color: #fdf6e3;
+      font-size: 0.94rem;
       font-family: inherit;
+      line-height: 1.5;
       outline: none;
+      min-height: 160px;
+      resize: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      box-sizing: border-box;
     }
 
     .modal-input:focus {
-      border-color: var(--border-focus);
-      background: #ffffff;
+      border-color: var(--color-cyan);
+      background: #002b36;
     }
 
     /* Days of Week Schedule Picker */
@@ -1500,6 +1507,194 @@
       background: transparent;
       cursor: default;
     }
+
+    /* --- FEATURE 3: DISCRETE MICRO-PUNCHES --- */
+    .task-card.micro-punch {
+      animation: microPunch 0.18s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+      border-left-width: 5px !important;
+    }
+
+    @keyframes microPunch {
+      0% { transform: scale(1); }
+      35% { transform: scale(0.97) translateX(3px); filter: brightness(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    /* --- FEATURE 8: LIVE COUNTDOWN TIMERS --- */
+    .live-countdown-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      padding: 0.06rem 0.35rem;
+      border-radius: 3px;
+      background: #002b36;
+      border: 1px solid var(--border);
+      color: var(--color-cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .live-countdown-badge.warn {
+      color: var(--color-orange);
+      border-color: var(--color-orange);
+      background: rgba(203, 75, 22, 0.15);
+    }
+
+    .live-countdown-badge.overdue {
+      color: var(--color-red);
+      border-color: var(--color-red);
+      background: rgba(220, 50, 47, 0.2);
+      animation: overduePulse 1.4s infinite ease-in-out;
+    }
+
+    @keyframes overduePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
+    .task-tag-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.56rem;
+      font-weight: 800;
+      color: var(--color-violet);
+      background: rgba(108, 113, 196, 0.18);
+      border: 1px solid var(--color-violet);
+      padding: 0.03rem 0.28rem;
+      border-radius: 2px;
+      margin-left: 0.2rem;
+    }
+
+    /* --- FEATURE 12: INPUT PREVIEW CHIPS --- */
+    .input-preview-bar {
+      display: none;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.2rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.58rem;
+      font-weight: 800;
+      padding: 0 0.1rem;
+    }
+
+    .input-preview-bar.active {
+      display: flex;
+    }
+
+    .input-preview-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      background: #002b36;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.06rem 0.32rem;
+      color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
+
+    .input-preview-chip.chip-diff { color: var(--color-yellow); border-color: var(--color-yellow); }
+    .input-preview-chip.chip-time { color: var(--color-cyan); border-color: var(--color-cyan); }
+    .input-preview-chip.chip-tag { color: var(--color-violet); border-color: var(--color-violet); }
+    .input-preview-chip.chip-sub { color: var(--color-green); border-color: var(--color-green); }
+
+    /* --- FEATURE 25: GHOST LINE (NORTH OF TODAY'S LINE) --- */
+    .ghost-track {
+      width: 100%;
+      height: 2.5px;
+      background: var(--card-subtle);
+      border-radius: 1px;
+      overflow: hidden;
+      margin-bottom: 2px;
+    }
+
+    .ghost-fill {
+      height: 100%;
+      background: var(--color-red);
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* --- DRAGGABLE SHAPES CANVAS --- */
+    .shapes-canvas {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      min-height: 320px;
+      background: #00222b;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .shape-node {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      touch-action: none;
+      transform: translate(-50%, -50%);
+      transition: filter 0.15s ease, opacity 0.15s ease;
+      z-index: 10;
+    }
+
+    .shape-node:active {
+      cursor: grabbing;
+      z-index: 50;
+    }
+
+    .shape-node.dragging {
+      opacity: 0.9;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    }
+
+    .shape-node.completed {
+      opacity: 0.5;
+    }
+
+    .shape-svg-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.35));
+      transition: transform 0.12s cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    .shape-node:hover .shape-svg-wrap {
+      transform: scale(1.06);
+    }
+
+    .shape-svg {
+      display: block;
+    }
+
+    .shape-inner-name {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.64rem;
+      font-weight: 800;
+      color: #fdf6e3;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+      pointer-events: none;
+      padding: 0.25rem 0.45rem;
+      text-align: center;
+      line-height: 1.15;
+      word-break: break-word;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 </head>
 
@@ -1516,6 +1711,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" class="action-pill-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
         <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
         <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
         <button type="button" class="action-pill-btn" id="importBtn" title="Import Backup JSON">IMP</button>
@@ -1536,7 +1732,14 @@
     <div class="progress-section" id="progressSection" title="Click to view monthly completion heatmap">
       <div class="progress-meta">
         <span id="progressPoints">0/0 PTS</span>
-        <span id="progressPercent">0%</span>
+        <div style="display: flex; align-items: center; gap: 0.35rem;">
+          <span id="dayCountdownPill" class="live-countdown-badge" title="Time until day reset">T-00:00:00</span>
+          <span id="progressPercent">0%</span>
+        </div>
+      </div>
+      <!-- Ghost Line (small red line north of today's line) -->
+      <div class="ghost-track" title="Ghost Pace (Yesterday's Progress)">
+        <div class="ghost-fill" id="ghostProgressBar"></div>
       </div>
       <div class="progress-track">
         <div class="progress-fill" id="progressBar"></div>
@@ -1552,15 +1755,18 @@
           <span>DAILIES</span>
           <span class="counter" id="dailiesCount">0/0 PTS</span>
         </div>
+        <button type="button" class="icon-btn" id="dailiesViewToggleBtn" title="Toggle List / Draggable Shapes View" style="padding: 0.1rem 0.35rem; font-size: 0.58rem; font-weight: 800; border-radius: 3px;">⬡ SHAPES</button>
       </div>
       <div class="input-row">
-        <textarea id="dailyInput" class="compact-textarea" placeholder="+ habit (*hard, *aug 30)..." rows="1"
+        <textarea id="dailyInput" class="compact-textarea" placeholder="+ habit (p1, in 2h, #work)..." rows="1"
           autocomplete="off"></textarea>
         <button type="button" class="expand-input-btn" id="openAddDailyModalBtn"
           title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addDailyBtn" title="Add Daily Task">+</button>
       </div>
+      <div class="input-preview-bar" id="dailyInputPreview"></div>
       <ul class="task-list" id="dailiesList"></ul>
+      <div class="shapes-canvas" id="dailiesShapesCanvas" style="display: none;"></div>
     </div>
 
     <!-- Draggable Middle Split Bar -->
@@ -1579,12 +1785,13 @@
         </div>
       </div>
       <div class="input-row">
-        <textarea id="todoInput" class="compact-textarea" placeholder="+ todo (*ultra, *aug 30)..." rows="1"
+        <textarea id="todoInput" class="compact-textarea" placeholder="+ todo (p1, tomorrow 5pm, #proj)..." rows="1"
           autocomplete="off"></textarea>
         <button type="button" class="expand-input-btn" id="openAddTodoModalBtn"
           title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addTodoBtn" title="Add To-Do Task">+</button>
       </div>
+      <div class="input-preview-bar" id="todoInputPreview"></div>
       <ul class="task-list" id="todosList"></ul>
     </div>
 
@@ -1619,16 +1826,15 @@
 
   <!-- Edit / Add Popup Modal -->
   <div class="modal-overlay" id="editModal">
-    <div class="modal" style="max-width: 420px;">
+    <div class="modal">
       <div class="modal-header">
         <span id="modalHeaderTitle">EDIT TASK</span>
         <button class="modal-close" id="modalCloseBtn">&times;</button>
       </div>
 
-      <div class="modal-section-title">Description</div>
-      <textarea id="modalTaskInput" class="modal-input" rows="4"
-        placeholder="Task description (supports *hard, *aug 30, /subtask)..."
-        style="resize: vertical; min-height: 75px; font-family: inherit; line-height: 1.4;"></textarea>
+      <div class="modal-section-title">Task Content & Plan</div>
+      <textarea id="modalTaskInput" class="modal-input" rows="6"
+        placeholder="Type your task or multi-line plan here...&#10;Supports *hard, *mega, *ultra, *tomorrow, *aug 30&#10;Supports subtasks:&#10;- First subtask step&#10;- Second subtask step"></textarea>
 
       <!-- Schedule Days (for Dailies) -->
       <div id="modalScheduleContainer" style="display: none; flex-direction: column; gap: 0.35rem;">
@@ -1808,72 +2014,130 @@
   </div>
 
   <script>
-    // Audio synthesizer for crisp sound effects
+    // Audio synthesizer for crisp tactile sound effects (Feature 10)
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let soundMuted = localStorage.getItem('nemesis_sound_muted') === 'true';
+
+    function toggleSoundMute() {
+      soundMuted = !soundMuted;
+      localStorage.setItem('nemesis_sound_muted', soundMuted ? 'true' : 'false');
+      updateSoundToggleBtn();
+      if (!soundMuted) playSound('click');
+    }
+
+    function updateSoundToggleBtn() {
+      const btn = document.getElementById('soundToggleBtn');
+      if (btn) {
+        btn.textContent = soundMuted ? '🔇 SFX' : '🔊 SFX';
+        btn.style.color = soundMuted ? 'var(--color-red)' : 'var(--text-muted)';
+      }
+    }
 
     function playSound(type) {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const now = audioCtx.currentTime;
+      if (soundMuted) return;
+      try {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
 
-      if (type === 'check') {
-        // Multi-oscillator 5-tone ascending harmonic power chord
-        const freqs = [587.33, 739.99, 880.00, 1174.66, 1479.98]; // D Major High Arpeggio
-        freqs.forEach((freq, idx) => {
+        if (type === 'check') {
+          // Multi-oscillator 5-tone ascending harmonic power chord
+          const freqs = [587.33, 739.99, 880.00, 1174.66, 1479.98];
+          freqs.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = idx === 0 ? 'triangle' : (idx === 4 ? 'sawtooth' : 'sine');
+            osc.frequency.setValueAtTime(freq, now + idx * 0.02);
+            osc.frequency.exponentialRampToValueAtTime(freq * 1.08, now + idx * 0.02 + 0.14);
+            gain.gain.setValueAtTime(0.18 - (idx * 0.025), now + idx * 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.02 + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.02);
+            osc.stop(now + idx * 0.02 + 0.2);
+          });
+
+          // Resonant sub-kick for tactile bass punch
+          const subOsc = audioCtx.createOscillator();
+          const subGain = audioCtx.createGain();
+          subOsc.type = 'sine';
+          subOsc.frequency.setValueAtTime(180, now);
+          subOsc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
+          subGain.gain.setValueAtTime(0.28, now);
+          subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          subOsc.connect(subGain);
+          subGain.connect(audioCtx.destination);
+          subOsc.start(now);
+          subOsc.stop(now + 0.08);
+
+          if (navigator.vibrate) navigator.vibrate([25, 45, 25, 35]);
+        } else if (type === 'subtask') {
+          // Tactile high-frequency micro-tick
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
-          osc.type = idx === 0 ? 'triangle' : (idx === 4 ? 'sawtooth' : 'sine');
-          osc.frequency.setValueAtTime(freq, now + idx * 0.02);
-          osc.frequency.exponentialRampToValueAtTime(freq * 1.08, now + idx * 0.02 + 0.14);
-          gain.gain.setValueAtTime(0.18 - (idx * 0.025), now + idx * 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.02 + 0.2);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.04);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
-          osc.start(now + idx * 0.02);
-          osc.stop(now + idx * 0.02 + 0.2);
-        });
-
-        // Resonant sub-kick for tactile bass punch
-        const subOsc = audioCtx.createOscillator();
-        const subGain = audioCtx.createGain();
-        subOsc.type = 'sine';
-        subOsc.frequency.setValueAtTime(180, now);
-        subOsc.frequency.exponentialRampToValueAtTime(38, now + 0.08);
-        subGain.gain.setValueAtTime(0.28, now);
-        subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        subOsc.connect(subGain);
-        subGain.connect(audioCtx.destination);
-        subOsc.start(now);
-        subOsc.stop(now + 0.08);
-
-        if (navigator.vibrate) navigator.vibrate([25, 45, 25, 35]);
-      } else if (type === 'uncheck') {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(220, now + 0.06);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.06);
-      } else if (type === 'checkin' || type === 'rebirth') {
-        const chord = [293.66, 369.99, 440.00, 587.33, 739.99, 880.00];
-        chord.forEach((freq, i) => {
+          osc.start(now);
+          osc.stop(now + 0.04);
+        } else if (type === 'uncheck') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(220, now + 0.06);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'click') {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + i * 0.03);
-          gain.gain.setValueAtTime(0.14, now + i * 0.03);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + 0.4);
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.025);
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
-          osc.start(now + i * 0.03);
-          osc.stop(now + i * 0.03 + 0.4);
-        });
-        if (navigator.vibrate) navigator.vibrate([30, 50, 30, 60]);
-      }
+          osc.start(now);
+          osc.stop(now + 0.025);
+        } else if (type === 'ghost_ahead') {
+          // Triumphant two-tone chirp
+          [880, 1318.5].forEach((f, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(f, now + i * 0.06);
+            gain.gain.setValueAtTime(0.14, now + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.12);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.06);
+            osc.stop(now + i * 0.06 + 0.12);
+          });
+        } else if (type === 'checkin' || type === 'rebirth' || type === 'tierup') {
+          const chord = [293.66, 369.99, 440.00, 587.33, 739.99, 880.00, 1174.66];
+          chord.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.035);
+            gain.gain.setValueAtTime(0.14, now + i * 0.035);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.035 + 0.45);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.035);
+            osc.stop(now + i * 0.035 + 0.45);
+          });
+          if (navigator.vibrate) navigator.vibrate([30, 50, 30, 60]);
+        }
+      } catch (e) { }
     }
 
     function triggerDopamineEffects(x, y, weight, cardEl, checkEl) {
@@ -1993,8 +2257,11 @@
       dailies: JSON.parse(localStorage.getItem('nemesis_dailies') || '[]'),
       todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
       history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
+      paceHistory: JSON.parse(localStorage.getItem('nemesis_pace_history') || '{}'),
       lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
       lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
+      dailiesView: localStorage.getItem('nemesis_dailies_view') || 'list', // 'list' or 'shapes'
+      shapePositions: JSON.parse(localStorage.getItem('nemesis_shape_positions') || '{}'),
       rightView: 'todos' // 'todos' or 'history'
     };
 
@@ -2036,8 +2303,11 @@
       localStorage.setItem('nemesis_dailies', JSON.stringify(state.dailies));
       localStorage.setItem('nemesis_todos', JSON.stringify(state.todos));
       localStorage.setItem('nemesis_history', JSON.stringify(state.history));
+      localStorage.setItem('nemesis_pace_history', JSON.stringify(state.paceHistory || {}));
       localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
       localStorage.setItem('nemesis_last_date', state.lastActiveDate);
+      localStorage.setItem('nemesis_dailies_view', state.dailiesView);
+      localStorage.setItem('nemesis_shape_positions', JSON.stringify(state.shapePositions || {}));
     }
 
     function checkDailyReset() {
@@ -2053,18 +2323,140 @@
       const options = { weekday: 'short', month: 'short', day: 'numeric' };
       document.getElementById('currentDate').textContent = now.toLocaleDateString('en-US', options).toUpperCase();
       document.getElementById('bigScoreVal').textContent = (state.score >= 0 ? '+' : '') + state.score;
+      updateSoundToggleBtn();
+    }
+
+    // --- FEATURE 25: GHOST PACE TRACKER ENGINE ---
+    function recordPaceCompletion(pts) {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      if (!state.paceHistory) state.paceHistory = {};
+      if (!state.paceHistory[todayStr]) state.paceHistory[todayStr] = [];
+      state.paceHistory[todayStr].push({ min: currentMinutes, pts: pts, t: Date.now() });
+      saveState();
+      calculateGhostPace();
+    }
+
+    function calculateGhostPace() {
+      const ghostBar = document.getElementById('ghostProgressBar');
+      if (!ghostBar) return;
+
+      const now = new Date();
+      const yestDate = new Date(Date.now() - 86400000);
+      const yestStr = yestDate.toISOString().split('T')[0];
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+      let totalPts = 0;
+      state.dailies.forEach(d => { totalPts += getWeight(d); });
+      state.todos.forEach(t => {
+        if (t.deadline === state.lastActiveDate || t.deadline === now.toISOString().split('T')[0]) totalPts += getWeight(t);
+      });
+
+      const yestLogs = (state.paceHistory && state.paceHistory[yestStr]) || [];
+      const yestPtsNow = yestLogs.filter(l => l.min <= currentMinutes).reduce((acc, l) => acc + (l.pts || 0), 0);
+      const yestTotalPts = yestLogs.reduce((acc, l) => acc + (l.pts || 0), 0);
+
+      const targetBasis = totalPts > 0 ? totalPts : Math.max(1, yestTotalPts);
+      const ghostPct = Math.min(100, Math.round((yestPtsNow / targetBasis) * 100));
+      ghostBar.style.width = `${ghostPct}%`;
+      if (ghostBar.parentElement) {
+        ghostBar.parentElement.title = `Ghost (Yesterday): ${yestPtsNow} pts (${ghostPct}%)`;
+      }
+    }
+
+    // --- FEATURE 8: LIVE COUNTDOWN UTILITIES ---
+    function getCountdownInfo(deadlineStr) {
+      if (!deadlineStr || deadlineStr.trim() === '') return null;
+      const now = new Date();
+      let target;
+
+      if (deadlineStr.includes('T')) {
+        target = new Date(deadlineStr);
+      } else {
+        const parts = deadlineStr.split('-');
+        target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 23, 59, 59);
+      }
+
+      if (isNaN(target.getTime())) return null;
+
+      const diffMs = target.getTime() - now.getTime();
+      const isPast = diffMs < 0;
+      const absDiff = Math.abs(diffMs);
+
+      const totalSec = Math.floor(absDiff / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hours = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+
+      let label = '';
+      if (days > 1) {
+        label = `T-${days}d ${String(hours).padStart(2, '0')}h`;
+      } else {
+        label = `T-${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      if (isPast) {
+        label = `OVERDUE -${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        return { text: label, status: 'overdue' };
+      } else if (diffMs < 7200000) { // < 2 hours
+        return { text: label, status: 'warn' };
+      } else {
+        return { text: label, status: 'normal' };
+      }
+    }
+
+    function updateLiveCountdowns() {
+      // 1. Day Reset Pill in header
+      const dayPill = document.getElementById('dayCountdownPill');
+      if (dayPill) {
+        const now = new Date();
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const remSec = Math.max(0, Math.floor((endOfDay - now) / 1000));
+        const h = String(Math.floor(remSec / 3600)).padStart(2, '0');
+        const m = String(Math.floor((remSec % 3600) / 60)).padStart(2, '0');
+        const s = String(remSec % 60).padStart(2, '0');
+        dayPill.textContent = `T-${h}:${m}:${s}`;
+      }
+
+      // 2. All task cards with live countdown badges
+      document.querySelectorAll('.live-countdown-badge[data-deadline]').forEach(badge => {
+        const dl = badge.dataset.deadline;
+        const info = getCountdownInfo(dl);
+        if (info) {
+          badge.textContent = info.text;
+          badge.className = `live-countdown-badge ${info.status}`;
+        }
+      });
+
+      calculateGhostPace();
     }
 
     function isOverdue(deadlineStr) {
       if (!deadlineStr) return false;
       const today = new Date().toISOString().split('T')[0];
+      if (deadlineStr.includes('T')) {
+        return new Date(deadlineStr) < new Date();
+      }
       return deadlineStr < today;
     }
 
     function formatDeadline(deadlineStr) {
       if (!deadlineStr) return '';
       const today = new Date().toISOString().split('T')[0];
-      if (deadlineStr === today) return 'Today';
+      if (deadlineStr.startsWith(today)) {
+        if (deadlineStr.includes('T')) {
+          const parts = deadlineStr.split('T')[1].split(':');
+          return `Today ${parts[0]}:${parts[1]}`;
+        }
+        return 'Today';
+      }
+      if (deadlineStr.includes('T')) {
+        const dParts = deadlineStr.split('T')[0].split('-');
+        const tParts = deadlineStr.split('T')[1].split(':');
+        return `${dParts[1]}/${dParts[2]} ${tParts[0]}:${tParts[1]}`;
+      }
       const parts = deadlineStr.split('-');
       return `${parts[1]}/${parts[2]}`;
     }
@@ -2074,7 +2466,7 @@
       return conf.weight;
     }
 
-    // Natural Language Multi-line Parser
+    // --- FEATURE 12: NATURAL LANGUAGE DATE, PRIORITY & TAG PARSER ---
     function parseNaturalLanguage(rawInput) {
       let rawLines = rawInput.split('\n');
       let subtasks = [];
@@ -2100,31 +2492,46 @@
       let difficulty = 'easy';
       let deadline = '';
       let color = SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex;
+      let tags = [];
 
       const now = new Date();
       const currentYear = now.getFullYear();
       const todayStr = now.toISOString().split('T')[0];
 
-      const months = {
-        jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
-        may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8,
-        oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11
-      };
+      // 1. Tags (#work, #gym, #dev)
+      const tagRegex = /#([a-zA-Z0-9_\-]+)/g;
+      let tagMatch;
+      while ((tagMatch = tagRegex.exec(fullText)) !== null) {
+        tags.push(tagMatch[1].toLowerCase());
+      }
+      fullText = fullText.replace(tagRegex, ' ');
 
-      // 1. Difficulty tags (*hard, *ultra, etc)
-      const starDiffRegex = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star)\b/gi;
-      let diffMatch = starDiffRegex.exec(fullText);
-      if (diffMatch) {
-        const val = diffMatch[1].toLowerCase();
+      // 2. Priority & Difficulty: p1/urgent/critical/ultra (10), p2/mega (7), p3/hard (5), p4/med (2), p5/easy (1)
+      const prioRegex = /\b(?:p|priority|!)?\s*([1-5])\b/i;
+      let pMatch = fullText.match(prioRegex);
+      if (pMatch) {
+        const pNum = pMatch[1];
+        if (pNum === '1') difficulty = 'ultra';
+        else if (pNum === '2') difficulty = 'mega';
+        else if (pNum === '3') difficulty = 'hard';
+        else if (pNum === '4') difficulty = 'medium';
+        else if (pNum === '5') difficulty = 'easy';
+        fullText = fullText.replace(pMatch[0], ' ');
+      }
+
+      const wordDiffRegex = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical)\b|\b(urgent|critical|ultra|mega|hard|medium|med|easy)\b/gi;
+      let wDiffMatch = wordDiffRegex.exec(fullText);
+      if (wDiffMatch && difficulty === 'easy') {
+        const val = (wDiffMatch[1] || wDiffMatch[2]).toLowerCase();
         if (['easy', 'circle'].includes(val)) difficulty = 'easy';
         else if (['medium', 'med', 'triangle'].includes(val)) difficulty = 'medium';
         else if (['hard', 'square'].includes(val)) difficulty = 'hard';
         else if (['mega', 'pentagon'].includes(val)) difficulty = 'mega';
-        else if (['ultra', 'star'].includes(val)) difficulty = 'ultra';
-        fullText = fullText.replace(diffMatch[0], ' ');
+        else if (['ultra', 'star', 'urgent', 'critical'].includes(val)) difficulty = 'ultra';
+        fullText = fullText.replace(wDiffMatch[0], ' ');
       }
 
-      // Color tags (*blue, etc)
+      // 3. Color tags (*blue, etc)
       const starColorRegex = /\*\s*(blue|green|cyan|yellow|orange|red|magenta|violet)\b/gi;
       let colMatch = starColorRegex.exec(fullText);
       if (colMatch) {
@@ -2133,73 +2540,139 @@
         fullText = fullText.replace(colMatch[0], ' ');
       }
 
-      // 2. Date expressions
-      const monthDayRegex = /(?:\*\s*)?\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
-      let mdMatch = monthDayRegex.exec(fullText);
-      if (mdMatch) {
-        const mIndex = months[mdMatch[1].toLowerCase()];
-        const day = parseInt(mdMatch[2], 10);
-        if (mIndex !== undefined && day >= 1 && day <= 31) {
-          const target = new Date(currentYear, mIndex, day);
-          const offset = target.getTimezoneOffset() * 60000;
-          deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
-          fullText = fullText.replace(mdMatch[0], ' ');
+      // 4. Relative time ("in 2h", "in 30m", "in 3d")
+      const relTimeRegex = /\bin\s+(\d+)\s*(h|hr|hrs|hours|m|min|mins|minutes|d|days|w|weeks)\b/i;
+      let relMatch = fullText.match(relTimeRegex);
+      if (relMatch) {
+        const amount = parseInt(relMatch[1], 10);
+        const unit = relMatch[2].toLowerCase();
+        const targetDate = new Date(now);
+        if (unit.startsWith('m')) {
+          targetDate.setMinutes(targetDate.getMinutes() + amount);
+        } else if (unit.startsWith('h')) {
+          targetDate.setHours(targetDate.getHours() + amount);
+        } else if (unit.startsWith('d')) {
+          targetDate.setDate(targetDate.getDate() + amount);
+        } else if (unit.startsWith('w')) {
+          targetDate.setDate(targetDate.getDate() + amount * 7);
+        }
+        const offset = targetDate.getTimezoneOffset() * 60000;
+        const localTarget = new Date(targetDate.getTime() - offset);
+        deadline = localTarget.toISOString().substring(0, 16); // YYYY-MM-DDTHH:mm
+        fullText = fullText.replace(relMatch[0], ' ');
+      }
+
+      // 5. Weekday parsing ("fri", "friday", "next monday")
+      if (!deadline) {
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const weekdayRegex = /\b(?:next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/i;
+        let wMatch = fullText.match(weekdayRegex);
+        if (wMatch) {
+          const name = wMatch[1].toLowerCase();
+          let targetDay = dayNames.indexOf(name);
+          if (targetDay === -1) targetDay = dayShort.indexOf(name);
+          if (targetDay !== -1) {
+            const currentDay = now.getDay();
+            let daysUntil = (targetDay - currentDay + 7) % 7;
+            if (daysUntil === 0 || wMatch[0].toLowerCase().includes('next')) daysUntil += 7;
+            const targetDate = new Date(now);
+            targetDate.setDate(targetDate.getDate() + daysUntil);
+            deadline = targetDate.toISOString().split('T')[0];
+            fullText = fullText.replace(wMatch[0], ' ');
+          }
         }
       }
 
-      if (!deadline) {
-        const slashRegex = /(?:\*\s*)?\b(\d{1,4})[\/\-](\d{1,2})(?:[\/\-](\d{1,4}))?\b/g;
-        let sMatch = slashRegex.exec(fullText);
-        if (sMatch) {
-          let y = currentYear, m, d;
-          if (sMatch[1].length === 4) {
-            y = parseInt(sMatch[1], 10);
-            m = parseInt(sMatch[2], 10) - 1;
-            d = parseInt(sMatch[3], 10);
-          } else {
-            m = parseInt(sMatch[1], 10) - 1;
-            d = parseInt(sMatch[2], 10);
-            if (sMatch[3]) y = parseInt(sMatch[3], 10);
-            if (y < 100) y += 2000;
-          }
-          if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
-            const target = new Date(y, m, d);
-            const offset = target.getTimezoneOffset() * 60000;
-            deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
-            fullText = fullText.replace(sMatch[0], ' ');
-          }
+      // 6. Explicit Time ("at 5pm", "3:30pm", "18:00")
+      const strictTimeRegex = /\b(?:at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?|(\d{1,2}):(\d{2})\s*(am|pm)?|(\d{1,2})\s*(am|pm))\b/i;
+      let timeMatch = fullText.match(strictTimeRegex);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1] || timeMatch[4] || timeMatch[7], 10);
+        let minute = parseInt(timeMatch[2] || timeMatch[5] || '0', 10);
+        const meridiem = (timeMatch[3] || timeMatch[6] || timeMatch[8] || '').toLowerCase();
+        if (meridiem === 'pm' && hour < 12) hour += 12;
+        if (meridiem === 'am' && hour === 12) hour = 0;
+        const timePart = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        if (deadline) {
+          deadline = `${deadline.split('T')[0]}T${timePart}`;
+        } else {
+          deadline = `${todayStr}T${timePart}`;
         }
+        fullText = fullText.replace(timeMatch[0], ' ');
       }
 
+      // 7. Standard dates (today, tomorrow, tonight, month day)
       if (!deadline) {
-        if (/(?:\*\s*)?\b(tomorrow)\b/i.test(fullText)) {
+        if (/(?:\*\s*)?\b(tomorrow|tmrw)\b/i.test(fullText)) {
           const tom = new Date(now);
           tom.setDate(tom.getDate() + 1);
           deadline = tom.toISOString().split('T')[0];
-          fullText = fullText.replace(/(?:\*\s*)?\b(tomorrow)\b/gi, ' ');
-        } else if (/(?:\*\s*)?\b(today)\b/i.test(fullText)) {
+          fullText = fullText.replace(/(?:\*\s*)?\b(tomorrow|tmrw)\b/gi, ' ');
+        } else if (/(?:\*\s*)?\b(today|tonight)\b/i.test(fullText)) {
           deadline = todayStr;
-          fullText = fullText.replace(/(?:\*\s*)?\b(today)\b/gi, ' ');
+          fullText = fullText.replace(/(?:\*\s*)?\b(today|tonight)\b/gi, ' ');
         }
       }
 
-      if (difficulty === 'easy') {
-        const wordDiffRegex = /\b(ultra|mega|hard|medium)\b/i;
-        let wMatch = fullText.match(wordDiffRegex);
-        if (wMatch) {
-          const val = wMatch[1].toLowerCase();
-          if (val === 'medium') difficulty = 'medium';
-          else if (val === 'hard') difficulty = 'hard';
-          else if (val === 'mega') difficulty = 'mega';
-          else if (val === 'ultra') difficulty = 'ultra';
-          fullText = fullText.replace(wMatch[0], ' ');
+      if (!deadline) {
+        const monthDayRegex = /(?:\*\s*)?\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
+        let mdMatch = monthDayRegex.exec(fullText);
+        if (mdMatch) {
+          const months = { jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11 };
+          const mIndex = months[mdMatch[1].toLowerCase()];
+          const day = parseInt(mdMatch[2], 10);
+          if (mIndex !== undefined && day >= 1 && day <= 31) {
+            const target = new Date(currentYear, mIndex, day);
+            const offset = target.getTimezoneOffset() * 60000;
+            deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
+            fullText = fullText.replace(mdMatch[0], ' ');
+          }
         }
       }
 
       let finalTitle = fullText.replace(/[*]/g, '').replace(/\s+/g, ' ').trim();
       if (!finalTitle) finalTitle = `Task (${difficulty.toUpperCase()})`;
 
-      return { text: finalTitle, difficulty, deadline, color, subtasks, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
+      return { text: finalTitle, difficulty, deadline, color, subtasks, tags, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
+    }
+
+    function updateInputPreview(inputEl, previewEl) {
+      if (!inputEl || !previewEl) return;
+      const text = inputEl.value.trim();
+      if (!text) {
+        previewEl.className = 'input-preview-bar';
+        previewEl.innerHTML = '';
+        return;
+      }
+      const parsed = parseNaturalLanguage(text);
+      let chipsHtml = '';
+
+      // Difficulty chip
+      const conf = DIFF_CONFIG[parsed.difficulty] || DIFF_CONFIG.easy;
+      chipsHtml += `<span class="input-preview-chip chip-diff">${conf.label}</span>`;
+
+      // Deadline chip
+      if (parsed.deadline) {
+        const cd = getCountdownInfo(parsed.deadline);
+        const cdText = cd ? ` (${cd.text})` : '';
+        chipsHtml += `<span class="input-preview-chip chip-time">⏱ ${formatDeadline(parsed.deadline)}${cdText}</span>`;
+      }
+
+      // Tag chips
+      if (parsed.tags && parsed.tags.length > 0) {
+        parsed.tags.forEach(t => {
+          chipsHtml += `<span class="input-preview-chip chip-tag">#${t}</span>`;
+        });
+      }
+
+      // Subtasks count
+      if (parsed.subtasks && parsed.subtasks.length > 0) {
+        chipsHtml += `<span class="input-preview-chip chip-sub">↳ ${parsed.subtasks.length} subtasks</span>`;
+      }
+
+      previewEl.innerHTML = chipsHtml;
+      previewEl.className = 'input-preview-bar active';
     }
 
     function getStreakBg(item) {
@@ -2354,13 +2827,34 @@
       mainRow.appendChild(textSpan);
       mainRow.appendChild(diffBadge);
 
-      // Deadline badge if present
+      // Deadline and Live Countdown badge if present (Feature 8)
       if (item.deadline && item.deadline.trim() !== '') {
         const dl = document.createElement('span');
         const overdue = !item.completed && isOverdue(item.deadline);
         dl.className = `deadline-badge ${overdue ? 'overdue' : ''}`;
         dl.innerHTML = `&#9202; ${formatDeadline(item.deadline)}`;
         mainRow.appendChild(dl);
+
+        if (!item.completed) {
+          const cdInfo = getCountdownInfo(item.deadline);
+          if (cdInfo) {
+            const cdBadge = document.createElement('span');
+            cdBadge.className = `live-countdown-badge ${cdInfo.status}`;
+            cdBadge.dataset.deadline = item.deadline;
+            cdBadge.textContent = cdInfo.text;
+            mainRow.appendChild(cdBadge);
+          }
+        }
+      }
+
+      // Tag badges (Feature 12)
+      if (item.tags && item.tags.length > 0) {
+        item.tags.forEach(t => {
+          const tBadge = document.createElement('span');
+          tBadge.className = 'task-tag-badge';
+          tBadge.textContent = `#${t}`;
+          mainRow.appendChild(tBadge);
+        });
       }
 
       // Bounty target pill
@@ -2495,6 +2989,160 @@
       }
     }
 
+    function toggleDailiesView() {
+      state.dailiesView = state.dailiesView === 'shapes' ? 'list' : 'shapes';
+      localStorage.setItem('nemesis_dailies_view', state.dailiesView);
+      applyDailiesView();
+      playSound('click');
+    }
+
+    function applyDailiesView() {
+      const listEl = document.getElementById('dailiesList');
+      const canvasEl = document.getElementById('dailiesShapesCanvas');
+      const btn = document.getElementById('dailiesViewToggleBtn');
+      if (!listEl || !canvasEl || !btn) return;
+
+      if (state.dailiesView === 'shapes') {
+        listEl.style.display = 'none';
+        canvasEl.style.display = 'block';
+        btn.textContent = '☰ LIST';
+        renderShapesCanvas();
+      } else {
+        listEl.style.display = 'flex';
+        canvasEl.style.display = 'none';
+        btn.textContent = '⬡ SHAPES';
+      }
+    }
+
+    function renderShapesCanvas() {
+      const canvas = document.getElementById('dailiesShapesCanvas');
+      if (!canvas) return;
+      canvas.innerHTML = '';
+
+      if (state.dailies.length === 0) {
+        canvas.innerHTML = '<div class="empty-state" style="margin: 2.5rem auto; text-align: center;">[ No habits to display ]</div>';
+        return;
+      }
+
+      if (!state.shapePositions) state.shapePositions = {};
+
+      const rect = canvas.getBoundingClientRect();
+      const canvasWidth = rect.width > 0 ? rect.width : (canvas.clientWidth || 320);
+
+      state.dailies.forEach((d, index) => {
+        let pos = state.shapePositions[d.id];
+        if (!pos) {
+          const cols = Math.max(1, Math.floor((canvasWidth - 20) / 80));
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          pos = {
+            x: 46 + col * 80,
+            y: 48 + row * 82
+          };
+          state.shapePositions[d.id] = pos;
+        }
+
+        const node = document.createElement('div');
+        node.className = `shape-node ${d.completed ? 'completed' : ''}`;
+        node.style.left = `${pos.x}px`;
+        node.style.top = `${pos.y}px`;
+        node.dataset.id = d.id;
+
+        const diff = d.difficulty || 'easy';
+        const weight = getWeight(d);
+        const color = d.completed ? '#859900' : (d.color || '#268bd2');
+
+        let svgShape = '';
+        if (diff === 'easy') {
+          svgShape = `<svg class="shape-svg" width="62" height="62" viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="${color}"/></svg>`;
+        } else if (diff === 'medium') {
+          svgShape = `<svg class="shape-svg" width="70" height="62" viewBox="0 0 72 64"><polygon points="36,0 72,64 0,64" fill="${color}"/></svg>`;
+        } else if (diff === 'hard') {
+          svgShape = `<svg class="shape-svg" width="62" height="62" viewBox="0 0 64 64"><rect x="0" y="0" width="64" height="64" rx="8" fill="${color}"/></svg>`;
+        } else if (diff === 'mega') {
+          svgShape = `<svg class="shape-svg" width="66" height="62" viewBox="0 0 68 64"><polygon points="34,0 68,24 53,64 15,64 0,24" fill="${color}"/></svg>`;
+        } else {
+          svgShape = `<svg class="shape-svg" width="70" height="66" viewBox="0 0 70 66"><polygon points="35,0 43,21 66,22 47,36 54,58 35,45 16,58 23,36 4,22 27,21" fill="${color}"/></svg>`;
+        }
+
+        const wrap = document.createElement('div');
+        wrap.className = 'shape-svg-wrap';
+        wrap.innerHTML = svgShape;
+
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'shape-inner-name';
+        nameSpan.textContent = d.completed ? '✓ ' + d.text : d.text;
+        wrap.appendChild(nameSpan);
+
+        node.title = `${d.text} (${weight} PTS)`;
+        node.appendChild(wrap);
+
+        let isDragging = false;
+        let startPointerX = 0;
+        let startPointerY = 0;
+        let startPosX = pos.x;
+        let startPosY = pos.y;
+        let hasMoved = false;
+        let tapCount = 0;
+        let tapTimer = null;
+
+        node.onpointerdown = (e) => {
+          isDragging = true;
+          hasMoved = false;
+          startPointerX = e.clientX;
+          startPointerY = e.clientY;
+          startPosX = pos.x;
+          startPosY = pos.y;
+          node.classList.add('dragging');
+          try { node.setPointerCapture(e.pointerId); } catch(err) {}
+        };
+
+        node.onpointermove = (e) => {
+          if (!isDragging) return;
+          const dx = e.clientX - startPointerX;
+          const dy = e.clientY - startPointerY;
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasMoved = true;
+          const cw = canvas.clientWidth || 320;
+          const ch = canvas.clientHeight || 360;
+          const newX = Math.max(25, Math.min(cw - 25, startPosX + dx));
+          const newY = Math.max(25, Math.min(ch - 25, startPosY + dy));
+          pos.x = newX;
+          pos.y = newY;
+          node.style.left = `${newX}px`;
+          node.style.top = `${newY}px`;
+        };
+
+        node.onpointerup = (e) => {
+          if (!isDragging) return;
+          isDragging = false;
+          node.classList.remove('dragging');
+          state.shapePositions[d.id] = { x: pos.x, y: pos.y };
+          saveState();
+
+          if (!hasMoved) {
+            tapCount++;
+            if (tapCount === 1) {
+              tapTimer = setTimeout(() => {
+                tapCount = 0;
+                toggleTask(d.id, 'dailies', wrap);
+              }, 250);
+            } else if (tapCount >= 2) {
+              clearTimeout(tapTimer);
+              tapCount = 0;
+              openEditModal(d, 'dailies');
+            }
+          }
+        };
+
+        node.onpointercancel = () => {
+          isDragging = false;
+          node.classList.remove('dragging');
+        };
+
+        canvas.appendChild(node);
+      });
+    }
+
     function render() {
       // Calculate Dailies Weight
       let dTotalPts = 0;
@@ -2541,7 +3189,7 @@
         if (headerRank) headerRank.textContent = tier.name;
       }
 
-      // Dailies List
+      // Dailies List & Shapes View
       const dList = document.getElementById('dailiesList');
       dList.innerHTML = '';
       if (state.dailies.length === 0) {
@@ -2550,6 +3198,7 @@
         state.dailies.forEach(d => dList.appendChild(renderItem(d, 'dailies')));
       }
       document.getElementById('dailiesCount').textContent = `${dDonePts}/${dTotalPts} PTS`;
+      applyDailiesView();
 
       // Todos List
       const tList = document.getElementById('todosList');
@@ -2614,17 +3263,27 @@
       if (typeof renderDisciplineDrawer === 'function') {
         renderDisciplineDrawer();
       }
+
+      calculateGhostPace();
     }
 
     function toggleTask(id, type, checkEl) {
       const task = state[type].find(t => t.id === id);
       if (task) {
         task.completed = !task.completed;
+        const cardEl = checkEl ? checkEl.closest('.task-card') : null;
+        if (cardEl) {
+          cardEl.classList.remove('micro-punch');
+          void cardEl.offsetWidth;
+          cardEl.classList.add('micro-punch');
+        }
         playSound(task.completed ? 'check' : 'uncheck');
-        if (task.completed && checkEl) {
-          const rect = checkEl.getBoundingClientRect();
-          const cardEl = checkEl.closest('.task-card');
-          triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, getWeight(task), cardEl, checkEl);
+        if (task.completed) {
+          recordPaceCompletion(getWeight(task));
+          if (checkEl) {
+            const rect = checkEl.getBoundingClientRect();
+            triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, getWeight(task), cardEl, checkEl);
+          }
         }
         saveState();
         render();
@@ -2637,11 +3296,19 @@
         const sub = task.subtasks.find(s => s.id === subtaskId);
         if (sub) {
           sub.completed = !sub.completed;
-          playSound(sub.completed ? 'check' : 'uncheck');
-          if (sub.completed && checkEl) {
-            const rect = checkEl.getBoundingClientRect();
-            const cardEl = checkEl.closest('.task-card');
-            triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, 1, cardEl, checkEl);
+          const cardEl = checkEl ? checkEl.closest('.task-card') : null;
+          if (cardEl) {
+            cardEl.classList.remove('micro-punch');
+            void cardEl.offsetWidth;
+            cardEl.classList.add('micro-punch');
+          }
+          playSound(sub.completed ? 'subtask' : 'uncheck');
+          if (sub.completed) {
+            recordPaceCompletion(1);
+            if (checkEl) {
+              const rect = checkEl.getBoundingClientRect();
+              triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, 1, cardEl, checkEl);
+            }
           }
           saveState();
           render();
@@ -2685,6 +3352,16 @@
       }
 
       state.history[todayStr] = totalPts > 0 ? donePts / totalPts : 1.0;
+
+      // Check Ghost Mode Pace bonus (Feature 25)
+      const yestDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const yestLogs = (state.paceHistory && state.paceHistory[yestDate]) || [];
+      const yestTotalPts = yestLogs.reduce((acc, l) => acc + (l.pts || 0), 0);
+      if (yestTotalPts > 0 && donePts > yestTotalPts) {
+        disciplineState.elo = (disciplineState.elo || 1000) + 15;
+        state.score = disciplineState.elo;
+        playSound('ghost_ahead');
+      }
 
       // 1. Invisible Lifetime Stats Tracking for each daily
       state.dailies.forEach(d => {
@@ -2822,8 +3499,13 @@
       }
     }
 
-    function openEditModal(id, type) {
-      const item = state[type].find(t => t.id === id);
+    function openEditModal(idOrItem, type) {
+      let item = null;
+      if (idOrItem && typeof idOrItem === 'object') {
+        item = idOrItem;
+      } else {
+        item = state[type].find(t => t.id === idOrItem);
+      }
       if (!item) return;
 
       activeEditing = {
@@ -2897,7 +3579,16 @@
 
       modal.classList.add('active');
       modal.style.display = 'grid';
+      autoResizeModalInput();
       input.focus();
+    }
+
+    function autoResizeModalInput() {
+      const input = document.getElementById('modalTaskInput');
+      if (input) {
+        input.style.height = 'auto';
+        input.style.height = Math.max(160, input.scrollHeight) + 'px';
+      }
     }
 
     function openAddModal(type) {
@@ -2977,6 +3668,7 @@
 
       modal.classList.add('active');
       modal.style.display = 'grid';
+      autoResizeModalInput();
       input.focus();
     }
 
@@ -3312,11 +4004,56 @@
     }
 
     function setupEventListeners() {
+      // Sound Toggle Button (Feature 10)
+      const soundBtn = document.getElementById('soundToggleBtn');
+      if (soundBtn) soundBtn.onclick = toggleSoundMute;
+
+      // Dailies View Toggle (List vs Shapes Canvas)
+      const shapesToggleBtn = document.getElementById('dailiesViewToggleBtn');
+      if (shapesToggleBtn) shapesToggleBtn.onclick = toggleDailiesView;
+
       // Plus Add Buttons & Expand Add Modal Buttons
-      document.getElementById('addDailyBtn').onclick = addDailyFromInput;
-      document.getElementById('addTodoBtn').onclick = addTodoFromInput;
+      document.getElementById('addDailyBtn').onclick = () => {
+        addDailyFromInput();
+        const dInp = document.getElementById('dailyInput');
+        const dPrev = document.getElementById('dailyInputPreview');
+        if (dInp && dPrev) updateInputPreview(dInp, dPrev);
+      };
+      document.getElementById('addTodoBtn').onclick = () => {
+        addTodoFromInput();
+        const tInp = document.getElementById('todoInput');
+        const tPrev = document.getElementById('todoInputPreview');
+        if (tInp && tPrev) updateInputPreview(tInp, tPrev);
+      };
       document.getElementById('openAddDailyModalBtn').onclick = () => openAddModal('dailies');
       document.getElementById('openAddTodoModalBtn').onclick = () => openAddModal('todos');
+
+      // Live Input Preview Listeners (Feature 12)
+      const dInp = document.getElementById('dailyInput');
+      const dPrev = document.getElementById('dailyInputPreview');
+      if (dInp && dPrev) {
+        dInp.addEventListener('input', () => updateInputPreview(dInp, dPrev));
+        dInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            addDailyFromInput();
+            updateInputPreview(dInp, dPrev);
+          }
+        });
+      }
+
+      const tInp = document.getElementById('todoInput');
+      const tPrev = document.getElementById('todoInputPreview');
+      if (tInp && tPrev) {
+        tInp.addEventListener('input', () => updateInputPreview(tInp, tPrev));
+        tInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            addTodoFromInput();
+            updateInputPreview(tInp, tPrev);
+          }
+        });
+      }
 
       // Check In Button
       document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
@@ -3449,6 +4186,7 @@
       document.getElementById('modalCloseBtn').onclick = closeEditModal;
       document.getElementById('modalSaveBtn').onclick = saveModalChanges;
       document.getElementById('modalDeleteBtn').onclick = deleteModalItem;
+      document.getElementById('modalTaskInput').oninput = autoResizeModalInput;
       document.getElementById('modalTaskInput').onkeydown = (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveModalChanges();
         if (e.key === 'Escape') closeEditModal();
@@ -4038,6 +4776,8 @@
     render();
     renderDisciplineDrawer();
     setupDisciplineDrawer();
+    updateLiveCountdowns();
+    setInterval(updateLiveCountdowns, 1000);
 
     // Register ServiceWorker and auto-update stale cache
     if ('serviceWorker' in navigator) {
