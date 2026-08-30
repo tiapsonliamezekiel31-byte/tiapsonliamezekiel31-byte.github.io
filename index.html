@@ -3100,18 +3100,17 @@
         node.title = `${d.text} (${weight} PTS)`;
         node.appendChild(wrap);
 
-        let isDragging = false;
+        let isPointerActive = false;
+        let isDrag = false;
         let startPointerX = 0;
         let startPointerY = 0;
         let startPosX = pos.x;
         let startPosY = pos.y;
-        let hasMoved = false;
-        let tapCount = 0;
-        let tapTimer = null;
 
         node.onpointerdown = (e) => {
-          isDragging = true;
-          hasMoved = false;
+          if (e.button !== 0) return;
+          isPointerActive = true;
+          isDrag = false;
           startPointerX = e.clientX;
           startPointerY = e.clientY;
           startPosX = pos.x;
@@ -3121,45 +3120,49 @@
         };
 
         node.onpointermove = (e) => {
-          if (!isDragging) return;
+          if (!isPointerActive) return;
           const dx = e.clientX - startPointerX;
           const dy = e.clientY - startPointerY;
-          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasMoved = true;
-          const cw = canvas.clientWidth || 320;
-          const ch = canvas.clientHeight || 360;
-          const newX = Math.max(25, Math.min(cw - 25, startPosX + dx));
-          const newY = Math.max(25, Math.min(ch - 25, startPosY + dy));
-          pos.x = newX;
-          pos.y = newY;
-          node.style.left = `${newX}px`;
-          node.style.top = `${newY}px`;
-        };
-
-        node.onpointerup = (e) => {
-          if (!isDragging) return;
-          isDragging = false;
-          node.classList.remove('dragging');
-          state.shapePositions[d.id] = { x: pos.x, y: pos.y };
-          saveState();
-
-          if (!hasMoved) {
-            tapCount++;
-            if (tapCount === 1) {
-              tapTimer = setTimeout(() => {
-                tapCount = 0;
-                toggleTask(d.id, 'dailies', wrap);
-              }, 250);
-            } else if (tapCount >= 2) {
-              clearTimeout(tapTimer);
-              tapCount = 0;
-              openEditModal(d, 'dailies');
-            }
+          if (!isDrag && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+            isDrag = true;
+          }
+          if (isDrag) {
+            const cw = canvas.clientWidth || 320;
+            const ch = canvas.clientHeight || 360;
+            const newX = Math.max(25, Math.min(cw - 25, startPosX + dx));
+            const newY = Math.max(25, Math.min(ch - 25, startPosY + dy));
+            pos.x = newX;
+            pos.y = newY;
+            node.style.left = `${newX}px`;
+            node.style.top = `${newY}px`;
           }
         };
 
-        node.onpointercancel = () => {
-          isDragging = false;
+        node.onpointerup = (e) => {
+          if (!isPointerActive) return;
+          isPointerActive = false;
           node.classList.remove('dragging');
+          try { node.releasePointerCapture(e.pointerId); } catch(err) {}
+
+          if (isDrag) {
+            state.shapePositions[d.id] = { x: pos.x, y: pos.y };
+            saveState();
+          } else {
+            // Instant single click toggle!
+            toggleTask(d.id, 'dailies', wrap);
+          }
+        };
+
+        node.onpointercancel = (e) => {
+          isPointerActive = false;
+          node.classList.remove('dragging');
+          try { node.releasePointerCapture(e.pointerId); } catch(err) {}
+        };
+
+        node.ondblclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openEditModal(d, 'dailies');
         };
 
         canvas.appendChild(node);
@@ -3294,7 +3297,7 @@
       const task = state[type].find(t => t.id === id);
       if (task) {
         task.completed = !task.completed;
-        const cardEl = checkEl ? checkEl.closest('.task-card') : null;
+        const cardEl = checkEl ? (checkEl.closest('.task-card') || checkEl.closest('.shape-node')) : null;
         if (cardEl) {
           cardEl.classList.remove('micro-punch');
           void cardEl.offsetWidth;
