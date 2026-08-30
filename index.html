@@ -775,7 +775,6 @@
       align-items: center;
       gap: 0.35rem;
       min-width: 0;
-      flex-wrap: wrap;
     }
 
     .task-checkbox {
@@ -806,22 +805,12 @@
     }
 
     .task-text {
-      flex: 1 1 120px;
+      flex: 1;
       font-size: 0.74rem;
       font-weight: 600;
       outline: none;
-      min-width: 120px;
+      min-width: 0;
       word-break: break-word;
-      line-height: 1.35;
-    }
-
-    .task-badges-wrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      flex-wrap: wrap;
-      margin-left: auto;
-      flex-shrink: 0;
     }
 
     /* Subtle streak text */
@@ -1633,9 +1622,10 @@
     /* --- DRAGGABLE SHAPES CANVAS --- */
     .shapes-canvas {
       position: relative;
-      flex: 1;
+      flex: 1 1 0;
       width: 100%;
-      min-height: 320px;
+      height: 100%;
+      min-height: 0;
       background: #00222b;
       border: 1px solid var(--border);
       border-radius: 4px;
@@ -2869,18 +2859,18 @@
       const textSpan = document.createElement('span');
       textSpan.className = 'task-text';
       textSpan.textContent = item.text;
-      mainRow.appendChild(check);
-      mainRow.appendChild(textSpan);
-
-      const badgesWrap = document.createElement('div');
-      badgesWrap.className = 'task-badges-wrap';
 
       // Subtle streak text for dailies
       if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
         const sText = document.createElement('span');
         sText.className = `streak-text ${item.streak > 0 ? 'pos' : 'neg'}`;
         sText.textContent = `${item.streak > 0 ? '+' : ''}${item.streak}`;
-        badgesWrap.appendChild(sText);
+        mainRow.appendChild(check);
+        mainRow.appendChild(textSpan);
+        mainRow.appendChild(sText);
+      } else {
+        mainRow.appendChild(check);
+        mainRow.appendChild(textSpan);
       }
 
       // Difficulty icon
@@ -2890,36 +2880,15 @@
       diffBadge.className = `diff-shape-icon diff-${diffName}`;
       diffBadge.title = conf.label;
       diffBadge.innerHTML = conf.svg;
-      badgesWrap.appendChild(diffBadge);
+      mainRow.appendChild(diffBadge);
 
-      // Deadline and Live Countdown badge if present (Feature 8)
+      // Deadline badge if present
       if (item.deadline && item.deadline.trim() !== '') {
         const dl = document.createElement('span');
         const overdue = !item.completed && isOverdue(item.deadline);
         dl.className = `deadline-badge ${overdue ? 'overdue' : ''}`;
         dl.innerHTML = `&#9202; ${formatDeadline(item.deadline)}`;
-        badgesWrap.appendChild(dl);
-
-        if (!item.completed) {
-          const cdInfo = getCountdownInfo(item.deadline);
-          if (cdInfo) {
-            const cdBadge = document.createElement('span');
-            cdBadge.className = `live-countdown-badge ${cdInfo.status}`;
-            cdBadge.dataset.deadline = item.deadline;
-            cdBadge.textContent = cdInfo.text;
-            badgesWrap.appendChild(cdBadge);
-          }
-        }
-      }
-
-      // Tag badges (Feature 12)
-      if (item.tags && item.tags.length > 0) {
-        item.tags.forEach(t => {
-          const tBadge = document.createElement('span');
-          tBadge.className = 'task-tag-badge';
-          tBadge.textContent = `#${t}`;
-          badgesWrap.appendChild(tBadge);
-        });
+        mainRow.appendChild(dl);
       }
 
       // Bounty target pill
@@ -2927,10 +2896,9 @@
         const pill = document.createElement('span');
         pill.className = 'bounty-target-pill';
         pill.textContent = `★ ${bountyTag}`;
-        badgesWrap.appendChild(pill);
+        mainRow.appendChild(pill);
       }
 
-      mainRow.appendChild(badgesWrap);
       card.appendChild(mainRow);
 
       // Subtasks tree

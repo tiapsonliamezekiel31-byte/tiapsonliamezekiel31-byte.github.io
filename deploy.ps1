@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: check-in 1-sec loop, add debug baseline reset, fix squished todo names"
+$commitMsg = "fix: restore clean linear daily task card look and expand shapes canvas to full height"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
