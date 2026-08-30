@@ -2260,6 +2260,7 @@
       paceHistory: JSON.parse(localStorage.getItem('nemesis_pace_history') || '{}'),
       lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
       lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
+      lastCheckinDate: localStorage.getItem('nemesis_last_checkin_date') || '',
       dailiesView: localStorage.getItem('nemesis_dailies_view') || 'list', // 'list' or 'shapes'
       shapePositions: JSON.parse(localStorage.getItem('nemesis_shape_positions') || '{}'),
       rightView: 'todos' // 'todos' or 'history'
@@ -2306,6 +2307,7 @@
       localStorage.setItem('nemesis_pace_history', JSON.stringify(state.paceHistory || {}));
       localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
       localStorage.setItem('nemesis_last_date', state.lastActiveDate);
+      localStorage.setItem('nemesis_last_checkin_date', state.lastCheckinDate);
       localStorage.setItem('nemesis_dailies_view', state.dailiesView);
       localStorage.setItem('nemesis_shape_positions', JSON.stringify(state.shapePositions || {}));
     }
@@ -2315,6 +2317,18 @@
       if (!state.lastActiveDate) {
         state.lastActiveDate = today;
         saveState();
+      }
+      checkAutoCheckin();
+    }
+
+    function checkAutoCheckin() {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const hour = now.getHours();
+
+      // Automatically check in at 8:00 AM or later every day if not checked in yet today
+      if (hour >= 8 && state.lastCheckinDate !== todayStr) {
+        performReset(false);
       }
     }
 
@@ -2431,6 +2445,7 @@
       });
 
       calculateGhostPace();
+      checkAutoCheckin();
     }
 
     function isOverdue(deadlineStr) {
@@ -3450,6 +3465,8 @@
         allStreaksAbove3
       };
 
+      state.lastCheckinDate = todayStr;
+      state.lastActiveDate = todayStr;
       state.todos = state.todos.filter(t => !t.completed);
 
       // Update compounding discipline rate & weekly contracts
