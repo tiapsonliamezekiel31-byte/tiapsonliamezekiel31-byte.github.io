@@ -1714,7 +1714,7 @@
       <div class="top-actions">
         <button type="button" class="action-pill-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
         <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
-        <button type="button" class="action-pill-btn" id="debugResetBtn" title="Debug: Reset all streaks, completion rates, and Elo to baseline" style="color: var(--color-red); border-color: rgba(220,50,47,0.4);">DEBUG</button>
+        <button type="button" class="action-pill-btn" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline" style="color: var(--color-red); border-color: rgba(220,50,47,0.4);">DEBUG</button>
         <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
         <button type="button" class="action-pill-btn" id="importBtn" title="Import Backup JSON">IMP</button>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
@@ -2338,7 +2338,6 @@
     }
 
     function debugResetBaseline() {
-      if (!confirm("DEBUG: Reset all completion rates, streaks, and Elo back to baseline (1000)?")) return;
       disciplineState.elo = 1000;
       disciplineState.acceptedContracts = {};
       disciplineState.completedContractsThisWeek = [];
@@ -2349,6 +2348,7 @@
       state.history = {};
       state.paceHistory = {};
       state.lastCheckinStats = {};
+      state.shapePositions = {};
       const todayStr = new Date().toISOString().split('T')[0];
       state.lastCheckinDate = todayStr;
       state.lastActiveDate = todayStr;
@@ -3061,17 +3061,21 @@
       if (!state.shapePositions) state.shapePositions = {};
 
       const rect = canvas.getBoundingClientRect();
-      const canvasWidth = rect.width > 0 ? rect.width : (canvas.clientWidth || 320);
+      const canvasWidth = rect.width > 50 ? rect.width : (canvas.clientWidth || 320);
+      const canvasHeight = rect.height > 50 ? rect.height : (canvas.clientHeight || 450);
+
+      const colSpacing = 85;
+      const rowSpacing = 88;
+      const cols = Math.max(2, Math.floor((canvasWidth - 10) / colSpacing));
 
       state.dailies.forEach((d, index) => {
         let pos = state.shapePositions[d.id];
-        if (!pos) {
-          const cols = Math.max(1, Math.floor((canvasWidth - 20) / 80));
+        if (!pos || typeof pos.x !== 'number' || typeof pos.y !== 'number' || pos.x > canvasWidth + 100 || pos.y > canvasHeight + 200) {
           const col = index % cols;
           const row = Math.floor(index / cols);
           pos = {
-            x: 46 + col * 80,
-            y: 48 + row * 82
+            x: 48 + col * colSpacing,
+            y: 48 + row * rowSpacing
           };
           state.shapePositions[d.id] = pos;
         }
@@ -3146,8 +3150,8 @@
             isDrag = true;
           }
           if (isDrag) {
-            const cw = canvas.clientWidth || 320;
-            const ch = canvas.clientHeight || 360;
+            const cw = canvas.clientWidth || canvasWidth || 320;
+            const ch = canvas.clientHeight || canvasHeight || 450;
             const newX = Math.max(25, Math.min(cw - 25, startPosX + dx));
             const newY = Math.max(25, Math.min(ch - 25, startPosY + dy));
             pos.x = newX;
