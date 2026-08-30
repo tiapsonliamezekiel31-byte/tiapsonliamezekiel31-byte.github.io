@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: make shape task completion instant single click without delay"
+$commitMsg = "fix: check-in 1-sec loop, add debug baseline reset, fix squished todo names"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

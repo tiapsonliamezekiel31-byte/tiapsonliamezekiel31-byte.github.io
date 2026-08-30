@@ -775,6 +775,7 @@
       align-items: center;
       gap: 0.35rem;
       min-width: 0;
+      flex-wrap: wrap;
     }
 
     .task-checkbox {
@@ -805,12 +806,22 @@
     }
 
     .task-text {
-      flex: 1;
+      flex: 1 1 120px;
       font-size: 0.74rem;
       font-weight: 600;
       outline: none;
-      min-width: 0;
+      min-width: 120px;
       word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .task-badges-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex-wrap: wrap;
+      margin-left: auto;
+      flex-shrink: 0;
     }
 
     /* Subtle streak text */
@@ -1713,6 +1724,7 @@
       <div class="top-actions">
         <button type="button" class="action-pill-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
         <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
+        <button type="button" class="action-pill-btn" id="debugResetBtn" title="Debug: Reset all streaks, completion rates, and Elo to baseline" style="color: var(--color-red); border-color: rgba(220,50,47,0.4);">DEBUG</button>
         <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
         <button type="button" class="action-pill-btn" id="importBtn" title="Import Backup JSON">IMP</button>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
@@ -2328,8 +2340,44 @@
 
       // Automatically check in at 8:00 AM or later every day if not checked in yet today
       if (hour >= 8 && state.lastCheckinDate !== todayStr) {
+        state.lastCheckinDate = todayStr;
+        state.lastActiveDate = todayStr;
+        saveState();
         performReset(false);
       }
+    }
+
+    function debugResetBaseline() {
+      if (!confirm("DEBUG: Reset all completion rates, streaks, and Elo back to baseline (1000)?")) return;
+      disciplineState.elo = 1000;
+      disciplineState.acceptedContracts = {};
+      disciplineState.completedContractsThisWeek = [];
+      disciplineState.unlockedSeals = [];
+      disciplineState.history = {};
+      disciplineState.todayEloDelta = 0;
+      state.score = 1000;
+      state.history = {};
+      state.paceHistory = {};
+      state.lastCheckinStats = {};
+      const todayStr = new Date().toISOString().split('T')[0];
+      state.lastCheckinDate = todayStr;
+      state.lastActiveDate = todayStr;
+      state.dailies.forEach(d => {
+        d.streak = 0;
+        d.history = [];
+        d.totalDays = 0;
+        d.completedDays = 0;
+        d.completed = false;
+        if (d.subtasks) d.subtasks.forEach(st => st.completed = false);
+      });
+      state.todos.forEach(t => {
+        t.completed = false;
+        if (t.subtasks) t.subtasks.forEach(st => st.completed = false);
+      });
+      saveState();
+      saveDisciplineState();
+      render();
+      playSound('rebirth');
     }
 
     function updateDateDisplay() {
@@ -2821,13 +2869,18 @@
       const textSpan = document.createElement('span');
       textSpan.className = 'task-text';
       textSpan.textContent = item.text;
+      mainRow.appendChild(check);
+      mainRow.appendChild(textSpan);
+
+      const badgesWrap = document.createElement('div');
+      badgesWrap.className = 'task-badges-wrap';
 
       // Subtle streak text for dailies
       if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
         const sText = document.createElement('span');
         sText.className = `streak-text ${item.streak > 0 ? 'pos' : 'neg'}`;
         sText.textContent = `${item.streak > 0 ? '+' : ''}${item.streak}`;
-        mainRow.appendChild(sText);
+        badgesWrap.appendChild(sText);
       }
 
       // Difficulty icon
@@ -2837,10 +2890,7 @@
       diffBadge.className = `diff-shape-icon diff-${diffName}`;
       diffBadge.title = conf.label;
       diffBadge.innerHTML = conf.svg;
-
-      mainRow.appendChild(check);
-      mainRow.appendChild(textSpan);
-      mainRow.appendChild(diffBadge);
+      badgesWrap.appendChild(diffBadge);
 
       // Deadline and Live Countdown badge if present (Feature 8)
       if (item.deadline && item.deadline.trim() !== '') {
@@ -2848,7 +2898,7 @@
         const overdue = !item.completed && isOverdue(item.deadline);
         dl.className = `deadline-badge ${overdue ? 'overdue' : ''}`;
         dl.innerHTML = `&#9202; ${formatDeadline(item.deadline)}`;
-        mainRow.appendChild(dl);
+        badgesWrap.appendChild(dl);
 
         if (!item.completed) {
           const cdInfo = getCountdownInfo(item.deadline);
@@ -2857,7 +2907,7 @@
             cdBadge.className = `live-countdown-badge ${cdInfo.status}`;
             cdBadge.dataset.deadline = item.deadline;
             cdBadge.textContent = cdInfo.text;
-            mainRow.appendChild(cdBadge);
+            badgesWrap.appendChild(cdBadge);
           }
         }
       }
@@ -2868,7 +2918,7 @@
           const tBadge = document.createElement('span');
           tBadge.className = 'task-tag-badge';
           tBadge.textContent = `#${t}`;
-          mainRow.appendChild(tBadge);
+          badgesWrap.appendChild(tBadge);
         });
       }
 
@@ -2877,9 +2927,10 @@
         const pill = document.createElement('span');
         pill.className = 'bounty-target-pill';
         pill.textContent = `★ ${bountyTag}`;
-        mainRow.appendChild(pill);
+        badgesWrap.appendChild(pill);
       }
 
+      mainRow.appendChild(badgesWrap);
       card.appendChild(mainRow);
 
       // Subtasks tree
@@ -3343,10 +3394,12 @@
     }
 
     function performReset(userInitiated = true) {
-      playSound('checkin');
+      if (userInitiated) playSound('checkin');
       let totalPts = 0;
       let donePts = 0;
-      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
+      state.lastCheckinDate = todayStr;
+      state.lastActiveDate = todayStr;
 
       state.dailies.forEach(d => {
         const w = getWeight(d);
@@ -4086,9 +4139,11 @@
       // Check In Button
       document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
 
-      // Rebirth Button
+      // Rebirth & Debug Reset Buttons
       const rebirthBtn = document.getElementById('rebirthEloBtn');
       if (rebirthBtn) rebirthBtn.onclick = rebirthElo;
+      const debugBtn = document.getElementById('debugResetBtn');
+      if (debugBtn) debugBtn.onclick = debugResetBaseline;
 
       // Old Data Recovery
       document.getElementById('recoverOldBtn').onclick = () => {
