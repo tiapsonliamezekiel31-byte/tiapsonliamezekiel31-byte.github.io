@@ -42,12 +42,18 @@
       padding: 0;
     }
 
+    html {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
     html,
     body {
       color-scheme: dark !important;
       background-color: #002b36 !important;
       color: #fdf6e3 !important;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -56,7 +62,7 @@
         color-scheme: dark !important;
         background-color: #002b36 !important;
         color: #fdf6e3 !important;
-        overflow-x: hidden;
+        overflow: hidden;
       }
     }
 
@@ -64,13 +70,16 @@
       font-family: 'JetBrains Mono', monospace;
       background-color: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      height: 100%;
+      height: 100dvh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: 0.5rem 0.35rem 2.5rem 0.35rem;
+      padding: 0.35rem;
       user-select: none;
       touch-action: pan-y;
-      overflow-x: hidden;
+      overflow: hidden;
+      box-sizing: border-box;
     }
 
     header {
@@ -354,8 +363,9 @@
       margin: 0 auto;
       display: flex;
       gap: 0.35rem;
-      flex: 1;
-      height: calc(100vh - 120px);
+      flex: 1 1 0;
+      min-height: 0;
+      height: 100%;
       position: relative;
       overflow: hidden;
     }
@@ -369,7 +379,9 @@
       padding: 0.5rem;
       min-width: 0;
       height: 100%;
-      flex: 1;
+      min-height: 0;
+      flex: 1 1 0;
+      overflow: hidden;
     }
 
     /* Draggable Middle Divider */
@@ -540,7 +552,8 @@
     .history-matrix-list {
       list-style: none;
       overflow-y: auto;
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
       display: flex;
       flex-direction: column;
       gap: 0.35rem;
@@ -2263,6 +2276,7 @@
       lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
       lastActiveDate: localStorage.getItem('nemesis_last_date') || '',
       lastCheckinDate: localStorage.getItem('nemesis_last_checkin_date') || '',
+      lastCheckinTime: parseInt(localStorage.getItem('nemesis_last_checkin_time') || '0', 10),
       dailiesView: localStorage.getItem('nemesis_dailies_view') || 'list', // 'list' or 'shapes'
       shapePositions: JSON.parse(localStorage.getItem('nemesis_shape_positions') || '{}'),
       rightView: 'todos' // 'todos' or 'history'
@@ -2309,7 +2323,8 @@
       localStorage.setItem('nemesis_pace_history', JSON.stringify(state.paceHistory || {}));
       localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
       localStorage.setItem('nemesis_last_date', state.lastActiveDate);
-      localStorage.setItem('nemesis_last_checkin_date', state.lastCheckinDate);
+      localStorage.setItem('nemesis_last_checkin_date', state.lastCheckinDate || '');
+      localStorage.setItem('nemesis_last_checkin_time', (state.lastCheckinTime || 0).toString());
       localStorage.setItem('nemesis_dailies_view', state.dailiesView);
       localStorage.setItem('nemesis_shape_positions', JSON.stringify(state.shapePositions || {}));
     }
@@ -2328,9 +2343,20 @@
       const todayStr = now.toISOString().split('T')[0];
       const hour = now.getHours();
 
+      // If already checked in today (manual or automatic), do NOT check in again today
+      if (state.lastCheckinDate === todayStr) {
+        return;
+      }
+
+      // If user checked in less than 16 hours ago, prevent redundant auto check-in
+      if (state.lastCheckinTime && (Date.now() - state.lastCheckinTime < 16 * 60 * 60 * 1000)) {
+        return;
+      }
+
       // Automatically check in at 8:00 AM or later every day if not checked in yet today
-      if (hour >= 8 && state.lastCheckinDate !== todayStr) {
+      if (hour >= 8) {
         state.lastCheckinDate = todayStr;
+        state.lastCheckinTime = Date.now();
         state.lastActiveDate = todayStr;
         saveState();
         performReset(false);
@@ -3375,6 +3401,7 @@
       let donePts = 0;
       const todayStr = new Date().toISOString().split('T')[0];
       state.lastCheckinDate = todayStr;
+      state.lastCheckinTime = Date.now();
       state.lastActiveDate = todayStr;
 
       state.dailies.forEach(d => {

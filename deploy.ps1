@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: robust shape canvas bounds validation and dynamic layout flow"
+$commitMsg = "feat: full 100dvh mobile height and prevent 8am checkin if already checked in today"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
