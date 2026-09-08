@@ -858,20 +858,6 @@
       box-shadow: inset -4px 0 10px rgba(181, 137, 0, 0.35);
     }
 
-    .bounty-target-pill {
-      font-size: 0.58rem;
-      font-weight: 900;
-      color: #002b36;
-      background: #b58900;
-      padding: 0.08rem 0.35rem;
-      border-radius: 2px;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-      margin-left: auto;
-      flex-shrink: 0;
-      box-shadow: 0 0 6px rgba(181, 137, 0, 0.6);
-    }
-
     .task-card.dopamine-pop {
       animation: dopaminePop 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
       box-shadow: 0 0 20px rgba(42, 161, 152, 0.6), inset 0 0 10px rgba(181, 137, 0, 0.25);
@@ -1160,7 +1146,7 @@
       word-break: break-word;
     }
 
-    /* Pure 10-Cell Matrix Row */
+    /* Pure Matrix Row */
     .matrix-row-card {
       padding: 0 0.45rem;
       justify-content: center;
@@ -1168,41 +1154,40 @@
 
     .ten-cells-grid {
       display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 2.5px;
       width: 100%;
-      height: 22px;
       align-items: center;
     }
 
     .history-cell {
-      height: 20px;
-      border-radius: 3px;
-      display: grid;
-      place-items: center;
-      font-size: 0.62rem;
-      font-weight: 800;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      transition: transform 0.1s ease;
+      height: 10px;
+      border-radius: 2px;
+      background: rgba(14, 83, 101, 0.4);
+      border: 1px solid rgba(14, 83, 101, 0.6);
+      transition: transform 0.1s ease, filter 0.1s ease;
+      cursor: default;
+    }
+
+    .history-cell:hover {
+      transform: scale(1.3);
+      z-index: 2;
+      filter: brightness(1.25);
     }
 
     .history-cell.done {
       background: var(--color-green);
       border-color: var(--color-green);
-      color: #fdf6e3;
     }
 
     .history-cell.missed {
-      background: #fdf0ee;
+      background: var(--color-red);
       border-color: var(--color-red);
-      color: var(--color-red);
     }
 
     .history-cell.empty {
-      background: var(--card-subtle);
-      color: var(--text-dim);
+      background: rgba(14, 83, 101, 0.35);
+      border-color: rgba(14, 83, 101, 0.5);
     }
 
     .empty-state {
@@ -1438,6 +1423,228 @@
       justify-content: space-between;
       align-items: center;
       margin-top: 0.2rem;
+    }
+
+    /* Floating Tiers Board (No background square, compact & solid) */
+    .tiers-floating-modal {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 96vw;
+      max-height: 90vh;
+      width: fit-content;
+      margin: auto;
+    }
+
+    .tiers-floating-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.1rem 0.2rem;
+    }
+
+    .tiers-board-container {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 80vh;
+      padding: 0.2rem;
+    }
+
+    .tiers-board {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      min-width: min-content;
+    }
+
+    .tier-column {
+      width: 105px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-self: flex-start;
+    }
+
+    .tier-column-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.1rem 0.15rem;
+      margin-bottom: 2px;
+    }
+
+    .tier-col-title {
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      user-select: none;
+    }
+
+    .tier-col-title.active {
+      color: var(--color-green);
+    }
+
+    .tier-col-streak-wrap {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .tier-streak-input {
+      width: 30px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--color-yellow);
+      border-radius: 2px;
+      padding: 0.1rem 0.15rem;
+      font-family: inherit;
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .tier-streak-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+
+    .tier-col-del-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 0 1px;
+      line-height: 1;
+    }
+
+    .tier-col-del-btn:hover {
+      color: var(--color-red);
+    }
+
+    .tier-daily-box {
+      border-radius: 2px;
+      padding: 0.22rem 0.35rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.2rem;
+      height: 22px;
+      box-sizing: border-box;
+      cursor: text;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    .tier-daily-box:hover {
+      transform: scale(1.02);
+      filter: brightness(1.1);
+    }
+
+    .tier-daily-box-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #002b36;
+      font-family: inherit;
+      font-size: 0.62rem;
+      font-weight: 800;
+      width: 100%;
+      cursor: text;
+      padding: 0;
+    }
+
+    .tier-daily-box-remove {
+      background: transparent;
+      border: none;
+      color: rgba(0, 43, 54, 0.6);
+      font-size: 0.75rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tier-daily-box-remove:hover {
+      color: #002b36;
+      font-weight: 900;
+    }
+
+    .tier-column-add-btn {
+      background: rgba(14, 83, 101, 0.3);
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      border-radius: 2px;
+      padding: 0.15rem;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+      transition: all 0.15s ease;
+      line-height: 1;
+    }
+
+    .tier-column-add-btn:hover {
+      border-color: var(--color-cyan);
+      color: var(--color-cyan);
+      background: rgba(42, 161, 152, 0.15);
+    }
+
+    .add-tier-board-btn {
+      width: 32px;
+      height: 48px;
+      flex-shrink: 0;
+      background: rgba(14, 83, 101, 0.2);
+      border: 1px dashed var(--border);
+      color: var(--text-muted);
+      border-radius: 2px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+      margin-top: 1.4rem;
+      transition: all 0.15s ease;
+    }
+
+    .add-tier-board-btn:hover {
+      border-color: var(--color-cyan);
+      color: var(--color-cyan);
+      background: rgba(42, 161, 152, 0.15);
+    }
+
+    .tierup-banner {
+      position: fixed;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--color-yellow);
+      color: #002b36;
+      font-weight: 800;
+      font-size: 0.72rem;
+      padding: 0.45rem 1rem;
+      border-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+      z-index: 3000;
+      letter-spacing: 0.05em;
+      animation: tierupSlideDown 0.35s ease forwards;
+    }
+
+    @keyframes tierupSlideDown {
+      from { opacity: 0; transform: translate(-50%, -12px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
     }
 
     /* Discipline Drawer - Minimal Solarized Dark */
@@ -1935,6 +2142,7 @@
       </div>
       <div class="top-actions">
         <button type="button" class="action-pill-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
+        <button type="button" class="action-pill-btn" id="tiersConfigBtn" title="Configure Dailies Tiers & Sets">TIERS</button>
         <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
         <button type="button" class="action-pill-btn" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline" style="color: var(--color-red); border-color: rgba(220,50,47,0.4);">DEBUG</button>
         <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
@@ -2015,18 +2223,18 @@
       <ul class="task-list" id="todosList"></ul>
     </div>
 
-    <!-- 10-Cell Daily History Matrix (Hidden by default, shown when middle bar is dragged right) -->
+    <!-- 20-Cell Daily History Matrix (Hidden by default, shown when middle bar is dragged right) -->
     <div class="column" id="historyColumn" style="display: none;">
       <div class="column-header">
         <div class="column-title">
-          <span>10-CHECKIN HISTORY</span>
+          <span>CHECKIN HISTORY</span>
         </div>
         <button class="icon-btn" id="closeHistoryBtn" style="padding: 0.1rem 0.35rem; font-size: 0.6rem;">⯇
           TODOS</button>
       </div>
       <div class="matrix-input-spacer">
-        <div class="ten-cells-grid" style="opacity: 0.7; font-size: 0.55rem; text-align: center;">
-          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+        <div class="ten-cells-grid" style="opacity: 0.65; font-size: 0.48rem; text-align: center; font-weight: 700;">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
         </div>
       </div>
       <ul class="history-matrix-list" id="historyMatrixList"></ul>
@@ -2160,6 +2368,23 @@
       <div class="modal-footer">
         <button class="modal-delete-btn" id="modalDeleteBtn">DELETE</button>
         <button class="modal-save-btn" id="modalSaveBtn">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiers Configuration Modal -->
+  <div class="modal-overlay" id="tiersModal" style="background: rgba(0, 20, 26, 0.85); backdrop-filter: blur(4px);">
+    <div class="tiers-floating-modal" id="tiersFloatingModal">
+      <div class="tiers-floating-header">
+        <span style="font-weight: 800; font-size: 0.72rem; letter-spacing: 0.08em; color: var(--color-yellow);">TIERS</span>
+        <div style="display: flex; gap: 0.35rem; align-items: center;">
+          <button type="button" class="action-pill-btn" id="tiersCancelBtn" style="font-size: 0.58rem; padding: 0.1rem 0.4rem;">CLOSE</button>
+          <button type="button" class="action-pill-btn" id="tiersSaveBtn" style="font-size: 0.58rem; padding: 0.1rem 0.4rem; background: var(--color-green); color: #002b36; border-color: var(--color-green); font-weight: 800;">SAVE</button>
+        </div>
+      </div>
+
+      <div class="tiers-board-container">
+        <div class="tiers-board" id="tiersBoard"></div>
       </div>
     </div>
   </div>
@@ -2517,6 +2742,8 @@
       score: parseInt(localStorage.getItem('nemesis_big_score') || '0', 10),
       dailies: JSON.parse(localStorage.getItem('nemesis_dailies') || '[]'),
       todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
+      tierConfig: JSON.parse(localStorage.getItem('nemesis_tier_config') || 'null'),
+      currentTierIndex: parseInt(localStorage.getItem('nemesis_current_tier_index') || '0', 10),
       history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
       paceHistory: JSON.parse(localStorage.getItem('nemesis_pace_history') || '{}'),
       lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
@@ -2565,6 +2792,8 @@
       localStorage.setItem('nemesis_big_score', state.score.toString());
       localStorage.setItem('nemesis_dailies', JSON.stringify(state.dailies));
       localStorage.setItem('nemesis_todos', JSON.stringify(state.todos));
+      localStorage.setItem('nemesis_tier_config', JSON.stringify(state.tierConfig || []));
+      localStorage.setItem('nemesis_current_tier_index', (state.currentTierIndex || 0).toString());
       localStorage.setItem('nemesis_history', JSON.stringify(state.history));
       localStorage.setItem('nemesis_pace_history', JSON.stringify(state.paceHistory || {}));
       localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
@@ -3062,6 +3291,7 @@
       const bountyTag = getActiveBountyMatch(item, type);
       if (bountyTag && !item.completed) {
         card.classList.add('bounty-targeted');
+        card.title = `Challenge: ${bountyTag}`;
       }
 
       // Drag and drop task reordering
@@ -3172,14 +3402,6 @@
         mainRow.appendChild(dl);
       }
 
-      // Bounty target pill
-      if (bountyTag && !item.completed) {
-        const pill = document.createElement('span');
-        pill.className = 'bounty-target-pill';
-        pill.textContent = `★ ${bountyTag}`;
-        mainRow.appendChild(pill);
-      }
-
       card.appendChild(mainRow);
 
       // Subtasks tree
@@ -3239,10 +3461,10 @@
         const grid = document.createElement('div');
         grid.className = 'ten-cells-grid';
 
-        // Retrieve last 10 entries of daily history
+        // Retrieve last 20 entries of daily history
         const hist = d.history || [];
         const cellsData = [];
-        for (let j = 9; j >= 0; j--) {
+        for (let j = 19; j >= 0; j--) {
           const entry = hist[hist.length - 1 - j];
           cellsData.push(entry || null);
         }
@@ -3251,15 +3473,12 @@
           const cell = document.createElement('div');
           if (entry === null) {
             cell.className = 'history-cell empty';
-            cell.textContent = '•';
-            cell.title = `${d.text} - Check-In #${idx + 1}: No data`;
+            cell.title = `${d.text} - #${idx + 1}: No data`;
           } else if (entry.completed) {
             cell.className = 'history-cell done';
-            cell.textContent = '✓';
             cell.title = `${d.text} - ${entry.date}: Done`;
           } else {
             cell.className = 'history-cell missed';
-            cell.textContent = '✕';
             cell.title = `${d.text} - ${entry.date}: Missed`;
           }
           grid.appendChild(cell);
@@ -3532,6 +3751,7 @@
         state.dailies.forEach(d => dList.appendChild(renderItem(d, 'dailies')));
       }
       document.getElementById('dailiesCount').textContent = `${dDonePts}/${dTotalPts} PTS`;
+      updateTiersUI();
       applyDailiesView();
 
       // Todos List
@@ -3764,6 +3984,9 @@
         if (d.subtasks) d.subtasks.forEach(s => s.completed = false);
       });
 
+      // Check Tier Progression (Set evolution when all streaks meet target)
+      checkTierProgression();
+
       const allStreaksAbove3 = state.dailies.length > 0 && state.dailies.every(d => (d.streak || 0) >= 3);
 
       state.lastCheckinStats = {
@@ -3790,6 +4013,321 @@
 
       saveState();
       render();
+    }
+
+    // --- TIER CONFIGURATION & SET EVOLUTION SYSTEM ---
+    function initTierConfig() {
+      if (!state.tierConfig || !Array.isArray(state.tierConfig) || state.tierConfig.length === 0) {
+        const defaultTasks = (state.dailies && state.dailies.length > 0)
+          ? state.dailies.map(d => d.text)
+          : ['Morning Routine', 'Deep Work Block', 'Physical Training'];
+        state.tierConfig = [
+          { name: 'Tier 1: Foundations', streak: 3, dailies: [...defaultTasks] },
+          { name: 'Tier 2: Progression', streak: 7, dailies: [...defaultTasks] }
+        ];
+        state.currentTierIndex = 0;
+        localStorage.setItem('nemesis_tier_config', JSON.stringify(state.tierConfig));
+        localStorage.setItem('nemesis_current_tier_index', '0');
+      }
+      if (typeof state.currentTierIndex !== 'number' || state.currentTierIndex >= state.tierConfig.length || state.currentTierIndex < 0) {
+        state.currentTierIndex = 0;
+      }
+    }
+
+    function updateTiersUI() {
+      initTierConfig();
+    }
+
+    function applyTierDailies(taskLines) {
+      if (!Array.isArray(taskLines)) return;
+      const cleanLines = taskLines.map(l => l.trim()).filter(l => l.length > 0);
+      if (cleanLines.length === 0) return;
+
+      const newDailies = [];
+      cleanLines.forEach((text, i) => {
+        if (state.dailies && state.dailies[i]) {
+          const d = state.dailies[i];
+          d.text = text;
+          d.completed = false;
+          if (d.subtasks) d.subtasks.forEach(s => s.completed = false);
+          newDailies.push(d);
+        } else {
+          newDailies.push({
+            id: 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            text: text,
+            completed: false,
+            difficulty: 'easy',
+            deadline: '',
+            color: SOLAR_COLORS[i % SOLAR_COLORS.length].hex,
+            subtasks: [],
+            streak: 0,
+            history: [],
+            days: [1, 2, 3, 4, 5, 6, 0]
+          });
+        }
+      });
+      state.dailies = newDailies;
+    }
+
+    function checkTierProgression() {
+      initTierConfig();
+      if (!state.tierConfig || state.tierConfig.length === 0) return;
+      const curTier = state.tierConfig[state.currentTierIndex || 0];
+      if (!curTier) return;
+
+      const reqStreak = curTier.streak || 3;
+      const allDailiesMet = state.dailies.length > 0 && state.dailies.every(d => (d.streak || 0) >= reqStreak);
+
+      if (allDailiesMet && (state.currentTierIndex + 1 < state.tierConfig.length)) {
+        state.currentTierIndex++;
+        const nextTier = state.tierConfig[state.currentTierIndex];
+        applyTierDailies(nextTier.dailies || []);
+        playSound('tierup');
+        showTierUpNotification(`TIER UP: Tier ${state.currentTierIndex + 1}`);
+        saveState();
+        return;
+      }
+
+      // Rank down when tierstreak / 2 * -1 is reached
+      const rankDownThreshold = -Math.max(1, Math.round(reqStreak / 2));
+      const allDailiesDown = state.dailies.length > 0 && state.dailies.every(d => (d.streak || 0) <= rankDownThreshold);
+
+      if (allDailiesDown && state.currentTierIndex > 0) {
+        state.currentTierIndex--;
+        const prevTier = state.tierConfig[state.currentTierIndex];
+        applyTierDailies(prevTier.dailies || []);
+        state.dailies.forEach(d => {
+          d.streak = 0;
+          d.completed = false;
+        });
+        playSound('uncheck');
+        showTierUpNotification(`TIER DEMOTED: Tier ${state.currentTierIndex + 1}`);
+        saveState();
+      }
+    }
+
+    function showTierUpNotification(text) {
+      const banner = document.createElement('div');
+      banner.className = 'tierup-banner';
+      banner.textContent = `★ ${text} ★`;
+      document.body.appendChild(banner);
+      setTimeout(() => {
+        banner.style.transition = 'opacity 0.4s ease';
+        banner.style.opacity = '0';
+        setTimeout(() => banner.remove(), 400);
+      }, 3500);
+    }
+
+    let tempTierConfig = [];
+
+    function openTiersModal() {
+      initTierConfig();
+      tempTierConfig = JSON.parse(JSON.stringify(state.tierConfig || []));
+      renderTiersBoard();
+      document.getElementById('tiersModal').classList.add('active');
+    }
+
+    function closeTiersModal() {
+      document.getElementById('tiersModal').classList.remove('active');
+    }
+
+    function renderTiersBoard() {
+      const board = document.getElementById('tiersBoard');
+      if (!board) return;
+      board.innerHTML = '';
+
+      tempTierConfig.forEach((tier, idx) => {
+        const col = document.createElement('div');
+        col.className = 'tier-column';
+
+        // Header: Tier Number & Streak
+        const top = document.createElement('div');
+        top.className = 'tier-column-top';
+
+        const title = document.createElement('div');
+        title.className = `tier-col-title ${idx === state.currentTierIndex ? 'active' : ''}`;
+        title.innerHTML = `<span>${idx + 1}</span>${idx === state.currentTierIndex ? '<span style="font-size: 0.5rem; background: var(--color-green); color: #002b36; padding: 0.08rem 0.22rem; border-radius: 2px;">ON</span>' : ''}`;
+        title.title = idx === state.currentTierIndex ? 'Active Tier' : 'Click to make this the active tier';
+        title.onclick = () => {
+          syncTempTiersFromDOM();
+          state.currentTierIndex = idx;
+          renderTiersBoard();
+        };
+
+        const streakWrap = document.createElement('div');
+        streakWrap.className = 'tier-col-streak-wrap';
+
+        const streakInput = document.createElement('input');
+        streakInput.type = 'number';
+        streakInput.min = '1';
+        streakInput.className = 'tier-streak-input';
+        streakInput.value = tier.streak || 3;
+        streakInput.title = `Streak target required to advance from Tier ${idx + 1}`;
+        streakWrap.appendChild(streakInput);
+
+        const flame = document.createElement('span');
+        flame.style.fontSize = '0.65rem';
+        flame.textContent = '🔥';
+        streakWrap.appendChild(flame);
+
+        if (tempTierConfig.length > 1) {
+          const delColBtn = document.createElement('button');
+          delColBtn.type = 'button';
+          delColBtn.className = 'tier-col-del-btn';
+          delColBtn.innerHTML = '&times;';
+          delColBtn.title = `Delete Tier ${idx + 1}`;
+          delColBtn.onclick = (e) => {
+            e.stopPropagation();
+            syncTempTiersFromDOM();
+            tempTierConfig.splice(idx, 1);
+            if (state.currentTierIndex >= tempTierConfig.length) {
+              state.currentTierIndex = tempTierConfig.length - 1;
+            }
+            renderTiersBoard();
+          };
+          streakWrap.appendChild(delColBtn);
+        }
+
+        top.appendChild(title);
+        top.appendChild(streakWrap);
+        col.appendChild(top);
+
+        // Daily floating boxes (vertical)
+        const dailiesList = tier.dailies || [];
+        dailiesList.forEach((dailyText, dIdx) => {
+          const box = document.createElement('div');
+          box.className = 'tier-daily-box';
+          const solidColor = SOLAR_COLORS[dIdx % SOLAR_COLORS.length].hex;
+          box.style.background = solidColor;
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'tier-daily-box-input';
+          input.value = dailyText;
+          input.placeholder = `Daily ${dIdx + 1}`;
+
+          // Single click focuses input to edit name
+          box.onclick = () => input.focus();
+
+          // Double click prompts to edit / remove
+          box.ondblclick = (e) => {
+            e.stopPropagation();
+            const action = prompt(`Daily: "${input.value}"\nNew name (or empty to delete):`, input.value);
+            if (action === null) return;
+            syncTempTiersFromDOM();
+            if (action.trim() === '') {
+              tier.dailies.splice(dIdx, 1);
+            } else {
+              tier.dailies[dIdx] = action.trim();
+            }
+            renderTiersBoard();
+          };
+
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'tier-daily-box-remove';
+          removeBtn.innerHTML = '&times;';
+          removeBtn.title = 'Remove daily';
+          removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            syncTempTiersFromDOM();
+            tier.dailies.splice(dIdx, 1);
+            renderTiersBoard();
+          };
+
+          box.appendChild(input);
+          box.appendChild(removeBtn);
+          col.appendChild(box);
+        });
+
+        // Bottom '+' button for this column
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'tier-column-add-btn';
+        addBtn.textContent = '+';
+        addBtn.title = `Add a daily to Tier ${idx + 1}`;
+        addBtn.onclick = () => {
+          syncTempTiersFromDOM();
+          if (!tier.dailies) tier.dailies = [];
+          tier.dailies.push('New Daily');
+          renderTiersBoard();
+          setTimeout(() => {
+            const allInputs = col.querySelectorAll('.tier-daily-box-input');
+            if (allInputs.length > 0) {
+              const last = allInputs[allInputs.length - 1];
+              last.focus();
+              last.select();
+            }
+          }, 50);
+        };
+        col.appendChild(addBtn);
+
+        board.appendChild(col);
+      });
+
+      // '+' button to add another Tier column on the right
+      const addTierBtn = document.createElement('button');
+      addTierBtn.type = 'button';
+      addTierBtn.className = 'add-tier-board-btn';
+      addTierBtn.innerHTML = '+<span>TIER</span>';
+      addTierBtn.title = 'Add new tier column';
+      addTierBtn.onclick = addTierRow;
+      board.appendChild(addTierBtn);
+    }
+
+    function syncTempTiersFromDOM() {
+      const cols = document.querySelectorAll('#tiersBoard .tier-column');
+      cols.forEach((col, i) => {
+        if (!tempTierConfig[i]) return;
+        const streakInp = col.querySelector('.tier-streak-input');
+        if (streakInp) tempTierConfig[i].streak = Math.max(1, parseInt(streakInp.value, 10) || 3);
+        const dailyInps = col.querySelectorAll('.tier-daily-box-input');
+        const names = [];
+        dailyInps.forEach(inp => {
+          const v = inp.value.trim();
+          if (v) names.push(v);
+        });
+        tempTierConfig[i].dailies = names;
+      });
+    }
+
+    function addTierRow() {
+      syncTempTiersFromDOM();
+      const lastTier = tempTierConfig[tempTierConfig.length - 1];
+      const prevDailies = lastTier && lastTier.dailies && lastTier.dailies.length > 0
+        ? [...lastTier.dailies]
+        : (state.dailies && state.dailies.length > 0 ? state.dailies.map(d => d.text) : ['New Daily']);
+      const prevStreak = lastTier ? (lastTier.streak || 3) : 3;
+
+      tempTierConfig.push({
+        name: `Tier ${tempTierConfig.length + 1}`,
+        streak: prevStreak + 4,
+        dailies: prevDailies
+      });
+      renderTiersBoard();
+    }
+
+    function saveTiersConfig() {
+      syncTempTiersFromDOM();
+      tempTierConfig.forEach((t, i) => {
+        if (!t.name) t.name = `Tier ${i + 1}`;
+        if (!t.dailies || t.dailies.length === 0) t.dailies = ['Daily Task'];
+      });
+
+      state.tierConfig = tempTierConfig;
+      if (state.currentTierIndex >= state.tierConfig.length) {
+        state.currentTierIndex = state.tierConfig.length - 1;
+      }
+
+      const activeTier = state.tierConfig[state.currentTierIndex];
+      if (activeTier) {
+        applyTierDailies(activeTier.dailies || []);
+      }
+
+      saveState();
+      updateTiersUI();
+      render();
+      closeTiersModal();
     }
 
     function renderHeatmap() {
@@ -4400,6 +4938,8 @@
             state.score = imported.score || 0;
             state.dailies = imported.dailies || [];
             state.todos = imported.todos || [];
+            if (imported.tierConfig) state.tierConfig = imported.tierConfig;
+            if (typeof imported.currentTierIndex === 'number') state.currentTierIndex = imported.currentTierIndex;
             state.history = imported.history || {};
             state.lastActiveDate = imported.lastActiveDate || '';
             saveState();
@@ -4520,8 +5060,30 @@
           if (sOverlay && sOverlay.style.display !== 'none') {
             closeTopSpotlight();
           }
+          const tModal = document.getElementById('tiersModal');
+          if (tModal && tModal.classList.contains('active')) {
+            closeTiersModal();
+          }
         }
       });
+
+      // Tiers Configuration Modal
+      const tiersBtn = document.getElementById('tiersConfigBtn');
+      if (tiersBtn) tiersBtn.onclick = openTiersModal;
+      const tiersClose = document.getElementById('tiersModalCloseBtn');
+      if (tiersClose) tiersClose.onclick = closeTiersModal;
+      const tiersCancel = document.getElementById('tiersCancelBtn');
+      if (tiersCancel) tiersCancel.onclick = closeTiersModal;
+      const tiersSave = document.getElementById('tiersSaveBtn');
+      if (tiersSave) tiersSave.onclick = saveTiersConfig;
+      const addTierBtn = document.getElementById('addTierRowBtn');
+      if (addTierBtn) addTierBtn.onclick = addTierRow;
+      const tiersModal = document.getElementById('tiersModal');
+      if (tiersModal) {
+        tiersModal.onclick = (e) => {
+          if (e.target === tiersModal) closeTiersModal();
+        };
+      }
 
       // Check In Button
       document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
