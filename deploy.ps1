@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: full 100dvh mobile height and prevent 8am checkin if already checked in today"
+$commitMsg = "feat: top spotlight popup input with auto-growing height, subtasks, and low friction add"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"

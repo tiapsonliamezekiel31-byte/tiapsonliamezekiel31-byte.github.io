@@ -524,27 +524,236 @@
       background: var(--color-blue);
     }
 
-    .expand-input-btn {
-      background: var(--card-subtle);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 700;
-      width: 30px;
-      height: 30px;
+    /* Top Spotlight Popup Text Field */
+    .top-spotlight-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 43, 54, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 16px;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+      animation: fadeInSpotlight 0.12s ease-out;
+    }
+
+    @keyframes fadeInSpotlight {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .top-spotlight-card {
+      width: min(740px, 100%);
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-focus);
+      border-radius: 8px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(38, 139, 210, 0.3);
+      padding: 0.65rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .top-spotlight-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .top-spotlight-type-badge {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      padding: 0.2rem 0.55rem;
       border-radius: 4px;
+      background: var(--card-subtle);
+      color: var(--color-cyan);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .top-spotlight-chips {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .spotlight-diff-group,
+    .spotlight-days-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .spotlight-chip-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 0.2rem 0.45rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      transition: all 0.12s ease;
+    }
+
+    .spotlight-chip-btn:hover {
+      border-color: var(--border-focus);
+      color: var(--text);
+    }
+
+    .spotlight-chip-btn.selected {
+      background: var(--color-blue);
+      color: #002b36;
+      border-color: var(--color-blue);
+    }
+
+    .spotlight-day-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 3px;
+      width: 22px;
+      height: 22px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.12s ease;
+    }
+
+    .spotlight-day-btn.selected {
+      background: var(--color-cyan);
+      color: #002b36;
+      border-color: var(--color-cyan);
+    }
+
+    .top-spotlight-close {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+    }
+
+    .top-spotlight-close:hover {
+      color: var(--color-red);
+      background: var(--card-subtle);
+    }
+
+    .top-spotlight-input-wrap {
+      display: flex;
+      gap: 0.35rem;
+      align-items: flex-start;
+    }
+
+    .top-spotlight-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-family: inherit;
+      outline: none;
+      line-height: 1.4;
+      resize: none;
+      min-height: 44px;
+      overflow-y: hidden;
+      transition: border-color 0.15s ease;
+    }
+
+    .top-spotlight-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .top-spotlight-submit {
+      background: var(--color-blue);
+      color: #002b36;
+      border: none;
+      border-radius: 6px;
+      width: 44px;
+      height: 44px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: inherit;
       cursor: pointer;
       display: grid;
       place-items: center;
       flex-shrink: 0;
-      transition: all 0.15s ease;
+      transition: opacity 0.15s ease, transform 0.05s ease;
     }
 
-    .expand-input-btn:hover {
-      background: #fdfaf0;
-      color: var(--text);
-      border-color: var(--border-focus);
+    .top-spotlight-submit:hover {
+      opacity: 0.9;
+    }
+
+    .top-spotlight-submit:active {
+      transform: scale(0.96);
+    }
+
+    .top-spotlight-preview {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      min-height: 22px;
+      font-size: 0.65rem;
+    }
+
+    .spotlight-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 3px;
+      background: var(--card-subtle);
+      border: 1px solid var(--border);
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    .top-spotlight-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+      padding-top: 0.35rem;
+    }
+
+    .top-spotlight-hint code {
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 0.05rem 0.25rem;
+      border-radius: 2px;
     }
 
     /* Task lists and History Matrix lists - identical container metrics */
@@ -1775,8 +1984,6 @@
       <div class="input-row">
         <textarea id="dailyInput" class="compact-textarea" placeholder="+ habit (p1, in 2h, #work)..." rows="1"
           autocomplete="off"></textarea>
-        <button type="button" class="expand-input-btn" id="openAddDailyModalBtn"
-          title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addDailyBtn" title="Add Daily Task">+</button>
       </div>
       <div class="input-preview-bar" id="dailyInputPreview"></div>
@@ -1802,8 +2009,6 @@
       <div class="input-row">
         <textarea id="todoInput" class="compact-textarea" placeholder="+ todo (p1, tomorrow 5pm, #proj)..." rows="1"
           autocomplete="off"></textarea>
-        <button type="button" class="expand-input-btn" id="openAddTodoModalBtn"
-          title="Open large modal to write more text">⛶</button>
         <button type="button" class="plus-add-btn" id="addTodoBtn" title="Add To-Do Task">+</button>
       </div>
       <div class="input-preview-bar" id="todoInputPreview"></div>
@@ -1825,6 +2030,47 @@
         </div>
       </div>
       <ul class="history-matrix-list" id="historyMatrixList"></ul>
+    </div>
+  </div>
+
+  <!-- Top Popup Text Field (Spotlight Quick Add) -->
+  <div class="top-spotlight-overlay" id="topSpotlightOverlay" style="display: none;">
+    <div class="top-spotlight-card" id="topSpotlightCard">
+      <div class="top-spotlight-header">
+        <span class="top-spotlight-type-badge" id="topSpotlightTypeBadge">NEW DAILY</span>
+        <div class="top-spotlight-chips" id="topSpotlightChips">
+          <div class="spotlight-diff-group">
+            <button type="button" class="spotlight-chip-btn selected" data-diff="easy" title="1 pt - Easy">● 1</button>
+            <button type="button" class="spotlight-chip-btn" data-diff="medium" title="2 pts - Medium">▲ 2</button>
+            <button type="button" class="spotlight-chip-btn" data-diff="hard" title="5 pts - Hard">■ 5</button>
+            <button type="button" class="spotlight-chip-btn" data-diff="mega" title="7 pts - Mega">⬟ 7</button>
+            <button type="button" class="spotlight-chip-btn" data-diff="ultra" title="10 pts - Ultra">★ 10</button>
+          </div>
+          <div class="spotlight-days-group" id="spotlightDaysGroup" style="display: none;">
+            <button type="button" class="spotlight-day-btn selected" data-day="1" title="Monday">M</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="2" title="Tuesday">T</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="3" title="Wednesday">W</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="4" title="Thursday">T</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="5" title="Friday">F</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="6" title="Saturday">S</button>
+            <button type="button" class="spotlight-day-btn selected" data-day="0" title="Sunday">S</button>
+          </div>
+        </div>
+        <button type="button" class="top-spotlight-close" id="topSpotlightCloseBtn" title="Close (Esc)">&times;</button>
+      </div>
+
+      <div class="top-spotlight-input-wrap">
+        <textarea id="topSpotlightInput" class="top-spotlight-input" rows="1" placeholder="+ task or habit..."></textarea>
+        <button type="button" class="top-spotlight-submit" id="topSpotlightSubmitBtn" title="Add Task (Ctrl+Enter)">↵</button>
+      </div>
+
+      <div class="top-spotlight-preview" id="topSpotlightPreview"></div>
+      <div class="top-spotlight-hint">
+        <span><b>Ctrl+Enter</b> or <b>↵</b> add task</span>
+        <span><b>Enter</b> new line / subtasks (<code>- step</code>)</span>
+        <span><b>Esc</b> dismiss</span>
+        <span>Supports <code>p1-p5</code>, <code>*hard</code>, <code>in 2h</code>, <code>tomorrow</code></span>
+      </div>
     </div>
   </div>
 
@@ -2553,8 +2799,14 @@
 
       rawLines.forEach(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
-          const subText = trimmed.replace(/^[-•]\s*/, '').trim();
+        if (!trimmed) return;
+
+        const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('[ ]') || trimmed.startsWith('[]');
+        const isNumbered = /^\d+[\.\)]\s+/.test(trimmed);
+        const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(trimmed);
+
+        if (isBullet || isNumbered || isStarSubtask) {
+          const subText = trimmed.replace(/^[-•*]|\[\s*\]|^\d+[\.\)]\s*/, '').trim();
           if (subText) {
             subtasks.push({
               id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
@@ -2562,12 +2814,15 @@
               completed: false
             });
           }
-        } else if (trimmed.length > 0) {
+        } else {
           mainLines.push(trimmed);
         }
       });
 
       let fullText = mainLines.join(' ');
+      if (!fullText && subtasks.length > 0) {
+        fullText = 'Task Plan';
+      }
       let difficulty = 'easy';
       let deadline = '';
       let color = SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex;
@@ -3675,85 +3930,155 @@
       }
     }
 
-    function openAddModal(type) {
-      const sourceInput = document.getElementById(type === 'dailies' ? 'dailyInput' : 'todoInput');
-      const initialText = sourceInput ? sourceInput.value.trim() : '';
-      const parsed = initialText ? parseNaturalLanguage(initialText) : null;
+    let spotlightState = {
+      type: 'dailies',
+      difficulty: 'easy',
+      days: [0, 1, 2, 3, 4, 5, 6]
+    };
 
-      activeEditing = {
-        id: null,
-        isNew: true,
-        type: type,
-        color: parsed ? parsed.color : SOLAR_COLORS[0].hex,
-        difficulty: parsed ? parsed.difficulty : 'easy',
-        deadline: parsed ? parsed.deadline : '',
-        subtasks: parsed && parsed.subtasks.length > 0 ? parsed.subtasks.map(st => ({ id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5), text: st, completed: false })) : [],
-        days: [0, 1, 2, 3, 4, 5, 6]
-      };
+    function openTopSpotlight(type, prefillText = '') {
+      spotlightState.type = type;
+      spotlightState.difficulty = 'easy';
+      spotlightState.days = [0, 1, 2, 3, 4, 5, 6];
 
-      const modal = document.getElementById('editModal');
-      document.getElementById('modalHeaderTitle').textContent = type === 'dailies' ? 'NEW DAILY (EXPANDED)' : 'NEW TO-DO (EXPANDED)';
-      const input = document.getElementById('modalTaskInput');
-      input.value = parsed ? parsed.text : initialText;
+      const overlay = document.getElementById('topSpotlightOverlay');
+      const badge = document.getElementById('topSpotlightTypeBadge');
+      const input = document.getElementById('topSpotlightInput');
+      const daysGroup = document.getElementById('spotlightDaysGroup');
 
-      const deadlineInput = document.getElementById('modalDeadlineInput');
-      deadlineInput.value = activeEditing.deadline || '';
+      if (!overlay || !input) return;
 
-      const schedContainer = document.getElementById('modalScheduleContainer');
-      if (type === 'dailies') {
-        schedContainer.style.display = 'flex';
-        document.querySelectorAll('#modalScheduleGrid .day-btn').forEach(btn => {
-          const dayNum = parseInt(btn.dataset.day, 10);
-          btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
-          btn.onclick = () => {
-            if (activeEditing.days.includes(dayNum)) {
-              if (activeEditing.days.length > 1) {
-                activeEditing.days = activeEditing.days.filter(d => d !== dayNum);
-              }
-            } else {
-              activeEditing.days.push(dayNum);
-            }
-            btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
-          };
-        });
-      } else {
-        schedContainer.style.display = 'none';
+      badge.textContent = type === 'dailies' ? 'NEW DAILY' : 'NEW TO-DO';
+      if (daysGroup) {
+        daysGroup.style.display = type === 'dailies' ? 'flex' : 'none';
       }
 
-      renderModalSubtasks();
-
-      document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.classList.toggle('selected', btn.dataset.diff === activeEditing.difficulty);
-        btn.onclick = () => {
-          activeEditing.difficulty = btn.dataset.diff;
-          document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
-          btn.classList.add('selected');
-        };
+      document.querySelectorAll('.spotlight-chip-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.diff === spotlightState.difficulty);
       });
 
-      const grid = document.getElementById('modalColorGrid');
-      if (grid) {
-        grid.innerHTML = '';
-        SOLAR_COLORS.forEach(c => {
-          const opt = document.createElement('div');
-          opt.className = `modal-color-option ${activeEditing.color === c.hex ? 'selected' : ''}`;
-          opt.style.background = c.hex;
-          opt.onclick = () => {
-            activeEditing.color = c.hex;
-            document.querySelectorAll('.modal-color-option').forEach(el => el.classList.remove('selected'));
-            opt.classList.add('selected');
-          };
-          grid.appendChild(opt);
+      document.querySelectorAll('.spotlight-day-btn').forEach(btn => {
+        const dayNum = parseInt(btn.dataset.day, 10);
+        btn.classList.toggle('selected', spotlightState.days.includes(dayNum));
+      });
+
+      overlay.style.display = 'flex';
+      input.value = prefillText;
+      input.placeholder = type === 'dailies'
+        ? '+ habit (e.g. read 20m p2, in 2h, #learning, - step 1)...'
+        : '+ todo (e.g. project report p1, tomorrow 5pm, #work)...';
+
+      autoResizeSpotlightInput();
+      updateSpotlightPreview();
+
+      setTimeout(() => {
+        input.focus();
+        if (input.value) {
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
+      }, 10);
+    }
+
+    function closeTopSpotlight() {
+      const overlay = document.getElementById('topSpotlightOverlay');
+      if (overlay) {
+        overlay.style.display = 'none';
+      }
+      const input = document.getElementById('topSpotlightInput');
+      if (input) input.value = '';
+      const prev = document.getElementById('topSpotlightPreview');
+      if (prev) prev.innerHTML = '';
+    }
+
+    function autoResizeSpotlightInput() {
+      const input = document.getElementById('topSpotlightInput');
+      if (input) {
+        input.style.height = 'auto';
+        input.style.height = Math.max(44, input.scrollHeight) + 'px';
+      }
+    }
+
+    function updateSpotlightPreview() {
+      const input = document.getElementById('topSpotlightInput');
+      const prev = document.getElementById('topSpotlightPreview');
+      if (!input || !prev) return;
+
+      const text = input.value.trim();
+      if (!text) {
+        prev.innerHTML = '';
+        return;
+      }
+
+      const parsed = parseNaturalLanguage(text);
+      const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
+
+      let diffPts = 1;
+      if (effDiff === 'medium') diffPts = 2;
+      else if (effDiff === 'hard') diffPts = 5;
+      else if (effDiff === 'mega') diffPts = 7;
+      else if (effDiff === 'ultra') diffPts = 10;
+
+      document.querySelectorAll('.spotlight-chip-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.diff === effDiff);
+      });
+
+      let html = `<span class="spotlight-pill" style="color: var(--color-blue); border-color: rgba(38,139,210,0.3);"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> ${effDiff.toUpperCase()} (${diffPts} pt${diffPts > 1 ? 's' : ''})</span>`;
+
+      if (parsed.deadline) {
+        html += `<span class="spotlight-pill" style="color: var(--color-green); border-color: rgba(133,153,0,0.3);">⏱ ${parsed.deadline.replace('T', ' ')}</span>`;
+      }
+
+      if (parsed.tags && parsed.tags.length > 0) {
+        parsed.tags.forEach(t => {
+          html += `<span class="spotlight-pill" style="color: var(--color-cyan); border-color: rgba(42,161,152,0.3);">#${t}</span>`;
         });
       }
 
-      const delBtn = document.getElementById('modalDeleteBtn');
-      delBtn.textContent = 'CANCEL';
+      if (parsed.subtasks && parsed.subtasks.length > 0) {
+        html += `<span class="spotlight-pill" style="color: var(--color-orange); border-color: rgba(203,75,22,0.3);">▤ ${parsed.subtasks.length} subtask${parsed.subtasks.length > 1 ? 's' : ''}</span>`;
+      }
 
-      modal.classList.add('active');
-      modal.style.display = 'grid';
-      autoResizeModalInput();
-      input.focus();
+      prev.innerHTML = html;
+    }
+
+    function submitTopSpotlight() {
+      const input = document.getElementById('topSpotlightInput');
+      if (!input) return;
+      const rawText = input.value.trim();
+      if (!rawText) {
+        closeTopSpotlight();
+        return;
+      }
+
+      const parsed = parseNaturalLanguage(rawText);
+      const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
+
+      const newItem = {
+        id: (spotlightState.type === 'dailies' ? 'd_' : 't_') + Date.now(),
+        text: parsed.text,
+        completed: false,
+        difficulty: effDiff,
+        deadline: parsed.deadline || '',
+        color: parsed.color || SOLAR_COLORS[0].hex,
+        subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
+        streak: 0,
+        history: []
+      };
+
+      if (spotlightState.type === 'dailies') {
+        newItem.days = spotlightState.days;
+      }
+
+      state[spotlightState.type].unshift(newItem);
+      saveState();
+      render();
+
+      const dInp = document.getElementById('dailyInput');
+      const tInp = document.getElementById('todoInput');
+      if (dInp) dInp.value = '';
+      if (tInp) tInp.value = '';
+
+      closeTopSpotlight();
     }
 
     function renderModalSubtasks() {
@@ -4096,48 +4421,107 @@
       const shapesToggleBtn = document.getElementById('dailiesViewToggleBtn');
       if (shapesToggleBtn) shapesToggleBtn.onclick = toggleDailiesView;
 
-      // Plus Add Buttons & Expand Add Modal Buttons
-      document.getElementById('addDailyBtn').onclick = () => {
-        addDailyFromInput();
-        const dInp = document.getElementById('dailyInput');
-        const dPrev = document.getElementById('dailyInputPreview');
-        if (dInp && dPrev) updateInputPreview(dInp, dPrev);
-      };
-      document.getElementById('addTodoBtn').onclick = () => {
-        addTodoFromInput();
-        const tInp = document.getElementById('todoInput');
-        const tPrev = document.getElementById('todoInputPreview');
-        if (tInp && tPrev) updateInputPreview(tInp, tPrev);
-      };
-      document.getElementById('openAddDailyModalBtn').onclick = () => openAddModal('dailies');
-      document.getElementById('openAddTodoModalBtn').onclick = () => openAddModal('todos');
+      // Top Spotlight Controls & Chip Bindings
+      document.querySelectorAll('.spotlight-chip-btn').forEach(btn => {
+        btn.onclick = () => {
+          spotlightState.difficulty = btn.dataset.diff;
+          document.querySelectorAll('.spotlight-chip-btn').forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          updateSpotlightPreview();
+          document.getElementById('topSpotlightInput')?.focus();
+        };
+      });
 
-      // Live Input Preview Listeners (Feature 12)
-      const dInp = document.getElementById('dailyInput');
-      const dPrev = document.getElementById('dailyInputPreview');
-      if (dInp && dPrev) {
-        dInp.addEventListener('input', () => updateInputPreview(dInp, dPrev));
-        dInp.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
+      document.querySelectorAll('.spotlight-day-btn').forEach(btn => {
+        const dayNum = parseInt(btn.dataset.day, 10);
+        btn.onclick = () => {
+          if (spotlightState.days.includes(dayNum)) {
+            if (spotlightState.days.length > 1) {
+              spotlightState.days = spotlightState.days.filter(d => d !== dayNum);
+            }
+          } else {
+            spotlightState.days.push(dayNum);
+          }
+          btn.classList.toggle('selected', spotlightState.days.includes(dayNum));
+          document.getElementById('topSpotlightInput')?.focus();
+        };
+      });
+
+      const spotClose = document.getElementById('topSpotlightCloseBtn');
+      if (spotClose) spotClose.onclick = closeTopSpotlight;
+
+      const spotSubmit = document.getElementById('topSpotlightSubmitBtn');
+      if (spotSubmit) spotSubmit.onclick = submitTopSpotlight;
+
+      const spotOverlay = document.getElementById('topSpotlightOverlay');
+      if (spotOverlay) {
+        spotOverlay.onclick = (e) => {
+          if (e.target === spotOverlay) closeTopSpotlight();
+        };
+      }
+
+      const spotInput = document.getElementById('topSpotlightInput');
+      if (spotInput) {
+        spotInput.addEventListener('input', () => {
+          autoResizeSpotlightInput();
+          updateSpotlightPreview();
+        });
+        spotInput.addEventListener('keyup', () => {
+          autoResizeSpotlightInput();
+        });
+        spotInput.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
-            addDailyFromInput();
-            updateInputPreview(dInp, dPrev);
+            submitTopSpotlight();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeTopSpotlight();
           }
         });
+      }
+
+      // Column Inputs -> Instant Top Spotlight Trigger
+      const dInp = document.getElementById('dailyInput');
+      const dBtn = document.getElementById('addDailyBtn');
+      if (dInp) {
+        dInp.addEventListener('focus', () => {
+          openTopSpotlight('dailies', dInp.value);
+        });
+        dInp.addEventListener('click', () => {
+          openTopSpotlight('dailies', dInp.value);
+        });
+      }
+      if (dBtn) {
+        dBtn.onclick = () => {
+          openTopSpotlight('dailies', dInp ? dInp.value : '');
+        };
       }
 
       const tInp = document.getElementById('todoInput');
-      const tPrev = document.getElementById('todoInputPreview');
-      if (tInp && tPrev) {
-        tInp.addEventListener('input', () => updateInputPreview(tInp, tPrev));
-        tInp.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            addTodoFromInput();
-            updateInputPreview(tInp, tPrev);
-          }
+      const tBtn = document.getElementById('addTodoBtn');
+      if (tInp) {
+        tInp.addEventListener('focus', () => {
+          openTopSpotlight('todos', tInp.value);
+        });
+        tInp.addEventListener('click', () => {
+          openTopSpotlight('todos', tInp.value);
         });
       }
+      if (tBtn) {
+        tBtn.onclick = () => {
+          openTopSpotlight('todos', tInp ? tInp.value : '');
+        };
+      }
+
+      // Global Keydown (Esc closes overlay)
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const sOverlay = document.getElementById('topSpotlightOverlay');
+          if (sOverlay && sOverlay.style.display !== 'none') {
+            closeTopSpotlight();
+          }
+        }
+      });
 
       // Check In Button
       document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
