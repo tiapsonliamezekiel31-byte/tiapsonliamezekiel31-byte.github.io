@@ -1449,6 +1449,18 @@
       overflow-y: auto;
       max-height: 80vh;
       padding: 0.2rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .tiers-board-container::-webkit-scrollbar {
+      height: 4px;
+      width: 4px;
+    }
+
+    .tiers-board-container::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
     }
 
     .tiers-board {
@@ -1544,6 +1556,40 @@
     .tier-daily-box:hover {
       transform: scale(1.02);
       filter: brightness(1.1);
+    }
+
+    .tier-daily-box.empty-slot {
+      background: #002b36 !important;
+      border: 1px dashed rgba(147, 161, 161, 0.35);
+      transform: none !important;
+      filter: none !important;
+    }
+
+    .tier-daily-box.empty-slot:hover {
+      border-color: var(--color-cyan);
+      background: #073642 !important;
+    }
+
+    .tier-daily-box.empty-slot .tier-daily-box-input {
+      color: var(--text-dim);
+      font-weight: 600;
+      font-style: italic;
+    }
+
+    .tier-daily-box.empty-slot .tier-daily-box-input:focus {
+      color: var(--text-bright);
+      font-style: normal;
+    }
+
+    .tier-daily-box.empty-slot .tier-daily-box-remove {
+      color: var(--text-dim);
+      opacity: 0.4;
+    }
+
+    .tier-daily-box.empty-slot .tier-daily-box-remove:hover {
+      color: var(--color-red);
+      opacity: 1;
+      font-weight: 900;
     }
 
     .tier-daily-box-input {
@@ -2744,6 +2790,7 @@
       todos: JSON.parse(localStorage.getItem('nemesis_todos') || '[]'),
       tierConfig: JSON.parse(localStorage.getItem('nemesis_tier_config') || 'null'),
       currentTierIndex: parseInt(localStorage.getItem('nemesis_current_tier_index') || '0', 10),
+      tierSlots: JSON.parse(localStorage.getItem('nemesis_tier_slots') || '{}'),
       history: JSON.parse(localStorage.getItem('nemesis_history') || '{}'),
       paceHistory: JSON.parse(localStorage.getItem('nemesis_pace_history') || '{}'),
       lastCheckinStats: JSON.parse(localStorage.getItem('nemesis_checkin_stats') || '{}'),
@@ -2794,6 +2841,7 @@
       localStorage.setItem('nemesis_todos', JSON.stringify(state.todos));
       localStorage.setItem('nemesis_tier_config', JSON.stringify(state.tierConfig || []));
       localStorage.setItem('nemesis_current_tier_index', (state.currentTierIndex || 0).toString());
+      localStorage.setItem('nemesis_tier_slots', JSON.stringify(state.tierSlots || {}));
       localStorage.setItem('nemesis_history', JSON.stringify(state.history));
       localStorage.setItem('nemesis_pace_history', JSON.stringify(state.paceHistory || {}));
       localStorage.setItem('nemesis_checkin_stats', JSON.stringify(state.lastCheckinStats || {}));
@@ -4040,33 +4088,54 @@
 
     function applyTierDailies(taskLines) {
       if (!Array.isArray(taskLines)) return;
-      const cleanLines = taskLines.map(l => l.trim()).filter(l => l.length > 0);
-      if (cleanLines.length === 0) return;
+      if (!state.tierSlots) state.tierSlots = {};
+
+      // Preserve current dailies streaks by slotIndex
+      if (state.dailies && Array.isArray(state.dailies)) {
+        state.dailies.forEach((d, idx) => {
+          const slot = (typeof d.slotIndex === 'number') ? d.slotIndex : idx;
+          state.tierSlots[slot] = {
+            streak: d.streak || 0,
+            history: d.history || [],
+            subtasks: d.subtasks || []
+          };
+        });
+      }
 
       const newDailies = [];
-      cleanLines.forEach((text, i) => {
-        if (state.dailies && state.dailies[i]) {
-          const d = state.dailies[i];
-          d.text = text;
-          d.completed = false;
-          if (d.subtasks) d.subtasks.forEach(s => s.completed = false);
-          newDailies.push(d);
+      taskLines.forEach((rawText, slotIdx) => {
+        const text = (rawText || '').trim();
+        if (!text) return; // skip empty slots for active checklist
+
+        const savedSlot = state.tierSlots[slotIdx];
+        const existingDaily = state.dailies ? state.dailies.find(d => d.slotIndex === slotIdx) : null;
+
+        if (existingDaily) {
+          existingDaily.text = text;
+          existingDaily.slotIndex = slotIdx;
+          existingDaily.completed = false;
+          if (existingDaily.subtasks) existingDaily.subtasks.forEach(s => s.completed = false);
+          newDailies.push(existingDaily);
         } else {
           newDailies.push({
-            id: 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+            id: 'd_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4) + '_' + slotIdx,
             text: text,
+            slotIndex: slotIdx,
             completed: false,
             difficulty: 'easy',
             deadline: '',
-            color: SOLAR_COLORS[i % SOLAR_COLORS.length].hex,
-            subtasks: [],
-            streak: 0,
-            history: [],
+            color: SOLAR_COLORS[slotIdx % SOLAR_COLORS.length].hex,
+            subtasks: savedSlot && savedSlot.subtasks ? savedSlot.subtasks : [],
+            streak: savedSlot ? (savedSlot.streak || 0) : 0,
+            history: savedSlot && savedSlot.history ? savedSlot.history : [],
             days: [1, 2, 3, 4, 5, 6, 0]
           });
         }
       });
-      state.dailies = newDailies;
+
+      if (newDailies.length > 0) {
+        state.dailies = newDailies;
+      }
     }
 
     function checkTierProgression() {
@@ -4195,27 +4264,42 @@
         // Daily floating boxes (vertical)
         const dailiesList = tier.dailies || [];
         dailiesList.forEach((dailyText, dIdx) => {
+          const isEmpty = !dailyText || dailyText.trim() === '';
           const box = document.createElement('div');
-          box.className = 'tier-daily-box';
+          box.className = `tier-daily-box ${isEmpty ? 'empty-slot' : ''}`;
           const solidColor = SOLAR_COLORS[dIdx % SOLAR_COLORS.length].hex;
-          box.style.background = solidColor;
+          if (!isEmpty) {
+            box.style.background = solidColor;
+          }
 
           const input = document.createElement('input');
           input.type = 'text';
           input.className = 'tier-daily-box-input';
-          input.value = dailyText;
-          input.placeholder = `Daily ${dIdx + 1}`;
+          input.value = dailyText || '';
+          input.placeholder = isEmpty ? '[ empty ]' : `Daily ${dIdx + 1}`;
 
           // Single click focuses input to edit name
           box.onclick = () => input.focus();
 
+          input.oninput = () => {
+            const val = input.value.trim();
+            if (val) {
+              box.classList.remove('empty-slot');
+              box.style.background = solidColor;
+            } else {
+              box.classList.add('empty-slot');
+              box.style.background = '';
+            }
+          };
+
           // Double click prompts to edit / remove
           box.ondblclick = (e) => {
             e.stopPropagation();
-            const action = prompt(`Daily: "${input.value}"\nNew name (or empty to delete):`, input.value);
+            const currentVal = input.value.trim();
+            const action = prompt(`Daily ${dIdx + 1}:\nNew name (empty for empty space, or "-" to delete slot completely):`, currentVal);
             if (action === null) return;
             syncTempTiersFromDOM();
-            if (action.trim() === '') {
+            if (action.trim() === '-') {
               tier.dailies.splice(dIdx, 1);
             } else {
               tier.dailies[dIdx] = action.trim();
@@ -4227,11 +4311,17 @@
           removeBtn.type = 'button';
           removeBtn.className = 'tier-daily-box-remove';
           removeBtn.innerHTML = '&times;';
-          removeBtn.title = 'Remove daily';
+          removeBtn.title = isEmpty ? 'Delete slot row' : 'Clear daily (leave empty space)';
           removeBtn.onclick = (e) => {
             e.stopPropagation();
             syncTempTiersFromDOM();
-            tier.dailies.splice(dIdx, 1);
+            if (!tier.dailies[dIdx] || tier.dailies[dIdx].trim() === '') {
+              // Already empty space: remove the row slot completely
+              tier.dailies.splice(dIdx, 1);
+            } else {
+              // First delete leaves an empty space so rows line up!
+              tier.dailies[dIdx] = '';
+            }
             renderTiersBoard();
           };
 
@@ -4284,8 +4374,7 @@
         const dailyInps = col.querySelectorAll('.tier-daily-box-input');
         const names = [];
         dailyInps.forEach(inp => {
-          const v = inp.value.trim();
-          if (v) names.push(v);
+          names.push(inp.value.trim());
         });
         tempTierConfig[i].dailies = names;
       });
@@ -4311,7 +4400,8 @@
       syncTempTiersFromDOM();
       tempTierConfig.forEach((t, i) => {
         if (!t.name) t.name = `Tier ${i + 1}`;
-        if (!t.dailies || t.dailies.length === 0) t.dailies = ['Daily Task'];
+        const hasAny = (t.dailies || []).some(d => d && d.trim().length > 0);
+        if (!hasAny) t.dailies = ['Daily Task'];
       });
 
       state.tierConfig = tempTierConfig;
@@ -4940,6 +5030,7 @@
             state.todos = imported.todos || [];
             if (imported.tierConfig) state.tierConfig = imported.tierConfig;
             if (typeof imported.currentTierIndex === 'number') state.currentTierIndex = imported.currentTierIndex;
+            if (imported.tierSlots) state.tierSlots = imported.tierSlots;
             state.history = imported.history || {};
             state.lastActiveDate = imported.lastActiveDate || '';
             saveState();

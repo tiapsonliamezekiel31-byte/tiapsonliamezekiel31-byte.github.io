@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: top spotlight popup input with auto-growing height, subtasks, and low friction add"
+$commitMsg = "feat: tier daily deletion preserves slot alignment with empty space"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
