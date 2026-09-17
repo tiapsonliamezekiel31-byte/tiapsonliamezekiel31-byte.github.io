@@ -115,25 +115,28 @@
 
     .header-stat-pills {
       display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
     }
 
     .header-stat-pill {
       background: #002b36;
       border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 0 0.4rem;
-      height: 26px;
+      border-radius: 2px;
+      padding: 0.05rem 0.35rem;
+      height: 16px;
       display: inline-flex;
       align-items: center;
-      gap: 0.25rem;
+      justify-content: space-between;
+      gap: 0.35rem;
       cursor: help;
-      font-size: 0.62rem;
+      font-size: 0.54rem;
       font-weight: 800;
       white-space: nowrap;
       user-select: none;
       transition: border-color 0.15s ease;
+      min-width: 80px;
     }
 
     .header-stat-pill:hover {
@@ -142,29 +145,139 @@
     }
 
     .stat-pill-label {
-      font-size: 0.52rem;
+      font-size: 0.48rem;
       color: var(--text-dim);
       letter-spacing: 0.05em;
     }
 
     .stat-pill-val {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.62rem;
+      font-size: 0.54rem;
       font-weight: 800;
       color: var(--text);
     }
 
-    @media (max-width: 600px) {
-      .header-stat-pills {
-        gap: 0.2rem;
-      }
-      .header-stat-pill {
-        padding: 0 0.25rem;
-        gap: 0.15rem;
-      }
-      .stat-pill-label {
-        display: none;
-      }
+    /* Floating Draggable Sticky Notes */
+    #stickyNotesLayer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1500;
+      overflow: hidden;
+    }
+
+    .sticky-note {
+      position: absolute;
+      pointer-events: auto;
+      background: #002b36;
+      border: 1.5px solid #b58900;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), 0 2px 6px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      min-width: 160px;
+      min-height: 120px;
+      overflow: hidden;
+      resize: both;
+      transition: box-shadow 0.15s ease;
+      touch-action: none;
+    }
+
+    .sticky-note.dragging {
+      opacity: 0.95;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.85);
+      cursor: grabbing !important;
+    }
+
+    .sticky-note-header {
+      background: #073642;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.25rem 0.45rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      cursor: grab;
+      user-select: none;
+      touch-action: none;
+    }
+
+    .sticky-note-title {
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .sticky-drag-grip {
+      color: var(--text-dim);
+      font-size: 0.62rem;
+      cursor: grab;
+    }
+
+    .sticky-color-palette {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .sticky-color-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 1px solid rgba(0, 0, 0, 0.4);
+      transition: transform 0.1s ease;
+      flex-shrink: 0;
+    }
+
+    .sticky-color-dot:hover {
+      transform: scale(1.3);
+    }
+
+    .sticky-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 0.15rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 2px;
+      transition: color 0.1s ease, background 0.1s ease;
+    }
+
+    .sticky-close-btn:hover {
+      color: var(--color-red);
+      background: rgba(220, 50, 47, 0.2);
+    }
+
+    .sticky-note-body {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 0.45rem;
+      color: #fdf6e3;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      resize: none;
+      box-sizing: border-box;
+      pointer-events: auto;
+    }
+
+    .sticky-note-body::placeholder {
+      color: var(--text-dim);
+      opacity: 0.55;
     }
 
     .score-container {
@@ -2509,6 +2622,7 @@
         </div>
       </div>
       <div class="top-actions">
+        <button type="button" class="action-pill-btn" id="addStickyNoteBtn" title="Spawn a draggable Sticky Note">📌 +NOTE</button>
         <div class="top-dropdown-container" id="topDropdownContainer">
           <button type="button" class="action-pill-btn" id="topDropdownBtn" title="Tools & Settings">
             <span>⚙ MORE</span>
@@ -6114,6 +6228,12 @@
         });
       }
 
+      // Sticky Note spawn button
+      const addStickyBtn = document.getElementById('addStickyNoteBtn');
+      if (addStickyBtn) {
+        addStickyBtn.onclick = () => spawnStickyNote();
+      }
+
       // Heatmap progress section click
       document.getElementById('progressSection').onclick = () => {
         renderHeatmap();
@@ -6912,6 +7032,193 @@
       }
     }
 
+    // --- STICKY NOTES SYSTEM ---
+    let stickyNotes = [];
+    let topStickyZIndex = 2000;
+
+    function loadStickyNotes() {
+      try {
+        const raw = localStorage.getItem('nemesis_sticky_notes');
+        if (raw) stickyNotes = JSON.parse(raw);
+        else stickyNotes = [];
+      } catch (e) {
+        stickyNotes = [];
+      }
+    }
+
+    function saveStickyNotes() {
+      localStorage.setItem('nemesis_sticky_notes', JSON.stringify(stickyNotes));
+    }
+
+    function spawnStickyNote(x, y, text = '', color = '#b58900') {
+      const id = 'note_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+      topStickyZIndex++;
+      const note = {
+        id: id,
+        x: x || Math.max(15, Math.min(window.innerWidth - 230, 40 + (stickyNotes.length * 20))),
+        y: y || Math.max(70, Math.min(window.innerHeight - 200, 80 + (stickyNotes.length * 20))),
+        width: 220,
+        height: 160,
+        text: text,
+        color: color,
+        zIndex: topStickyZIndex
+      };
+      stickyNotes.push(note);
+      saveStickyNotes();
+      renderStickyNotes();
+    }
+
+    function deleteStickyNote(id) {
+      stickyNotes = stickyNotes.filter(n => n.id !== id);
+      saveStickyNotes();
+      renderStickyNotes();
+    }
+
+    function renderStickyNotes() {
+      const layer = document.getElementById('stickyNotesLayer');
+      if (!layer) return;
+      layer.innerHTML = '';
+
+      stickyNotes.forEach(note => {
+        const el = document.createElement('div');
+        el.className = 'sticky-note';
+        el.id = note.id;
+        el.style.left = `${note.x}px`;
+        el.style.top = `${note.y}px`;
+        el.style.width = `${note.width || 220}px`;
+        el.style.height = `${note.height || 160}px`;
+        el.style.zIndex = note.zIndex || 2000;
+        el.style.borderColor = note.color || '#b58900';
+
+        el.innerHTML = `
+          <div class="sticky-note-header" style="border-bottom-color: ${note.color || '#b58900'}55;">
+            <div class="sticky-note-title">
+              <span class="sticky-drag-grip">⋮⋮</span>
+              <span>NOTE</span>
+            </div>
+            <div class="sticky-color-palette">
+              <span class="sticky-color-dot" data-color="#b58900" style="background: #b58900;" title="Yellow"></span>
+              <span class="sticky-color-dot" data-color="#2aa198" style="background: #2aa198;" title="Cyan"></span>
+              <span class="sticky-color-dot" data-color="#6c71c4" style="background: #6c71c4;" title="Violet"></span>
+              <span class="sticky-color-dot" data-color="#859900" style="background: #859900;" title="Green"></span>
+            </div>
+            <button type="button" class="sticky-close-btn" title="Delete note">&times;</button>
+          </div>
+          <textarea class="sticky-note-body" placeholder="Type note here...">${note.text || ''}</textarea>
+        `;
+
+        // Bring to front
+        el.addEventListener('pointerdown', () => {
+          topStickyZIndex++;
+          note.zIndex = topStickyZIndex;
+          el.style.zIndex = topStickyZIndex;
+          saveStickyNotes();
+        });
+
+        // Color dots
+        el.querySelectorAll('.sticky-color-dot').forEach(dot => {
+          dot.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const col = dot.dataset.color;
+            note.color = col;
+            el.style.borderColor = col;
+            const hdr = el.querySelector('.sticky-note-header');
+            if (hdr) hdr.style.borderBottomColor = col + '55';
+            saveStickyNotes();
+          });
+        });
+
+        // Close button
+        const closeBtn = el.querySelector('.sticky-close-btn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteStickyNote(note.id);
+          });
+        }
+
+        // Text input autosave
+        const textarea = el.querySelector('.sticky-note-body');
+        if (textarea) {
+          textarea.addEventListener('input', () => {
+            note.text = textarea.value;
+            saveStickyNotes();
+          });
+        }
+
+        // Resize persistence
+        if (window.ResizeObserver) {
+          const ro = new ResizeObserver(entries => {
+            for (let entry of entries) {
+              const cr = entry.contentRect;
+              if (cr.width > 50 && cr.height > 50) {
+                note.width = Math.round(entry.target.offsetWidth);
+                note.height = Math.round(entry.target.offsetHeight);
+                saveStickyNotes();
+              }
+            }
+          });
+          ro.observe(el);
+        }
+
+        // Dragging
+        const header = el.querySelector('.sticky-note-header');
+        if (header) {
+          let isDragging = false;
+          let dragStartX = 0;
+          let dragStartY = 0;
+          let initialLeft = 0;
+          let initialTop = 0;
+
+          const onStart = (clientX, clientY, pointerId) => {
+            isDragging = true;
+            el.classList.add('dragging');
+            dragStartX = clientX;
+            dragStartY = clientY;
+            initialLeft = el.offsetLeft;
+            initialTop = el.offsetTop;
+            topStickyZIndex++;
+            note.zIndex = topStickyZIndex;
+            el.style.zIndex = topStickyZIndex;
+            if (pointerId !== undefined && header.setPointerCapture) {
+              try { header.setPointerCapture(pointerId); } catch(err){}
+            }
+          };
+
+          const onMove = (clientX, clientY) => {
+            if (!isDragging) return;
+            const dx = clientX - dragStartX;
+            const dy = clientY - dragStartY;
+            let nextX = initialLeft + dx;
+            let nextY = initialTop + dy;
+            nextX = Math.max(5, Math.min(window.innerWidth - 60, nextX));
+            nextY = Math.max(5, Math.min(window.innerHeight - 40, nextY));
+            el.style.left = `${nextX}px`;
+            el.style.top = `${nextY}px`;
+            note.x = nextX;
+            note.y = nextY;
+          };
+
+          const onEnd = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            el.classList.remove('dragging');
+            saveStickyNotes();
+          };
+
+          header.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.sticky-color-dot') || e.target.closest('.sticky-close-btn')) return;
+            onStart(e.clientX, e.clientY, e.pointerId);
+          });
+          header.addEventListener('pointermove', (e) => onMove(e.clientX, e.clientY));
+          header.addEventListener('pointerup', () => onEnd());
+          header.addEventListener('pointercancel', () => onEnd());
+        }
+
+        layer.appendChild(el);
+      });
+    }
+
     checkDailyReset();
     updateDateDisplay();
     setupEventListeners();
@@ -6919,6 +7226,8 @@
     renderDisciplineDrawer();
     setupDisciplineDrawer();
     initFocusTimerWatcher();
+    loadStickyNotes();
+    renderStickyNotes();
     updateLiveCountdowns();
     setInterval(updateLiveCountdowns, 1000);
 
@@ -6937,6 +7246,8 @@
       });
     }
   </script>
+  <!-- Floating Draggable Sticky Notes Container -->
+  <div id="stickyNotesLayer"></div>
 </body>
 
 </html>
