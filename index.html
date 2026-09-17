@@ -94,51 +94,133 @@
 
     /* Big Score Header */
     .score-banner {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 0.4rem 0.65rem;
+      padding: 0.5rem 0.75rem;
       gap: 0.5rem;
-      min-height: 48px;
+      min-height: 64px;
+    }
+
+    .score-banner-left {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.35rem;
+      flex-wrap: nowrap;
+    }
+
+    .header-stat-pills {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .header-stat-pill {
+      background: #002b36;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0 0.4rem;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      cursor: help;
+      font-size: 0.62rem;
+      font-weight: 800;
+      white-space: nowrap;
+      user-select: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .header-stat-pill:hover {
+      border-color: var(--border-focus);
+      background: #073642;
+    }
+
+    .stat-pill-label {
+      font-size: 0.52rem;
+      color: var(--text-dim);
+      letter-spacing: 0.05em;
+    }
+
+    .stat-pill-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    @media (max-width: 600px) {
+      .header-stat-pills {
+        gap: 0.2rem;
+      }
+      .header-stat-pill {
+        padding: 0 0.25rem;
+        gap: 0.15rem;
+      }
+      .stat-pill-label {
+        display: none;
+      }
     }
 
     .score-container {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: center;
+      text-align: center;
+      gap: 2px;
       flex-shrink: 0;
     }
 
     .big-score {
-      font-size: 2.1rem;
+      font-size: 3.1rem;
       font-weight: 900;
-      line-height: 1;
+      line-height: 0.95;
       color: #fdf6e3;
-      letter-spacing: -0.04em;
+      letter-spacing: -0.03em;
+      font-family: 'JetBrains Mono', monospace;
+      text-shadow: 0 0 20px rgba(181, 137, 0, 0.25);
     }
 
     .score-info {
       display: flex;
-      flex-direction: column;
-      gap: 1px;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
     }
 
     .score-label {
-      font-size: 0.54rem;
+      font-size: 0.52rem;
       font-weight: 800;
       color: var(--text-dim);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
 
     .score-rank {
-      font-size: 0.64rem;
+      font-size: 0.65rem;
       font-weight: 900;
       color: var(--color-yellow);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.05em;
       line-height: 1;
+    }
+
+    @media (max-width: 480px) {
+      .score-banner {
+        padding: 0.4rem 0.4rem;
+        gap: 0.25rem;
+      }
+      .big-score {
+        font-size: 2.35rem;
+      }
+      .date-badge {
+        font-size: 0.54rem;
+        padding: 0 0.3rem;
+      }
     }
 
     .top-actions {
@@ -181,6 +263,73 @@
     .action-pill-btn.rebirth-btn:hover {
       background: var(--color-red);
       color: #ffffff;
+    }
+
+    /* Top Actions Dropdown Menu */
+    .top-dropdown-container {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .top-dropdown-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: #002b36;
+      border: 1px solid var(--border-focus);
+      border-radius: 4px;
+      padding: 0.35rem 0.25rem;
+      min-width: 145px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .top-dropdown-menu.active {
+      display: flex;
+    }
+
+    .dropdown-item-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.35rem 0.55rem;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      text-align: left;
+      width: 100%;
+      box-sizing: border-box;
+      transition: background 0.12s ease;
+      white-space: nowrap;
+    }
+
+    .dropdown-item-btn:hover {
+      background: #073642;
+      color: #fdf6e3;
+      border-color: var(--border);
+    }
+
+    .dropdown-item-btn.item-danger {
+      color: var(--color-red);
+    }
+
+    .dropdown-item-btn.item-danger:hover {
+      background: rgba(220, 50, 47, 0.18);
+      border-color: var(--color-red);
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0.2rem 0.15rem;
     }
 
     .date-badge {
@@ -391,6 +540,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 10px;
       cursor: col-resize;
       background: transparent;
       user-select: none;
@@ -426,6 +576,79 @@
       font-size: 0.65rem;
       font-weight: 800;
       line-height: 1;
+    }
+
+    .focus-timer-circle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      color: var(--color-yellow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.82rem;
+      padding: 0;
+      outline: none;
+      transition: all 0.2s ease;
+      z-index: 15;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+      flex-shrink: 0;
+      touch-action: manipulation;
+      pointer-events: auto;
+    }
+
+    .focus-timer-circle-btn:hover {
+      border-color: var(--color-yellow);
+      background: var(--card-subtle);
+      transform: scale(1.08);
+    }
+
+    .focus-timer-circle-btn.active {
+      width: auto;
+      height: 24px;
+      border-radius: 12px;
+      padding: 0 0.4rem;
+      background: #002b36;
+      border-color: var(--color-yellow);
+      box-shadow: 0 0 10px rgba(181, 137, 0, 0.35);
+      cursor: default;
+      white-space: nowrap;
+    }
+
+    .focus-timer-circle-btn.active .focus-btn-clock {
+      display: inline-block !important;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--color-yellow);
+      letter-spacing: 0.04em;
+    }
+
+    .focus-timer-circle-btn.active .focus-btn-icon {
+      display: none;
+    }
+
+    .focus-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card-bg);
+      border: 1.5px solid var(--color-yellow);
+      border-radius: 8px;
+      padding: 0.75rem 1.25rem;
+      text-align: center;
+      z-index: 9999;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      pointer-events: none;
+    }
+
+    .focus-toast.show {
+      transform: translateX(-50%) translateY(0);
     }
 
     /* Column Header - exact height across all 3 panels */
@@ -1226,6 +1449,87 @@
       flex-direction: column;
       gap: 0.65rem;
       box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7);
+    }
+
+    #editModal.notes-mode .modal,
+    .modal.notes-mode {
+      max-width: 1100px !important;
+      width: 98vw !important;
+      height: 98vh !important;
+      height: 98dvh !important;
+      max-height: 98vh !important;
+      max-height: 98dvh !important;
+      padding: 1rem 1.25rem !important;
+      border-radius: 6px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+    }
+
+    #editModal.notes-mode .modal-header,
+    .modal.notes-mode .modal-header {
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    #editModal.notes-mode .notes-toolbar,
+    .modal.notes-mode .notes-toolbar {
+      flex-shrink: 0;
+    }
+
+    #editModal.notes-mode .modal-section-title,
+    .modal.notes-mode .modal-section-title {
+      flex-shrink: 0;
+    }
+
+    #editModal.notes-mode .modal-input,
+    .modal.notes-mode .modal-input {
+      flex: 1 1 0 !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 1.05rem !important;
+      line-height: 1.7 !important;
+      padding: 1rem 1.2rem !important;
+      white-space: pre-wrap !important;
+      word-break: break-word !important;
+      box-sizing: border-box !important;
+      overflow-y: auto !important;
+    }
+
+    #editModal.notes-mode .modal-footer,
+    .modal.notes-mode .modal-footer {
+      flex-shrink: 0;
+      margin-top: 0.3rem;
+    }
+
+    .notes-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      align-items: center;
+      padding: 0.2rem 0;
+    }
+
+    .notes-chip-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 0.28rem 0.6rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .notes-chip-btn:hover {
+      background: var(--card-subtle);
+      color: var(--text);
+      border-color: var(--border-focus);
     }
 
     .modal-header {
@@ -2179,23 +2483,49 @@
   <header>
     <!-- Top Big Score Banner -->
     <div class="score-banner">
+      <div class="score-banner-left">
+        <div class="date-badge" id="currentDate"></div>
+        <div class="header-stat-pills" id="headerStatPills">
+          <div class="header-stat-pill" id="statWeightedStreakPill" title="Weighted Average Streak: sum(streak * pts) / total pts">
+            <span class="stat-pill-label">W-STRK</span>
+            <span class="stat-pill-val" id="statWeightedStreakVal">0.0d</span>
+          </div>
+          <div class="header-stat-pill" id="stat30dRatePill" title="Average Completion Rate across last 30 days">
+            <span class="stat-pill-label">30D</span>
+            <span class="stat-pill-val" id="stat30dRateVal">0%</span>
+          </div>
+          <div class="header-stat-pill" id="statCleanSweepPill" title="7-Day Clean Sweep: 100% completion days in last 7 days">
+            <span class="stat-pill-label">SWEEP</span>
+            <span class="stat-pill-val" id="statCleanSweepVal">0/7</span>
+          </div>
+        </div>
+      </div>
       <div class="score-container">
         <span class="big-score" id="bigScoreVal">1000</span>
         <div class="score-info">
           <span class="score-label">DISCIPLINE ELO</span>
+          <span style="font-size: 0.45rem; color: var(--text-dim); opacity: 0.6;">&bull;</span>
           <span class="score-rank" id="headerEloRank">NOVICE</span>
         </div>
       </div>
       <div class="top-actions">
-        <button type="button" class="action-pill-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
-        <button type="button" class="action-pill-btn" id="tiersConfigBtn" title="Configure Dailies Tiers & Sets">TIERS</button>
-        <button type="button" class="action-pill-btn rebirth-btn" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">REBIRTH</button>
-        <button type="button" class="action-pill-btn" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline" style="color: var(--color-red); border-color: rgba(220,50,47,0.4);">DEBUG</button>
-        <button type="button" class="action-pill-btn" id="exportBtn" title="Export Backup JSON">EXP</button>
-        <button type="button" class="action-pill-btn" id="importBtn" title="Import Backup JSON">IMP</button>
+        <div class="top-dropdown-container" id="topDropdownContainer">
+          <button type="button" class="action-pill-btn" id="topDropdownBtn" title="Tools & Settings">
+            <span>⚙ MORE</span>
+            <span style="font-size: 0.52rem; opacity: 0.8; margin-left: 1px;">▼</span>
+          </button>
+          <div class="top-dropdown-menu" id="topDropdownMenu">
+            <button type="button" class="dropdown-item-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
+            <button type="button" class="dropdown-item-btn" id="tiersConfigBtn" title="Configure Dailies Tiers & Sets">🎯 TIERS</button>
+            <button type="button" class="dropdown-item-btn" id="exportBtn" title="Export Backup JSON">💾 EXP</button>
+            <button type="button" class="dropdown-item-btn" id="importBtn" title="Import Backup JSON">📥 IMP</button>
+            <button type="button" class="dropdown-item-btn" id="recoverOldBtn" title="Recover old app data">📜 LEGACY</button>
+            <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item-btn item-danger" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">🔥 REBIRTH</button>
+            <button type="button" class="dropdown-item-btn item-danger" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline">⚡ DEBUG</button>
+          </div>
+        </div>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
-        <button type="button" class="action-pill-btn" id="recoverOldBtn" title="Recover old app data" style="font-size: 0.58rem;">LEGACY</button>
-        <div class="date-badge" id="currentDate"></div>
         <button type="button" class="reset-btn" id="resetDailiesBtn" title="Check in daily progress">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
             stroke-linecap="round" stroke-linejoin="round">
@@ -2250,6 +2580,10 @@
       <div class="divider-handle" id="dividerHandle">
         <span class="divider-arrow" id="dividerArrow">⯈</span>
       </div>
+      <button type="button" class="focus-timer-circle-btn" id="focusTimerBtn" title="Sacrifice 5 ELO for Focus Timer (+50% bonus points)">
+        <span class="focus-btn-icon" id="focusBtnIcon">⏱</span>
+        <span class="focus-btn-clock" id="focusBtnClock" style="display: none;">00:00</span>
+      </button>
     </div>
 
     <!-- Todos Section (Right, default) -->
@@ -2259,6 +2593,7 @@
           <span>TO-DOS</span>
           <span class="counter" id="todosCount">0/0 PTS</span>
         </div>
+        <button type="button" class="action-pill-btn" id="openTodosNotesBtn" title="Edit All To-Dos in Notes Mode" style="font-size: 0.58rem; padding: 0.1rem 0.4rem; background: var(--card-bg); color: var(--color-blue); border: 1px solid var(--border); font-weight: 700; cursor: pointer; border-radius: 3px;">✎ NOTES</button>
       </div>
       <div class="input-row">
         <textarea id="todoInput" class="compact-textarea" placeholder="+ todo (p1, tomorrow 5pm, #proj)..." rows="1"
@@ -2347,9 +2682,23 @@
         <button class="modal-close" id="modalCloseBtn">&times;</button>
       </div>
 
-      <div class="modal-section-title">Task Content & Plan</div>
+      <div class="notes-toolbar" id="modalNotesToolbar" style="display: none;">
+        <button type="button" class="notes-chip-btn" data-insert="- [ ] ">+ Subtask</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *easy">● Easy</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *medium">▲ Med</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *hard">■ Hard</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *mega">⬟ Mega</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *ultra">★ Ultra</button>
+        <button type="button" class="notes-chip-btn" data-insert=" *tomorrow">⏱ Tomorrow</button>
+      </div>
+
+      <div class="modal-section-title" id="modalContentSectionTitle">Task Content & Plan</div>
       <textarea id="modalTaskInput" class="modal-input" rows="6"
         placeholder="Type your task or multi-line plan here...&#10;Supports *hard, *mega, *ultra, *tomorrow, *aug 30&#10;Supports subtasks:&#10;- First subtask step&#10;- Second subtask step"></textarea>
+
+      <div class="top-spotlight-hint" id="modalNotesHint" style="display: none; margin-top: -0.2rem; margin-bottom: 0.2rem;">
+        <span>Each line = todo. Subtasks = <code>- [ ]</code> or <code>-</code>. Unspecified takes previous <code>*diff</code> & <code>*deadline</code>.</span>
+      </div>
 
       <!-- Schedule Days (for Dailies) -->
       <div id="modalScheduleContainer" style="display: none; flex-direction: column; gap: 0.35rem;">
@@ -2365,56 +2714,92 @@
         </div>
       </div>
 
-      <div class="modal-section-title">Difficulty</div>
-      <div class="diff-grid" id="modalDiffGrid">
-        <button type="button" class="diff-btn" data-diff="easy">
-          <span class="diff-shape-icon diff-easy"><svg width="11" height="11" viewBox="0 0 12 12">
-              <circle cx="6" cy="6" r="4.5" fill="currentColor" />
-            </svg></span>
-          <span>1</span>
-        </button>
-        <button type="button" class="diff-btn" data-diff="medium">
-          <span class="diff-shape-icon diff-medium"><svg width="11" height="11" viewBox="0 0 12 12">
-              <polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor" />
-            </svg></span>
-          <span>2</span>
-        </button>
-        <button type="button" class="diff-btn" data-diff="hard">
-          <span class="diff-shape-icon diff-hard"><svg width="11" height="11" viewBox="0 0 12 12">
-              <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor" />
-            </svg></span>
-          <span>5</span>
-        </button>
-        <button type="button" class="diff-btn" data-diff="mega">
-          <span class="diff-shape-icon diff-mega"><svg width="11" height="11" viewBox="0 0 12 12">
-              <polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor" />
-            </svg></span>
-          <span>7</span>
-        </button>
-        <button type="button" class="diff-btn" data-diff="ultra">
-          <span class="diff-shape-icon diff-ultra"><svg width="11" height="11" viewBox="0 0 12 12">
-              <polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3"
-                fill="currentColor" />
-            </svg></span>
-          <span>10</span>
-        </button>
+      <div id="modalDiffContainer">
+        <div class="modal-section-title">Difficulty</div>
+        <div class="diff-grid" id="modalDiffGrid">
+          <button type="button" class="diff-btn" data-diff="easy">
+            <span class="diff-shape-icon diff-easy"><svg width="11" height="11" viewBox="0 0 12 12">
+                <circle cx="6" cy="6" r="4.5" fill="currentColor" />
+              </svg></span>
+            <span>1</span>
+          </button>
+          <button type="button" class="diff-btn" data-diff="medium">
+            <span class="diff-shape-icon diff-medium"><svg width="11" height="11" viewBox="0 0 12 12">
+                <polygon points="6,1.5 11,10.5 1,10.5" fill="currentColor" />
+              </svg></span>
+            <span>2</span>
+          </button>
+          <button type="button" class="diff-btn" data-diff="hard">
+            <span class="diff-shape-icon diff-hard"><svg width="11" height="11" viewBox="0 0 12 12">
+                <rect x="2" y="2" width="8" height="8" rx="1.5" fill="currentColor" />
+              </svg></span>
+            <span>5</span>
+          </button>
+          <button type="button" class="diff-btn" data-diff="mega">
+            <span class="diff-shape-icon diff-mega"><svg width="11" height="11" viewBox="0 0 12 12">
+                <polygon points="6,1 11,4.5 9,10.5 3,10.5" fill="currentColor" />
+              </svg></span>
+            <span>7</span>
+          </button>
+          <button type="button" class="diff-btn" data-diff="ultra">
+            <span class="diff-shape-icon diff-ultra"><svg width="11" height="11" viewBox="0 0 12 12">
+                <polygon points="6,0.8 7.5,4.3 11.2,4.6 8.4,7.1 9.3,10.8 6,8.8 2.7,10.8 3.6,7.1 0.8,4.6 4.5,4.3"
+                  fill="currentColor" />
+              </svg></span>
+            <span>10</span>
+          </button>
+        </div>
       </div>
 
-      <div class="modal-section-title">Deadline (Optional)</div>
-      <input type="date" id="modalDeadlineInput" class="modal-input" />
+      <div id="modalDeadlineContainer">
+        <div class="modal-section-title">Deadline (Optional)</div>
+        <input type="date" id="modalDeadlineInput" class="modal-input" />
+      </div>
 
-      <!-- Subtasks Section -->
-      <div class="modal-section-title">Subtasks</div>
-      <div class="modal-subtask-list" id="modalSubtaskList"></div>
-      <button type="button" class="add-subtask-btn" id="modalAddSubtaskBtn">+ Add Subtask</button>
+      <!-- Subtasks Section (hidden since subtasks are edited directly in Task Content & Plan) -->
+      <div id="modalSubtasksContainer" style="display: none;">
+        <div class="modal-section-title">Subtasks</div>
+        <div class="modal-subtask-list" id="modalSubtaskList"></div>
+        <button type="button" class="add-subtask-btn" id="modalAddSubtaskBtn">+ Add Subtask</button>
+      </div>
 
-      <div class="modal-section-title">Color Tag</div>
-      <div class="color-grid" id="modalColorGrid"></div>
+      <div id="modalColorContainer">
+        <div class="modal-section-title">Color Tag</div>
+        <div class="color-grid" id="modalColorGrid"></div>
+      </div>
 
       <div class="modal-footer">
         <button class="modal-delete-btn" id="modalDeleteBtn">DELETE</button>
         <button class="modal-save-btn" id="modalSaveBtn">SAVE</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Focus Timer Prompt Modal -->
+  <div class="modal-overlay" id="focusModal">
+    <div class="modal" style="max-width: 360px; text-align: center; gap: 0.8rem;">
+      <div class="modal-header">
+        <span style="color: var(--color-yellow);">⚡ FOCUS OVERDRIVE</span>
+        <button class="modal-close" id="focusModalCloseBtn">&times;</button>
+      </div>
+      <div style="font-size: 0.74rem; color: var(--text-muted); line-height: 1.5; padding: 0.2rem 0;">
+        Sacrifice <b style="color: var(--color-red);">-5 ELO</b> to start an un-pausable focus session.<br/>
+        Earn <b style="color: var(--color-green);">+50% bonus points</b> on all tasks completed during the timer!
+      </div>
+      <div>
+        <div class="modal-section-title" style="margin-bottom: 0.4rem;">SESSION DURATION (MINUTES)</div>
+        <input type="number" id="focusMinutesInput" class="modal-input" min="1" max="180" value="25"
+          style="min-height: 46px; height: 46px; font-size: 1.25rem; font-weight: 800; text-align: center; font-family: 'JetBrains Mono', monospace;" />
+      </div>
+      <div style="display: flex; gap: 0.4rem; justify-content: center;">
+        <button type="button" class="notes-chip-btn focus-preset-btn" data-min="15">15m</button>
+        <button type="button" class="notes-chip-btn focus-preset-btn" data-min="25">25m</button>
+        <button type="button" class="notes-chip-btn focus-preset-btn" data-min="45">45m</button>
+        <button type="button" class="notes-chip-btn focus-preset-btn" data-min="60">60m</button>
+      </div>
+      <button type="button" class="modal-save-btn" id="startFocusBtn" style="width: 100%; padding: 0.65rem; font-weight: 800; background: var(--color-yellow); color: #002b36; font-size: 0.76rem; border-radius: 4px;">
+        SACRIFICE -5 ELO & START
+      </button>
     </div>
   </div>
 
@@ -3248,6 +3633,310 @@
       return { text: finalTitle, difficulty, deadline, color, subtasks, tags, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
     }
 
+    // --- MULTI-LINE / NOTES PARSER WITH CASCADE INHERITANCE ---
+    function parseMultipleTodos(rawText, baseDifficulty = 'easy', baseDeadline = '') {
+      if (!rawText || !rawText.trim()) return [];
+      const lines = rawText.split('\n');
+      const todos = [];
+      let currentTodo = null;
+      let runningDifficulty = baseDifficulty || 'easy';
+      let runningDeadline = baseDeadline || '';
+
+      function isBulletOrSubtask(line) {
+        const trimmed = line.trim();
+        if (!trimmed) return false;
+        const hasIndent = /^\s+/.test(line);
+        const startsBullet = /^[-•*]\s+/.test(trimmed) || /^\[\s*[xX]?\s*\]\s*/.test(trimmed);
+        const isNumbered = /^\d+[\.\)]\s+/.test(trimmed);
+        const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})\b/i.test(trimmed);
+        return hasIndent || startsBullet || isNumbered || isStarSubtask;
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        if (currentTodo && isBulletOrSubtask(line)) {
+          let isChecked = false;
+          if (/^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed)) {
+            isChecked = true;
+          }
+          const subText = trimmed
+            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
+            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
+            .replace(/^\d+[\.\)]\s*/, '')
+            .trim();
+
+          if (subText) {
+            currentTodo.subtasks.push({
+              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+              text: subText,
+              completed: isChecked
+            });
+          }
+        } else {
+          // New Todo line
+          const parsed = parseNaturalLanguage(trimmed);
+
+          // Check if explicit difficulty or deadline was given in this line
+          const hasExplicitDiff = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical)\b|\b(?:p|priority|!)\s*[1-5]\b|\b(urgent|critical|ultra|mega|hard|medium|med)\b/i.test(trimmed);
+          if (hasExplicitDiff) {
+            runningDifficulty = parsed.difficulty;
+          }
+
+          const hasExplicitDeadline = !!parsed.deadline;
+          if (hasExplicitDeadline) {
+            runningDeadline = parsed.deadline;
+          }
+
+          currentTodo = {
+            id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5) + '_' + todos.length,
+            text: parsed.text,
+            completed: false,
+            difficulty: runningDifficulty,
+            deadline: runningDeadline,
+            color: parsed.color || SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex,
+            subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
+            tags: parsed.tags || []
+          };
+          todos.push(currentTodo);
+        }
+      }
+
+      return todos;
+    }
+
+    function serializeActiveTodosToNotes() {
+      const activeTodos = (state.todos || []).filter(t => !t.completed);
+      return activeTodos.map(t => {
+        let line = t.text;
+        if (t.difficulty && t.difficulty !== 'easy') {
+          line += ` *${t.difficulty}`;
+        }
+        if (t.deadline) {
+          line += ` *${t.deadline.replace('T', ' ')}`;
+        }
+        if (t.tags && t.tags.length > 0) {
+          line += ` ` + t.tags.map(tag => `#${tag}`).join(' ');
+        }
+        const lines = [line];
+        if (Array.isArray(t.subtasks) && t.subtasks.length > 0) {
+          t.subtasks.forEach(st => {
+            lines.push(`- [${st.completed ? 'x' : ' '}] ${st.text}`);
+          });
+        }
+        return lines.join('\n');
+      }).join('\n\n');
+    }
+
+    function saveAllTodosFromNotes(notesText) {
+      const parsedTodos = parseMultipleTodos(notesText);
+      const oldActive = (state.todos || []).filter(t => !t.completed);
+      const completedTodos = (state.todos || []).filter(t => t.completed);
+
+      const newActiveTodos = parsedTodos.map(pt => {
+        const existing = oldActive.find(o => o.text.trim().toLowerCase() === pt.text.trim().toLowerCase());
+        if (existing) {
+          existing.text = pt.text;
+          existing.difficulty = pt.difficulty;
+          existing.deadline = pt.deadline;
+          existing.subtasks = (pt.subtasks || []).map(nst => {
+            const existSt = (existing.subtasks || []).find(es => es.text.trim().toLowerCase() === nst.text.trim().toLowerCase());
+            return {
+              id: existSt ? existSt.id : nst.id,
+              text: nst.text,
+              completed: nst.completed !== undefined ? nst.completed : (existSt ? existSt.completed : false)
+            };
+          });
+          return existing;
+        } else {
+          return pt;
+        }
+      });
+
+      state.todos = [...newActiveTodos, ...completedTodos];
+      saveState();
+      render();
+    }
+
+    // --- FOCUS OVERDRIVE TIMER SYSTEM ---
+    let focusTimerInterval = null;
+
+    function getFocusSession() {
+      try {
+        const raw = localStorage.getItem('nemesis_focus_session');
+        if (raw) return JSON.parse(raw);
+      } catch (e) { }
+      return null;
+    }
+
+    function saveFocusSession(session) {
+      if (session) {
+        localStorage.setItem('nemesis_focus_session', JSON.stringify(session));
+      } else {
+        localStorage.removeItem('nemesis_focus_session');
+      }
+    }
+
+    function openFocusModal() {
+      const session = getFocusSession();
+      if (session && session.active) {
+        if (Date.now() < session.endTime) {
+          return; // Running - cannot be paused or stopped!
+        } else {
+          finishFocusTimer(session);
+        }
+      }
+      const modal = document.getElementById('focusModal');
+      if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'grid';
+        const inp = document.getElementById('focusMinutesInput');
+        if (inp) {
+          setTimeout(() => {
+            inp.focus();
+            inp.select();
+          }, 30);
+        }
+      }
+    }
+
+    function closeFocusModal() {
+      const modal = document.getElementById('focusModal');
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+      }
+    }
+
+    function startFocusTimer(minutes) {
+      const min = Math.max(1, parseInt(minutes, 10) || 25);
+
+      // Sacrifice 5 ELO points
+      disciplineState.elo = Math.max(0, (disciplineState.elo || 1000) - 5);
+      state.score = disciplineState.elo;
+      saveDisciplineState();
+
+      const session = {
+        active: true,
+        startTime: Date.now(),
+        endTime: Date.now() + min * 60 * 1000,
+        durationMinutes: min,
+        basePointsEarned: 0,
+        completedTasks: []
+      };
+      saveFocusSession(session);
+      saveState();
+      render();
+
+      initFocusTimerWatcher();
+      closeFocusModal();
+    }
+
+    function initFocusTimerWatcher() {
+      if (focusTimerInterval) clearInterval(focusTimerInterval);
+      updateFocusTimerUI();
+      focusTimerInterval = setInterval(updateFocusTimerUI, 1000);
+    }
+
+    function updateFocusTimerUI() {
+      const session = getFocusSession();
+      const btn = document.getElementById('focusTimerBtn');
+      const icon = document.getElementById('focusBtnIcon');
+      const clock = document.getElementById('focusBtnClock');
+      if (!btn) return;
+
+      if (!session || !session.active) {
+        btn.classList.remove('active');
+        if (icon) icon.style.display = 'inline';
+        if (clock) clock.style.display = 'none';
+        btn.title = "Sacrifice 5 ELO for Focus Timer (+50% bonus points)";
+        return;
+      }
+
+      const now = Date.now();
+      const remainingMs = session.endTime - now;
+
+      if (remainingMs <= 0) {
+        finishFocusTimer(session);
+        return;
+      }
+
+      btn.classList.add('active');
+      if (icon) icon.style.display = 'none';
+      if (clock) clock.style.display = 'inline-block';
+
+      const totalSec = Math.floor(remainingMs / 1000);
+      const m = Math.floor(totalSec / 60);
+      const s = totalSec % 60;
+      const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      if (clock) clock.textContent = timeStr;
+      btn.title = `Focus Timer Active: ${timeStr} left (Un-pausable, +50% pts on tasks)`;
+    }
+
+    function finishFocusTimer(session) {
+      if (focusTimerInterval) clearInterval(focusTimerInterval);
+      const basePts = session.basePointsEarned || 0;
+      const bonusPts = Math.round(basePts * 0.5);
+
+      if (bonusPts > 0) {
+        state.bonusPoints = (state.bonusPoints || 0) + bonusPts;
+        saveState();
+        render();
+      }
+
+      playSound('contract');
+      showFocusToast(basePts, bonusPts);
+
+      saveFocusSession(null);
+      updateFocusTimerUI();
+    }
+
+    function onTaskCompletedForFocus(task) {
+      const session = getFocusSession();
+      if (session && session.active && Date.now() < session.endTime) {
+        const w = getWeight(task);
+        session.basePointsEarned = (session.basePointsEarned || 0) + w;
+        session.completedTasks = session.completedTasks || [];
+        session.completedTasks.push(task.id);
+        saveFocusSession(session);
+      }
+    }
+
+    function onTaskUncheckedForFocus(task) {
+      const session = getFocusSession();
+      if (session && session.active && Date.now() < session.endTime) {
+        const w = getWeight(task);
+        session.basePointsEarned = Math.max(0, (session.basePointsEarned || 0) - w);
+        if (session.completedTasks) {
+          const idx = session.completedTasks.lastIndexOf(task.id);
+          if (idx !== -1) session.completedTasks.splice(idx, 1);
+        }
+        saveFocusSession(session);
+      }
+    }
+
+    function showFocusToast(basePts, bonusPts) {
+      let toast = document.getElementById('focusToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'focusToast';
+        toast.className = 'focus-toast';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = `
+        <div style="font-weight: 800; color: var(--color-yellow); font-size: 0.8rem; letter-spacing: 0.05em;">⚡ FOCUS SESSION COMPLETE</div>
+        <div style="font-size: 0.68rem; margin-top: 0.2rem; color: var(--text);">
+          ${basePts} base pts earned &rarr; <b style="color: var(--color-green);">+${bonusPts} BONUS POINTS</b> awarded to daily score!
+        </div>
+      `;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 5500);
+    }
+
     function updateInputPreview(inputEl, previewEl) {
       if (!inputEl || !previewEl) return;
       const text = inputEl.value.trim();
@@ -3775,11 +4464,12 @@
       });
 
       // Overall Progress
+      const bonusPts = (state.bonusPoints || 0);
       const totalPts = dTotalPts + tTotalPts;
-      const donePts = dDonePts + tDonePts;
+      const donePts = dDonePts + tDonePts + bonusPts;
       const pct = totalPts > 0 ? Math.round((donePts / totalPts) * 100) : (donePts > 0 ? 100 : 0);
 
-      document.getElementById('progressPoints').textContent = `${donePts}/${totalPts} PTS`;
+      document.getElementById('progressPoints').textContent = `${donePts}/${totalPts} PTS${bonusPts > 0 ? ` (+${bonusPts})` : ''}`;
       document.getElementById('progressPercent').textContent = `${pct}%`;
       document.getElementById('progressBar').style.width = `${Math.min(pct, 100)}%`;
       document.getElementById('bigScoreVal').textContent = (typeof disciplineState !== 'undefined' && disciplineState.elo) ? disciplineState.elo : 1000;
@@ -3866,7 +4556,73 @@
         renderDisciplineDrawer();
       }
 
+      updateHeaderStats();
       calculateGhostPace();
+    }
+
+    function updateHeaderStats() {
+      // 1. Weighted Average Streak: sum(streak * weight) / totalWeight
+      let totalWeight = 0;
+      let weightedStreakSum = 0;
+      if (state.dailies && state.dailies.length > 0) {
+        state.dailies.forEach(d => {
+          const w = getWeight(d);
+          const streak = (typeof d.streak === 'number') ? d.streak : 0;
+          totalWeight += w;
+          weightedStreakSum += (streak * w);
+        });
+      }
+      const weightedStreak = totalWeight > 0 ? (weightedStreakSum / totalWeight) : 0;
+      const streakEl = document.getElementById('statWeightedStreakVal');
+      if (streakEl) {
+        const formattedStreak = (weightedStreak > 0 ? '+' : '') + weightedStreak.toFixed(1) + 'd';
+        streakEl.textContent = formattedStreak;
+        if (weightedStreak > 0) {
+          streakEl.style.color = 'var(--color-yellow)';
+        } else if (weightedStreak < 0) {
+          streakEl.style.color = 'var(--color-red)';
+        } else {
+          streakEl.style.color = 'var(--text-muted)';
+        }
+      }
+
+      // 2. 30-Day Average Completion Rate
+      const histKeys = Object.keys(state.history || {}).sort();
+      const last30Keys = histKeys.slice(-30);
+      let avgRate = 0;
+      if (last30Keys.length > 0) {
+        const sumRate = last30Keys.reduce((acc, k) => acc + (Number(state.history[k]) || 0), 0);
+        avgRate = Math.round((sumRate / last30Keys.length) * 100);
+      }
+      const rateEl = document.getElementById('stat30dRateVal');
+      if (rateEl) {
+        rateEl.textContent = `${avgRate}%`;
+        if (avgRate >= 80) {
+          rateEl.style.color = 'var(--color-green)';
+        } else if (avgRate >= 50) {
+          rateEl.style.color = 'var(--color-yellow)';
+        } else if (last30Keys.length > 0) {
+          rateEl.style.color = 'var(--color-red)';
+        } else {
+          rateEl.style.color = 'var(--text-muted)';
+        }
+      }
+
+      // 3. 7-Day Clean Sweep (100% days in last 7 recorded days)
+      const last7Keys = histKeys.slice(-7);
+      let cleanSweepCount = 0;
+      last7Keys.forEach(k => {
+        if ((Number(state.history[k]) || 0) >= 1.0) cleanSweepCount++;
+      });
+      const sweepEl = document.getElementById('statCleanSweepVal');
+      if (sweepEl) {
+        sweepEl.textContent = `${cleanSweepCount}/${Math.max(1, Math.min(7, last7Keys.length))}`;
+        if (cleanSweepCount >= 5) {
+          sweepEl.style.color = 'var(--color-cyan)';
+        } else {
+          sweepEl.style.color = 'var(--text-muted)';
+        }
+      }
     }
 
     function toggleTask(id, type, checkEl) {
@@ -3881,11 +4637,14 @@
         }
         playSound(task.completed ? 'check' : 'uncheck');
         if (task.completed) {
+          onTaskCompletedForFocus(task);
           recordPaceCompletion(getWeight(task));
           if (checkEl) {
             const rect = checkEl.getBoundingClientRect();
             triggerDopamineEffects(rect.left + rect.width / 2, rect.top + rect.height / 2, getWeight(task), cardEl, checkEl);
           }
+        } else {
+          onTaskUncheckedForFocus(task);
         }
         saveState();
         render();
@@ -4053,6 +4812,7 @@
       state.lastCheckinDate = todayStr;
       state.lastActiveDate = todayStr;
       state.todos = state.todos.filter(t => !t.completed);
+      state.bonusPoints = 0;
 
       // Update compounding discipline rate & weekly contracts
       if (typeof updateDisciplineOnCheckin === 'function') {
@@ -4470,31 +5230,93 @@
       let item = null;
       if (idOrItem && typeof idOrItem === 'object') {
         item = idOrItem;
-      } else {
+      } else if (idOrItem) {
         item = state[type].find(t => t.id === idOrItem);
       }
+
+      const modal = document.getElementById('editModal');
+      const input = document.getElementById('modalTaskInput');
+      const notesToolbar = document.getElementById('modalNotesToolbar');
+      const notesHint = document.getElementById('modalNotesHint');
+      const schedContainer = document.getElementById('modalScheduleContainer');
+      const diffContainer = document.getElementById('modalDiffContainer');
+      const dlContainer = document.getElementById('modalDeadlineContainer');
+      const subContainer = document.getElementById('modalSubtasksContainer');
+      const colContainer = document.getElementById('modalColorContainer');
+      const delBtn = document.getElementById('modalDeleteBtn');
+      const saveBtn = document.getElementById('modalSaveBtn');
+
+      if (type === 'todos') {
+        activeEditing = {
+          id: item ? item.id : null,
+          isNew: false,
+          type: 'todos'
+        };
+
+        modal.classList.add('notes-mode');
+        const innerModal = modal.querySelector('.modal');
+        if (innerModal) innerModal.classList.add('notes-mode');
+        document.getElementById('modalHeaderTitle').textContent = 'ALL TO-DOS (NOTES)';
+
+        const notesText = serializeActiveTodosToNotes();
+        input.value = notesText;
+
+        if (notesToolbar) notesToolbar.style.display = 'flex';
+        if (notesHint) notesHint.style.display = 'block';
+        if (schedContainer) schedContainer.style.display = 'none';
+        if (diffContainer) diffContainer.style.display = 'none';
+        if (dlContainer) dlContainer.style.display = 'none';
+        if (subContainer) subContainer.style.display = 'none';
+        if (colContainer) colContainer.style.display = 'none';
+
+        if (delBtn) delBtn.style.display = 'none';
+        if (saveBtn) saveBtn.textContent = 'SAVE ALL';
+
+        modal.classList.add('active');
+        modal.style.display = 'grid';
+
+        setTimeout(() => {
+          input.focus();
+          if (item && item.text) {
+            const idx = notesText.toLowerCase().indexOf(item.text.toLowerCase());
+            if (idx !== -1) {
+              input.setSelectionRange(idx, idx + item.text.length);
+              const lineRatio = idx / (notesText.length || 1);
+              input.scrollTop = input.scrollHeight * lineRatio;
+            }
+          }
+        }, 30);
+        return;
+      }
+
+      // Dailies mode
       if (!item) return;
 
       activeEditing = {
         id: item.id,
         isNew: false,
-        type: type,
+        type: 'dailies',
         color: item.color || SOLAR_COLORS[0].hex,
         difficulty: item.difficulty || 'easy',
         subtasks: item.subtasks ? JSON.parse(JSON.stringify(item.subtasks)) : [],
         days: item.days ? [...item.days] : [0, 1, 2, 3, 4, 5, 6]
       };
 
-      const modal = document.getElementById('editModal');
-      document.getElementById('modalHeaderTitle').textContent = type === 'dailies' ? 'EDIT DAILY' : 'EDIT TO-DO';
-      const input = document.getElementById('modalTaskInput');
-      input.value = item.text;
+      modal.classList.remove('notes-mode');
+      const innerModal = modal.querySelector('.modal');
+      if (innerModal) innerModal.classList.remove('notes-mode');
+      document.getElementById('modalHeaderTitle').textContent = 'EDIT DAILY';
 
-      const deadlineInput = document.getElementById('modalDeadlineInput');
-      deadlineInput.value = item.deadline || '';
+      let dailyContent = item.text;
+      if (Array.isArray(item.subtasks) && item.subtasks.length > 0) {
+        dailyContent += '\n' + item.subtasks.map(s => `- [${s.completed ? 'x' : ' '}] ${s.text}`).join('\n');
+      }
+      input.value = dailyContent;
 
-      const schedContainer = document.getElementById('modalScheduleContainer');
-      if (type === 'dailies') {
+      if (notesToolbar) notesToolbar.style.display = 'none';
+      if (notesHint) notesHint.style.display = 'none';
+
+      if (schedContainer) {
         schedContainer.style.display = 'flex';
         document.querySelectorAll('#modalScheduleGrid .day-btn').forEach(btn => {
           const dayNum = parseInt(btn.dataset.day, 10);
@@ -4510,11 +5332,15 @@
             btn.classList.toggle('selected', activeEditing.days.includes(dayNum));
           };
         });
-      } else {
-        schedContainer.style.display = 'none';
       }
 
-      renderModalSubtasks();
+      if (diffContainer) diffContainer.style.display = 'block';
+      if (dlContainer) dlContainer.style.display = 'block';
+      if (subContainer) subContainer.style.display = 'none';
+      if (colContainer) colContainer.style.display = 'block';
+
+      const deadlineInput = document.getElementById('modalDeadlineInput');
+      if (deadlineInput) deadlineInput.value = item.deadline || '';
 
       document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.classList.toggle('selected', btn.dataset.diff === activeEditing.difficulty);
@@ -4541,8 +5367,11 @@
         });
       }
 
-      const delBtn = document.getElementById('modalDeleteBtn');
-      delBtn.textContent = 'DELETE';
+      if (delBtn) {
+        delBtn.style.display = 'block';
+        delBtn.textContent = 'DELETE';
+      }
+      if (saveBtn) saveBtn.textContent = 'SAVE';
 
       modal.classList.add('active');
       modal.style.display = 'grid';
@@ -4552,7 +5381,12 @@
 
     function autoResizeModalInput() {
       const input = document.getElementById('modalTaskInput');
+      const modal = document.getElementById('editModal');
       if (input) {
+        if (modal && modal.classList.contains('notes-mode')) {
+          input.style.height = '';
+          return;
+        }
         input.style.height = 'auto';
         input.style.height = Math.max(160, input.scrollHeight) + 'px';
       }
@@ -4637,6 +5471,20 @@
         return;
       }
 
+      if (spotlightState.type === 'todos') {
+        const parsedList = parseMultipleTodos(text, spotlightState.difficulty);
+        if (parsedList.length > 1) {
+          let totalSubtasks = 0;
+          parsedList.forEach(p => totalSubtasks += (p.subtasks ? p.subtasks.length : 0));
+          let html = `<span class="spotlight-pill" style="color: var(--color-blue); border-color: rgba(38,139,210,0.3); font-weight: 700;">★ BULK ADD: ${parsedList.length} TODOS</span>`;
+          if (totalSubtasks > 0) {
+            html += `<span class="spotlight-pill" style="color: var(--color-orange); border-color: rgba(203,75,22,0.3);">▤ ${totalSubtasks} subtasks</span>`;
+          }
+          prev.innerHTML = html;
+          return;
+        }
+      }
+
       const parsed = parseNaturalLanguage(text);
       const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
 
@@ -4678,28 +5526,34 @@
         return;
       }
 
-      const parsed = parseNaturalLanguage(rawText);
-      const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
-
-      const newItem = {
-        id: (spotlightState.type === 'dailies' ? 'd_' : 't_') + Date.now(),
-        text: parsed.text,
-        completed: false,
-        difficulty: effDiff,
-        deadline: parsed.deadline || '',
-        color: parsed.color || SOLAR_COLORS[0].hex,
-        subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
-        streak: 0,
-        history: []
-      };
-
-      if (spotlightState.type === 'dailies') {
-        newItem.days = spotlightState.days;
+      if (spotlightState.type === 'todos') {
+        const parsedList = parseMultipleTodos(rawText, spotlightState.difficulty);
+        if (parsedList.length > 0) {
+          for (let i = parsedList.length - 1; i >= 0; i--) {
+            state.todos.unshift(parsedList[i]);
+          }
+          saveState();
+          render();
+        }
+      } else {
+        const parsed = parseNaturalLanguage(rawText);
+        const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
+        const newItem = {
+          id: 'd_' + Date.now(),
+          text: parsed.text,
+          completed: false,
+          difficulty: effDiff,
+          deadline: parsed.deadline || '',
+          color: parsed.color || SOLAR_COLORS[0].hex,
+          subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
+          streak: 0,
+          history: [],
+          days: spotlightState.days
+        };
+        state.dailies.unshift(newItem);
+        saveState();
+        render();
       }
-
-      state[spotlightState.type].unshift(newItem);
-      saveState();
-      render();
 
       const dInp = document.getElementById('dailyInput');
       const tInp = document.getElementById('todoInput');
@@ -4710,92 +5564,99 @@
     }
 
     function renderModalSubtasks() {
+      // Subtasks are edited inline in modalTaskInput
       const list = document.getElementById('modalSubtaskList');
-      list.innerHTML = '';
-      activeEditing.subtasks.forEach((st, idx) => {
-        const row = document.createElement('div');
-        row.className = 'modal-subtask-row';
-
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.className = 'modal-subtask-input';
-        inp.value = st.text;
-        inp.placeholder = 'Subtask description...';
-        inp.oninput = (e) => { st.text = e.target.value; };
-
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'del-subtask-btn';
-        del.innerHTML = '&times;';
-        del.onclick = () => {
-          activeEditing.subtasks.splice(idx, 1);
-          renderModalSubtasks();
-        };
-
-        row.appendChild(inp);
-        row.appendChild(del);
-        list.appendChild(row);
-      });
+      if (list) list.innerHTML = '';
     }
 
     function closeEditModal() {
-      document.getElementById('editModal').classList.remove('active');
-      document.getElementById('editModal').style.display = 'none';
+      const modal = document.getElementById('editModal');
+      if (modal) {
+        modal.classList.remove('active', 'notes-mode');
+        const innerModal = modal.querySelector('.modal');
+        if (innerModal) innerModal.classList.remove('notes-mode');
+        modal.style.display = 'none';
+      }
       activeEditing = null;
     }
 
     function saveModalChanges() {
       if (!activeEditing) return;
       const input = document.getElementById('modalTaskInput');
-      const newText = input.value.trim();
+      const textVal = input.value;
+
+      if (activeEditing.type === 'todos') {
+        saveAllTodosFromNotes(textVal);
+        closeEditModal();
+        return;
+      }
+
+      // Dailies save with inline subtasks
       const deadlineVal = document.getElementById('modalDeadlineInput').value;
+      const lines = textVal.split('\n');
+      let title = '';
+      const subtasks = [];
+
+      lines.forEach(l => {
+        const trimmed = l.trim();
+        if (!trimmed) return;
+        const isBullet = /^[-•*]\s*/.test(trimmed) || /^\[\s*[xX]?\s*\]\s*/.test(trimmed);
+        if (isBullet) {
+          const isChecked = /^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed);
+          const stText = trimmed
+            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
+            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
+            .replace(/^\d+[\.\)]\s*/, '')
+            .trim();
+          if (stText) {
+            subtasks.push({
+              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+              text: stText,
+              completed: isChecked
+            });
+          }
+        } else if (!title) {
+          title = trimmed;
+        }
+      });
+
+      if (!title && subtasks.length > 0) {
+        title = 'Daily Habit';
+      }
 
       if (activeEditing.isNew) {
-        if (newText.length > 0) {
-          const parsed = parseNaturalLanguage(newText);
+        if (title.length > 0) {
+          const parsed = parseNaturalLanguage(title);
           const newItem = {
-            id: (activeEditing.type === 'dailies' ? 'd_' : 't_') + Date.now(),
+            id: 'd_' + Date.now(),
             text: parsed.text,
             completed: false,
             difficulty: (parsed.difficulty !== 'easy' ? parsed.difficulty : activeEditing.difficulty),
             deadline: (parsed.deadline || deadlineVal),
             color: (parsed.color !== SOLAR_COLORS[0].hex ? parsed.color : activeEditing.color),
-            subtasks: activeEditing.subtasks.filter(s => s.text.trim().length > 0),
+            subtasks: subtasks,
             streak: 0,
-            history: []
+            history: [],
+            days: activeEditing.days
           };
-          if (parsed.subtasks && parsed.subtasks.length > 0) {
-            parsed.subtasks.forEach(st => {
-              newItem.subtasks.push({
-                id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                text: st,
-                completed: false
-              });
-            });
-          }
-          if (activeEditing.type === 'dailies') {
-            newItem.days = activeEditing.days;
-          }
-          state[activeEditing.type].unshift(newItem);
-          const sourceInput = document.getElementById(activeEditing.type === 'dailies' ? 'dailyInput' : 'todoInput');
-          if (sourceInput) sourceInput.value = '';
+          state.dailies.unshift(newItem);
+          const dInput = document.getElementById('dailyInput');
+          if (dInput) dInput.value = '';
           saveState();
           render();
         }
       } else {
-        const task = state[activeEditing.type].find(t => t.id === activeEditing.id);
+        const task = state.dailies.find(t => t.id === activeEditing.id);
         if (task) {
-          if (newText.length === 0) {
-            state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+          if (title.length === 0) {
+            state.dailies = state.dailies.filter(t => t.id !== activeEditing.id);
           } else {
-            task.text = newText;
+            task.text = title;
             task.color = activeEditing.color;
             task.difficulty = activeEditing.difficulty;
             task.deadline = deadlineVal;
-            task.subtasks = activeEditing.subtasks.filter(s => s.text.trim().length > 0);
-            if (activeEditing.type === 'dailies') {
-              task.days = activeEditing.days;
-            }
+            task.subtasks = subtasks;
+            task.days = activeEditing.days;
           }
           saveState();
           render();
@@ -4806,8 +5667,8 @@
 
     function deleteModalItem() {
       if (!activeEditing) return;
-      if (!activeEditing.isNew) {
-        state[activeEditing.type] = state[activeEditing.type].filter(t => t.id !== activeEditing.id);
+      if (!activeEditing.isNew && activeEditing.type === 'dailies') {
+        state.dailies = state.dailies.filter(t => t.id !== activeEditing.id);
         saveState();
         render();
       }
@@ -4839,19 +5700,15 @@
     function addTodoFromInput() {
       const tInput = document.getElementById('todoInput');
       if (tInput.value.trim()) {
-        const parsed = parseNaturalLanguage(tInput.value);
-        state.todos.unshift({
-          id: 't_' + Date.now(),
-          text: parsed.text,
-          completed: false,
-          difficulty: parsed.difficulty,
-          deadline: parsed.deadline,
-          color: parsed.color,
-          subtasks: parsed.subtasks
-        });
-        tInput.value = '';
-        saveState();
-        render();
+        const parsedList = parseMultipleTodos(tInput.value);
+        if (parsedList.length > 0) {
+          for (let i = parsedList.length - 1; i >= 0; i--) {
+            state.todos.unshift(parsedList[i]);
+          }
+          tInput.value = '';
+          saveState();
+          render();
+        }
       }
     }
 
@@ -5104,6 +5961,33 @@
           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             submitTopSpotlight();
+          } else if (e.key === 'Enter') {
+            const start = spotInput.selectionStart;
+            const end = spotInput.selectionEnd;
+            const val = spotInput.value;
+            const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+            const currentLine = val.substring(lineStart, start);
+
+            const emptyMatch = currentLine.match(/^(\s*[-•*]\s*(\[\s*[xX]?\s*\]\s*)?)$/);
+            if (emptyMatch) {
+              e.preventDefault();
+              spotInput.value = val.substring(0, lineStart) + val.substring(start);
+              spotInput.selectionStart = spotInput.selectionEnd = lineStart;
+              autoResizeSpotlightInput();
+              updateSpotlightPreview();
+              return;
+            }
+
+            const bulletMatch = currentLine.match(/^(\s*[-•*]\s*\[\s*[xX]?\s*\]\s*|\s*[-•*]\s*|\s*\[\s*[xX]?\s*\]\s*)/);
+            if (bulletMatch) {
+              e.preventDefault();
+              const prefix = bulletMatch[1].includes('[') ? '- [ ] ' : '- ';
+              const insertText = '\n' + prefix;
+              spotInput.value = val.substring(0, start) + insertText + val.substring(end);
+              spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
+              autoResizeSpotlightInput();
+              updateSpotlightPreview();
+            }
           } else if (e.key === 'Escape') {
             e.preventDefault();
             closeTopSpotlight();
@@ -5210,6 +6094,26 @@
         }
       };
 
+      // Top Actions Dropdown Toggle
+      const topDropBtn = document.getElementById('topDropdownBtn');
+      const topDropMenu = document.getElementById('topDropdownMenu');
+      if (topDropBtn && topDropMenu) {
+        topDropBtn.onclick = (e) => {
+          e.stopPropagation();
+          topDropMenu.classList.toggle('active');
+        };
+        topDropMenu.onclick = (e) => {
+          if (e.target && e.target.id !== 'soundToggleBtn') {
+            topDropMenu.classList.remove('active');
+          }
+        };
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('#topDropdownContainer')) {
+            topDropMenu.classList.remove('active');
+          }
+        });
+      }
+
       // Heatmap progress section click
       document.getElementById('progressSection').onclick = () => {
         renderHeatmap();
@@ -5264,16 +6168,26 @@
 
       // Pointer / Mouse events on divider
       divider.onpointerdown = (e) => {
+        if (e.target && e.target.closest('#focusTimerBtn')) return;
         onDragStart(e.clientX);
         try { divider.setPointerCapture(e.pointerId); } catch (err) { }
       };
-      divider.onpointermove = (e) => onDragMove(e.clientX);
+      divider.onpointermove = (e) => {
+        if (!isDividerDragging) return;
+        onDragMove(e.clientX);
+      };
       divider.onpointerup = () => onDragEnd();
       divider.onpointercancel = () => onDragEnd();
 
       // Touch events on divider
-      divider.ontouchstart = (e) => onDragStart(e.touches[0].clientX);
-      divider.ontouchmove = (e) => onDragMove(e.touches[0].clientX);
+      divider.ontouchstart = (e) => {
+        if (e.target && e.target.closest('#focusTimerBtn')) return;
+        onDragStart(e.touches[0].clientX);
+      };
+      divider.ontouchmove = (e) => {
+        if (!isDividerDragging) return;
+        onDragMove(e.touches[0].clientX);
+      };
       divider.ontouchend = () => onDragEnd();
 
       // Swipe on right panel container
@@ -5293,17 +6207,39 @@
         }
       }, { passive: true });
 
+      // Notes mode button on Todos column
+      const notesBtn = document.getElementById('openTodosNotesBtn');
+      if (notesBtn) {
+        notesBtn.onclick = () => openEditModal(null, 'todos');
+      }
+
+      // Notes toolbar chip buttons
+      document.querySelectorAll('.notes-chip-btn').forEach(btn => {
+        btn.onclick = () => {
+          const toInsert = btn.dataset.insert;
+          const input = document.getElementById('modalTaskInput');
+          if (!input || !toInsert) return;
+          const start = input.selectionStart;
+          const end = input.selectionEnd;
+          const val = input.value;
+          input.value = val.substring(0, start) + toInsert + val.substring(end);
+          input.selectionStart = input.selectionEnd = start + toInsert.length;
+          input.focus();
+        };
+      });
+
       // Modal Subtasks Add
-      document.getElementById('modalAddSubtaskBtn').onclick = () => {
-        if (activeEditing) {
-          activeEditing.subtasks.push({
-            id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-            text: '',
-            completed: false
-          });
-          renderModalSubtasks();
-        }
-      };
+      const addStBtn = document.getElementById('modalAddSubtaskBtn');
+      if (addStBtn) {
+        addStBtn.onclick = () => {
+          const input = document.getElementById('modalTaskInput');
+          if (input) {
+            input.value = input.value ? (input.value + '\n- [ ] ') : '- [ ] ';
+            input.focus();
+            input.selectionStart = input.selectionEnd = input.value.length;
+          }
+        };
+      }
 
       // Modal Buttons
       document.getElementById('modalCloseBtn').onclick = closeEditModal;
@@ -5311,7 +6247,38 @@
       document.getElementById('modalDeleteBtn').onclick = deleteModalItem;
       document.getElementById('modalTaskInput').oninput = autoResizeModalInput;
       document.getElementById('modalTaskInput').onkeydown = (e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveModalChanges();
+        if (e.key === 'Enter') {
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            saveModalChanges();
+            return;
+          }
+          const inp = e.target;
+          const start = inp.selectionStart;
+          const end = inp.selectionEnd;
+          const val = inp.value;
+          const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+          const currentLine = val.substring(lineStart, start);
+
+          const emptyMatch = currentLine.match(/^(\s*[-•*]\s*(\[\s*[xX]?\s*\]\s*)?)$/);
+          if (emptyMatch) {
+            e.preventDefault();
+            inp.value = val.substring(0, lineStart) + val.substring(start);
+            inp.selectionStart = inp.selectionEnd = lineStart;
+            autoResizeModalInput();
+            return;
+          }
+
+          const bulletMatch = currentLine.match(/^(\s*[-•*]\s*\[\s*[xX]?\s*\]\s*|\s*[-•*]\s*|\s*\[\s*[xX]?\s*\]\s*)/);
+          if (bulletMatch) {
+            e.preventDefault();
+            const prefix = bulletMatch[1].includes('[') ? '- [ ] ' : '- ';
+            const insertText = '\n' + prefix;
+            inp.value = val.substring(0, start) + insertText + val.substring(end);
+            inp.selectionStart = inp.selectionEnd = start + insertText.length;
+            autoResizeModalInput();
+          }
+        }
         if (e.key === 'Escape') closeEditModal();
       };
 
@@ -5319,6 +6286,58 @@
       document.getElementById('editModal').onclick = (e) => {
         if (e.target === document.getElementById('editModal')) closeEditModal();
       };
+
+      // Focus Timer button & modal
+      const focusBtn = document.getElementById('focusTimerBtn');
+      if (focusBtn) {
+        focusBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+        focusBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+        focusBtn.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+        focusBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          openFocusModal();
+        });
+      }
+
+      const focusCloseBtn = document.getElementById('focusModalCloseBtn');
+      if (focusCloseBtn) {
+        focusCloseBtn.addEventListener('click', closeFocusModal);
+      }
+
+      const focusOverlay = document.getElementById('focusModal');
+      if (focusOverlay) {
+        focusOverlay.addEventListener('click', (e) => {
+          if (e.target === focusOverlay) closeFocusModal();
+        });
+      }
+
+      const startFocusBtn = document.getElementById('startFocusBtn');
+      if (startFocusBtn) {
+        startFocusBtn.addEventListener('click', () => {
+          const inp = document.getElementById('focusMinutesInput');
+          startFocusTimer(inp ? inp.value : 25);
+        });
+      }
+
+      const focusInp = document.getElementById('focusMinutesInput');
+      if (focusInp) {
+        focusInp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            startFocusTimer(focusInp.value);
+          } else if (e.key === 'Escape') {
+            closeFocusModal();
+          }
+        });
+      }
+
+      document.querySelectorAll('.focus-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const m = btn.dataset.min;
+          if (focusInp && m) focusInp.value = m;
+        });
+      });
     }
 
     // Window resize re-aligns matrix heights
@@ -5440,8 +6459,8 @@
         id: 'project_dissection',
         title: 'Project Dissection',
         tag: 'DEEP WORK',
-        desc: 'Complete at least 20 subtasks across complex multi-step tasks.',
-        target: 20,
+        desc: 'Complete at least 10 subtasks across complex multi-step tasks.',
+        target: 10,
         sealId: 'seal_architect',
         sealName: 'Architect Seal',
         sealDesc: 'Awarded for granular deep work execution.',
@@ -5528,7 +6547,7 @@
       }
       if (disciplineState.acceptedContracts['project_dissection'] !== undefined) {
         if ((stats.subtasksCount || 0) > 0) {
-          disciplineState.acceptedContracts['project_dissection'] = Math.min(20, (disciplineState.acceptedContracts['project_dissection'] || 0) + stats.subtasksCount);
+          disciplineState.acceptedContracts['project_dissection'] = Math.min(10, (disciplineState.acceptedContracts['project_dissection'] || 0) + stats.subtasksCount);
         }
       }
       if (disciplineState.acceptedContracts['weekend_fortress'] !== undefined) {
@@ -5899,6 +6918,7 @@
     render();
     renderDisciplineDrawer();
     setupDisciplineDrawer();
+    initFocusTimerWatcher();
     updateLiveCountdowns();
     setInterval(updateLiveCountdowns, 1000);
 
