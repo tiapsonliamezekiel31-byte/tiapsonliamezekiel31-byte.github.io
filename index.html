@@ -3597,7 +3597,7 @@
 
       let fullText = mainLines.join(' ');
       if (!fullText && subtasks.length > 0) {
-        fullText = 'Task Plan';
+        fullText = subtasks.shift().text;
       }
       let difficulty = 'easy';
       let deadline = '';
@@ -3617,7 +3617,7 @@
       fullText = fullText.replace(tagRegex, ' ');
 
       // 2. Priority & Difficulty: p1/urgent/critical/ultra (10), p2/mega (7), p3/hard (5), p4/med (2), p5/easy (1)
-      const prioRegex = /\b(?:p|priority|!)?\s*([1-5])\b/i;
+      const prioRegex = /\b(?:p|priority|!)\s*([1-5])\b/i;
       let pMatch = fullText.match(prioRegex);
       if (pMatch) {
         const pNum = pMatch[1];
@@ -3672,7 +3672,17 @@
         fullText = fullText.replace(relMatch[0], ' ');
       }
 
-      // 5. Weekday parsing ("fri", "friday", "next monday")
+      // 5. ISO date format (*2026-09-20 or 2026-09-20T15:00 or 2026-09-20 15:00)
+      if (!deadline) {
+        const isoDateRegex = /(?:\*\s*)?\b(\d{4}-\d{2}-\d{2})(?:[T\s](\d{1,2}:\d{2}))?\b/i;
+        let isoMatch = fullText.match(isoDateRegex);
+        if (isoMatch) {
+          deadline = isoMatch[2] ? `${isoMatch[1]}T${isoMatch[2]}` : isoMatch[1];
+          fullText = fullText.replace(isoMatch[0], ' ');
+        }
+      }
+
+      // 6. Weekday parsing ("fri", "friday", "next monday")
       if (!deadline) {
         const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const dayShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -3694,7 +3704,7 @@
         }
       }
 
-      // 6. Explicit Time ("at 5pm", "3:30pm", "18:00")
+      // 7. Explicit Time ("at 5pm", "3:30pm", "18:00")
       const strictTimeRegex = /\b(?:at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?|(\d{1,2}):(\d{2})\s*(am|pm)?|(\d{1,2})\s*(am|pm))\b/i;
       let timeMatch = fullText.match(strictTimeRegex);
       if (timeMatch) {
@@ -3712,7 +3722,7 @@
         fullText = fullText.replace(timeMatch[0], ' ');
       }
 
-      // 7. Standard dates (today, tomorrow, tonight, month day)
+      // 8. Standard dates (today, tomorrow, tonight, month day)
       if (!deadline) {
         if (/(?:\*\s*)?\b(tomorrow|tmrw)\b/i.test(fullText)) {
           const tom = new Date(now);
@@ -3747,31 +3757,38 @@
       return { text: finalTitle, difficulty, deadline, color, subtasks, tags, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
     }
 
-    // --- MULTI-LINE / NOTES PARSER WITH CASCADE INHERITANCE ---
+    // --- MULTI-LINE / NOTES PARSER WITH INDEPENDENT ITEM SCOPING ---
     function parseMultipleTodos(rawText, baseDifficulty = 'easy', baseDeadline = '') {
       if (!rawText || !rawText.trim()) return [];
       const lines = rawText.split('\n');
       const todos = [];
       let currentTodo = null;
-      let runningDifficulty = baseDifficulty || 'easy';
-      let runningDeadline = baseDeadline || '';
 
-      function isBulletOrSubtask(line) {
+      function isSubtaskLine(line, hasParent) {
         const trimmed = line.trim();
         if (!trimmed) return false;
         const hasIndent = /^\s+/.test(line);
         const startsBullet = /^[-•*]\s+/.test(trimmed) || /^\[\s*[xX]?\s*\]\s*/.test(trimmed);
-        const isNumbered = /^\d+[\.\)]\s+/.test(trimmed);
         const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})\b/i.test(trimmed);
-        return hasIndent || startsBullet || isNumbered || isStarSubtask;
+
+        // If there is no parent yet, an unindented line is a new todo
+        if (!hasParent) {
+          return hasIndent;
+        }
+        // If a parent exists: indented lines, bullet lines, or star lines attach as subtasks
+        return hasIndent || startsBullet || isStarSubtask;
       }
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
-        if (!trimmed) continue;
+        if (!trimmed) {
+          // Blank line terminates current todo scope
+          currentTodo = null;
+          continue;
+        }
 
-        if (currentTodo && isBulletOrSubtask(line)) {
+        if (currentTodo && isSubtaskLine(line, true)) {
           let isChecked = false;
           if (/^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed)) {
             isChecked = true;
@@ -3791,25 +3808,26 @@
           }
         } else {
           // New Todo line
-          const parsed = parseNaturalLanguage(trimmed);
+          let cleanLine = trimmed;
+          // Strip bullet or checkbox prefix if line is treated as todo title
+          cleanLine = cleanLine
+            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
+            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
+            .replace(/^\d+[\.\)]\s*/, '')
+            .trim();
 
-          // Check if explicit difficulty or deadline was given in this line
-          const hasExplicitDiff = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical)\b|\b(?:p|priority|!)\s*[1-5]\b|\b(urgent|critical|ultra|mega|hard|medium|med)\b/i.test(trimmed);
-          if (hasExplicitDiff) {
-            runningDifficulty = parsed.difficulty;
-          }
+          const parsed = parseNaturalLanguage(cleanLine || trimmed);
 
-          const hasExplicitDeadline = !!parsed.deadline;
-          if (hasExplicitDeadline) {
-            runningDeadline = parsed.deadline;
-          }
+          // STRICT ISOLATION: Do NOT cascade difficulty or deadline across tasks!
+          const explicitDeadline = parsed.deadline || '';
+          const explicitDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : (baseDifficulty || 'easy');
 
           currentTodo = {
             id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5) + '_' + todos.length,
             text: parsed.text,
             completed: false,
-            difficulty: runningDifficulty,
-            deadline: runningDeadline,
+            difficulty: explicitDiff,
+            deadline: explicitDeadline,
             color: parsed.color || SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex,
             subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
             tags: parsed.tags || []
@@ -3849,12 +3867,21 @@
       const oldActive = (state.todos || []).filter(t => !t.completed);
       const completedTodos = (state.todos || []).filter(t => t.completed);
 
-      const newActiveTodos = parsedTodos.map(pt => {
-        const existing = oldActive.find(o => o.text.trim().toLowerCase() === pt.text.trim().toLowerCase());
+      const matchedExistingIds = new Set();
+
+      const newActiveTodos = parsedTodos.map((pt, idx) => {
+        let existing = oldActive.find(o => !matchedExistingIds.has(o.id) && o.text.trim().toLowerCase() === pt.text.trim().toLowerCase());
+        if (!existing && oldActive[idx] && !matchedExistingIds.has(oldActive[idx].id) && parsedTodos.length === oldActive.length) {
+          existing = oldActive[idx];
+        }
+
         if (existing) {
+          matchedExistingIds.add(existing.id);
           existing.text = pt.text;
           existing.difficulty = pt.difficulty;
           existing.deadline = pt.deadline;
+          existing.color = pt.color && pt.color !== SOLAR_COLORS[0].hex ? pt.color : (existing.color || SOLAR_COLORS[0].hex);
+          existing.tags = pt.tags && pt.tags.length > 0 ? pt.tags : (existing.tags || []);
           existing.subtasks = (pt.subtasks || []).map(nst => {
             const existSt = (existing.subtasks || []).find(es => es.text.trim().toLowerCase() === nst.text.trim().toLowerCase());
             return {

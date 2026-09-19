@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: draggable sticky notes and vertical stat pills beside ELO"
+$commitMsg = "fix: to-do subtask grouping and eliminate deadline cascade"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
