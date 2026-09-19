@@ -4198,41 +4198,44 @@
         }
       };
 
-      // Touch drag reordering for mobile
-      let touchStartY = 0;
-      let touchMoved = false;
+      // Touch drag reordering for mobile (requires hold to prevent scroll conflict)
+      let touchHoldTimer = null;
+      let isTouchDragging = false;
       let touchTargetCard = null;
 
       card.addEventListener('touchstart', (e) => {
         if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
-        touchStartY = e.touches[0].clientY;
-        touchMoved = false;
-        draggedId = item.id;
-        draggedType = type;
+        touchTargetCard = null;
+        touchHoldTimer = setTimeout(() => {
+          isTouchDragging = true;
+          draggedId = item.id;
+          draggedType = type;
+          card.classList.add('dragging');
+        }, 260);
       }, { passive: true });
 
       card.addEventListener('touchmove', (e) => {
-        if (!draggedId || draggedType !== type) return;
-        const currentY = e.touches[0].clientY;
-        if (Math.abs(currentY - touchStartY) > 12) {
-          touchMoved = true;
-          card.classList.add('dragging');
-          const elem = document.elementFromPoint(e.touches[0].clientX, currentY);
-          const targetCard = elem ? elem.closest('.task-card') : null;
-          document.querySelectorAll('.task-card').forEach(c => c.classList.remove('drag-over'));
-          if (targetCard && targetCard !== card && targetCard.dataset.id) {
-            targetCard.classList.add('drag-over');
-            touchTargetCard = targetCard;
-          } else {
-            touchTargetCard = null;
-          }
+        if (!isTouchDragging) {
+          clearTimeout(touchHoldTimer);
+          return;
+        }
+        const touch = e.touches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        const targetCard = elem ? elem.closest('.task-card') : null;
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('drag-over'));
+        if (targetCard && targetCard !== card && targetCard.dataset.id) {
+          targetCard.classList.add('drag-over');
+          touchTargetCard = targetCard;
+        } else {
+          touchTargetCard = null;
         }
       }, { passive: true });
 
-      card.addEventListener('touchend', () => {
+      const onTouchEndOrCancel = () => {
+        clearTimeout(touchHoldTimer);
         card.classList.remove('dragging');
         document.querySelectorAll('.task-card').forEach(c => c.classList.remove('drag-over'));
-        if (touchMoved && touchTargetCard && draggedId && draggedType === type) {
+        if (isTouchDragging && touchTargetCard && draggedId && draggedType === type) {
           const targetId = touchTargetCard.dataset.id;
           if (targetId && targetId !== draggedId) {
             const list = state[type];
@@ -4249,10 +4252,14 @@
             }
           }
         }
+        isTouchDragging = false;
         draggedId = null;
         draggedType = null;
         touchTargetCard = null;
-      });
+      };
+
+      card.addEventListener('touchend', onTouchEndOrCancel);
+      card.addEventListener('touchcancel', onTouchEndOrCancel);
 
       // Double-Click & Double-Tap detection
       let clickCount = 0;
@@ -6178,36 +6185,6 @@
           if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             submitTopSpotlight();
-          } else if (e.key === 'Enter') {
-            const start = spotInput.selectionStart;
-            const end = spotInput.selectionEnd;
-            const val = spotInput.value;
-            const lineStart = val.lastIndexOf('\n', start - 1) + 1;
-            const currentLine = val.substring(lineStart, start);
-
-            const emptyMatch = currentLine.match(/^(\s*[-•*]\s*(\[\s*[xX]?\s*\]\s*)?)$/);
-            if (emptyMatch) {
-              e.preventDefault();
-              spotInput.value = val.substring(0, lineStart) + val.substring(start);
-              spotInput.selectionStart = spotInput.selectionEnd = lineStart;
-              autoResizeSpotlightInput();
-              updateSpotlightPreview();
-              return;
-            }
-
-            const bulletMatch = currentLine.match(/^(\s*[-•*]\s*\[\s*[xX]?\s*\]\s*|\s*[-•*]\s*|\s*\[\s*[xX]?\s*\]\s*)/);
-            if (bulletMatch) {
-              e.preventDefault();
-              const prefix = bulletMatch[1].includes('[') ? '- [ ] ' : '- ';
-              const insertText = '\n' + prefix;
-              spotInput.value = val.substring(0, start) + insertText + val.substring(end);
-              spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
-              autoResizeSpotlightInput();
-              updateSpotlightPreview();
-            } else if (!e.shiftKey) {
-              e.preventDefault();
-              submitTopSpotlight();
-            }
           } else if (e.key === 'Escape') {
             e.preventDefault();
             closeTopSpotlight();
@@ -6473,45 +6450,12 @@
       document.getElementById('modalDeleteBtn').onclick = deleteModalItem;
       document.getElementById('modalTaskInput').oninput = autoResizeModalInput;
       document.getElementById('modalTaskInput').onkeydown = (e) => {
-        if (e.key === 'Enter') {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            saveModalChanges();
-            return;
-          }
-          const inp = e.target;
-          const start = inp.selectionStart;
-          const end = inp.selectionEnd;
-          const val = inp.value;
-          const lineStart = val.lastIndexOf('\n', start - 1) + 1;
-          const currentLine = val.substring(lineStart, start);
-
-          const emptyMatch = currentLine.match(/^(\s*[-•*]\s*(\[\s*[xX]?\s*\]\s*)?)$/);
-          if (emptyMatch) {
-            e.preventDefault();
-            inp.value = val.substring(0, lineStart) + val.substring(start);
-            inp.selectionStart = inp.selectionEnd = lineStart;
-            autoResizeModalInput();
-            return;
-          }
-
-          const bulletMatch = currentLine.match(/^(\s*[-•*]\s*\[\s*[xX]?\s*\]\s*|\s*[-•*]\s*|\s*\[\s*[xX]?\s*\]\s*)/);
-          if (bulletMatch) {
-            e.preventDefault();
-            const prefix = bulletMatch[1].includes('[') ? '- [ ] ' : '- ';
-            const insertText = '\n' + prefix;
-            inp.value = val.substring(0, start) + insertText + val.substring(end);
-            inp.selectionStart = inp.selectionEnd = start + insertText.length;
-            autoResizeModalInput();
-          } else if (activeEditing && activeEditing.type === 'dailies' && currentLine.trim()) {
-            e.preventDefault();
-            const insertText = '\n- [ ] ';
-            inp.value = val.substring(0, start) + insertText + val.substring(end);
-            inp.selectionStart = inp.selectionEnd = start + insertText.length;
-            autoResizeModalInput();
-          }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          saveModalChanges();
+        } else if (e.key === 'Escape') {
+          closeEditModal();
         }
-        if (e.key === 'Escape') closeEditModal();
       };
 
       // Close modal clicking outside
