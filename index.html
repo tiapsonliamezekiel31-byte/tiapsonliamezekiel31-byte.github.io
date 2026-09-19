@@ -3764,71 +3764,44 @@
       const todos = [];
       let currentTodo = null;
 
-      function isSubtaskLine(line, parentTodo) {
-        const trimmed = line.trim();
-        if (!trimmed || !parentTodo) return false;
-        const hasIndent = /^\s+/.test(line);
-        // Any bullet, checkbox, or numbered step (with or without space)
-        const startsBullet = /^([-•*>]|\[\s*[xX]?\s*\]|\d+[\.\)])\s*/.test(trimmed);
-        const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})\b/i.test(trimmed);
-
-        if (hasIndent || startsBullet || isStarSubtask) {
-          return true;
-        }
-
-        // If parent task already has bullet subtasks, an unindented line without a bullet starts a new task
-        if (parentTodo.hasBulletSubtasks) {
-          return false;
-        }
-
-        // Regular subtask (plain line following parent todo before any blank line)
-        return true;
-      }
-
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
         if (!trimmed) {
-          // Blank line terminates current todo scope
-          currentTodo = null;
           continue;
         }
 
-        if (currentTodo && isSubtaskLine(line, currentTodo)) {
-          let isChecked = false;
-          if (/^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed)) {
-            isChecked = true;
-          }
-          const startsBullet = /^([-•*>]|\[\s*[xX]?\s*\]|\d+[\.\)])\s*/.test(trimmed);
-          if (startsBullet) {
-            currentTodo.hasBulletSubtasks = true;
-          }
-          const subText = trimmed
-            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
-            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
-            .replace(/^\d+[\.\)]\s*/, '')
-            .trim();
+        // KEEP IT SIMPLE: "-" indicates a subtask under the task
+        if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+          const isChecked = /^[-•]\s*\[\s*[xX]\s*\]/.test(trimmed);
+          const subText = trimmed.replace(/^[-•]\s*(\[\s*[xX]?\s*\]\s*)?/, '').trim();
 
-          if (subText) {
-            currentTodo.subtasks.push({
-              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-              text: subText,
-              completed: isChecked
-            });
+          if (currentTodo) {
+            if (subText) {
+              currentTodo.subtasks.push({
+                id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                text: subText,
+                completed: isChecked
+              });
+            }
+          } else {
+            // First line starts with '-', promote to parent task
+            const parsed = parseNaturalLanguage(subText || trimmed);
+            currentTodo = {
+              id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5) + '_' + todos.length,
+              text: parsed.text,
+              completed: isChecked,
+              difficulty: (parsed.difficulty !== 'easy') ? parsed.difficulty : (baseDifficulty || 'easy'),
+              deadline: parsed.deadline || '',
+              color: parsed.color || SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex,
+              subtasks: [],
+              tags: parsed.tags || []
+            };
+            todos.push(currentTodo);
           }
         } else {
-          // New Todo line
-          let cleanLine = trimmed;
-          // Strip bullet or checkbox prefix if line is treated as todo title
-          cleanLine = cleanLine
-            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
-            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
-            .replace(/^\d+[\.\)]\s*/, '')
-            .trim();
-
-          const parsed = parseNaturalLanguage(cleanLine || trimmed);
-
-          // STRICT ISOLATION: Do NOT cascade difficulty or deadline across tasks!
+          // Normal task line
+          const parsed = parseNaturalLanguage(trimmed);
           const explicitDeadline = parsed.deadline || '';
           const explicitDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : (baseDifficulty || 'easy');
 
@@ -5757,7 +5730,30 @@
           render();
         }
       } else {
-        const parsed = parseNaturalLanguage(rawText);
+        const lines = rawText.split('\n');
+        let title = '';
+        const subtasks = [];
+        lines.forEach(l => {
+          const trimmed = l.trim();
+          if (!trimmed) return;
+          if (trimmed.startsWith('-') || trimmed.startsWith('•')) {
+            const isChecked = /^[-•]\s*\[\s*[xX]\s*\]/.test(trimmed);
+            const stText = trimmed.replace(/^[-•]\s*(\[\s*[xX]?\s*\]\s*)?/, '').trim();
+            if (stText) {
+              subtasks.push({
+                id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                text: stText,
+                completed: isChecked
+              });
+            }
+          } else if (!title) {
+            title = trimmed;
+          }
+        });
+        if (!title && subtasks.length > 0) {
+          title = subtasks.shift().text;
+        }
+        const parsed = parseNaturalLanguage(title || rawText);
         const effDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : spotlightState.difficulty;
         const newItem = {
           id: 'd_' + Date.now(),
@@ -5766,7 +5762,7 @@
           difficulty: effDiff,
           deadline: parsed.deadline || '',
           color: parsed.color || SOLAR_COLORS[0].hex,
-          subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
+          subtasks: subtasks.length > 0 ? subtasks : (parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : []),
           streak: 0,
           history: [],
           days: spotlightState.days
@@ -6208,13 +6204,9 @@
               spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
               autoResizeSpotlightInput();
               updateSpotlightPreview();
-            } else if (currentLine.trim()) {
+            } else if (!e.shiftKey) {
               e.preventDefault();
-              const insertText = '\n- ';
-              spotInput.value = val.substring(0, start) + insertText + val.substring(end);
-              spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
-              autoResizeSpotlightInput();
-              updateSpotlightPreview();
+              submitTopSpotlight();
             }
           } else if (e.key === 'Escape') {
             e.preventDefault();
