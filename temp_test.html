@@ -1,0 +1,368 @@
+<!DOCTYPE html><html><body><pre id="out"></pre><script>
+const SOLAR_COLORS = [{ name: 'blue', hex: '#268bd2' }];
+const DIFF_CONFIG = { easy: { weight: 1, label: 'Easy' } };
+function parseNaturalLanguage(rawInput) {
+      let rawLines = rawInput.split('\n');
+      let subtasks = [];
+      let mainLines = [];
+
+      rawLines.forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+
+        const isBullet = trimmed.startsWith('-') || trimmed.startsWith('•') || trimmed.startsWith('[ ]') || trimmed.startsWith('[]');
+        const isNumbered = /^\d+[\.\)]\s+/.test(trimmed);
+        const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(trimmed);
+
+        if (isBullet || isNumbered || isStarSubtask) {
+          const subText = trimmed.replace(/^[-•*]|\[\s*\]|^\d+[\.\)]\s*/, '').trim();
+          if (subText) {
+            subtasks.push({
+              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+              text: subText,
+              completed: false
+            });
+          }
+        } else {
+          mainLines.push(trimmed);
+        }
+      });
+
+      let fullText = mainLines.join(' ');
+      if (!fullText && subtasks.length > 0) {
+        fullText = subtasks.shift().text;
+      }
+      let difficulty = 'easy';
+      let deadline = '';
+      let color = SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex;
+      let tags = [];
+
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const todayStr = now.toISOString().split('T')[0];
+
+      // 1. Tags (#work, #gym, #dev)
+      const tagRegex = /#([a-zA-Z0-9_\-]+)/g;
+      let tagMatch;
+      while ((tagMatch = tagRegex.exec(fullText)) !== null) {
+        tags.push(tagMatch[1].toLowerCase());
+      }
+      fullText = fullText.replace(tagRegex, ' ');
+
+      // 2. Priority & Difficulty: p1/urgent/critical/ultra (10), p2/mega (7), p3/hard (5), p4/med (2), p5/easy (1)
+      const prioRegex = /\b(?:p|priority|!)\s*([1-5])\b/i;
+      let pMatch = fullText.match(prioRegex);
+      if (pMatch) {
+        const pNum = pMatch[1];
+        if (pNum === '1') difficulty = 'ultra';
+        else if (pNum === '2') difficulty = 'mega';
+        else if (pNum === '3') difficulty = 'hard';
+        else if (pNum === '4') difficulty = 'medium';
+        else if (pNum === '5') difficulty = 'easy';
+        fullText = fullText.replace(pMatch[0], ' ');
+      }
+
+      const wordDiffRegex = /\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical)\b|\b(urgent|critical|ultra|mega|hard|medium|med|easy)\b/gi;
+      let wDiffMatch = wordDiffRegex.exec(fullText);
+      if (wDiffMatch && difficulty === 'easy') {
+        const val = (wDiffMatch[1] || wDiffMatch[2]).toLowerCase();
+        if (['easy', 'circle'].includes(val)) difficulty = 'easy';
+        else if (['medium', 'med', 'triangle'].includes(val)) difficulty = 'medium';
+        else if (['hard', 'square'].includes(val)) difficulty = 'hard';
+        else if (['mega', 'pentagon'].includes(val)) difficulty = 'mega';
+        else if (['ultra', 'star', 'urgent', 'critical'].includes(val)) difficulty = 'ultra';
+        fullText = fullText.replace(wDiffMatch[0], ' ');
+      }
+
+      // 3. Color tags (*blue, etc)
+      const starColorRegex = /\*\s*(blue|green|cyan|yellow|orange|red|magenta|violet)\b/gi;
+      let colMatch = starColorRegex.exec(fullText);
+      if (colMatch) {
+        const found = SOLAR_COLORS.find(c => c.name === colMatch[1].toLowerCase());
+        if (found) color = found.hex;
+        fullText = fullText.replace(colMatch[0], ' ');
+      }
+
+      // 4. Relative time ("in 2h", "in 30m", "in 3d")
+      const relTimeRegex = /\bin\s+(\d+)\s*(h|hr|hrs|hours|m|min|mins|minutes|d|days|w|weeks)\b/i;
+      let relMatch = fullText.match(relTimeRegex);
+      if (relMatch) {
+        const amount = parseInt(relMatch[1], 10);
+        const unit = relMatch[2].toLowerCase();
+        const targetDate = new Date(now);
+        if (unit.startsWith('m')) {
+          targetDate.setMinutes(targetDate.getMinutes() + amount);
+        } else if (unit.startsWith('h')) {
+          targetDate.setHours(targetDate.getHours() + amount);
+        } else if (unit.startsWith('d')) {
+          targetDate.setDate(targetDate.getDate() + amount);
+        } else if (unit.startsWith('w')) {
+          targetDate.setDate(targetDate.getDate() + amount * 7);
+        }
+        const offset = targetDate.getTimezoneOffset() * 60000;
+        const localTarget = new Date(targetDate.getTime() - offset);
+        deadline = localTarget.toISOString().substring(0, 16); // YYYY-MM-DDTHH:mm
+        fullText = fullText.replace(relMatch[0], ' ');
+      }
+
+      // 5. ISO date format (*2026-09-20 or 2026-09-20T15:00 or 2026-09-20 15:00)
+      if (!deadline) {
+        const isoDateRegex = /(?:\*\s*)?\b(\d{4}-\d{2}-\d{2})(?:[T\s](\d{1,2}:\d{2}))?\b/i;
+        let isoMatch = fullText.match(isoDateRegex);
+        if (isoMatch) {
+          deadline = isoMatch[2] ? `${isoMatch[1]}T${isoMatch[2]}` : isoMatch[1];
+          fullText = fullText.replace(isoMatch[0], ' ');
+        }
+      }
+
+      // 6. Weekday parsing ("fri", "friday", "next monday")
+      if (!deadline) {
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const weekdayRegex = /\b(?:next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tue|wed|thu|fri|sat)\b/i;
+        let wMatch = fullText.match(weekdayRegex);
+        if (wMatch) {
+          const name = wMatch[1].toLowerCase();
+          let targetDay = dayNames.indexOf(name);
+          if (targetDay === -1) targetDay = dayShort.indexOf(name);
+          if (targetDay !== -1) {
+            const currentDay = now.getDay();
+            let daysUntil = (targetDay - currentDay + 7) % 7;
+            if (daysUntil === 0 || wMatch[0].toLowerCase().includes('next')) daysUntil += 7;
+            const targetDate = new Date(now);
+            targetDate.setDate(targetDate.getDate() + daysUntil);
+            deadline = targetDate.toISOString().split('T')[0];
+            fullText = fullText.replace(wMatch[0], ' ');
+          }
+        }
+      }
+
+      // 7. Explicit Time ("at 5pm", "3:30pm", "18:00")
+      const strictTimeRegex = /\b(?:at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?|(\d{1,2}):(\d{2})\s*(am|pm)?|(\d{1,2})\s*(am|pm))\b/i;
+      let timeMatch = fullText.match(strictTimeRegex);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1] || timeMatch[4] || timeMatch[7], 10);
+        let minute = parseInt(timeMatch[2] || timeMatch[5] || '0', 10);
+        const meridiem = (timeMatch[3] || timeMatch[6] || timeMatch[8] || '').toLowerCase();
+        if (meridiem === 'pm' && hour < 12) hour += 12;
+        if (meridiem === 'am' && hour === 12) hour = 0;
+        const timePart = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        if (deadline) {
+          deadline = `${deadline.split('T')[0]}T${timePart}`;
+        } else {
+          deadline = `${todayStr}T${timePart}`;
+        }
+        fullText = fullText.replace(timeMatch[0], ' ');
+      }
+
+      // 8. Standard dates (today, tomorrow, tonight, month day)
+      if (!deadline) {
+        if (/(?:\*\s*)?\b(tomorrow|tmrw)\b/i.test(fullText)) {
+          const tom = new Date(now);
+          tom.setDate(tom.getDate() + 1);
+          deadline = tom.toISOString().split('T')[0];
+          fullText = fullText.replace(/(?:\*\s*)?\b(tomorrow|tmrw)\b/gi, ' ');
+        } else if (/(?:\*\s*)?\b(today|tonight)\b/i.test(fullText)) {
+          deadline = todayStr;
+          fullText = fullText.replace(/(?:\*\s*)?\b(today|tonight)\b/gi, ' ');
+        }
+      }
+
+      if (!deadline) {
+        const monthDayRegex = /(?:\*\s*)?\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?\b/gi;
+        let mdMatch = monthDayRegex.exec(fullText);
+        if (mdMatch) {
+          const months = { jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7, sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11 };
+          const mIndex = months[mdMatch[1].toLowerCase()];
+          const day = parseInt(mdMatch[2], 10);
+          if (mIndex !== undefined && day >= 1 && day <= 31) {
+            const target = new Date(currentYear, mIndex, day);
+            const offset = target.getTimezoneOffset() * 60000;
+            deadline = new Date(target.getTime() - offset).toISOString().split('T')[0];
+            fullText = fullText.replace(mdMatch[0], ' ');
+          }
+        }
+      }
+
+      let finalTitle = fullText.replace(/[*]/g, '').replace(/\s+/g, ' ').trim();
+      if (!finalTitle) finalTitle = `Task (${difficulty.toUpperCase()})`;
+
+      return { text: finalTitle, difficulty, deadline, color, subtasks, tags, streak: 0, history: [], days: [0, 1, 2, 3, 4, 5, 6] };
+    }
+
+    // --- MULTI-LINE / NOTES PARSER WITH INDEPENDENT ITEM SCOPING ---
+    function parseMultipleTodos(rawText, baseDifficulty = 'easy', baseDeadline = '') {
+      if (!rawText || !rawText.trim()) return [];
+      const lines = rawText.split('\n');
+      const todos = [];
+      let currentTodo = null;
+
+      function isSubtaskLine(line, hasParent) {
+        const trimmed = line.trim();
+        if (!trimmed) return false;
+        const hasIndent = /^\s+/.test(line);
+        const startsBullet = /^[-•*]\s+/.test(trimmed) || /^\[\s*[xX]?\s*\]\s*/.test(trimmed);
+        const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})\b/i.test(trimmed);
+
+        // If there is no parent yet, an unindented line is a new todo
+        if (!hasParent) {
+          return hasIndent;
+        }
+        // If a parent exists: indented lines, bullet lines, or star lines attach as subtasks
+        return hasIndent || startsBullet || isStarSubtask;
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+        if (!trimmed) {
+          // Blank line terminates current todo scope
+          currentTodo = null;
+          continue;
+        }
+
+        if (currentTodo && isSubtaskLine(line, true)) {
+          let isChecked = false;
+          if (/^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed)) {
+            isChecked = true;
+          }
+          const subText = trimmed
+            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
+            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
+            .replace(/^\d+[\.\)]\s*/, '')
+            .trim();
+
+          if (subText) {
+            currentTodo.subtasks.push({
+              id: 'st_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+              text: subText,
+              completed: isChecked
+            });
+          }
+        } else {
+          // New Todo line
+          let cleanLine = trimmed;
+          // Strip bullet or checkbox prefix if line is treated as todo title
+          cleanLine = cleanLine
+            .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
+            .replace(/^\[\s*[xX]?\s*\]\s*/, '')
+            .replace(/^\d+[\.\)]\s*/, '')
+            .trim();
+
+          const parsed = parseNaturalLanguage(cleanLine || trimmed);
+
+          // STRICT ISOLATION: Do NOT cascade difficulty or deadline across tasks!
+          const explicitDeadline = parsed.deadline || '';
+          const explicitDiff = (parsed.difficulty !== 'easy') ? parsed.difficulty : (baseDifficulty || 'easy');
+
+          currentTodo = {
+            id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5) + '_' + todos.length,
+            text: parsed.text,
+            completed: false,
+            difficulty: explicitDiff,
+            deadline: explicitDeadline,
+            color: parsed.color || SOLAR_COLORS[Math.floor(Math.random() * SOLAR_COLORS.length)].hex,
+            subtasks: parsed.subtasks && parsed.subtasks.length > 0 ? parsed.subtasks : [],
+            tags: parsed.tags || []
+          };
+          todos.push(currentTodo);
+        }
+      }
+
+      return todos;
+    }
+
+    function serializeActiveTodosToNotes() {
+      const activeTodos = (state.todos || []).filter(t => !t.completed);
+      return activeTodos.map(t => {
+        let line = t.text;
+        if (t.difficulty && t.difficulty !== 'easy') {
+          line += ` *${t.difficulty}`;
+        }
+        if (t.deadline) {
+          line += ` *${t.deadline.replace('T', ' ')}`;
+        }
+        if (t.tags && t.tags.length > 0) {
+          line += ` ` + t.tags.map(tag => `#${tag}`).join(' ');
+        }
+        const lines = [line];
+        if (Array.isArray(t.subtasks) && t.subtasks.length > 0) {
+          t.subtasks.forEach(st => {
+            lines.push(`- [${st.completed ? 'x' : ' '}] ${st.text}`);
+          });
+        }
+        return lines.join('\n');
+      }).join('\n\n');
+    }
+
+    function saveAllTodosFromNotes(notesText) {
+      const parsedTodos = parseMultipleTodos(notesText);
+      const oldActive = (state.todos || []).filter(t => !t.completed);
+      const completedTodos = (state.todos || []).filter(t => t.completed);
+
+      const matchedExistingIds = new Set();
+
+      const newActiveTodos = parsedTodos.map((pt, idx) => {
+        let existing = oldActive.find(o => !matchedExistingIds.has(o.id) && o.text.trim().toLowerCase() === pt.text.trim().toLowerCase());
+        if (!existing && oldActive[idx] && !matchedExistingIds.has(oldActive[idx].id) && parsedTodos.length === oldActive.length) {
+          existing = oldActive[idx];
+        }
+
+        if (existing) {
+          matchedExistingIds.add(existing.id);
+          existing.text = pt.text;
+          existing.difficulty = pt.difficulty;
+          existing.deadline = pt.deadline;
+          existing.color = pt.color && pt.color !== SOLAR_COLORS[0].hex ? pt.color : (existing.color || SOLAR_COLORS[0].hex);
+          existing.tags = pt.tags && pt.tags.length > 0 ? pt.tags : (existing.tags || []);
+          existing.subtasks = (pt.subtasks || []).map(nst => {
+            const existSt = (existing.subtasks || []).find(es => es.text.trim().toLowerCase() === nst.text.trim().toLowerCase());
+            return {
+              id: existSt ? existSt.id : nst.id,
+              text: nst.text,
+              completed: nst.completed !== undefined ? nst.completed : (existSt ? existSt.completed : false)
+            };
+          });
+          return existing;
+        } else {
+          return pt;
+        }
+      });
+
+      state.todos = [...newActiveTodos, ...completedTodos];
+      saveState();
+      render();
+    }
+
+    // --- FOCUS OVERDRIVE TIMER SYSTEM ---
+    let focusTimerInterval = null;
+
+    
+function log(msg) {
+  document.getElementById('out').textContent += '\n' + msg;
+}
+
+log('--- TEST A: Regular subtasks with dash ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n- check token\n- check cookies'), null, 2));
+
+log('--- TEST B: Regular subtasks without space ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n-check token\n-check cookies'), null, 2));
+
+log('--- TEST C: Regular subtasks with newlines ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n\n- check token\n\n- check cookies'), null, 2));
+
+log('--- TEST D: Numbered subtasks ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n1. check token\n2. check cookies'), null, 2));
+
+log('--- TEST E: Indented plain text ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n  check token\n  check cookies'), null, 2));
+
+log('--- TEST F: Tab indented ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n\tcheck token\n\tcheck cookies'), null, 2));
+
+log('--- TEST G: Subtasks with bullet symbol ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\n• check token\n• check cookies'), null, 2));
+
+log('--- TEST H: Spotlight quick add single task with lines ---');
+log(JSON.stringify(parseMultipleTodos('Fix login\ncheck token\ncheck cookies'), null, 2));
+</script></body></html>

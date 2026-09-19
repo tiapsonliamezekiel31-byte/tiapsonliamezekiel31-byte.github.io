@@ -3764,19 +3764,25 @@
       const todos = [];
       let currentTodo = null;
 
-      function isSubtaskLine(line, hasParent) {
+      function isSubtaskLine(line, parentTodo) {
         const trimmed = line.trim();
-        if (!trimmed) return false;
+        if (!trimmed || !parentTodo) return false;
         const hasIndent = /^\s+/.test(line);
-        const startsBullet = /^[-•*]\s+/.test(trimmed) || /^\[\s*[xX]?\s*\]\s*/.test(trimmed);
+        // Any bullet, checkbox, or numbered step (with or without space)
+        const startsBullet = /^([-•*>]|\[\s*[xX]?\s*\]|\d+[\.\)])\s*/.test(trimmed);
         const isStarSubtask = trimmed.startsWith('*') && !/^\*\s*(easy|circle|medium|med|triangle|hard|square|mega|pentagon|ultra|star|urgent|critical|blue|green|cyan|yellow|orange|red|magenta|violet|tomorrow|tmrw|today|tonight|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{4}-\d{2}-\d{2})\b/i.test(trimmed);
 
-        // If there is no parent yet, an unindented line is a new todo
-        if (!hasParent) {
-          return hasIndent;
+        if (hasIndent || startsBullet || isStarSubtask) {
+          return true;
         }
-        // If a parent exists: indented lines, bullet lines, or star lines attach as subtasks
-        return hasIndent || startsBullet || isStarSubtask;
+
+        // If parent task already has bullet subtasks, an unindented line without a bullet starts a new task
+        if (parentTodo.hasBulletSubtasks) {
+          return false;
+        }
+
+        // Regular subtask (plain line following parent todo before any blank line)
+        return true;
       }
 
       for (let i = 0; i < lines.length; i++) {
@@ -3788,10 +3794,14 @@
           continue;
         }
 
-        if (currentTodo && isSubtaskLine(line, true)) {
+        if (currentTodo && isSubtaskLine(line, currentTodo)) {
           let isChecked = false;
           if (/^\[\s*[xX]\s*\]/.test(trimmed) || /^[-•*]\s*\[\s*[xX]\s*\]/.test(trimmed)) {
             isChecked = true;
+          }
+          const startsBullet = /^([-•*>]|\[\s*[xX]?\s*\]|\d+[\.\)])\s*/.test(trimmed);
+          if (startsBullet) {
+            currentTodo.hasBulletSubtasks = true;
           }
           const subText = trimmed
             .replace(/^[-•*]\s*(\[\s*[xX]?\s*\]\s*)?/, '')
@@ -4172,12 +4182,16 @@
         card.title = `Challenge: ${bountyTag}`;
       }
 
-      // Drag and drop task reordering
+      // Drag and drop task reordering (Desktop + Touch)
       card.ondragstart = (e) => {
         draggedId = item.id;
         draggedType = type;
         card.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
+        try {
+          e.dataTransfer.setData('text/plain', item.id);
+          e.dataTransfer.setData('text/html', card.outerHTML);
+        } catch (err) { }
       };
       card.ondragend = () => {
         draggedId = null;
@@ -4186,6 +4200,7 @@
       };
       card.ondragover = (e) => {
         e.preventDefault();
+        try { e.dataTransfer.dropEffect = 'move'; } catch (err) { }
         if (draggedType === type) card.classList.add('drag-over');
       };
       card.ondragleave = () => {
@@ -4201,11 +4216,70 @@
           if (fromIdx >= 0 && toIdx >= 0) {
             const [moved] = list.splice(fromIdx, 1);
             list.splice(toIdx, 0, moved);
+            if (type === 'dailies' && state.tierConfig && state.tierConfig[state.currentTierIndex || 0]) {
+              state.tierConfig[state.currentTierIndex || 0].dailies = state.dailies.map(d => d.text);
+            }
             saveState();
             render();
           }
         }
       };
+
+      // Touch drag reordering for mobile
+      let touchStartY = 0;
+      let touchMoved = false;
+      let touchTargetCard = null;
+
+      card.addEventListener('touchstart', (e) => {
+        if (e.target.closest('.task-checkbox') || e.target.closest('.subtask-checkbox')) return;
+        touchStartY = e.touches[0].clientY;
+        touchMoved = false;
+        draggedId = item.id;
+        draggedType = type;
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        if (!draggedId || draggedType !== type) return;
+        const currentY = e.touches[0].clientY;
+        if (Math.abs(currentY - touchStartY) > 12) {
+          touchMoved = true;
+          card.classList.add('dragging');
+          const elem = document.elementFromPoint(e.touches[0].clientX, currentY);
+          const targetCard = elem ? elem.closest('.task-card') : null;
+          document.querySelectorAll('.task-card').forEach(c => c.classList.remove('drag-over'));
+          if (targetCard && targetCard !== card && targetCard.dataset.id) {
+            targetCard.classList.add('drag-over');
+            touchTargetCard = targetCard;
+          } else {
+            touchTargetCard = null;
+          }
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.task-card').forEach(c => c.classList.remove('drag-over'));
+        if (touchMoved && touchTargetCard && draggedId && draggedType === type) {
+          const targetId = touchTargetCard.dataset.id;
+          if (targetId && targetId !== draggedId) {
+            const list = state[type];
+            const fromIdx = list.findIndex(t => t.id === draggedId);
+            const toIdx = list.findIndex(t => t.id === targetId);
+            if (fromIdx >= 0 && toIdx >= 0) {
+              const [moved] = list.splice(fromIdx, 1);
+              list.splice(toIdx, 0, moved);
+              if (type === 'dailies' && state.tierConfig && state.tierConfig[state.currentTierIndex || 0]) {
+                state.tierConfig[state.currentTierIndex || 0].dailies = state.dailies.map(d => d.text);
+              }
+              saveState();
+              render();
+            }
+          }
+        }
+        draggedId = null;
+        draggedType = null;
+        touchTargetCard = null;
+      });
 
       // Double-Click & Double-Tap detection
       let clickCount = 0;
@@ -4513,7 +4587,7 @@
         let startPosY = pos.y;
 
         node.onpointerdown = (e) => {
-          if (e.button !== 0) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
           isPointerActive = true;
           isDrag = false;
           startPointerX = e.clientX;
@@ -4528,12 +4602,13 @@
           if (!isPointerActive) return;
           const dx = e.clientX - startPointerX;
           const dy = e.clientY - startPointerY;
-          if (!isDrag && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+          if (!isDrag && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
             isDrag = true;
           }
           if (isDrag) {
-            const cw = Math.max(280, canvas.clientWidth || canvasWidth || 320);
-            const ch = Math.max(360, canvas.clientHeight || canvasHeight || 450);
+            const rect = canvas.getBoundingClientRect();
+            const cw = Math.max(280, rect.width || canvas.clientWidth || 320);
+            const ch = Math.max(360, rect.height || canvas.clientHeight || 450);
             const newX = Math.max(25, Math.min(cw - 25, startPosX + dx));
             const newY = Math.max(25, Math.min(ch - 25, startPosY + dy));
             pos.x = newX;
@@ -4559,9 +4634,14 @@
         };
 
         node.onpointercancel = (e) => {
+          if (!isPointerActive) return;
           isPointerActive = false;
           node.classList.remove('dragging');
           try { node.releasePointerCapture(e.pointerId); } catch(err) {}
+          if (isDrag) {
+            state.shapePositions[d.id] = { x: pos.x, y: pos.y };
+            saveState();
+          }
         };
 
         node.ondblclick = (e) => {
@@ -6128,6 +6208,13 @@
               spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
               autoResizeSpotlightInput();
               updateSpotlightPreview();
+            } else if (currentLine.trim()) {
+              e.preventDefault();
+              const insertText = '\n- ';
+              spotInput.value = val.substring(0, start) + insertText + val.substring(end);
+              spotInput.selectionStart = spotInput.selectionEnd = start + insertText.length;
+              autoResizeSpotlightInput();
+              updateSpotlightPreview();
             }
           } else if (e.key === 'Escape') {
             e.preventDefault();
@@ -6421,6 +6508,12 @@
             e.preventDefault();
             const prefix = bulletMatch[1].includes('[') ? '- [ ] ' : '- ';
             const insertText = '\n' + prefix;
+            inp.value = val.substring(0, start) + insertText + val.substring(end);
+            inp.selectionStart = inp.selectionEnd = start + insertText.length;
+            autoResizeModalInput();
+          } else if (activeEditing && activeEditing.type === 'dailies' && currentLine.trim()) {
+            e.preventDefault();
+            const insertText = '\n- [ ] ';
             inp.value = val.substring(0, start) + insertText + val.substring(end);
             inp.selectionStart = inp.selectionEnd = start + insertText.length;
             autoResizeModalInput();
