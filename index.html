@@ -2798,7 +2798,7 @@
       font-weight: 600;
     }
 
-    /* Arcade Slot Machine View */
+    /* Arcade Slot Machine View (Solid Color, No Glow) */
     .arcade-view-container {
       display: flex;
       flex-direction: column;
@@ -2825,57 +2825,47 @@
     .arcade-reel-box {
       background: #073642;
       border: 2px solid #0e5365;
-      border-radius: 8px;
-      padding: 0.85rem 0.4rem 0.75rem;
+      border-radius: 6px;
+      padding: 0.75rem 0.4rem 0.65rem;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
-      gap: 0.4rem;
-      min-height: 100px;
+      gap: 0.35rem;
+      min-height: 106px;
       position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.35);
       transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
     }
 
+    .arcade-reel-box.comp { border-color: #859900; }
+    .arcade-reel-box.strk { border-color: #b58900; }
+    .arcade-reel-box.delta { border-color: #268bd2; }
+
     .arcade-reel-box.spinning {
       border-color: #b58900;
-      animation: reelBorderPulse 0.12s infinite alternate;
-    }
-
-    @keyframes reelBorderPulse {
-      0% { border-color: #b58900; box-shadow: 0 0 10px rgba(181, 137, 0, 0.4); }
-      100% { border-color: #268bd2; box-shadow: 0 0 14px rgba(38, 139, 210, 0.5); }
+      background: #002b36;
     }
 
     .arcade-reel-box.locked {
-      border-color: #859900;
       background: #094352;
-      transform: scale(1.03);
-      box-shadow: 0 0 16px rgba(133, 153, 0, 0.35), inset 0 2px 6px rgba(0,0,0,0.6);
-      animation: lockBounce 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      transform: scale(1.02);
     }
 
-    @keyframes lockBounce {
-      0% { transform: scale(0.92); }
-      60% { transform: scale(1.08); }
-      100% { transform: scale(1.03); }
+    .arcade-reel-label {
+      font-size: 0.54rem;
+      font-weight: 900;
+      color: #93a1a1;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     .arcade-reel-icon {
-      font-size: 1.6rem;
+      font-size: 1.45rem;
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-      transition: transform 0.2s ease;
-    }
-
-    .arcade-reel-box.locked .arcade-reel-icon {
-      transform: scale(1.15);
     }
 
     .arcade-reel-val {
@@ -2901,34 +2891,253 @@
       max-width: 260px;
       margin: 0.2rem auto 0;
       background: #073642;
-      border: 2px solid #268bd2;
+      border: 2px solid #2aa198;
       border-radius: 9999px;
       padding: 0.65rem 1.4rem;
-      box-shadow: 0 0 22px rgba(38, 139, 210, 0.35), inset 0 2px 6px rgba(0,0,0,0.6);
-      animation: eloBadgePop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    }
-
-    @keyframes eloBadgePop {
-      0% { transform: scale(0.8); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
     }
 
     .arcade-elo-icon {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       line-height: 1;
     }
 
     #arcadeNewEloVal {
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 900;
       color: #fdf6e3;
       letter-spacing: 0.04em;
       font-family: 'JetBrains Mono', monospace;
     }
 
+    /* Analytics Phase: Top Habit Grids & Bottom 30-Day Completion Graph */
+    .checkin-analytics-view {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      width: 100%;
+    }
+
+    .checkin-section-card {
+      background: #073642;
+      border: 2px solid #0e5365;
+      border-radius: 6px;
+      padding: 0.55rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .checkin-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .checkin-section-title {
+      font-size: 0.62rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .checkin-section-badge {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #b58900;
+      background: #002b36;
+      border: 1px solid #b58900;
+      padding: 0.06rem 0.35rem;
+      border-radius: 2px;
+    }
+
+    /* Habit Cell Grids */
+    .checkin-habit-grids-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-height: 175px;
+      overflow-y: auto;
+      padding-right: 0.15rem;
+    }
+
+    .checkin-habit-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      background: #002b36;
+      border: 1.5px solid #0e5365;
+      border-radius: 4px;
+      padding: 0.35rem 0.5rem;
+    }
+
+    .checkin-habit-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+
+    .checkin-habit-meta-left {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      overflow: hidden;
+    }
+
+    .checkin-habit-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .checkin-habit-name {
+      font-size: 0.64rem;
+      font-weight: 800;
+      color: #fdf6e3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .checkin-habit-streak {
+      font-size: 0.55rem;
+      font-weight: 800;
+      color: #b58900;
+      background: #073642;
+      border: 1px solid #0e5365;
+      padding: 0.04rem 0.3rem;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .checkin-habit-cells-grid {
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      gap: 3px;
+      width: 100%;
+      padding-top: 0.1rem;
+    }
+
+    .checkin-cell {
+      height: 8px;
+      border-radius: 1.5px;
+    }
+
+    .checkin-cell.done { background: #859900; }
+    .checkin-cell.missed { background: #dc322f; }
+    .checkin-cell.empty { background: #073642; border: 1px solid #0e5365; }
+
+    /* Completion Rate Graph (Last 30 Days) */
+    .checkin-graph-container {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 3px;
+      height: 96px;
+      padding: 0.45rem 0.3rem 0.15rem;
+      background: #002b36;
+      border: 1.5px solid #0e5365;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .checkin-bar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      flex: 1;
+      height: 100%;
+      justify-content: flex-end;
+      cursor: help;
+    }
+
+    .checkin-bar-wrap {
+      width: 100%;
+      height: 72px;
+      display: flex;
+      align-items: flex-end;
+      background: #073642;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .checkin-bar-fill {
+      width: 100%;
+      border-radius: 1px 1px 0 0;
+      transition: height 0.3s ease;
+    }
+
+    .checkin-bar-lbl {
+      font-size: 0.44rem;
+      font-weight: 800;
+      color: #586e75;
+      line-height: 1;
+    }
+
+    /* Minimized Bottom Tally Dock */
+    .checkin-minimized-tally {
+      display: none;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+      background: #073642;
+      border-top: 2px solid #0e5365;
+      padding: 0.55rem 0.85rem;
+      flex-shrink: 0;
+    }
+
+    .mini-tally-chips {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      width: 100%;
+    }
+
+    @media (max-width: 480px) {
+      .mini-tally-chips {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .mini-chip {
+      background: #002b36;
+      border: 1.5px solid #0e5365;
+      border-radius: 4px;
+      padding: 0.3rem 0.35rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-align: center;
+    }
+
+    .mini-chip.mini-chip-comp { border-color: #859900; }
+    .mini-chip.mini-chip-strk { border-color: #b58900; }
+    .mini-chip.mini-chip-delta { border-color: #268bd2; }
+    .mini-chip.mini-chip-elo { border-color: #2aa198; }
+
+    .mini-chip-label {
+      font-size: 0.48rem;
+      font-weight: 900;
+      color: #93a1a1;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .mini-chip-val {
+      font-size: 0.84rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     .checkin-footer {
       background: #073642;
-      border-top: 1px solid #0e5365;
+      border-top: 2px solid #0e5365;
       padding: 0.65rem 0.9rem;
       display: flex;
       gap: 0.5rem;
@@ -2953,16 +3162,11 @@
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
-      transition: background 0.15s ease, transform 0.08s ease;
+      transition: background 0.15s ease;
     }
 
     .checkin-confirm-btn:hover {
       background: #d4a017;
-      transform: translateY(-1px);
-    }
-
-    .checkin-confirm-btn:active {
-      transform: translateY(1px);
     }
 
     .checkin-continue-btn {
@@ -2970,10 +3174,10 @@
       background: #859900;
       color: #002b36;
       border: none;
-      border-radius: 6px;
-      padding: 0.75rem 1.2rem;
+      border-radius: 4px;
+      padding: 0.7rem 1.2rem;
       font-family: inherit;
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 900;
       letter-spacing: 0.06em;
       cursor: pointer;
@@ -2981,22 +3185,11 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      box-shadow: 0 4px 16px rgba(133, 153, 0, 0.45);
-      transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
-      animation: continuePulse 1.8s infinite ease-in-out;
-    }
-
-    @keyframes continuePulse {
-      0%, 100% { box-shadow: 0 4px 16px rgba(133, 153, 0, 0.45); transform: scale(1); }
-      50% { box-shadow: 0 6px 24px rgba(133, 153, 0, 0.75); transform: scale(1.02); }
+      transition: background 0.15s ease;
     }
 
     .checkin-continue-btn:hover {
       background: #9ab400;
-    }
-
-    .checkin-continue-btn:active {
-      transform: scale(0.98);
     }
 
     .arcade-rumble {
@@ -3448,19 +3641,22 @@
         <div class="arcade-view-container">
           <div class="arcade-reels-row">
             <!-- Reel 1: Completion -->
-            <div class="arcade-reel-box" id="arcadeReel1">
+            <div class="arcade-reel-box comp" id="arcadeReel1">
+              <span class="arcade-reel-label">COMPLETION</span>
               <span class="arcade-reel-icon">🎯</span>
               <span class="arcade-reel-val" id="arcadeReelVal1">0%</span>
             </div>
 
             <!-- Reel 2: Streak Multiplier / Bonus -->
-            <div class="arcade-reel-box" id="arcadeReel2">
+            <div class="arcade-reel-box strk" id="arcadeReel2">
+              <span class="arcade-reel-label">STREAK</span>
               <span class="arcade-reel-icon">🔥</span>
               <span class="arcade-reel-val" id="arcadeReelVal2" style="color: #b58900;">0</span>
             </div>
 
             <!-- Reel 3: ELO Delta -->
-            <div class="arcade-reel-box" id="arcadeReel3">
+            <div class="arcade-reel-box delta" id="arcadeReel3">
+              <span class="arcade-reel-label">ELO DELTA</span>
               <span class="arcade-reel-icon">⚡</span>
               <span class="arcade-reel-val" id="arcadeReelVal3">+0</span>
             </div>
@@ -3473,13 +3669,62 @@
         </div>
       </div>
 
-      <!-- Footer Buttons -->
+      <!-- Phase 3: Analytics View (Top: Habit Grids, Bottom: 30D Completion Graph) -->
+      <div class="checkin-body" id="checkinAnalyticsPhase" style="display: none;">
+        <div class="checkin-analytics-view">
+          <!-- Top: Daily Habit Grids -->
+          <div class="checkin-section-card">
+            <div class="checkin-section-header">
+              <span class="checkin-section-title">DAILY HABIT CELL GRIDS</span>
+              <span class="checkin-section-badge" id="checkinHabitCountBadge">0 HABITS</span>
+            </div>
+            <div class="checkin-habit-grids-list" id="checkinHabitGridsList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Bottom: 30-Day Completion Rate Graph -->
+          <div class="checkin-section-card">
+            <div class="checkin-section-header">
+              <span class="checkin-section-title">COMPLETION RATE (LAST 30 DAYS)</span>
+              <span class="checkin-section-badge" id="checkin30dAvgBadge">0% AVG</span>
+            </div>
+            <div class="checkin-graph-container" id="checkin30dGraph">
+              <!-- 30 vertical solid bars via JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Minimized Bottom Tally Dock -->
+      <div class="checkin-minimized-tally" id="checkinMinimizedTally">
+        <div class="mini-tally-chips">
+          <div class="mini-chip mini-chip-comp">
+            <span class="mini-chip-label">COMPLETION</span>
+            <span class="mini-chip-val" id="miniTallyComp">0%</span>
+          </div>
+          <div class="mini-chip mini-chip-strk">
+            <span class="mini-chip-label">STREAK</span>
+            <span class="mini-chip-val" id="miniTallyStrk">0</span>
+          </div>
+          <div class="mini-chip mini-chip-delta">
+            <span class="mini-chip-label">ELO DELTA</span>
+            <span class="mini-chip-val" id="miniTallyDelta">+0</span>
+          </div>
+          <div class="mini-chip mini-chip-elo">
+            <span class="mini-chip-label">NEW ELO</span>
+            <span class="mini-chip-val" id="miniTallyElo">1000</span>
+          </div>
+        </div>
+        <button type="button" class="checkin-continue-btn" id="checkinContinueBtn">
+          <span>CONTINUE</span>
+        </button>
+      </div>
+
+      <!-- Footer Buttons for Review Phase -->
       <div class="checkin-footer" id="checkinModalFooter">
         <button type="button" class="checkin-confirm-btn" id="checkinConfirmBtn">
           <span>CONFIRM & TALLY</span>
-        </button>
-        <button type="button" class="checkin-continue-btn" id="checkinContinueBtn" style="display: none;">
-          <span>CONTINUE</span>
         </button>
       </div>
     </div>
@@ -3990,9 +4235,15 @@
       if (header) header.style.display = 'flex';
       reviewPhase.style.display = 'flex';
       arcadePhase.style.display = 'none';
+      const analyticsPhase = document.getElementById('checkinAnalyticsPhase');
+      const minimizedTally = document.getElementById('checkinMinimizedTally');
+      if (analyticsPhase) analyticsPhase.style.display = 'none';
+      if (minimizedTally) minimizedTally.style.display = 'none';
       confirmBtn.style.display = 'flex';
-      continueBtn.style.display = 'none';
-      if (card) card.classList.remove('arcade-rumble');
+      if (card) {
+        card.style.maxWidth = '520px';
+        card.classList.remove('arcade-rumble');
+      }
 
       renderCheckinReviewList();
 
@@ -4223,12 +4474,165 @@
         // Call the underlying unchanged game reset logic silently
         performReset(false);
 
-        // Show Continue button (only disappears when clicked)
-        if (continueBtn) {
-          continueBtn.style.display = 'flex';
-          continueBtn.innerHTML = `<span>CONTINUE</span>`;
-        }
+        // 5. Minimize tally to bottom dock & transition to analytics (habit grids & 30d graph)
+        setTimeout(() => {
+          if (arcadePhase) arcadePhase.style.display = 'none';
+
+          const analyticsPhase = document.getElementById('checkinAnalyticsPhase');
+          const minimizedTally = document.getElementById('checkinMinimizedTally');
+          const miniComp = document.getElementById('miniTallyComp');
+          const miniStrk = document.getElementById('miniTallyStrk');
+          const miniDelta = document.getElementById('miniTallyDelta');
+          const miniElo = document.getElementById('miniTallyElo');
+
+          if (miniComp) {
+            miniComp.textContent = `${targetPct}%`;
+            miniComp.style.color = targetPct >= 80 ? 'var(--color-green)' : (targetPct >= 50 ? 'var(--color-yellow)' : 'var(--color-red)');
+          }
+          if (miniStrk) {
+            const strk = deltaInfo.streakBonus || 0;
+            miniStrk.textContent = strk > 0 ? `+${strk}` : `0`;
+            miniStrk.style.color = strk > 0 ? 'var(--color-yellow)' : 'var(--text-muted)';
+          }
+          if (miniDelta) {
+            miniDelta.textContent = `${deltaInfo.totalDelta >= 0 ? '+' : ''}${deltaInfo.totalDelta}`;
+            miniDelta.style.color = deltaInfo.totalDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+          }
+          if (miniElo) {
+            miniElo.textContent = `${projectedElo}`;
+            miniElo.style.color = 'var(--color-cyan)';
+          }
+
+          if (card) card.style.maxWidth = '640px';
+          renderCheckinHabitGrids();
+          renderCheckin30dGraph();
+
+          if (analyticsPhase) analyticsPhase.style.display = 'flex';
+          if (minimizedTally) minimizedTally.style.display = 'flex';
+        }, 1100);
       }, 2050);
+    }
+
+    function renderCheckinHabitGrids() {
+      const container = document.getElementById('checkinHabitGridsList');
+      const countBadge = document.getElementById('checkinHabitCountBadge');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const dailies = state.dailies || [];
+      if (countBadge) countBadge.textContent = `${dailies.length} HABITS`;
+
+      if (dailies.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.65rem; padding: 0.5rem; text-align: center;">No daily habits configured</div>';
+        return;
+      }
+
+      dailies.forEach(d => {
+        const row = document.createElement('div');
+        row.className = 'checkin-habit-row';
+
+        const meta = document.createElement('div');
+        meta.className = 'checkin-habit-meta';
+
+        const metaLeft = document.createElement('div');
+        metaLeft.className = 'checkin-habit-meta-left';
+
+        const dot = document.createElement('span');
+        dot.className = 'checkin-habit-dot';
+        dot.style.background = d.color || '#268bd2';
+
+        const name = document.createElement('span');
+        name.className = 'checkin-habit-name';
+        name.textContent = d.text;
+
+        metaLeft.appendChild(dot);
+        metaLeft.appendChild(name);
+
+        const streakBadge = document.createElement('span');
+        streakBadge.className = 'checkin-habit-streak';
+        streakBadge.textContent = `🔥 ${d.streak || 0}`;
+
+        meta.appendChild(metaLeft);
+        meta.appendChild(streakBadge);
+
+        const grid = document.createElement('div');
+        grid.className = 'checkin-habit-cells-grid';
+
+        const hist = d.history || [];
+        for (let j = 19; j >= 0; j--) {
+          const entry = hist[hist.length - 1 - j];
+          const cell = document.createElement('div');
+          if (!entry) {
+            cell.className = 'checkin-cell empty';
+            cell.title = 'No data';
+          } else if (entry.completed) {
+            cell.className = 'checkin-cell done';
+            cell.title = `${entry.date}: Done`;
+          } else {
+            cell.className = 'checkin-cell missed';
+            cell.title = `${entry.date}: Missed`;
+          }
+          grid.appendChild(cell);
+        }
+
+        row.appendChild(meta);
+        row.appendChild(grid);
+        container.appendChild(row);
+      });
+    }
+
+    function renderCheckin30dGraph() {
+      const container = document.getElementById('checkin30dGraph');
+      const badge = document.getElementById('checkin30dAvgBadge');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const days = [];
+      const now = new Date();
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const dayLabel = d.getDate();
+        const rate = (state.history && state.history[dateStr] !== undefined) ? Number(state.history[dateStr]) : 0;
+        days.push({ dateStr, dayLabel, rate });
+      }
+
+      const recordedDays = days.filter(d => state.history && state.history[d.dateStr] !== undefined);
+      const avg = recordedDays.length > 0
+        ? Math.round((recordedDays.reduce((acc, d) => acc + d.rate, 0) / recordedDays.length) * 100)
+        : 0;
+      if (badge) badge.textContent = `${avg}% AVG`;
+
+      days.forEach(day => {
+        const pct = Math.round(day.rate * 100);
+        const col = document.createElement('div');
+        col.className = 'checkin-bar-col';
+        col.title = `${day.dateStr}: ${pct}%`;
+
+        const barWrap = document.createElement('div');
+        barWrap.className = 'checkin-bar-wrap';
+
+        const barFill = document.createElement('div');
+        barFill.className = 'checkin-bar-fill';
+        barFill.style.height = `${Math.max(4, pct)}%`;
+
+        if (pct >= 100) barFill.style.background = '#859900';
+        else if (pct >= 70) barFill.style.background = '#b58900';
+        else if (pct >= 40) barFill.style.background = '#cb4b16';
+        else if (pct > 0) barFill.style.background = '#dc322f';
+        else barFill.style.background = '#0e5365';
+
+        barWrap.appendChild(barFill);
+
+        const lbl = document.createElement('span');
+        lbl.className = 'checkin-bar-lbl';
+        lbl.textContent = day.dayLabel;
+
+        col.appendChild(barWrap);
+        col.appendChild(lbl);
+        container.appendChild(col);
+      });
     }
 
     function triggerCheckinSparkles(x, y) {
@@ -4257,7 +4661,13 @@
       if (arcadeReelTickInterval) clearInterval(arcadeReelTickInterval);
       const modal = document.getElementById('checkinCeremonyModal');
       const header = document.getElementById('checkinModalHeader');
+      const analyticsPhase = document.getElementById('checkinAnalyticsPhase');
+      const minimizedTally = document.getElementById('checkinMinimizedTally');
+      const card = document.getElementById('checkinModalCard');
       if (header) header.style.display = 'flex';
+      if (analyticsPhase) analyticsPhase.style.display = 'none';
+      if (minimizedTally) minimizedTally.style.display = 'none';
+      if (card) card.style.maxWidth = '520px';
       if (modal) {
         modal.classList.remove('active');
         modal.style.display = 'none';
@@ -7156,20 +7566,10 @@
       if (checkinCancelBtn) {
         checkinCancelBtn.onclick = closeCheckinCeremony;
       }
-      const checkinCard = document.getElementById('checkinModalCard');
-      if (checkinCard) {
-        checkinCard.addEventListener('click', (e) => {
-          if (checkinContinueBtn && checkinContinueBtn.style.display !== 'none') {
-            closeCheckinCeremony();
-          }
-        });
-      }
       const checkinOverlay = document.getElementById('checkinCeremonyModal');
       if (checkinOverlay) {
         checkinOverlay.onclick = (e) => {
-          if (checkinContinueBtn && checkinContinueBtn.style.display !== 'none') {
-            closeCheckinCeremony();
-          } else if (e.target === checkinOverlay && !currentCheckinIsMandatory) {
+          if (e.target === checkinOverlay && !currentCheckinIsMandatory) {
             closeCheckinCeremony();
           }
         };
