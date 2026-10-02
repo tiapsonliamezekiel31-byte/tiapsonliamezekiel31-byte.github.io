@@ -2588,6 +2588,427 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    /* --- FEATURE: MANDATORY CHECK-IN CEREMONY & ARCADE TALLY --- */
+    .checkin-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 20, 26, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem;
+    }
+
+    .checkin-modal-overlay.active {
+      display: flex;
+    }
+
+    .checkin-modal-card {
+      background: #002b36;
+      border: 2px solid #b58900;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      max-height: 90dvh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(181, 137, 0, 0.35);
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+      animation: checkinAppear 0.22s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes checkinAppear {
+      0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .checkin-header {
+      background: #073642;
+      border-bottom: 2px solid #0e5365;
+      padding: 0.65rem 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .checkin-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .checkin-badge-lamp {
+      background: #cb4b16;
+      color: #002b36;
+      font-size: 0.55rem;
+      font-weight: 900;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      animation: checkinLampGlow 1.4s infinite ease-in-out;
+    }
+
+    @keyframes checkinLampGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    .checkin-title {
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      letter-spacing: 0.05em;
+    }
+
+    .checkin-time-tag {
+      font-size: 0.6rem;
+      font-weight: 800;
+      color: #2aa198;
+      background: #002b36;
+      border: 1px solid #0e5365;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+
+    .checkin-body {
+      padding: 0.85rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .checkin-notice {
+      font-size: 0.64rem;
+      color: #93a1a1;
+      line-height: 1.45;
+      background: #073642;
+      border-left: 3px solid #b58900;
+      padding: 0.45rem 0.6rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .checkin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      max-height: 38vh;
+      overflow-y: auto;
+      padding-right: 0.15rem;
+    }
+
+    .checkin-item-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #073642;
+      border: 1px solid #0e5365;
+      border-radius: 4px;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      user-select: none;
+    }
+
+    .checkin-item-row:hover {
+      border-color: #268bd2;
+      background: #094352;
+    }
+
+    .checkin-item-row.completed {
+      opacity: 0.65;
+      background: rgba(133, 153, 0, 0.12);
+      border-color: #859900;
+    }
+
+    .checkin-checkbox {
+      width: 17px;
+      height: 17px;
+      border-radius: 3px;
+      border: 1.5px solid #268bd2;
+      background: #002b36;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #859900;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .checkin-item-row.completed .checkin-checkbox {
+      background: #859900;
+      border-color: #859900;
+      color: #002b36;
+    }
+
+    .checkin-item-text {
+      flex: 1;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #fdf6e3;
+      word-break: break-word;
+    }
+
+    .checkin-item-row.completed .checkin-item-text {
+      text-decoration: line-through;
+      color: #93a1a1;
+    }
+
+    .checkin-item-weight {
+      font-size: 0.58rem;
+      font-weight: 800;
+      color: #b58900;
+      background: #002b36;
+      padding: 0.08rem 0.3rem;
+      border-radius: 2px;
+      border: 1px solid #0e5365;
+    }
+
+    .checkin-all-clear-card {
+      background: rgba(133, 153, 0, 0.15);
+      border: 1.5px solid #859900;
+      border-radius: 6px;
+      padding: 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .checkin-all-clear-title {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #859900;
+      letter-spacing: 0.05em;
+    }
+
+    .checkin-all-clear-sub {
+      font-size: 0.65rem;
+      color: #fdf6e3;
+      font-weight: 600;
+    }
+
+    /* Arcade Slot Machine View */
+    .arcade-view-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.5rem 0;
+    }
+
+    .arcade-reels-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.65rem;
+      width: 100%;
+    }
+
+    @media (max-width: 440px) {
+      .arcade-reels-row {
+        gap: 0.35rem;
+      }
+    }
+
+    .arcade-reel-box {
+      background: #073642;
+      border: 2px solid #0e5365;
+      border-radius: 8px;
+      padding: 0.85rem 0.4rem 0.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0.4rem;
+      min-height: 100px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.35);
+      transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .arcade-reel-box.spinning {
+      border-color: #b58900;
+      animation: reelBorderPulse 0.12s infinite alternate;
+    }
+
+    @keyframes reelBorderPulse {
+      0% { border-color: #b58900; box-shadow: 0 0 10px rgba(181, 137, 0, 0.4); }
+      100% { border-color: #268bd2; box-shadow: 0 0 14px rgba(38, 139, 210, 0.5); }
+    }
+
+    .arcade-reel-box.locked {
+      border-color: #859900;
+      background: #094352;
+      transform: scale(1.03);
+      box-shadow: 0 0 16px rgba(133, 153, 0, 0.35), inset 0 2px 6px rgba(0,0,0,0.6);
+      animation: lockBounce 0.25s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes lockBounce {
+      0% { transform: scale(0.92); }
+      60% { transform: scale(1.08); }
+      100% { transform: scale(1.03); }
+    }
+
+    .arcade-reel-icon {
+      font-size: 1.6rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+      transition: transform 0.2s ease;
+    }
+
+    .arcade-reel-box.locked .arcade-reel-icon {
+      transform: scale(1.15);
+    }
+
+    .arcade-reel-val {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: -0.02em;
+    }
+
+    .arcade-reel-val.roll-blur {
+      filter: blur(1.5px);
+      transform: translateY(2px);
+    }
+
+    .arcade-standing-pill {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      width: 100%;
+      max-width: 260px;
+      margin: 0.2rem auto 0;
+      background: #073642;
+      border: 2px solid #268bd2;
+      border-radius: 9999px;
+      padding: 0.65rem 1.4rem;
+      box-shadow: 0 0 22px rgba(38, 139, 210, 0.35), inset 0 2px 6px rgba(0,0,0,0.6);
+      animation: eloBadgePop 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes eloBadgePop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .arcade-elo-icon {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+
+    #arcadeNewEloVal {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fdf6e3;
+      letter-spacing: 0.04em;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .checkin-footer {
+      background: #073642;
+      border-top: 1px solid #0e5365;
+      padding: 0.65rem 0.9rem;
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .checkin-confirm-btn {
+      width: 100%;
+      background: #b58900;
+      color: #002b36;
+      border: none;
+      border-radius: 4px;
+      padding: 0.65rem 1rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: background 0.15s ease, transform 0.08s ease;
+    }
+
+    .checkin-confirm-btn:hover {
+      background: #d4a017;
+      transform: translateY(-1px);
+    }
+
+    .checkin-confirm-btn:active {
+      transform: translateY(1px);
+    }
+
+    .checkin-continue-btn {
+      width: 100%;
+      background: #859900;
+      color: #002b36;
+      border: none;
+      border-radius: 6px;
+      padding: 0.75rem 1.2rem;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 16px rgba(133, 153, 0, 0.45);
+      transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+      animation: continuePulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes continuePulse {
+      0%, 100% { box-shadow: 0 4px 16px rgba(133, 153, 0, 0.45); transform: scale(1); }
+      50% { box-shadow: 0 6px 24px rgba(133, 153, 0, 0.75); transform: scale(1.02); }
+    }
+
+    .checkin-continue-btn:hover {
+      background: #9ab400;
+    }
+
+    .checkin-continue-btn:active {
+      transform: scale(0.98);
+    }
+
+    .arcade-rumble {
+      animation: screenRumble 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes screenRumble {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+      40%, 60% { transform: translate3d(3px, 0, 0); }
+    }
   </style>
 </head>
 
@@ -2630,6 +3051,10 @@
           </button>
           <div class="top-dropdown-menu" id="topDropdownMenu">
             <button type="button" class="dropdown-item-btn" id="soundToggleBtn" title="Toggle Sound FX">🔊 SFX</button>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.35rem 0.6rem; font-size: 0.6rem; color: var(--text-muted); font-weight: 700; border-bottom: 1px solid var(--border); background: #002b36; border-radius: 3px; margin: 2px 0;">
+              <span>⏰ CHECK-IN</span>
+              <input type="time" id="checkinTimeInput" value="08:00" style="background: #073642; border: 1px solid var(--border); color: #fdf6e3; font-family: inherit; font-size: 0.6rem; padding: 0.1rem 0.25rem; border-radius: 2px; outline: none; cursor: pointer;" title="Scheduled check-in popup time" />
+            </div>
             <button type="button" class="dropdown-item-btn" id="tiersConfigBtn" title="Configure Dailies Tiers & Sets">🎯 TIERS</button>
             <button type="button" class="dropdown-item-btn" id="exportBtn" title="Export Backup JSON">💾 EXP</button>
             <button type="button" class="dropdown-item-btn" id="importBtn" title="Import Backup JSON">📥 IMP</button>
@@ -2640,7 +3065,7 @@
           </div>
         </div>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
-        <button type="button" class="reset-btn" id="resetDailiesBtn" title="Check in daily progress">
+        <button type="button" class="reset-btn" id="resetDailiesBtn" onclick="openCheckinPopup(false)" title="Check in daily progress">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
             stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
@@ -2987,6 +3412,79 @@
     </div>
   </div>
 
+  <!-- Mandatory Check-In Ceremony & Arcade Tally Modal -->
+  <div class="checkin-modal-overlay" id="checkinCeremonyModal">
+    <div class="checkin-modal-card" id="checkinModalCard">
+      <!-- Header -->
+      <div class="checkin-header" id="checkinModalHeader">
+        <div class="checkin-title-wrap">
+          <span class="checkin-badge-lamp" id="checkinBadgeLamp">MANDATORY</span>
+          <span class="checkin-title">DAILY CHECK-IN</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.4rem;">
+          <span class="checkin-time-tag" id="checkinScheduledTimeTag">TIME: 08:00</span>
+          <button type="button" class="modal-close" id="checkinModalCancelBtn" style="display: none; padding: 0 0.35rem; font-size: 1.1rem; line-height: 1; cursor: pointer;" title="Cancel">&times;</button>
+        </div>
+      </div>
+
+      <!-- Phase 1: Review Unchecked Items -->
+      <div class="checkin-body" id="checkinReviewPhase">
+        <div class="checkin-notice" id="checkinNoticeText">
+          Review today's pending habits and due to-dos. Check off what you completed before locking in your daily rating!
+        </div>
+
+        <div class="checkin-list" id="checkinPendingList">
+          <!-- Populated dynamically via JS -->
+        </div>
+
+        <div class="checkin-all-clear-card" id="checkinAllClearCard" style="display: none;">
+          <div class="checkin-all-clear-title">★ 100% DISCIPLINE CLEARED ★</div>
+          <div class="checkin-all-clear-sub">All active tasks completed. Ready for the jackpot tally!</div>
+        </div>
+      </div>
+
+      <!-- Phase 2: Arcade Slot Machine Tally View -->
+      <div class="checkin-body" id="checkinArcadePhase" style="display: none;">
+        <div class="arcade-view-container">
+          <div class="arcade-reels-row">
+            <!-- Reel 1: Completion -->
+            <div class="arcade-reel-box" id="arcadeReel1">
+              <span class="arcade-reel-icon">🎯</span>
+              <span class="arcade-reel-val" id="arcadeReelVal1">0%</span>
+            </div>
+
+            <!-- Reel 2: Streak Multiplier / Bonus -->
+            <div class="arcade-reel-box" id="arcadeReel2">
+              <span class="arcade-reel-icon">🔥</span>
+              <span class="arcade-reel-val" id="arcadeReelVal2" style="color: #b58900;">0</span>
+            </div>
+
+            <!-- Reel 3: ELO Delta -->
+            <div class="arcade-reel-box" id="arcadeReel3">
+              <span class="arcade-reel-icon">⚡</span>
+              <span class="arcade-reel-val" id="arcadeReelVal3">+0</span>
+            </div>
+          </div>
+
+          <div class="arcade-standing-pill" id="arcadeStandingPill" style="display: none;">
+            <span class="arcade-elo-icon">⚔️</span>
+            <span id="arcadeNewEloVal">1000 ELO</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="checkin-footer" id="checkinModalFooter">
+        <button type="button" class="checkin-confirm-btn" id="checkinConfirmBtn">
+          <span>CONFIRM & TALLY</span>
+        </button>
+        <button type="button" class="checkin-continue-btn" id="checkinContinueBtn" style="display: none;">
+          <span>CONTINUE</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Draggable Discipline Bottom Drawer -->
   <div class="discipline-drawer" id="disciplineDrawer" style="height: 38px;">
     <div class="discipline-drawer-handle" id="disciplineDrawerHandle">
@@ -3167,6 +3665,56 @@
             osc.stop(now + i * 0.035 + 0.45);
           });
           if (navigator.vibrate) navigator.vibrate([30, 50, 30, 60]);
+        } else if (type === 'arcade_tick') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(800 + Math.random() * 200, now);
+          osc.frequency.exponentialRampToValueAtTime(150, now + 0.02);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.02);
+        } else if (type === 'arcade_lock') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'arcade_jackpot') {
+          const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00, 2637.02];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.18, now + idx * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.35);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.35);
+          });
+          const sub = audioCtx.createOscillator();
+          const subG = audioCtx.createGain();
+          sub.type = 'sine';
+          sub.frequency.setValueAtTime(140, now);
+          sub.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+          subG.gain.setValueAtTime(0.35, now);
+          subG.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+          sub.connect(subG);
+          subG.connect(audioCtx.destination);
+          sub.start(now);
+          sub.stop(now + 0.3);
+          if (navigator.vibrate) navigator.vibrate([40, 60, 40, 80, 50, 120]);
         }
       } catch (e) { }
     }
@@ -3360,12 +3908,31 @@
       checkAutoCheckin();
     }
 
+    // --- MANDATORY CHECK-IN CEREMONY & ADDICTIVE ARCADE TALLY ---
+    let isCheckinCeremonyActive = false;
+    let checkinDismissInterval = null;
+    let arcadeReelTickInterval = null;
+
+    function getScheduledCheckinTime() {
+      const stored = localStorage.getItem('nemesis_checkin_time') || '08:00';
+      const parts = stored.split(':');
+      const hour = parseInt(parts[0], 10) || 8;
+      const min = parseInt(parts[1], 10) || 0;
+      return {
+        hour,
+        min,
+        str: `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+      };
+    }
+
     function checkAutoCheckin() {
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
-      const hour = now.getHours();
+      const sched = getScheduledCheckinTime();
+      const currentMinOfDay = now.getHours() * 60 + now.getMinutes();
+      const schedMinOfDay = sched.hour * 60 + sched.min;
 
-      // If already checked in today (manual or automatic), do NOT check in again today
+      // If already checked in today, do not auto check in again
       if (state.lastCheckinDate === todayStr) {
         return;
       }
@@ -3375,14 +3942,329 @@
         return;
       }
 
-      // Automatically check in at 8:00 AM or later every day if not checked in yet today
-      if (hour >= 8) {
-        state.lastCheckinDate = todayStr;
-        state.lastCheckinTime = Date.now();
-        state.lastActiveDate = todayStr;
-        saveState();
-        performReset(false);
+      // Automatically trigger required check-in at or after scheduled time
+      if (currentMinOfDay >= schedMinOfDay) {
+        if (!isCheckinCeremonyActive) {
+          openCheckinPopup(true);
+        }
       }
+    }
+
+    let currentCheckinIsMandatory = false;
+    let checkinSessionItems = [];
+
+    function openCheckinPopup(isMandatory = false) {
+      currentCheckinIsMandatory = !!isMandatory;
+      isCheckinCeremonyActive = true;
+      const modal = document.getElementById('checkinCeremonyModal');
+      const card = document.getElementById('checkinModalCard');
+      const timeTag = document.getElementById('checkinScheduledTimeTag');
+      const lamp = document.getElementById('checkinBadgeLamp');
+      const cancelBtn = document.getElementById('checkinModalCancelBtn');
+      const reviewPhase = document.getElementById('checkinReviewPhase');
+      const arcadePhase = document.getElementById('checkinArcadePhase');
+      const confirmBtn = document.getElementById('checkinConfirmBtn');
+      const continueBtn = document.getElementById('checkinContinueBtn');
+
+      if (!modal) return;
+
+      const sched = getScheduledCheckinTime();
+      if (timeTag) timeTag.textContent = `TIME: ${sched.str}`;
+
+      if (lamp) {
+        lamp.textContent = currentCheckinIsMandatory ? 'MANDATORY' : 'MANUAL';
+        lamp.style.background = currentCheckinIsMandatory ? '#cb4b16' : '#268bd2';
+      }
+
+      if (cancelBtn) {
+        cancelBtn.style.display = currentCheckinIsMandatory ? 'none' : 'block';
+      }
+
+      // Snapshot items incomplete at time of opening checkin
+      const pendingD = (state.dailies || []).filter(d => !d.completed).map(d => ({ item: d, type: 'dailies' }));
+      const pendingT = (state.todos || []).filter(t => !t.completed && (!t.deadline || t.deadline <= todayStr)).map(t => ({ item: t, type: 'todos' }));
+      checkinSessionItems = [...pendingD, ...pendingT];
+
+      // Reset phase visibility
+      const header = document.getElementById('checkinModalHeader');
+      if (header) header.style.display = 'flex';
+      reviewPhase.style.display = 'flex';
+      arcadePhase.style.display = 'none';
+      confirmBtn.style.display = 'flex';
+      continueBtn.style.display = 'none';
+      if (card) card.classList.remove('arcade-rumble');
+
+      renderCheckinReviewList();
+
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+
+    window.openCheckinPopup = openCheckinPopup;
+
+    function renderCheckinReviewList() {
+      const listEl = document.getElementById('checkinPendingList');
+      const allClearCard = document.getElementById('checkinAllClearCard');
+      const confirmBtn = document.getElementById('checkinConfirmBtn');
+      if (!listEl) return;
+
+      listEl.innerHTML = '';
+
+      if (checkinSessionItems.length === 0) {
+        listEl.style.display = 'none';
+        if (allClearCard) allClearCard.style.display = 'flex';
+        if (confirmBtn) {
+          confirmBtn.innerHTML = `<span>🎰 SPIN & COLLECT ELO</span>`;
+          confirmBtn.style.background = 'var(--color-green)';
+        }
+        return;
+      }
+
+      const completedInSession = checkinSessionItems.filter(x => x.item.completed).length;
+      const allDone = completedInSession === checkinSessionItems.length;
+
+      if (allDone) {
+        if (allClearCard) allClearCard.style.display = 'flex';
+        if (confirmBtn) {
+          confirmBtn.innerHTML = `<span>🎰 SPIN & COLLECT ELO</span>`;
+          confirmBtn.style.background = 'var(--color-green)';
+        }
+      } else {
+        if (allClearCard) allClearCard.style.display = 'none';
+        if (confirmBtn) {
+          confirmBtn.innerHTML = `<span>CONFIRM & TALLY (${completedInSession}/${checkinSessionItems.length} DONE)</span>`;
+          confirmBtn.style.background = '#b58900';
+        }
+      }
+
+      listEl.style.display = 'flex';
+      checkinSessionItems.forEach(({ item, type }) => {
+        const row = document.createElement('div');
+        row.className = `checkin-item-row ${item.completed ? 'completed' : ''}`;
+
+        const checkbox = document.createElement('div');
+        checkbox.className = 'checkin-checkbox';
+        if (item.completed) {
+          checkbox.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        }
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'checkin-item-text';
+        const typeBadge = type === 'dailies' ? '[DAILY]' : '[TODO]';
+        textSpan.textContent = `${typeBadge} ${item.text}`;
+
+        const weightSpan = document.createElement('span');
+        weightSpan.className = 'checkin-item-weight';
+        weightSpan.textContent = `+${getWeight(item)} pts`;
+
+        row.appendChild(checkbox);
+        row.appendChild(textSpan);
+        row.appendChild(weightSpan);
+
+        row.onclick = () => {
+          item.completed = !item.completed;
+          playSound(item.completed ? 'check' : 'uncheck');
+          saveState();
+          render();
+          renderCheckinReviewList();
+        };
+
+        listEl.appendChild(row);
+      });
+    }
+
+    function confirmAndPlayCheckinArcade() {
+      const card = document.getElementById('checkinModalCard');
+      const header = document.getElementById('checkinModalHeader');
+      const reviewPhase = document.getElementById('checkinReviewPhase');
+      const arcadePhase = document.getElementById('checkinArcadePhase');
+      const confirmBtn = document.getElementById('checkinConfirmBtn');
+      const continueBtn = document.getElementById('checkinContinueBtn');
+      const r1 = document.getElementById('arcadeReel1');
+      const r2 = document.getElementById('arcadeReel2');
+      const r3 = document.getElementById('arcadeReel3');
+      const v1 = document.getElementById('arcadeReelVal1');
+      const v2 = document.getElementById('arcadeReelVal2');
+      const v3 = document.getElementById('arcadeReelVal3');
+      const standingPill = document.getElementById('arcadeStandingPill');
+      const newEloEl = document.getElementById('arcadeNewEloVal');
+
+      if (!reviewPhase || !arcadePhase) return;
+
+      // 1. Calculate projected metrics using untouched game mechanics formulas
+      let totalPts = 0;
+      let donePts = 0;
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
+
+      state.dailies.forEach(d => {
+        const w = getWeight(d);
+        totalPts += w;
+        if (d.completed) donePts += w;
+      });
+      state.todos.forEach(t => {
+        const w = getWeight(t);
+        const hasNoDeadline = !t.deadline || t.deadline.trim() === '';
+        const isDueToday = t.deadline === todayStr;
+        if (isDueToday) {
+          totalPts += w;
+          if (t.completed) donePts += w;
+        } else if (hasNoDeadline) {
+          if (t.completed) donePts += w;
+        } else if (t.completed) {
+          donePts += w;
+        }
+      });
+
+      const pct = totalPts > 0 ? (donePts / totalPts) * 100 : (donePts > 0 ? 100 : 100);
+      const activeStreaksCount = state.dailies.filter(d => (d.streak || 0) > 0).length;
+      const deltaInfo = calculateNormalizedEloDelta(pct, activeStreaksCount);
+      const projectedElo = Math.max(100, (disciplineState.elo || 1000) + deltaInfo.totalDelta);
+      const targetPct = Math.round(pct);
+
+      // 2. Switch to Arcade Reel view (hide header for pure visual focus)
+      if (header) header.style.display = 'none';
+      reviewPhase.style.display = 'none';
+      arcadePhase.style.display = 'flex';
+      confirmBtn.style.display = 'none';
+      continueBtn.style.display = 'none';
+      if (standingPill) standingPill.style.display = 'none';
+
+      // 3. Initiate Spinning Reels
+      [r1, r2, r3].forEach(r => {
+        if (r) {
+          r.classList.add('spinning');
+          r.classList.remove('locked');
+        }
+      });
+      [v1, v2, v3].forEach(v => {
+        if (v) v.classList.add('roll-blur');
+      });
+
+      // Rapid tick sound and rolling number interval
+      if (arcadeReelTickInterval) clearInterval(arcadeReelTickInterval);
+      const streakFrames = ['0', '+1', '+2', '+3', '+4', '+5'];
+      let tickCount = 0;
+      arcadeReelTickInterval = setInterval(() => {
+        tickCount++;
+        playSound('arcade_tick');
+        if (v1 && r1 && r1.classList.contains('spinning')) {
+          v1.textContent = `${Math.floor(Math.random() * 100)}%`;
+        }
+        if (v2 && r2 && r2.classList.contains('spinning')) {
+          v2.textContent = streakFrames[tickCount % streakFrames.length];
+        }
+        if (v3 && r3 && r3.classList.contains('spinning')) {
+          const randDelta = (Math.random() > 0.4 ? '+' : '-') + Math.floor(Math.random() * 15);
+          v3.textContent = randDelta;
+        }
+      }, 55);
+
+      // Staggered Reel Lock 1: Completion % (at 750ms)
+      setTimeout(() => {
+        if (r1 && v1) {
+          r1.classList.remove('spinning');
+          r1.classList.add('locked');
+          v1.classList.remove('roll-blur');
+          v1.textContent = `${targetPct}%`;
+          v1.style.color = targetPct >= 80 ? 'var(--color-green)' : (targetPct >= 50 ? 'var(--color-yellow)' : 'var(--color-red)');
+          playSound('arcade_lock');
+        }
+      }, 750);
+
+      // Staggered Reel Lock 2: Streak Multiplier (at 1300ms)
+      setTimeout(() => {
+        if (r2 && v2) {
+          r2.classList.remove('spinning');
+          r2.classList.add('locked');
+          v2.classList.remove('roll-blur');
+          const strk = deltaInfo.streakBonus || 0;
+          v2.textContent = strk > 0 ? `+${strk}` : `0`;
+          v2.style.color = strk > 0 ? 'var(--color-yellow)' : 'var(--text-muted)';
+          playSound('arcade_lock');
+        }
+      }, 1300);
+
+      // Staggered Reel Lock 3: ELO Delta (at 1800ms)
+      setTimeout(() => {
+        if (arcadeReelTickInterval) clearInterval(arcadeReelTickInterval);
+        if (r3 && v3) {
+          r3.classList.remove('spinning');
+          r3.classList.add('locked');
+          v3.classList.remove('roll-blur');
+          v3.textContent = `${deltaInfo.totalDelta >= 0 ? '+' : ''}${deltaInfo.totalDelta}`;
+          v3.style.color = deltaInfo.totalDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+          playSound('arcade_lock');
+        }
+      }, 1800);
+
+      // 4. Climax Ceremony (at 2050ms)
+      setTimeout(() => {
+        if (card) {
+          card.classList.remove('arcade-rumble');
+          void card.offsetWidth;
+          card.classList.add('arcade-rumble');
+        }
+
+        playSound('arcade_jackpot');
+
+        // Confetti / dopamine sparkles burst
+        if (card) {
+          const cardRect = card.getBoundingClientRect();
+          const centerX = cardRect.left + cardRect.width / 2;
+          const centerY = cardRect.top + cardRect.height / 2;
+          triggerCheckinSparkles(centerX, centerY);
+        }
+
+        if (standingPill && newEloEl) {
+          newEloEl.textContent = `${projectedElo} ELO`;
+          standingPill.style.display = 'flex';
+        }
+
+        // Call the underlying unchanged game reset logic silently
+        performReset(false);
+
+        // Show Continue button (only disappears when clicked)
+        if (continueBtn) {
+          continueBtn.style.display = 'flex';
+          continueBtn.innerHTML = `<span>CONTINUE</span>`;
+        }
+      }, 2050);
+    }
+
+    function triggerCheckinSparkles(x, y) {
+      const colors = ['#859900', '#268bd2', '#b58900', '#2aa198', '#cb4b16', '#d33682', '#fdf6e3'];
+      for (let i = 0; i < 48; i++) {
+        const spark = document.createElement('div');
+        spark.className = 'dopamine-spark';
+        spark.style.backgroundColor = colors[i % colors.length];
+        spark.style.left = `${x}px`;
+        spark.style.top = `${y}px`;
+        const size = (i % 3 === 0) ? 7 : 5;
+        spark.style.width = `${size}px`;
+        spark.style.height = `${size}px`;
+        spark.style.zIndex = '10000';
+        const angle = (Math.PI * 2 * i) / 48 + (Math.random() * 0.2 - 0.1);
+        const dist = 50 + Math.random() * 90;
+        spark.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+        spark.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 700);
+      }
+    }
+
+    function closeCheckinCeremony() {
+      if (checkinDismissInterval) clearInterval(checkinDismissInterval);
+      if (arcadeReelTickInterval) clearInterval(arcadeReelTickInterval);
+      const modal = document.getElementById('checkinCeremonyModal');
+      const header = document.getElementById('checkinModalHeader');
+      if (header) header.style.display = 'flex';
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+      }
+      isCheckinCeremonyActive = false;
+      currentCheckinIsMandatory = false;
+      render();
     }
 
     function debugResetBaseline() {
@@ -6236,8 +7118,74 @@
           if (tModal && tModal.classList.contains('active')) {
             closeTiersModal();
           }
+          if (isCheckinCeremonyActive) {
+            if (!currentCheckinIsMandatory) {
+              closeCheckinCeremony();
+            } else {
+              // Mandatory check-in cannot be dismissed with Escape key
+              e.preventDefault();
+            }
+          }
         }
       });
+
+      // Scheduled Check-In Time Input Setting
+      const checkinTimeInput = document.getElementById('checkinTimeInput');
+      if (checkinTimeInput) {
+        checkinTimeInput.value = localStorage.getItem('nemesis_checkin_time') || '08:00';
+        checkinTimeInput.onchange = (e) => {
+          localStorage.setItem('nemesis_checkin_time', e.target.value);
+          const timeTag = document.getElementById('checkinScheduledTimeTag');
+          if (timeTag) timeTag.textContent = `TIME: ${e.target.value}`;
+        };
+      }
+
+      // Check-In Ceremony Modal Action Buttons
+      const checkinConfirmBtn = document.getElementById('checkinConfirmBtn');
+      if (checkinConfirmBtn) {
+        checkinConfirmBtn.onclick = confirmAndPlayCheckinArcade;
+      }
+      const checkinContinueBtn = document.getElementById('checkinContinueBtn');
+      if (checkinContinueBtn) {
+        checkinContinueBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeCheckinCeremony();
+        };
+      }
+      const checkinCancelBtn = document.getElementById('checkinModalCancelBtn');
+      if (checkinCancelBtn) {
+        checkinCancelBtn.onclick = closeCheckinCeremony;
+      }
+      const checkinCard = document.getElementById('checkinModalCard');
+      if (checkinCard) {
+        checkinCard.addEventListener('click', (e) => {
+          if (checkinContinueBtn && checkinContinueBtn.style.display !== 'none') {
+            closeCheckinCeremony();
+          }
+        });
+      }
+      const checkinOverlay = document.getElementById('checkinCeremonyModal');
+      if (checkinOverlay) {
+        checkinOverlay.onclick = (e) => {
+          if (checkinContinueBtn && checkinContinueBtn.style.display !== 'none') {
+            closeCheckinCeremony();
+          } else if (e.target === checkinOverlay && !currentCheckinIsMandatory) {
+            closeCheckinCeremony();
+          }
+        };
+      }
+
+      // Check In Button (Header)
+      const resetDailiesBtn = document.getElementById('resetDailiesBtn');
+      if (resetDailiesBtn) {
+        resetDailiesBtn.onclick = (e) => {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          openCheckinPopup(false);
+        };
+      }
 
       // Tiers Configuration Modal
       const tiersBtn = document.getElementById('tiersConfigBtn');
@@ -6256,9 +7204,6 @@
           if (e.target === tiersModal) closeTiersModal();
         };
       }
-
-      // Check In Button
-      document.getElementById('resetDailiesBtn').onclick = () => performReset(true);
 
       // Rebirth & Debug Reset Buttons
       const rebirthBtn = document.getElementById('rebirthEloBtn');
