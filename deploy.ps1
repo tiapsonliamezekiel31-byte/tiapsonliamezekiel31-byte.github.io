@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: thematic streak animations with 5-stage progression scaling to 20 streak requirement"
+$commitMsg = "fix: soften streak 1 animation to gentle ambient and scale intensity across 5 stages to 20 streak max"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
