@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "style: big visible streak numbers, compact habit rows, check-in history graph"
+$commitMsg = "feat: thematic streak animations with 5-stage progression scaling to 20 streak requirement"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
