@@ -1357,20 +1357,40 @@
       word-break: break-word;
     }
 
-    /* Subtle streak text */
+    /* Big & Highly Visible Streak Number Badge for Dailies */
     .streak-text {
-      font-size: 0.62rem;
-      font-weight: 700;
-      color: var(--text-dim);
-      margin-left: 0.15rem;
+      font-size: 0.92rem;
+      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.08rem 0.35rem;
+      border-radius: 3px;
+      letter-spacing: -0.02em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      line-height: 1;
+      margin-left: auto;
+      margin-right: 0.2rem;
+      flex-shrink: 0;
     }
 
     .streak-text.pos {
-      color: var(--color-green);
+      color: #002b36;
+      background: #859900;
+      border: 1px solid #859900;
     }
 
     .streak-text.neg {
-      color: var(--color-red);
+      color: #fdf6e3;
+      background: #dc322f;
+      border: 1px solid #dc322f;
+    }
+
+    .streak-text.zero {
+      color: #93a1a1;
+      background: #002b36;
+      border: 1px solid #0e5365;
     }
 
     /* Crisp SVG geometric difficulty badge */
@@ -3032,15 +3052,34 @@
     .checkin-cell.empty { background: #073642; border: 1px solid #0e5365; }
 
     .checkin-habit-streak {
-      font-size: 0.52rem;
-      font-weight: 800;
-      color: #b58900;
-      background: #073642;
-      border: 1px solid #0e5365;
-      padding: 0.05rem 0.25rem;
-      border-radius: 2px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #002b36;
+      background: #859900;
+      padding: 0.08rem 0.32rem;
+      border-radius: 3px;
       flex-shrink: 0;
       white-space: nowrap;
+      min-width: 22px;
+      text-align: center;
+      line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .checkin-habit-streak.pos {
+      color: #002b36;
+      background: #859900;
+    }
+
+    .checkin-habit-streak.neg {
+      color: #fdf6e3;
+      background: #dc322f;
+    }
+
+    .checkin-habit-streak.zero {
+      color: #93a1a1;
+      background: #073642;
+      border: 1px solid #0e5365;
     }
 
     /* Check-In History Graph (by last check-ins, not days) */
@@ -3628,8 +3667,7 @@
             <!-- Reel 2: Streak Multiplier / Bonus -->
             <div class="arcade-reel-box strk" id="arcadeReel2">
               <span class="arcade-reel-label">STREAK</span>
-              <span class="arcade-reel-icon">🔥</span>
-              <span class="arcade-reel-val" id="arcadeReelVal2" style="color: #b58900;">0</span>
+              <span class="arcade-reel-val streak-big-num" id="arcadeReelVal2" style="color: #b58900; font-size: 2.1rem;">0</span>
             </div>
 
             <!-- Reel 3: ELO Delta -->
@@ -4556,8 +4594,10 @@
         }
 
         const streakBadge = document.createElement('span');
-        streakBadge.className = 'checkin-habit-streak';
-        streakBadge.textContent = `🔥 ${d.streak || 0}`;
+        const stVal = typeof d.streak === 'number' ? d.streak : 0;
+        streakBadge.className = `checkin-habit-streak ${stVal > 0 ? 'pos' : (stVal < 0 ? 'neg' : 'zero')}`;
+        streakBadge.textContent = `${stVal > 0 ? '+' : ''}${stVal}`;
+        streakBadge.title = `Streak: ${stVal}`;
 
         row.appendChild(metaLeft);
         row.appendChild(grid);
@@ -5599,11 +5639,13 @@
       textSpan.className = 'task-text';
       textSpan.textContent = item.text;
 
-      // Subtle streak text for dailies
-      if (type === 'dailies' && item.streak !== undefined && item.streak !== 0) {
+      // Big and highly visible streak number badge for dailies
+      if (type === 'dailies' && typeof item.streak === 'number') {
         const sText = document.createElement('span');
-        sText.className = `streak-text ${item.streak > 0 ? 'pos' : 'neg'}`;
-        sText.textContent = `${item.streak > 0 ? '+' : ''}${item.streak}`;
+        const sVal = item.streak;
+        sText.className = `streak-text ${sVal > 0 ? 'pos' : (sVal < 0 ? 'neg' : 'zero')}`;
+        sText.textContent = `${sVal > 0 ? '+' : ''}${sVal}`;
+        sText.title = `Current Streak: ${sVal}`;
         mainRow.appendChild(check);
         mainRow.appendChild(textSpan);
         mainRow.appendChild(sText);
@@ -6492,8 +6534,10 @@
         streakWrap.appendChild(streakInput);
 
         const flame = document.createElement('span');
-        flame.style.fontSize = '0.65rem';
-        flame.textContent = '🔥';
+        flame.style.fontSize = '0.62rem';
+        flame.style.fontWeight = '800';
+        flame.style.color = '#b58900';
+        flame.textContent = 'STRK';
         streakWrap.appendChild(flame);
 
         if (tempTierConfig.length > 1) {
