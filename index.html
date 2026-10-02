@@ -2807,6 +2807,13 @@
       justify-content: center;
       width: 100%;
       padding: 0.5rem 0;
+      transition: transform 0.38s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.32s ease;
+    }
+
+    .arcade-view-container.minimizing {
+      transform: scale(0.8) translateY(32px);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .arcade-reels-row {
@@ -2909,22 +2916,28 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Analytics Phase: Top Habit Grids & Bottom 30-Day Completion Graph */
+    /* Analytics Phase: Top Habit Grids & Bottom Last Check-Ins Graph */
     .checkin-analytics-view {
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      gap: 0.55rem;
       width: 100%;
+      animation: analyticsSlideIn 0.42s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+    }
+
+    @keyframes analyticsSlideIn {
+      0% { opacity: 0; transform: translateY(-16px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .checkin-section-card {
       background: #073642;
       border: 2px solid #0e5365;
       border-radius: 6px;
-      padding: 0.55rem 0.75rem;
+      padding: 0.5rem 0.65rem;
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.4rem;
     }
 
     .checkin-section-header {
@@ -2951,37 +2964,33 @@
       border-radius: 2px;
     }
 
-    /* Habit Cell Grids */
+    /* Compact Habit Cell Grids - Single-line rows, show everything */
     .checkin-habit-grids-list {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      max-height: 175px;
-      overflow-y: auto;
-      padding-right: 0.15rem;
+      gap: 0.25rem;
+      width: 100%;
     }
 
     .checkin-habit-row {
       display: flex;
-      flex-direction: column;
-      gap: 0.2rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.45rem;
       background: #002b36;
       border: 1.5px solid #0e5365;
       border-radius: 4px;
-      padding: 0.35rem 0.5rem;
-    }
-
-    .checkin-habit-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.4rem;
+      padding: 0.25rem 0.45rem;
+      min-height: 24px;
     }
 
     .checkin-habit-meta-left {
       display: flex;
       align-items: center;
       gap: 0.35rem;
+      width: 140px;
+      min-width: 110px;
+      flex-shrink: 0;
       overflow: hidden;
     }
 
@@ -2993,7 +3002,7 @@
     }
 
     .checkin-habit-name {
-      font-size: 0.64rem;
+      font-size: 0.62rem;
       font-weight: 800;
       color: #fdf6e3;
       white-space: nowrap;
@@ -3001,46 +3010,53 @@
       text-overflow: ellipsis;
     }
 
-    .checkin-habit-streak {
-      font-size: 0.55rem;
-      font-weight: 800;
-      color: #b58900;
-      background: #073642;
-      border: 1px solid #0e5365;
-      padding: 0.04rem 0.3rem;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
     .checkin-habit-cells-grid {
-      display: grid;
-      grid-template-columns: repeat(20, 1fr);
-      gap: 3px;
-      width: 100%;
-      padding-top: 0.1rem;
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+      flex: 1;
+      justify-content: flex-end;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
     .checkin-cell {
+      width: 8px;
       height: 8px;
       border-radius: 1.5px;
+      flex-shrink: 0;
     }
 
     .checkin-cell.done { background: #859900; }
     .checkin-cell.missed { background: #dc322f; }
     .checkin-cell.empty { background: #073642; border: 1px solid #0e5365; }
 
-    /* Completion Rate Graph (Last 30 Days) */
+    .checkin-habit-streak {
+      font-size: 0.52rem;
+      font-weight: 800;
+      color: #b58900;
+      background: #073642;
+      border: 1px solid #0e5365;
+      padding: 0.05rem 0.25rem;
+      border-radius: 2px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Check-In History Graph (by last check-ins, not days) */
     .checkin-graph-container {
       display: flex;
       align-items: flex-end;
-      justify-content: space-between;
-      gap: 3px;
+      justify-content: flex-start;
+      gap: 4px;
       height: 96px;
-      padding: 0.45rem 0.3rem 0.15rem;
+      padding: 0.45rem 0.35rem 0.15rem;
       background: #002b36;
       border: 1.5px solid #0e5365;
       border-radius: 4px;
       width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
 
     .checkin-bar-col {
@@ -3048,6 +3064,7 @@
       flex-direction: column;
       align-items: center;
       gap: 3px;
+      min-width: 18px;
       flex: 1;
       height: 100%;
       justify-content: flex-end;
@@ -3071,10 +3088,11 @@
     }
 
     .checkin-bar-lbl {
-      font-size: 0.44rem;
+      font-size: 0.46rem;
       font-weight: 800;
-      color: #586e75;
+      color: #93a1a1;
       line-height: 1;
+      white-space: nowrap;
     }
 
     /* Minimized Bottom Tally Dock */
@@ -3087,52 +3105,12 @@
       border-top: 2px solid #0e5365;
       padding: 0.55rem 0.85rem;
       flex-shrink: 0;
+      animation: miniDockSlideUp 0.38s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
     }
 
-    .mini-tally-chips {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.4rem;
-      width: 100%;
-    }
-
-    @media (max-width: 480px) {
-      .mini-tally-chips {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    .mini-chip {
-      background: #002b36;
-      border: 1.5px solid #0e5365;
-      border-radius: 4px;
-      padding: 0.3rem 0.35rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      text-align: center;
-    }
-
-    .mini-chip.mini-chip-comp { border-color: #859900; }
-    .mini-chip.mini-chip-strk { border-color: #b58900; }
-    .mini-chip.mini-chip-delta { border-color: #268bd2; }
-    .mini-chip.mini-chip-elo { border-color: #2aa198; }
-
-    .mini-chip-label {
-      font-size: 0.48rem;
-      font-weight: 900;
-      color: #93a1a1;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-    }
-
-    .mini-chip-val {
-      font-size: 0.84rem;
-      font-weight: 900;
-      color: #fdf6e3;
-      font-family: 'JetBrains Mono', monospace;
+    @keyframes miniDockSlideUp {
+      0% { opacity: 0; transform: translateY(22px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
 
     .checkin-footer {
@@ -3683,14 +3661,14 @@
             </div>
           </div>
 
-          <!-- Bottom: 30-Day Completion Rate Graph -->
+          <!-- Bottom: Check-In History Graph -->
           <div class="checkin-section-card">
             <div class="checkin-section-header">
-              <span class="checkin-section-title">COMPLETION RATE (LAST 30 DAYS)</span>
-              <span class="checkin-section-badge" id="checkin30dAvgBadge">0% AVG</span>
+              <span class="checkin-section-title">CHECK-IN HISTORY GRAPH</span>
+              <span class="checkin-section-badge" id="checkinHistoryAvgBadge">0% AVG</span>
             </div>
-            <div class="checkin-graph-container" id="checkin30dGraph">
-              <!-- 30 vertical solid bars via JS -->
+            <div class="checkin-graph-container" id="checkinHistoryGraph">
+              <!-- Rendered via JS -->
             </div>
           </div>
         </div>
@@ -4474,42 +4452,52 @@
         // Call the underlying unchanged game reset logic silently
         performReset(false);
 
-        // 5. Minimize tally to bottom dock & transition to analytics (habit grids & 30d graph)
+        // 5. Smoothly minimize tally to bottom dock & transition to analytics
         setTimeout(() => {
-          if (arcadePhase) arcadePhase.style.display = 'none';
+          const arcadeContainer = document.querySelector('.arcade-view-container');
+          if (arcadeContainer) arcadeContainer.classList.add('minimizing');
 
-          const analyticsPhase = document.getElementById('checkinAnalyticsPhase');
-          const minimizedTally = document.getElementById('checkinMinimizedTally');
-          const miniComp = document.getElementById('miniTallyComp');
-          const miniStrk = document.getElementById('miniTallyStrk');
-          const miniDelta = document.getElementById('miniTallyDelta');
-          const miniElo = document.getElementById('miniTallyElo');
+          setTimeout(() => {
+            if (arcadePhase) arcadePhase.style.display = 'none';
+            if (arcadeContainer) arcadeContainer.classList.remove('minimizing');
 
-          if (miniComp) {
-            miniComp.textContent = `${targetPct}%`;
-            miniComp.style.color = targetPct >= 80 ? 'var(--color-green)' : (targetPct >= 50 ? 'var(--color-yellow)' : 'var(--color-red)');
-          }
-          if (miniStrk) {
-            const strk = deltaInfo.streakBonus || 0;
-            miniStrk.textContent = strk > 0 ? `+${strk}` : `0`;
-            miniStrk.style.color = strk > 0 ? 'var(--color-yellow)' : 'var(--text-muted)';
-          }
-          if (miniDelta) {
-            miniDelta.textContent = `${deltaInfo.totalDelta >= 0 ? '+' : ''}${deltaInfo.totalDelta}`;
-            miniDelta.style.color = deltaInfo.totalDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)';
-          }
-          if (miniElo) {
-            miniElo.textContent = `${projectedElo}`;
-            miniElo.style.color = 'var(--color-cyan)';
-          }
+            const analyticsPhase = document.getElementById('checkinAnalyticsPhase');
+            const minimizedTally = document.getElementById('checkinMinimizedTally');
+            const miniComp = document.getElementById('miniTallyComp');
+            const miniStrk = document.getElementById('miniTallyStrk');
+            const miniDelta = document.getElementById('miniTallyDelta');
+            const miniElo = document.getElementById('miniTallyElo');
 
-          if (card) card.style.maxWidth = '640px';
-          renderCheckinHabitGrids();
-          renderCheckin30dGraph();
+            if (miniComp) {
+              miniComp.textContent = `${targetPct}%`;
+              miniComp.style.color = targetPct >= 80 ? 'var(--color-green)' : (targetPct >= 50 ? 'var(--color-yellow)' : 'var(--color-red)');
+            }
+            if (miniStrk) {
+              const strk = deltaInfo.streakBonus || 0;
+              miniStrk.textContent = strk > 0 ? `+${strk}` : `0`;
+              miniStrk.style.color = strk > 0 ? 'var(--color-yellow)' : 'var(--text-muted)';
+            }
+            if (miniDelta) {
+              miniDelta.textContent = `${deltaInfo.totalDelta >= 0 ? '+' : ''}${deltaInfo.totalDelta}`;
+              miniDelta.style.color = deltaInfo.totalDelta >= 0 ? 'var(--color-green)' : 'var(--color-red)';
+            }
+            if (miniElo) {
+              miniElo.textContent = `${projectedElo}`;
+              miniElo.style.color = 'var(--color-cyan)';
+            }
 
-          if (analyticsPhase) analyticsPhase.style.display = 'flex';
-          if (minimizedTally) minimizedTally.style.display = 'flex';
-        }, 1100);
+            if (card) {
+              card.style.maxWidth = '640px';
+              card.style.transition = 'max-width 0.38s ease';
+            }
+
+            renderCheckinHabitGrids();
+            renderCheckinHistoryGraph();
+
+            if (analyticsPhase) analyticsPhase.style.display = 'flex';
+            if (minimizedTally) minimizedTally.style.display = 'flex';
+          }, 360);
+        }, 900);
       }, 2050);
     }
 
@@ -4531,9 +4519,6 @@
         const row = document.createElement('div');
         row.className = 'checkin-habit-row';
 
-        const meta = document.createElement('div');
-        meta.className = 'checkin-habit-meta';
-
         const metaLeft = document.createElement('div');
         metaLeft.className = 'checkin-habit-meta-left';
 
@@ -4544,22 +4529,17 @@
         const name = document.createElement('span');
         name.className = 'checkin-habit-name';
         name.textContent = d.text;
+        name.title = d.text;
 
         metaLeft.appendChild(dot);
         metaLeft.appendChild(name);
-
-        const streakBadge = document.createElement('span');
-        streakBadge.className = 'checkin-habit-streak';
-        streakBadge.textContent = `🔥 ${d.streak || 0}`;
-
-        meta.appendChild(metaLeft);
-        meta.appendChild(streakBadge);
 
         const grid = document.createElement('div');
         grid.className = 'checkin-habit-cells-grid';
 
         const hist = d.history || [];
-        for (let j = 19; j >= 0; j--) {
+        const maxCells = Math.min(24, Math.max(14, hist.length));
+        for (let j = maxCells - 1; j >= 0; j--) {
           const entry = hist[hist.length - 1 - j];
           const cell = document.createElement('div');
           if (!entry) {
@@ -4575,59 +4555,83 @@
           grid.appendChild(cell);
         }
 
-        row.appendChild(meta);
+        const streakBadge = document.createElement('span');
+        streakBadge.className = 'checkin-habit-streak';
+        streakBadge.textContent = `🔥 ${d.streak || 0}`;
+
+        row.appendChild(metaLeft);
         row.appendChild(grid);
+        row.appendChild(streakBadge);
         container.appendChild(row);
       });
     }
 
-    function renderCheckin30dGraph() {
-      const container = document.getElementById('checkin30dGraph');
-      const badge = document.getElementById('checkin30dAvgBadge');
+    function renderCheckinHistoryGraph() {
+      const container = document.getElementById('checkinHistoryGraph');
+      const badge = document.getElementById('checkinHistoryAvgBadge');
       if (!container) return;
       container.innerHTML = '';
 
-      const days = [];
-      const now = new Date();
-      for (let i = 29; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
-        const dayLabel = d.getDate();
-        const rate = (state.history && state.history[dateStr] !== undefined) ? Number(state.history[dateStr]) : 0;
-        days.push({ dateStr, dayLabel, rate });
+      // Collect all recorded check-ins chronologically from history
+      const checkinEvents = [];
+      const sHist = (state && state.history) || {};
+      const dHist = (disciplineState && disciplineState.history) || {};
+
+      // Filter out penalty resets so we only track genuine check-in events
+      const allDates = Array.from(new Set([...Object.keys(sHist), ...Object.keys(dHist)]))
+        .filter(k => !k.includes('penalty'))
+        .sort();
+
+      allDates.forEach(k => {
+        let pct = 0;
+        let delta = 0;
+        let elo = 1000;
+        if (dHist[k]) {
+          pct = typeof dHist[k].pct === 'number' ? Math.round(dHist[k].pct) : Math.round((dHist[k].rate || 0) * 100);
+          delta = dHist[k].delta || 0;
+          elo = dHist[k].elo || 1000;
+        } else if (sHist[k] !== undefined) {
+          pct = Math.round(Number(sHist[k]) * 100);
+        }
+        const parts = k.split('-');
+        const dateLabel = parts.length >= 3 ? `${Number(parts[1])}/${Number(parts[2])}` : k;
+        checkinEvents.push({ dateStr: k, dateLabel, pct, delta, elo });
+      });
+
+      // Show up to the last 25 check-in events
+      const lastCheckins = checkinEvents.slice(-25);
+
+      if (lastCheckins.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-dim); font-size: 0.65rem; padding: 1rem; width: 100%; text-align: center;">No check-ins recorded yet</div>';
+        if (badge) badge.textContent = '0% AVG';
+        return;
       }
 
-      const recordedDays = days.filter(d => state.history && state.history[d.dateStr] !== undefined);
-      const avg = recordedDays.length > 0
-        ? Math.round((recordedDays.reduce((acc, d) => acc + d.rate, 0) / recordedDays.length) * 100)
-        : 0;
-      if (badge) badge.textContent = `${avg}% AVG`;
+      const avg = Math.round(lastCheckins.reduce((acc, c) => acc + c.pct, 0) / lastCheckins.length);
+      if (badge) badge.textContent = `${avg}% AVG (${lastCheckins.length} CHECK-INS)`;
 
-      days.forEach(day => {
-        const pct = Math.round(day.rate * 100);
+      lastCheckins.forEach((c, idx) => {
         const col = document.createElement('div');
         col.className = 'checkin-bar-col';
-        col.title = `${day.dateStr}: ${pct}%`;
+        col.title = `Check-In #${idx + 1} (${c.dateStr})\nCompletion: ${c.pct}%\nDelta: ${c.delta >= 0 ? '+' : ''}${c.delta} ELO\nRating: ${c.elo} ELO`;
 
         const barWrap = document.createElement('div');
         barWrap.className = 'checkin-bar-wrap';
 
         const barFill = document.createElement('div');
         barFill.className = 'checkin-bar-fill';
-        barFill.style.height = `${Math.max(4, pct)}%`;
+        barFill.style.height = `${Math.max(6, c.pct)}%`;
 
-        if (pct >= 100) barFill.style.background = '#859900';
-        else if (pct >= 70) barFill.style.background = '#b58900';
-        else if (pct >= 40) barFill.style.background = '#cb4b16';
-        else if (pct > 0) barFill.style.background = '#dc322f';
-        else barFill.style.background = '#0e5365';
+        if (c.pct >= 100) barFill.style.background = '#859900';
+        else if (c.pct >= 70) barFill.style.background = '#b58900';
+        else if (c.pct >= 40) barFill.style.background = '#cb4b16';
+        else barFill.style.background = '#dc322f';
 
         barWrap.appendChild(barFill);
 
         const lbl = document.createElement('span');
         lbl.className = 'checkin-bar-lbl';
-        lbl.textContent = day.dayLabel;
+        lbl.textContent = c.dateLabel;
 
         col.appendChild(barWrap);
         col.appendChild(lbl);
