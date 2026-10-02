@@ -4670,6 +4670,7 @@
       }
 
       // Snapshot items incomplete at time of opening checkin
+      const todayStr = state.lastActiveDate || new Date().toISOString().split('T')[0];
       const pendingD = (state.dailies || []).filter(d => !d.completed).map(d => ({ item: d, type: 'dailies' }));
       const pendingT = (state.todos || []).filter(t => !t.completed && (!t.deadline || t.deadline <= todayStr)).map(t => ({ item: t, type: 'todos' }));
       checkinSessionItems = [...pendingD, ...pendingT];
@@ -9293,7 +9294,11 @@
       });
     }
 
-    checkDailyReset();
+    try {
+      checkDailyReset();
+    } catch (e) {
+      console.error('Checkin reset error:', e);
+    }
     updateDateDisplay();
     setupEventListeners();
     render();
