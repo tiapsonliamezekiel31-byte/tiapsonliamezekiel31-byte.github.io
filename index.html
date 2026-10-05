@@ -1158,15 +1158,23 @@
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       gap: 0.2rem;
       transition: border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
       position: relative;
+    }
+
+    .matrix-row-card {
+      justify-content: center;
       overflow: hidden;
     }
 
     .task-card {
       cursor: grab;
+      flex-shrink: 0;
+      min-height: fit-content;
+      height: auto;
+      justify-content: flex-start;
+      overflow: visible;
     }
 
     .task-card:active {
@@ -1867,19 +1875,26 @@
     .subtasks-container {
       display: flex;
       flex-direction: column;
-      gap: 0.15rem;
+      gap: 0.2rem;
       padding-left: 0.7rem;
-      margin-top: 0.05rem;
+      margin-top: 0.15rem;
+      padding-bottom: 0.1rem;
       position: relative;
       z-index: 2;
+      width: 100%;
+      box-sizing: border-box;
+      flex-shrink: 0;
     }
 
     .subtask-item {
       display: flex;
       align-items: center;
-      gap: 0.3rem;
+      gap: 0.35rem;
       font-size: 0.68rem;
       color: var(--text);
+      min-height: 18px;
+      line-height: 1.3;
+      flex-shrink: 0;
     }
 
     .subtask-prefix {
@@ -3042,6 +3057,7 @@
       align-items: center;
       justify-content: center;
       padding: 0.75rem;
+      cursor: pointer;
     }
 
     .checkin-modal-overlay.active {
@@ -3049,6 +3065,7 @@
     }
 
     .checkin-modal-card {
+      cursor: default;
       background: #002b36;
       border: 2px solid #b58900;
       border-radius: 8px;
@@ -3150,8 +3167,8 @@
 
     .checkin-item-row {
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      flex-direction: column;
+      gap: 0.3rem;
       background: #073642;
       border: 1px solid #0e5365;
       border-radius: 4px;
@@ -3159,6 +3176,25 @@
       cursor: pointer;
       transition: background 0.15s ease, border-color 0.15s ease;
       user-select: none;
+      flex-shrink: 0;
+      min-height: fit-content;
+      height: auto;
+    }
+
+    .checkin-item-top {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+    }
+
+    .checkin-subtasks-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      padding-left: 1.6rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .checkin-item-row:hover {
@@ -4666,7 +4702,7 @@
       }
 
       if (cancelBtn) {
-        cancelBtn.style.display = currentCheckinIsMandatory ? 'none' : 'block';
+        cancelBtn.style.display = 'block';
       }
 
       // Snapshot items incomplete at time of opening checkin
@@ -4738,6 +4774,9 @@
         const row = document.createElement('div');
         row.className = `checkin-item-row ${item.completed ? 'completed' : ''}`;
 
+        const topRow = document.createElement('div');
+        topRow.className = 'checkin-item-top';
+
         const checkbox = document.createElement('div');
         checkbox.className = 'checkin-checkbox';
         if (item.completed) {
@@ -4753,12 +4792,56 @@
         weightSpan.className = 'checkin-item-weight';
         weightSpan.textContent = `+${getWeight(item)} pts`;
 
-        row.appendChild(checkbox);
-        row.appendChild(textSpan);
-        row.appendChild(weightSpan);
+        topRow.appendChild(checkbox);
+        topRow.appendChild(textSpan);
+        topRow.appendChild(weightSpan);
+        row.appendChild(topRow);
 
-        row.onclick = () => {
+        if (Array.isArray(item.subtasks) && item.subtasks.length > 0) {
+          const subsWrap = document.createElement('div');
+          subsWrap.className = 'checkin-subtasks-wrap';
+
+          item.subtasks.forEach(st => {
+            const stRow = document.createElement('div');
+            stRow.style.display = 'flex';
+            stRow.style.alignItems = 'center';
+            stRow.style.gap = '0.35rem';
+            stRow.style.fontSize = '0.64rem';
+            stRow.style.color = st.completed ? '#93a1a1' : '#fdf6e3';
+
+            const stCheck = document.createElement('div');
+            stCheck.className = `subtask-checkbox ${st.completed ? 'checked' : ''}`;
+            stCheck.innerHTML = `<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            stCheck.onclick = (e) => {
+              e.stopPropagation();
+              st.completed = !st.completed;
+              if (item.subtasks.every(s => s.completed)) {
+                item.completed = true;
+              }
+              playSound(st.completed ? 'check' : 'uncheck');
+              saveState();
+              render();
+              renderCheckinReviewList();
+            };
+
+            const stTxt = document.createElement('span');
+            stTxt.textContent = `- ${st.text}`;
+            if (st.completed) stTxt.style.textDecoration = 'line-through';
+
+            stRow.appendChild(stCheck);
+            stRow.appendChild(stTxt);
+            subsWrap.appendChild(stRow);
+          });
+
+          row.appendChild(subsWrap);
+        }
+
+        topRow.onclick = (e) => {
+          e.stopPropagation();
           item.completed = !item.completed;
+          if (item.subtasks && item.subtasks.length > 0) {
+            item.subtasks.forEach(s => { s.completed = item.completed; });
+          }
           playSound(item.completed ? 'check' : 'uncheck');
           saveState();
           render();
@@ -8203,12 +8286,7 @@
             closeTiersModal();
           }
           if (isCheckinCeremonyActive) {
-            if (!currentCheckinIsMandatory) {
-              closeCheckinCeremony();
-            } else {
-              // Mandatory check-in cannot be dismissed with Escape key
-              e.preventDefault();
-            }
+            closeCheckinCeremony();
           }
         }
       });
@@ -8242,11 +8320,11 @@
       }
       const checkinOverlay = document.getElementById('checkinCeremonyModal');
       if (checkinOverlay) {
-        checkinOverlay.onclick = (e) => {
-          if (e.target === checkinOverlay && !currentCheckinIsMandatory) {
+        checkinOverlay.addEventListener('click', (e) => {
+          if (!e.target.closest('#checkinModalCard')) {
             closeCheckinCeremony();
           }
-        };
+        });
       }
 
       // Check In Button (Header)

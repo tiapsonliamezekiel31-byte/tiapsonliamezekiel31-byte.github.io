@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: soften streak 1 animation to gentle ambient and scale intensity across 5 stages to 20 streak max"
+$commitMsg = "fix: allow exiting check-in popup by clicking outside and ensure proper todo slot height for subtasks"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
