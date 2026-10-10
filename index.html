@@ -3762,7 +3762,7 @@
             <button type="button" class="dropdown-item-btn" id="importBtn" title="Import Backup JSON">📥 IMP</button>
             <button type="button" class="dropdown-item-btn" id="recoverOldBtn" title="Recover old app data">📜 LEGACY</button>
             <div class="dropdown-divider"></div>
-            <button type="button" class="dropdown-item-btn item-warning" id="revertPrevCheckinBtn" title="Reset to previous check-in state and its stats">↺ RESET PREV CHECK-IN</button>
+            <button type="button" class="dropdown-item-btn item-warning" id="revertPrevCheckinBtn" onclick="resetToPreviousCheckin()" title="Reset to previous check-in state and its stats">↺ RESET PREV CHECK-IN</button>
             <button type="button" class="dropdown-item-btn item-danger" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">🔥 REBIRTH</button>
             <button type="button" class="dropdown-item-btn item-danger" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline">⚡ DEBUG</button>
           </div>
@@ -4229,7 +4229,7 @@
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; width: 100%;">
-          <button type="button" class="checkin-revert-btn" id="checkinUndoBtn" title="Reset this check-in and restore previous stats">
+          <button type="button" class="checkin-revert-btn" id="checkinUndoBtn" onclick="resetToPreviousCheckin()" title="Reset this check-in and restore previous stats">
             <span>↺ RESET CHECK-IN</span>
           </button>
           <button type="button" class="checkin-continue-btn" id="checkinContinueBtn">
@@ -7151,130 +7151,168 @@
     }
 
     function resetToPreviousCheckin() {
-      let snapshot = null;
-      let stack = [];
       try {
-        stack = JSON.parse(localStorage.getItem('nemesis_checkin_snapshots_stack') || '[]');
-        if (!Array.isArray(stack)) stack = [];
-      } catch (e) { stack = []; }
-
-      if (stack.length > 0) {
-        snapshot = stack[stack.length - 1];
-      } else {
+        let snapshot = null;
+        let stack = [];
         try {
-          const raw = localStorage.getItem('nemesis_prev_checkin_snapshot');
-          if (raw) snapshot = JSON.parse(raw);
-        } catch (e) { }
-      }
+          stack = JSON.parse(localStorage.getItem('nemesis_checkin_snapshots_stack') || '[]');
+          if (!Array.isArray(stack)) stack = [];
+        } catch (e) { stack = []; }
 
-      const targetDate = state.lastCheckinDate || (snapshot && snapshot.date) || new Date().toISOString().split('T')[0];
-      const hasHistory = (state.history && state.history[targetDate] !== undefined) ||
-                         (disciplineState.history && disciplineState.history[targetDate] !== undefined) ||
-                         (state.dailies && state.dailies.some(d => d.history && d.history.some(h => h.date === targetDate)));
-
-      if (!snapshot && !hasHistory && !state.lastCheckinDate) {
-        alert('No previous check-in recorded to reset.');
-        return;
-      }
-
-      const displayDate = (snapshot && snapshot.date) || targetDate;
-      const eloInfo = (snapshot && snapshot.disciplineState && snapshot.disciplineState.elo)
-        ? ` (${snapshot.disciplineState.elo} ELO)`
-        : '';
-      const promptMsg = `Reset to previous check-in from ${displayDate}?\n\nThis will restore previous task states, streaks, ELO rating${eloInfo}, and stats.`;
-
-      if (!confirm(promptMsg)) {
-        return;
-      }
-
-      if (snapshot && snapshot.state && snapshot.disciplineState) {
         if (stack.length > 0) {
-          stack.pop();
-          try {
-            localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
-            if (stack.length > 0) {
-              localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(stack[stack.length - 1]));
-            } else {
-              localStorage.removeItem('nemesis_prev_checkin_snapshot');
-            }
-          } catch (e) { }
+          snapshot = stack[stack.length - 1];
         } else {
           try {
-            localStorage.removeItem('nemesis_prev_checkin_snapshot');
+            const raw = localStorage.getItem('nemesis_prev_checkin_snapshot');
+            if (raw) snapshot = JSON.parse(raw);
           } catch (e) { }
         }
 
-        state.score = snapshot.state.score;
-        state.dailies = snapshot.state.dailies;
-        state.todos = snapshot.state.todos;
-        if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
-        if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
-        if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
-        state.history = snapshot.state.history;
-        state.paceHistory = snapshot.state.paceHistory || {};
-        state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
-        state.lastActiveDate = snapshot.state.lastActiveDate || targetDate;
-        state.lastCheckinDate = snapshot.state.lastCheckinDate || '';
-        state.lastCheckinTime = snapshot.state.lastCheckinTime || 0;
-        if (snapshot.state.shapePositions) state.shapePositions = snapshot.state.shapePositions;
-        if (typeof snapshot.state.streakFxEnabled === 'boolean') state.streakFxEnabled = snapshot.state.streakFxEnabled;
+        // Determine target checkin date from all possible history sources
+        let targetDate = (snapshot && snapshot.date) || state.lastCheckinDate;
+        if (!targetDate) {
+          const allHistDates = [
+            ...Object.keys(state.history || {}),
+            ...Object.keys((disciplineState && disciplineState.history) || {}).filter(k => !k.includes('penalty'))
+          ].sort();
+          if (allHistDates.length > 0) {
+            targetDate = allHistDates[allHistDates.length - 1];
+          }
+        }
+        if (!targetDate) {
+          targetDate = state.lastActiveDate || new Date().toISOString().split('T')[0];
+        }
 
-        disciplineState.elo = snapshot.disciplineState.elo;
-        disciplineState.acceptedContracts = snapshot.disciplineState.acceptedContracts || {};
-        disciplineState.completedContractsThisWeek = snapshot.disciplineState.completedContractsThisWeek || [];
-        disciplineState.currentWeek = snapshot.disciplineState.currentWeek;
-        disciplineState.unlockedSeals = snapshot.disciplineState.unlockedSeals || [];
-        disciplineState.history = snapshot.disciplineState.history || {};
-        disciplineState.todayEloDelta = snapshot.disciplineState.todayEloDelta || 0;
-      } else {
-        // Fallback rollback
-        if (Array.isArray(state.dailies)) {
-          state.dailies.forEach(d => {
-            if (Array.isArray(d.history) && d.history.length > 0) {
-              const lastEntry = d.history[d.history.length - 1];
-              if (lastEntry && (lastEntry.date === targetDate || d.history.length === 1)) {
-                d.history.pop();
-                if (lastEntry.completed) {
-                  d.completed = true;
-                  if (typeof d.completedDays === 'number' && d.completedDays > 0) d.completedDays--;
-                  if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
-                  if (typeof d.streak === 'number' && d.streak > 0) d.streak--;
-                } else {
-                  d.completed = false;
-                  if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
-                  if (typeof d.streak === 'number' && d.streak < 0) d.streak++;
+        const hasAnyHistory = (snapshot != null) ||
+                              (state.history && state.history[targetDate] !== undefined) ||
+                              (disciplineState.history && disciplineState.history[targetDate] !== undefined) ||
+                              (state.dailies && state.dailies.some(d => Array.isArray(d.history) && d.history.length > 0)) ||
+                              !!state.lastCheckinDate;
+
+        if (!hasAnyHistory) {
+          alert('No previous check-in found to reset.');
+          return;
+        }
+
+        const displayDate = (snapshot && snapshot.date) || targetDate;
+        const eloInfo = (snapshot && snapshot.disciplineState && snapshot.disciplineState.elo)
+          ? ` (${snapshot.disciplineState.elo} ELO)`
+          : '';
+        const promptMsg = `Reset to previous check-in from ${displayDate}?\n\nThis will restore previous task states, streaks, ELO rating${eloInfo}, and stats.`;
+
+        if (!confirm(promptMsg)) {
+          return;
+        }
+
+        if (snapshot && snapshot.state && snapshot.disciplineState) {
+          if (stack.length > 0) {
+            stack.pop();
+            try {
+              localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
+              if (stack.length > 0) {
+                localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(stack[stack.length - 1]));
+              } else {
+                localStorage.removeItem('nemesis_prev_checkin_snapshot');
+              }
+            } catch (e) { }
+          } else {
+            try {
+              localStorage.removeItem('nemesis_prev_checkin_snapshot');
+            } catch (e) { }
+          }
+
+          state.score = snapshot.state.score;
+          state.dailies = snapshot.state.dailies;
+          state.todos = snapshot.state.todos;
+          if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
+          if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
+          if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
+          state.history = snapshot.state.history;
+          state.paceHistory = snapshot.state.paceHistory || {};
+          state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
+          state.lastActiveDate = snapshot.state.lastActiveDate || targetDate;
+          state.lastCheckinDate = snapshot.state.lastCheckinDate || '';
+          state.lastCheckinTime = snapshot.state.lastCheckinTime || 0;
+          if (snapshot.state.shapePositions) state.shapePositions = snapshot.state.shapePositions;
+          if (typeof snapshot.state.streakFxEnabled === 'boolean') state.streakFxEnabled = snapshot.state.streakFxEnabled;
+
+          disciplineState.elo = snapshot.disciplineState.elo;
+          disciplineState.acceptedContracts = snapshot.disciplineState.acceptedContracts || {};
+          disciplineState.completedContractsThisWeek = snapshot.disciplineState.completedContractsThisWeek || [];
+          disciplineState.currentWeek = snapshot.disciplineState.currentWeek;
+          disciplineState.unlockedSeals = snapshot.disciplineState.unlockedSeals || [];
+          disciplineState.history = snapshot.disciplineState.history || {};
+          disciplineState.todayEloDelta = snapshot.disciplineState.todayEloDelta || 0;
+        } else {
+          // Robust fallback rollback
+          if (Array.isArray(state.dailies)) {
+            state.dailies.forEach(d => {
+              if (Array.isArray(d.history) && d.history.length > 0) {
+                const lastEntry = d.history.pop();
+                if (lastEntry) {
+                  if (lastEntry.completed) {
+                    d.completed = true;
+                    if (typeof d.completedDays === 'number' && d.completedDays > 0) d.completedDays--;
+                    if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
+                    if (typeof d.streak === 'number' && d.streak > 0) d.streak--;
+                  } else {
+                    d.completed = false;
+                    if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
+                    if (typeof d.streak === 'number' && d.streak < 0) d.streak++;
+                  }
                 }
               }
+            });
+          }
+
+          let delta = 0;
+          if (disciplineState.history) {
+            if (disciplineState.history[targetDate]) {
+              delta = disciplineState.history[targetDate].delta || 0;
+              delete disciplineState.history[targetDate];
+            } else {
+              const keys = Object.keys(disciplineState.history).filter(k => !k.includes('penalty')).sort();
+              if (keys.length > 0) {
+                const lastKey = keys[keys.length - 1];
+                delta = disciplineState.history[lastKey].delta || 0;
+                delete disciplineState.history[lastKey];
+              }
             }
-          });
-        }
-
-        if (disciplineState.history && disciplineState.history[targetDate]) {
-          const delta = disciplineState.history[targetDate].delta || 0;
-          disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - delta);
-          delete disciplineState.history[targetDate];
+          }
+          if (delta) {
+            disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - delta);
+          }
           disciplineState.todayEloDelta = 0;
+
+          if (state.history) {
+            if (state.history[targetDate] !== undefined) {
+              delete state.history[targetDate];
+            } else {
+              const sKeys = Object.keys(state.history).sort();
+              if (sKeys.length > 0) delete state.history[sKeys[sKeys.length - 1]];
+            }
+          }
+
+          state.score = disciplineState.elo || 1000;
+          state.lastCheckinStats = {};
+
+          const remDates = Object.keys(disciplineState.history || {}).filter(k => !k.includes('penalty')).sort();
+          state.lastCheckinDate = remDates.length > 0 ? remDates[remDates.length - 1] : '';
+          state.lastCheckinTime = 0;
         }
 
-        if (state.history && state.history[targetDate] !== undefined) {
-          delete state.history[targetDate];
-        }
-
-        state.score = disciplineState.elo || 1000;
-        state.lastCheckinStats = {};
-
-        const remDates = Object.keys(disciplineState.history || {}).filter(k => !k.includes('penalty')).sort();
-        state.lastCheckinDate = remDates.length > 0 ? remDates[remDates.length - 1] : '';
-        state.lastCheckinTime = 0;
+        saveState();
+        saveDisciplineState();
+        closeCheckinCeremony();
+        render();
+        if (typeof renderDisciplineDrawer === 'function') renderDisciplineDrawer();
+        if (typeof updateGhostPace === 'function') updateGhostPace();
+        if (typeof playSound === 'function') playSound('uncheck');
+        alert('Check-in reset complete: previous stats and tasks restored.');
+      } catch (err) {
+        console.error('Reset checkin error:', err);
+        alert('Error resetting check-in: ' + err.message);
       }
-
-      saveState();
-      saveDisciplineState();
-      closeCheckinCeremony();
-      render();
-      renderDisciplineDrawer();
-      if (typeof updateGhostPace === 'function') updateGhostPace();
-      playSound('uncheck');
     }
     window.resetToPreviousCheckin = resetToPreviousCheckin;
 
