@@ -430,6 +430,15 @@
       border-color: var(--border);
     }
 
+    .dropdown-item-btn.item-warning {
+      color: var(--color-yellow);
+    }
+
+    .dropdown-item-btn.item-warning:hover {
+      background: rgba(181, 137, 0, 0.18);
+      border-color: var(--color-yellow);
+    }
+
     .dropdown-item-btn.item-danger {
       color: var(--color-red);
     }
@@ -3644,8 +3653,32 @@
       background: #d4a017;
     }
 
+    .checkin-revert-btn {
+      flex: 1;
+      background: #073642;
+      color: #b58900;
+      border: 1.5px solid #b58900;
+      border-radius: 4px;
+      padding: 0.7rem 0.9rem;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .checkin-revert-btn:hover {
+      background: #b58900;
+      color: #002b36;
+    }
+
     .checkin-continue-btn {
-      width: 100%;
+      flex: 1.5;
       background: #859900;
       color: #002b36;
       border: none;
@@ -3729,6 +3762,7 @@
             <button type="button" class="dropdown-item-btn" id="importBtn" title="Import Backup JSON">📥 IMP</button>
             <button type="button" class="dropdown-item-btn" id="recoverOldBtn" title="Recover old app data">📜 LEGACY</button>
             <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item-btn item-warning" id="revertPrevCheckinBtn" title="Reset to previous check-in state and its stats">↺ RESET PREV CHECK-IN</button>
             <button type="button" class="dropdown-item-btn item-danger" id="rebirthEloBtn" title="Reset ELO back to baseline 1000">🔥 REBIRTH</button>
             <button type="button" class="dropdown-item-btn item-danger" id="debugResetBtn" onclick="debugResetBaseline()" title="Debug: Reset all streaks, completion rates, and Elo to baseline">⚡ DEBUG</button>
           </div>
@@ -4194,9 +4228,14 @@
             <span class="mini-chip-val" id="miniTallyElo">1000</span>
           </div>
         </div>
-        <button type="button" class="checkin-continue-btn" id="checkinContinueBtn">
-          <span>CONTINUE</span>
-        </button>
+        <div style="display: flex; gap: 0.5rem; width: 100%;">
+          <button type="button" class="checkin-revert-btn" id="checkinUndoBtn" title="Reset this check-in and restore previous stats">
+            <span>↺ RESET CHECK-IN</span>
+          </button>
+          <button type="button" class="checkin-continue-btn" id="checkinContinueBtn">
+            <span>CONTINUE</span>
+          </button>
+        </div>
       </div>
 
       <!-- Footer Buttons for Review Phase -->
@@ -6920,6 +6959,53 @@
 
     function performReset(userInitiated = true) {
       if (userInitiated) playSound('checkin');
+
+      // Preserve full snapshot of state & disciplineState prior to check-in mutation
+      try {
+        const checkinSnapshot = {
+          state: {
+            score: state.score,
+            dailies: JSON.parse(JSON.stringify(state.dailies || [])),
+            todos: JSON.parse(JSON.stringify(state.todos || [])),
+            tierConfig: JSON.parse(JSON.stringify(state.tierConfig || null)),
+            currentTierIndex: state.currentTierIndex,
+            tierSlots: JSON.parse(JSON.stringify(state.tierSlots || {})),
+            history: JSON.parse(JSON.stringify(state.history || {})),
+            paceHistory: JSON.parse(JSON.stringify(state.paceHistory || {})),
+            lastCheckinStats: JSON.parse(JSON.stringify(state.lastCheckinStats || {})),
+            lastActiveDate: state.lastActiveDate,
+            lastCheckinDate: state.lastCheckinDate,
+            lastCheckinTime: state.lastCheckinTime,
+            dailiesView: state.dailiesView,
+            shapePositions: JSON.parse(JSON.stringify(state.shapePositions || {})),
+            streakFxEnabled: state.streakFxEnabled
+          },
+          disciplineState: {
+            elo: disciplineState.elo,
+            acceptedContracts: JSON.parse(JSON.stringify(disciplineState.acceptedContracts || {})),
+            completedContractsThisWeek: JSON.parse(JSON.stringify(disciplineState.completedContractsThisWeek || [])),
+            currentWeek: disciplineState.currentWeek,
+            unlockedSeals: JSON.parse(JSON.stringify(disciplineState.unlockedSeals || [])),
+            history: JSON.parse(JSON.stringify(disciplineState.history || {})),
+            todayEloDelta: disciplineState.todayEloDelta
+          },
+          timestamp: Date.now(),
+          date: state.lastActiveDate || new Date().toISOString().split('T')[0]
+        };
+
+        let stack = [];
+        try {
+          stack = JSON.parse(localStorage.getItem('nemesis_checkin_snapshots_stack') || '[]');
+          if (!Array.isArray(stack)) stack = [];
+        } catch (e) { stack = []; }
+        stack.push(checkinSnapshot);
+        if (stack.length > 5) stack.shift();
+        localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
+        localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(checkinSnapshot));
+      } catch (err) {
+        console.warn('Failed to save checkin snapshot:', err);
+      }
+
       let totalPts = 0;
       let donePts = 0;
       const todayStr = new Date().toISOString().split('T')[0];
@@ -7063,6 +7149,134 @@
       saveState();
       render();
     }
+
+    function resetToPreviousCheckin() {
+      let snapshot = null;
+      let stack = [];
+      try {
+        stack = JSON.parse(localStorage.getItem('nemesis_checkin_snapshots_stack') || '[]');
+        if (!Array.isArray(stack)) stack = [];
+      } catch (e) { stack = []; }
+
+      if (stack.length > 0) {
+        snapshot = stack[stack.length - 1];
+      } else {
+        try {
+          const raw = localStorage.getItem('nemesis_prev_checkin_snapshot');
+          if (raw) snapshot = JSON.parse(raw);
+        } catch (e) { }
+      }
+
+      const targetDate = state.lastCheckinDate || (snapshot && snapshot.date) || new Date().toISOString().split('T')[0];
+      const hasHistory = (state.history && state.history[targetDate] !== undefined) ||
+                         (disciplineState.history && disciplineState.history[targetDate] !== undefined) ||
+                         (state.dailies && state.dailies.some(d => d.history && d.history.some(h => h.date === targetDate)));
+
+      if (!snapshot && !hasHistory && !state.lastCheckinDate) {
+        alert('No previous check-in recorded to reset.');
+        return;
+      }
+
+      const displayDate = (snapshot && snapshot.date) || targetDate;
+      const eloInfo = (snapshot && snapshot.disciplineState && snapshot.disciplineState.elo)
+        ? ` (${snapshot.disciplineState.elo} ELO)`
+        : '';
+      const promptMsg = `Reset to previous check-in from ${displayDate}?\n\nThis will restore previous task states, streaks, ELO rating${eloInfo}, and stats.`;
+
+      if (!confirm(promptMsg)) {
+        return;
+      }
+
+      if (snapshot && snapshot.state && snapshot.disciplineState) {
+        if (stack.length > 0) {
+          stack.pop();
+          try {
+            localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
+            if (stack.length > 0) {
+              localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(stack[stack.length - 1]));
+            } else {
+              localStorage.removeItem('nemesis_prev_checkin_snapshot');
+            }
+          } catch (e) { }
+        } else {
+          try {
+            localStorage.removeItem('nemesis_prev_checkin_snapshot');
+          } catch (e) { }
+        }
+
+        state.score = snapshot.state.score;
+        state.dailies = snapshot.state.dailies;
+        state.todos = snapshot.state.todos;
+        if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
+        if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
+        if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
+        state.history = snapshot.state.history;
+        state.paceHistory = snapshot.state.paceHistory || {};
+        state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
+        state.lastActiveDate = snapshot.state.lastActiveDate || targetDate;
+        state.lastCheckinDate = snapshot.state.lastCheckinDate || '';
+        state.lastCheckinTime = snapshot.state.lastCheckinTime || 0;
+        if (snapshot.state.shapePositions) state.shapePositions = snapshot.state.shapePositions;
+        if (typeof snapshot.state.streakFxEnabled === 'boolean') state.streakFxEnabled = snapshot.state.streakFxEnabled;
+
+        disciplineState.elo = snapshot.disciplineState.elo;
+        disciplineState.acceptedContracts = snapshot.disciplineState.acceptedContracts || {};
+        disciplineState.completedContractsThisWeek = snapshot.disciplineState.completedContractsThisWeek || [];
+        disciplineState.currentWeek = snapshot.disciplineState.currentWeek;
+        disciplineState.unlockedSeals = snapshot.disciplineState.unlockedSeals || [];
+        disciplineState.history = snapshot.disciplineState.history || {};
+        disciplineState.todayEloDelta = snapshot.disciplineState.todayEloDelta || 0;
+      } else {
+        // Fallback rollback
+        if (Array.isArray(state.dailies)) {
+          state.dailies.forEach(d => {
+            if (Array.isArray(d.history) && d.history.length > 0) {
+              const lastEntry = d.history[d.history.length - 1];
+              if (lastEntry && (lastEntry.date === targetDate || d.history.length === 1)) {
+                d.history.pop();
+                if (lastEntry.completed) {
+                  d.completed = true;
+                  if (typeof d.completedDays === 'number' && d.completedDays > 0) d.completedDays--;
+                  if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
+                  if (typeof d.streak === 'number' && d.streak > 0) d.streak--;
+                } else {
+                  d.completed = false;
+                  if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
+                  if (typeof d.streak === 'number' && d.streak < 0) d.streak++;
+                }
+              }
+            }
+          });
+        }
+
+        if (disciplineState.history && disciplineState.history[targetDate]) {
+          const delta = disciplineState.history[targetDate].delta || 0;
+          disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - delta);
+          delete disciplineState.history[targetDate];
+          disciplineState.todayEloDelta = 0;
+        }
+
+        if (state.history && state.history[targetDate] !== undefined) {
+          delete state.history[targetDate];
+        }
+
+        state.score = disciplineState.elo || 1000;
+        state.lastCheckinStats = {};
+
+        const remDates = Object.keys(disciplineState.history || {}).filter(k => !k.includes('penalty')).sort();
+        state.lastCheckinDate = remDates.length > 0 ? remDates[remDates.length - 1] : '';
+        state.lastCheckinTime = 0;
+      }
+
+      saveState();
+      saveDisciplineState();
+      closeCheckinCeremony();
+      render();
+      renderDisciplineDrawer();
+      if (typeof updateGhostPace === 'function') updateGhostPace();
+      playSound('uncheck');
+    }
+    window.resetToPreviousCheckin = resetToPreviousCheckin;
 
     // --- TIER CONFIGURATION & SET EVOLUTION SYSTEM ---
     function initTierConfig() {
@@ -8314,6 +8528,13 @@
           closeCheckinCeremony();
         };
       }
+      const checkinUndoBtn = document.getElementById('checkinUndoBtn');
+      if (checkinUndoBtn) {
+        checkinUndoBtn.onclick = (e) => {
+          e.stopPropagation();
+          resetToPreviousCheckin();
+        };
+      }
       const checkinCancelBtn = document.getElementById('checkinModalCancelBtn');
       if (checkinCancelBtn) {
         checkinCancelBtn.onclick = closeCheckinCeremony;
@@ -8357,7 +8578,9 @@
         };
       }
 
-      // Rebirth & Debug Reset Buttons
+      // Revert, Rebirth & Debug Reset Buttons
+      const revertPrevBtn = document.getElementById('revertPrevCheckinBtn');
+      if (revertPrevBtn) revertPrevBtn.onclick = resetToPreviousCheckin;
       const rebirthBtn = document.getElementById('rebirthEloBtn');
       if (rebirthBtn) rebirthBtn.onclick = rebirthElo;
       const debugBtn = document.getElementById('debugResetBtn');

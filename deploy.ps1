@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: allow exiting check-in popup by clicking outside and ensure proper todo slot height for subtasks"
+$commitMsg = "feat: add feature to reset to previous check-in and restore its stats"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
