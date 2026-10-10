@@ -6999,7 +6999,6 @@
           if (!Array.isArray(stack)) stack = [];
         } catch (e) { stack = []; }
         stack.push(checkinSnapshot);
-        if (stack.length > 5) stack.shift();
         localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
         localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(checkinSnapshot));
       } catch (err) {
@@ -7133,7 +7132,11 @@
         overdueClearedCount,
         hasZeroOverdueDebt,
         isWeekend100,
-        allStreaksAbove3
+        allStreaksAbove3,
+        rate: Math.round(pct),
+        pct: Math.round(pct),
+        donePts: donePts,
+        totalPts: totalPts
       };
 
       state.lastCheckinDate = todayStr;
@@ -7152,153 +7155,163 @@
 
     function resetToPreviousCheckin() {
       try {
-        let snapshot = null;
         let stack = [];
         try {
           stack = JSON.parse(localStorage.getItem('nemesis_checkin_snapshots_stack') || '[]');
           if (!Array.isArray(stack)) stack = [];
         } catch (e) { stack = []; }
 
+        // Find all check-in dates recorded in history
+        const sHist = state.history || {};
+        const dHist = (disciplineState && disciplineState.history) || {};
+        const allHistDates = Array.from(new Set([
+          ...Object.keys(sHist),
+          ...Object.keys(dHist).filter(k => !k.includes('penalty') && !k.includes('reset'))
+        ])).sort();
+
+        const hasHistory = allHistDates.length > 0 ||
+          (state.dailies && state.dailies.some(d => Array.isArray(d.history) && d.history.length > 0)) ||
+          !!state.lastCheckinDate;
+
+        if (stack.length === 0 && !hasHistory) {
+          alert('No previous check-ins to reset. Already at baseline.');
+          return;
+        }
+
+        // Target check-in date to rollback from
+        let targetDate = state.lastCheckinDate || (allHistDates.length > 0 ? allHistDates[allHistDates.length - 1] : '');
+        if (!targetDate && stack.length > 0 && stack[stack.length - 1].date) {
+          targetDate = stack[stack.length - 1].date;
+        }
+        if (!targetDate) {
+          targetDate = new Date().toISOString().split('T')[0];
+        }
+
+        const confirmText = `Reset to previous check-in? (Rollback ${targetDate})\n\nThis will restore previous daily streaks, completion rate, ELO, and stats.`;
+        if (!confirm(confirmText)) {
+          return;
+        }
+
+        let restoredDate = '';
+        let restoredRate = 100;
+        let restoredElo = 1000;
+
         if (stack.length > 0) {
-          snapshot = stack[stack.length - 1];
-        } else {
+          // 1. Pop from unlimited stack
+          const snapshot = stack.pop();
           try {
-            const raw = localStorage.getItem('nemesis_prev_checkin_snapshot');
-            if (raw) snapshot = JSON.parse(raw);
-          } catch (e) { }
-        }
-
-        // Determine target checkin date from all possible history sources
-        let targetDate = (snapshot && snapshot.date) || state.lastCheckinDate;
-        if (!targetDate) {
-          const allHistDates = [
-            ...Object.keys(state.history || {}),
-            ...Object.keys((disciplineState && disciplineState.history) || {}).filter(k => !k.includes('penalty'))
-          ].sort();
-          if (allHistDates.length > 0) {
-            targetDate = allHistDates[allHistDates.length - 1];
-          }
-        }
-        if (!targetDate) {
-          targetDate = state.lastActiveDate || new Date().toISOString().split('T')[0];
-        }
-
-        const hasAnyHistory = (snapshot != null) ||
-                              (state.history && state.history[targetDate] !== undefined) ||
-                              (disciplineState.history && disciplineState.history[targetDate] !== undefined) ||
-                              (state.dailies && state.dailies.some(d => Array.isArray(d.history) && d.history.length > 0)) ||
-                              !!state.lastCheckinDate;
-
-        if (!hasAnyHistory) {
-          alert('No previous check-in found to reset.');
-          return;
-        }
-
-        const displayDate = (snapshot && snapshot.date) || targetDate;
-        const eloInfo = (snapshot && snapshot.disciplineState && snapshot.disciplineState.elo)
-          ? ` (${snapshot.disciplineState.elo} ELO)`
-          : '';
-        const promptMsg = `Reset to previous check-in from ${displayDate}?\n\nThis will restore previous task states, streaks, ELO rating${eloInfo}, and stats.`;
-
-        if (!confirm(promptMsg)) {
-          return;
-        }
-
-        if (snapshot && snapshot.state && snapshot.disciplineState) {
-          if (stack.length > 0) {
-            stack.pop();
-            try {
-              localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
-              if (stack.length > 0) {
-                localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(stack[stack.length - 1]));
-              } else {
-                localStorage.removeItem('nemesis_prev_checkin_snapshot');
-              }
-            } catch (e) { }
-          } else {
-            try {
+            localStorage.setItem('nemesis_checkin_snapshots_stack', JSON.stringify(stack));
+            if (stack.length > 0) {
+              localStorage.setItem('nemesis_prev_checkin_snapshot', JSON.stringify(stack[stack.length - 1]));
+            } else {
               localStorage.removeItem('nemesis_prev_checkin_snapshot');
-            } catch (e) { }
+            }
+          } catch (e) { }
+
+          if (snapshot && snapshot.state && snapshot.disciplineState) {
+            state.score = snapshot.state.score;
+            state.dailies = snapshot.state.dailies;
+            state.todos = snapshot.state.todos;
+            if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
+            if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
+            if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
+            state.history = snapshot.state.history;
+            state.paceHistory = snapshot.state.paceHistory || {};
+            state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
+            state.lastActiveDate = snapshot.state.lastActiveDate || '';
+            state.lastCheckinDate = snapshot.state.lastCheckinDate || '';
+            state.lastCheckinTime = snapshot.state.lastCheckinTime || 0;
+            if (snapshot.state.shapePositions) state.shapePositions = snapshot.state.shapePositions;
+            if (typeof snapshot.state.streakFxEnabled === 'boolean') state.streakFxEnabled = snapshot.state.streakFxEnabled;
+
+            disciplineState.elo = snapshot.disciplineState.elo;
+            disciplineState.acceptedContracts = snapshot.disciplineState.acceptedContracts || {};
+            disciplineState.completedContractsThisWeek = snapshot.disciplineState.completedContractsThisWeek || [];
+            disciplineState.currentWeek = snapshot.disciplineState.currentWeek;
+            disciplineState.unlockedSeals = snapshot.disciplineState.unlockedSeals || [];
+            disciplineState.history = snapshot.disciplineState.history || {};
+            disciplineState.todayEloDelta = snapshot.disciplineState.todayEloDelta || 0;
+
+            restoredDate = state.lastCheckinDate || 'baseline';
+            restoredElo = disciplineState.elo;
+            restoredRate = (state.lastCheckinStats && (state.lastCheckinStats.rate ?? state.lastCheckinStats.pct)) || 100;
           }
-
-          state.score = snapshot.state.score;
-          state.dailies = snapshot.state.dailies;
-          state.todos = snapshot.state.todos;
-          if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
-          if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
-          if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
-          state.history = snapshot.state.history;
-          state.paceHistory = snapshot.state.paceHistory || {};
-          state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
-          state.lastActiveDate = snapshot.state.lastActiveDate || targetDate;
-          state.lastCheckinDate = snapshot.state.lastCheckinDate || '';
-          state.lastCheckinTime = snapshot.state.lastCheckinTime || 0;
-          if (snapshot.state.shapePositions) state.shapePositions = snapshot.state.shapePositions;
-          if (typeof snapshot.state.streakFxEnabled === 'boolean') state.streakFxEnabled = snapshot.state.streakFxEnabled;
-
-          disciplineState.elo = snapshot.disciplineState.elo;
-          disciplineState.acceptedContracts = snapshot.disciplineState.acceptedContracts || {};
-          disciplineState.completedContractsThisWeek = snapshot.disciplineState.completedContractsThisWeek || [];
-          disciplineState.currentWeek = snapshot.disciplineState.currentWeek;
-          disciplineState.unlockedSeals = snapshot.disciplineState.unlockedSeals || [];
-          disciplineState.history = snapshot.disciplineState.history || {};
-          disciplineState.todayEloDelta = snapshot.disciplineState.todayEloDelta || 0;
         } else {
-          // Robust fallback rollback
+          // 2. Fallback history-based rollback (reconstructing previous stats unlimitedly)
+          const lastDate = targetDate;
+          const remainingDates = allHistDates.filter(d => d !== lastDate);
+          const prevDate = remainingDates.length > 0 ? remainingDates[remainingDates.length - 1] : '';
+
+          // A. Rollback dailies: pop last entry and recompute exact streak & rate from history
           if (Array.isArray(state.dailies)) {
             state.dailies.forEach(d => {
               if (Array.isArray(d.history) && d.history.length > 0) {
-                const lastEntry = d.history.pop();
-                if (lastEntry) {
-                  if (lastEntry.completed) {
-                    d.completed = true;
-                    if (typeof d.completedDays === 'number' && d.completedDays > 0) d.completedDays--;
-                    if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
-                    if (typeof d.streak === 'number' && d.streak > 0) d.streak--;
-                  } else {
-                    d.completed = false;
-                    if (typeof d.totalDays === 'number' && d.totalDays > 0) d.totalDays--;
-                    if (typeof d.streak === 'number' && d.streak < 0) d.streak++;
-                  }
+                const lastIdx = d.history.findIndex(h => h.date === lastDate);
+                if (lastIdx !== -1) {
+                  d.history.splice(lastIdx, 1);
+                } else {
+                  d.history.pop();
                 }
+
+                // Recompute exact streak up to prevDate
+                let currentStreak = 0;
+                d.history.forEach(h => {
+                  if (h.completed) {
+                    currentStreak = (currentStreak < 0 ? 0 : currentStreak) + 1;
+                  } else {
+                    currentStreak = (currentStreak > 0 ? 0 : currentStreak) - 1;
+                  }
+                });
+                d.streak = currentStreak;
+                d.completedDays = d.history.filter(h => h.completed).length;
+                d.totalDays = d.history.length;
+              } else {
+                d.streak = 0;
               }
+              d.completed = false;
+              if (d.subtasks) d.subtasks.forEach(st => st.completed = false);
             });
           }
 
-          let delta = 0;
+          // B. Rollback discipline ELO
           if (disciplineState.history) {
-            if (disciplineState.history[targetDate]) {
-              delta = disciplineState.history[targetDate].delta || 0;
-              delete disciplineState.history[targetDate];
-            } else {
-              const keys = Object.keys(disciplineState.history).filter(k => !k.includes('penalty')).sort();
-              if (keys.length > 0) {
-                const lastKey = keys[keys.length - 1];
-                delta = disciplineState.history[lastKey].delta || 0;
-                delete disciplineState.history[lastKey];
-              }
-            }
+            delete disciplineState.history[lastDate];
           }
-          if (delta) {
-            disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - delta);
+          if (prevDate && disciplineState.history[prevDate]) {
+            disciplineState.elo = disciplineState.history[prevDate].elo || 1000;
+            disciplineState.todayEloDelta = disciplineState.history[prevDate].delta || 0;
+          } else {
+            disciplineState.elo = 1000;
+            disciplineState.todayEloDelta = 0;
           }
-          disciplineState.todayEloDelta = 0;
 
+          // C. Rollback state history and score
           if (state.history) {
-            if (state.history[targetDate] !== undefined) {
-              delete state.history[targetDate];
-            } else {
-              const sKeys = Object.keys(state.history).sort();
-              if (sKeys.length > 0) delete state.history[sKeys[sKeys.length - 1]];
-            }
+            delete state.history[lastDate];
+          }
+          state.score = disciplineState.elo;
+
+          // D. Rollback lastCheckinDate & previous check-in stats
+          state.lastCheckinDate = prevDate;
+          state.lastCheckinTime = prevDate ? Date.now() - 86400000 : 0;
+
+          if (prevDate) {
+            const prevEntry = disciplineState.history[prevDate] || {};
+            const prevPct = typeof prevEntry.pct === 'number' ? prevEntry.pct : (state.history[prevDate] ? Math.round(state.history[prevDate] * 100) : 100);
+            restoredRate = prevPct;
+            state.lastCheckinStats = {
+              rate: prevPct,
+              pct: prevPct,
+              is100Pct: prevPct >= 100,
+              streakTier: Math.floor(state.dailies.filter(d => (d.streak || 0) > 0).length / 5)
+            };
+          } else {
+            restoredRate = 0;
+            state.lastCheckinStats = {};
           }
 
-          state.score = disciplineState.elo || 1000;
-          state.lastCheckinStats = {};
-
-          const remDates = Object.keys(disciplineState.history || {}).filter(k => !k.includes('penalty')).sort();
-          state.lastCheckinDate = remDates.length > 0 ? remDates[remDates.length - 1] : '';
-          state.lastCheckinTime = 0;
+          restoredDate = prevDate || 'baseline';
+          restoredElo = disciplineState.elo;
         }
 
         saveState();
@@ -7308,7 +7321,8 @@
         if (typeof renderDisciplineDrawer === 'function') renderDisciplineDrawer();
         if (typeof updateGhostPace === 'function') updateGhostPace();
         if (typeof playSound === 'function') playSound('uncheck');
-        alert('Check-in reset complete: previous stats and tasks restored.');
+
+        alert(`Reset check-in complete.\nRestored to: ${restoredDate}\nELO: ${restoredElo} | Rate: ${restoredRate}%`);
       } catch (err) {
         console.error('Reset checkin error:', err);
         alert('Error resetting check-in: ' + err.message);
