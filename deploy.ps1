@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "fix: make check-in reset button top-level, non-blocking and unlimited with exact stat rollback"
+$commitMsg = "feat: add confirmation popup and step selection for check-in state rewind"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
