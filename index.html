@@ -439,6 +439,19 @@
       border-color: var(--color-yellow);
     }
 
+    .action-pill-btn.revert-checkin-btn {
+      border-color: rgba(181, 137, 0, 0.45);
+      color: var(--color-yellow);
+      background: #002b36;
+      font-weight: 800;
+    }
+
+    .action-pill-btn.revert-checkin-btn:hover {
+      background: rgba(181, 137, 0, 0.22);
+      border-color: var(--color-yellow);
+      color: #fdf6e3;
+    }
+
     .dropdown-item-btn.item-danger {
       color: var(--color-red);
     }
@@ -3768,6 +3781,7 @@
           </div>
         </div>
         <input type="file" id="importFileInput" accept=".json" style="display: none;" />
+        <button type="button" class="action-pill-btn revert-checkin-btn" id="topRevertCheckinBtn" onclick="resetToPreviousCheckin()" title="Reset to previous check-in state, streaks, rate and ELO">↺ RESET</button>
         <button type="button" class="reset-btn" id="resetDailiesBtn" onclick="openCheckinPopup(false)" title="Check in daily progress">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
             stroke-linecap="round" stroke-linejoin="round">
@@ -7153,6 +7167,27 @@
       render();
     }
 
+    function showCheckinToast(title, details, isSuccess = true) {
+      let toast = document.getElementById('checkinResetToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'checkinResetToast';
+        toast.className = 'focus-toast';
+        document.body.appendChild(toast);
+      }
+      toast.style.borderColor = isSuccess ? 'var(--color-yellow)' : 'var(--color-red)';
+      toast.innerHTML = `
+        <div style="font-weight: 800; color: ${isSuccess ? 'var(--color-yellow)' : 'var(--color-red)'}; font-size: 0.78rem; letter-spacing: 0.04em;">
+          ${title}
+        </div>
+        ${details ? `<div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; font-family: monospace;">${details}</div>` : ''}
+      `;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4200);
+    }
+
     function resetToPreviousCheckin() {
       try {
         let stack = [];
@@ -7170,25 +7205,12 @@
         ])).sort();
 
         const hasHistory = allHistDates.length > 0 ||
-          (state.dailies && state.dailies.some(d => Array.isArray(d.history) && d.history.length > 0)) ||
+          (state.dailies && state.dailies.some(d => (d.streak || 0) !== 0 || (Array.isArray(d.history) && d.history.length > 0))) ||
           !!state.lastCheckinDate;
 
         if (stack.length === 0 && !hasHistory) {
-          alert('No previous check-ins to reset. Already at baseline.');
-          return;
-        }
-
-        // Target check-in date to rollback from
-        let targetDate = state.lastCheckinDate || (allHistDates.length > 0 ? allHistDates[allHistDates.length - 1] : '');
-        if (!targetDate && stack.length > 0 && stack[stack.length - 1].date) {
-          targetDate = stack[stack.length - 1].date;
-        }
-        if (!targetDate) {
-          targetDate = new Date().toISOString().split('T')[0];
-        }
-
-        const confirmText = `Reset to previous check-in? (Rollback ${targetDate})\n\nThis will restore previous daily streaks, completion rate, ELO, and stats.`;
-        if (!confirm(confirmText)) {
+          if (typeof playSound === 'function') playSound('uncheck');
+          showCheckinToast('⚡ ALREADY AT BASELINE', 'No previous check-in history to reset.', false);
           return;
         }
 
@@ -7215,7 +7237,7 @@
             if (snapshot.state.tierConfig) state.tierConfig = snapshot.state.tierConfig;
             if (typeof snapshot.state.currentTierIndex === 'number') state.currentTierIndex = snapshot.state.currentTierIndex;
             if (snapshot.state.tierSlots) state.tierSlots = snapshot.state.tierSlots;
-            state.history = snapshot.state.history;
+            state.history = snapshot.state.history || {};
             state.paceHistory = snapshot.state.paceHistory || {};
             state.lastCheckinStats = snapshot.state.lastCheckinStats || {};
             state.lastActiveDate = snapshot.state.lastActiveDate || '';
@@ -7237,73 +7259,81 @@
             restoredRate = (state.lastCheckinStats && (state.lastCheckinStats.rate ?? state.lastCheckinStats.pct)) || 100;
           }
         } else {
-          // 2. Fallback history-based rollback (reconstructing previous stats unlimitedly)
-          const lastDate = targetDate;
-          const remainingDates = allHistDates.filter(d => d !== lastDate);
+          // 2. Fallback history-based rollback (stepping back safely without data wipe)
+          let targetDate = state.lastCheckinDate || (allHistDates.length > 0 ? allHistDates[allHistDates.length - 1] : '');
+          if (!targetDate) targetDate = new Date().toISOString().split('T')[0];
+
+          const remainingDates = allHistDates.filter(d => d !== targetDate);
           const prevDate = remainingDates.length > 0 ? remainingDates[remainingDates.length - 1] : '';
 
-          // A. Rollback dailies: pop last entry and recompute exact streak & rate from history
+          // A. Step back daily streaks safely
           if (Array.isArray(state.dailies)) {
             state.dailies.forEach(d => {
+              let wasCompleted = false;
               if (Array.isArray(d.history) && d.history.length > 0) {
-                const lastIdx = d.history.findIndex(h => h.date === lastDate);
+                const lastIdx = d.history.findIndex(h => h.date === targetDate);
                 if (lastIdx !== -1) {
+                  wasCompleted = !!d.history[lastIdx].completed;
                   d.history.splice(lastIdx, 1);
                 } else {
-                  d.history.pop();
+                  wasCompleted = !!d.history.pop().completed;
                 }
-
-                // Recompute exact streak up to prevDate
-                let currentStreak = 0;
-                d.history.forEach(h => {
-                  if (h.completed) {
-                    currentStreak = (currentStreak < 0 ? 0 : currentStreak) + 1;
-                  } else {
-                    currentStreak = (currentStreak > 0 ? 0 : currentStreak) - 1;
-                  }
-                });
-                d.streak = currentStreak;
-                d.completedDays = d.history.filter(h => h.completed).length;
-                d.totalDays = d.history.length;
-              } else {
-                d.streak = 0;
               }
+
+              if (wasCompleted) {
+                if (typeof d.streak === 'number' && d.streak > 1) d.streak = d.streak - 1;
+                else d.streak = 0;
+              } else {
+                if (typeof d.streak === 'number' && d.streak < -1) d.streak = d.streak + 1;
+                else if (typeof d.streak === 'number' && d.streak > 0) d.streak = d.streak - 1;
+                else d.streak = 0;
+              }
+
+              d.completedDays = (d.history || []).filter(h => h.completed).length;
+              d.totalDays = Math.max(0, (d.history || []).length);
               d.completed = false;
               if (d.subtasks) d.subtasks.forEach(st => st.completed = false);
             });
           }
 
-          // B. Rollback discipline ELO
-          if (disciplineState.history) {
-            delete disciplineState.history[lastDate];
+          // B. Step back discipline ELO
+          let eloDelta = 0;
+          if (disciplineState.history && disciplineState.history[targetDate]) {
+            eloDelta = disciplineState.history[targetDate].delta || 0;
+            delete disciplineState.history[targetDate];
           }
-          if (prevDate && disciplineState.history[prevDate]) {
-            disciplineState.elo = disciplineState.history[prevDate].elo || 1000;
+          if (prevDate && disciplineState.history && disciplineState.history[prevDate]) {
+            disciplineState.elo = disciplineState.history[prevDate].elo || Math.max(100, (disciplineState.elo || 1000) - eloDelta);
             disciplineState.todayEloDelta = disciplineState.history[prevDate].delta || 0;
           } else {
-            disciplineState.elo = 1000;
+            disciplineState.elo = Math.max(100, (disciplineState.elo || 1000) - eloDelta);
             disciplineState.todayEloDelta = 0;
           }
 
-          // C. Rollback state history and score
+          // C. Step back state history and score
           if (state.history) {
-            delete state.history[lastDate];
+            delete state.history[targetDate];
           }
           state.score = disciplineState.elo;
-
-          // D. Rollback lastCheckinDate & previous check-in stats
           state.lastCheckinDate = prevDate;
+          state.lastActiveDate = prevDate || new Date().toISOString().split('T')[0];
           state.lastCheckinTime = prevDate ? Date.now() - 86400000 : 0;
 
+          // D. Restore previous check-in stats & rate
           if (prevDate) {
-            const prevEntry = disciplineState.history[prevDate] || {};
-            const prevPct = typeof prevEntry.pct === 'number' ? prevEntry.pct : (state.history[prevDate] ? Math.round(state.history[prevDate] * 100) : 100);
+            let prevPct = 100;
+            if (disciplineState.history && disciplineState.history[prevDate] && typeof disciplineState.history[prevDate].pct === 'number') {
+              prevPct = Math.round(disciplineState.history[prevDate].pct);
+            } else if (state.history && typeof state.history[prevDate] === 'number') {
+              prevPct = Math.round(state.history[prevDate] * 100);
+            }
             restoredRate = prevPct;
             state.lastCheckinStats = {
               rate: prevPct,
               pct: prevPct,
               is100Pct: prevPct >= 100,
-              streakTier: Math.floor(state.dailies.filter(d => (d.streak || 0) > 0).length / 5)
+              streakTier: Math.floor(state.dailies.filter(d => (d.streak || 0) > 0).length / 5),
+              allStreaksAbove3: state.dailies.length > 0 && state.dailies.every(d => (d.streak || 0) >= 3)
             };
           } else {
             restoredRate = 0;
@@ -7322,10 +7352,10 @@
         if (typeof updateGhostPace === 'function') updateGhostPace();
         if (typeof playSound === 'function') playSound('uncheck');
 
-        alert(`Reset check-in complete.\nRestored to: ${restoredDate}\nELO: ${restoredElo} | Rate: ${restoredRate}%`);
+        showCheckinToast('↺ CHECK-IN RESET COMPLETE', `Restored to: ${restoredDate} | ELO: ${restoredElo} | Rate: ${restoredRate}% | Streaks updated`);
       } catch (err) {
         console.error('Reset checkin error:', err);
-        alert('Error resetting check-in: ' + err.message);
+        showCheckinToast('⚠️ RESET CHECK-IN ERROR', err.message || 'Unknown error', false);
       }
     }
     window.resetToPreviousCheckin = resetToPreviousCheckin;
@@ -8631,6 +8661,8 @@
       }
 
       // Revert, Rebirth & Debug Reset Buttons
+      const topRevertBtn = document.getElementById('topRevertCheckinBtn');
+      if (topRevertBtn) topRevertBtn.onclick = resetToPreviousCheckin;
       const revertPrevBtn = document.getElementById('revertPrevCheckinBtn');
       if (revertPrevBtn) revertPrevBtn.onclick = resetToPreviousCheckin;
       const rebirthBtn = document.getElementById('rebirthEloBtn');

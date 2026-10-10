@@ -1,7 +1,7 @@
 # Deploy.ps1 - Automated deployment script
 # Default parameters (can be edited manually before running)
 $branch = "main"
-$commitMsg = "feat: support unlimited check-in stacking and restore previous streaks, rate, and stats"
+$commitMsg = "fix: make check-in reset button top-level, non-blocking and unlimited with exact stat rollback"
 $bumpSw = $true
 $swTag = "auto" # "auto" generates timestamp tag
 $buildCmd = ""  # e.g., "npm run build"
